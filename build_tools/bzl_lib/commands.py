@@ -28,7 +28,7 @@ bazel_modes = (
 
 
 def cmd_bazel(args, bazel_args, mode_args):
-    exec_wrapper.execv(
+    exec_wrapper.execvp(
         args.bazel_path, [args.bazel_path] + bazel_args + [args.mode] + mode_args
     )
 

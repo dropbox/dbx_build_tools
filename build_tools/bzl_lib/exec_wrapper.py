@@ -23,6 +23,16 @@ def execv(binary, args):
     os.execv(binary, args)
 
 
+def execvp(binary, args):
+    # type: (Text, List[str]) -> None
+    metrics.report_metrics()
+    if os.getenv("BZL_DEBUG"):
+        print >>sys.stderr, "exec: {} {}".format(
+            binary, " ".join(pipes.quote(s) for s in args[1:])
+        )
+    os.execvp(binary, args)
+
+
 def execve(binary, args, env):
     metrics.report_metrics()
     if os.getenv("BZL_DEBUG"):
