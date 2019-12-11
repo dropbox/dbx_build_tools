@@ -27,8 +27,9 @@ Follow the [installation instructions](https://docs.bazel.build/versions/master/
     
     http_archive(
         name = "dbx_build_tools",
-        urls = ["https://github.com/dropbox/dbx_build_tools/archive/master.tar.gz"],
-        strip_prefix = "dbx_build_tools-master",
+        urls = ["https://github.com/dropbox/dbx_build_tools/archive/062b7ced7133a905f0db351ab8cd4e3c5733b30f.tar.gz"],
+        strip_prefix = "dbx_build_tools-062b7ced7133a905f0db351ab8cd4e3c5733b30f",
+        sha256 = "3d62fbdd7a528ef80bd4ee5b64a28bfd46d4a4a5db665742ef00a489c57c8aeb",
     )
     
     load('@dbx_build_tools//build_tools/bazel:external_workspace.bzl', 'drte_deps')
