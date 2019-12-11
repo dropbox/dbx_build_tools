@@ -1,0 +1,4 @@
+dbx_go_binary(
+    name = "svcctl",
+    testonly = True,
+)

@@ -1,0 +1,7 @@
+package(default_visibility = ["//visibility:public"])
+
+# This rule exposes all files in a package as `@workspace_name//:files`
+filegroup(
+    name = "files",
+    srcs = glob(["**/*"]),
+)

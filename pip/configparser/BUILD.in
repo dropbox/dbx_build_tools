@@ -1,0 +1,11 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
+
+dbx_py_pypi_piplib(
+    name = "configparser",
+    namespace_pkgs = ["backports"],
+    pip_version = "3.7.4",
+    provides = ["backports.configparser"],
+    python3_compatible = True,
+)

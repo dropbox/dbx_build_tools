@@ -1,0 +1,51 @@
+load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
+
+dbx_thirdparty_cc_library(
+    name = "z",
+    srcs = [
+        "adler32.c",
+        "compress.c",
+        "crc32.c",
+        "crc32.h",
+        "deflate.c",
+        "deflate.h",
+        "gzclose.c",
+        "gzguts.h",
+        "gzlib.c",
+        "gzread.c",
+        "gzwrite.c",
+        "infback.c",
+        "inffast.c",
+        "inffast.h",
+        "inffixed.h",
+        "inflate.c",
+        "inflate.h",
+        "inftrees.c",
+        "inftrees.h",
+        "trees.c",
+        "trees.h",
+        "uncompr.c",
+        "zutil.c",
+        "zutil.h",
+    ],
+    hdrs = [
+        "zconf.h",
+        "zlib.h",
+    ],
+    copts = [
+        "-DZ_HAVE_UNISTD_H",
+        "-DZ_HAVE_STDARG_H",
+    ],
+    includes = ["."],
+    tags = ["dbx-shelflife-version:zlib=1.2.11"],
+    visibility = ["//visibility:private"],
+)
+
+alias(
+    name = "zlib",
+    actual = ":z",
+    visibility = ["//visibility:public"],
+)
+
+# Required by tensorflow.
+exports_files(["zlib.h"])

@@ -1,0 +1,5 @@
+dbx_go_binary(
+    name = "svcd",
+    testonly = True,
+    generate_norace_binary = True,
+)

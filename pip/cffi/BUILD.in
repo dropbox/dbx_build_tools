@@ -1,0 +1,13 @@
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # MIT
+
+dbx_py_pypi_piplib(
+    name = "cffi",
+    pip_version = "1.13.1",
+    python3_compatible = True,
+    deps = [
+        "//pip/pycparser",
+        "@org_sourceware_libffi//:ffi",
+    ],
+)

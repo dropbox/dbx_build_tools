@@ -1,0 +1,29 @@
+#!/bin/bash -eu
+abs_binary="$0"
+if [[ ! "$abs_binary" == /* ]]; then
+    abs_binary=$(pwd)/"$abs_binary"
+fi
+abs_binary="${abs_binary%.runfiles/*}"
+while true; do
+    if [[ -d "$abs_binary".runfiles ]] || [[ ! -L "$abs_binary" ]]; then
+        break
+    fi
+    link_target=$(/bin/readlink "$abs_binary")
+    if [[ "$link_target" == /* ]]; then
+        abs_binary="$link_target"
+    else
+        abs_binary=$(/usr/bin/dirname "$abs_binary")/"$link_target"
+    fi
+done
+runfiles="$(/bin/readlink -f "$abs_binary".runfiles)"
+
+export RUNFILES="$runfiles"/{workspace_name}
+
+# This is required for compatibility with the built in java wrapper,
+# which uses JAVA_RUNFILES instead of RUNFILES.
+export JAVA_RUNFILES="$runfiles"
+
+# ASAN_OPTIONS has no effect in runtime unless application is built using ASAN.
+export ASAN_OPTIONS="${EXTRA_COMMON_SAN_OPTIONS:-}"
+
+{content}

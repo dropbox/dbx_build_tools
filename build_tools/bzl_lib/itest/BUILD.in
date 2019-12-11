@@ -1,0 +1,32 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//build_tools/sh:sh.bzl", "dbx_sh_binary")
+
+dbx_py_library(
+    name = "itest",
+    srcs = glob(["*.py"]),
+    data = [
+        "bashrc",
+        ":bzl-itest-init",
+        ":bzl-itest-wait",
+    ],
+    python3_compatible = False,
+)
+
+dbx_sh_binary(
+    name = "bzl-itest-init",
+    srcs = ["bzl-itest-init.sh"],
+    data = [
+        "bzl-itest-common.sh",
+    ],
+    visibility = ["//visibility:private"],
+)
+
+dbx_sh_binary(
+    name = "bzl-itest-wait",
+    srcs = ["bzl-itest-wait.sh"],
+    data = [
+        "bzl-itest-common.sh",
+    ],
+    visibility = ["//visibility:private"],
+)

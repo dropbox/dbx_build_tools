@@ -1,0 +1,11 @@
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # MIT
+
+dbx_py_pypi_piplib(
+    name = "setuptools_scm",
+    pip_version = "3.3.3",
+    python2_compatible = True,
+    python3_compatible = True,
+    deps = ["//pip/setuptools"],
+)

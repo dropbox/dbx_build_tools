@@ -1,0 +1,9 @@
+licenses(["notice"])  # MIT
+
+dbx_py_pypi_piplib(
+    name = "six",
+    pip_version = "1.13.0",
+    python2_compatible = True,
+    python3_compatible = True,
+    visibility = ["//visibility:public"],
+)

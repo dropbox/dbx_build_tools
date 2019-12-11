@@ -1,0 +1,20 @@
+Fix installation with --disable-obsolete-rpc.
+
+Debian has a patch that installs lib*_pic.a libraries. libnsl can't be
+built if sunrpc is disabled. So, we need to extend upstream's weird
+hack of marking libraries we don't want built or installed as linker
+scripts.
+
+diff --git a/nis/Makefile b/nis/Makefile
+index d77c6e0c8..4c6559316 100644
+--- a/nis/Makefile
++++ b/nis/Makefile
+@@ -73,7 +73,7 @@ libnss_nisplus-inhibit-o = $(filter-out .os,$(object-suffixes))
+ else # not $(build-obsolete-nsl)
+ # Pretend that libnsl.so is a linker script, so that the symbolic link
+ # is not installed.
+-install-lib-ldscripts = libnsl.so
++install-lib-ldscripts = libnsl.so libnsl_pic.a
+ $(inst_libdir)/libnsl.so:
+ # Build only shared libnsl.
+ libnsl-inhibit-o = $(filter-out .os,$(object-suffixes))

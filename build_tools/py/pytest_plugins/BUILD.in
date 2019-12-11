@@ -1,0 +1,10 @@
+package(default_visibility = ["//visibility:public"])
+
+dbx_py_library(
+    name = "preserve_symlinks",
+    testonly = True,
+    srcs = [
+        "preserve_symlinks.py",
+    ],
+    python3_compatible = True,
+)

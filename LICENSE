@@ -1,0 +1,8 @@
+Unless otherwise covered by a LICENSE file in a subdirectory, this work is
+licensed to you under the following terms.
+
+- build_tools/drte/tools/drte-build.sh is available under the GPL2, found here
+  LICENSE.GPL2.
+
+- Other files not covered by the above license or a LICENSE file in
+  subdirectory are available under Apache 2.0, found here LICENSE.Apache2.0.

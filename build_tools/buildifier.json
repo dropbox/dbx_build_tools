@@ -1,0 +1,18 @@
+{
+  "IsLabelArg": {
+    "additional_deps": true,
+    "additional_data": true
+  },
+  "IsSortableListArg": {
+    "additional_deps": true,
+    "additional_data": true
+  },
+  "SortableBlacklist": {
+    "dbx_javascript_amd_bundle.srcs": true,
+    "dbx_javascript_amd_module.module_deps": true,
+    "dbx_javascript_amd_module.srcs": true,
+    "dbx_javascript_amd_package.deps": true,
+    "dbx_javascript_bundle.srcs": true,
+    "dbx_webpack_build.deps": true
+  }
+}

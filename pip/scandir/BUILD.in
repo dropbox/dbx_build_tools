@@ -1,0 +1,7 @@
+package(default_visibility = ["//visibility:public"])
+
+dbx_py_pypi_piplib(
+    name = "scandir",
+    pip_version = "1.5",
+    python3_compatible = True,
+)

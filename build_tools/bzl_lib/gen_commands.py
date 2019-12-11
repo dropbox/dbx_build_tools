@@ -1,0 +1,49 @@
+# mypy: allow-untyped-defs
+
+import functools
+
+import build_tools.bzl_lib.gazel as gazel
+
+
+def cmd_gen(args, bazel_args, mode_args, generators):
+    gazel.regenerate_build_files(
+        args.targets,
+        verbose=args.verbose,
+        skip_deps_generation=not args.deps_generation,
+        dry_run=args.dry_run,
+        reverse_deps_generation=args.reverse_deps_generation,
+        generators=generators,
+        use_magic_mirror=args.use_magic_mirror,
+    )
+
+
+def register_cmd_gen(sp, generators, sap=None):
+    if not sap:
+        sap = sp.add_parser(
+            "gen", help="Generate a BUILD file or proto files for a list of targets."
+        )
+    sap.add_argument("--dry-run", action="store_true", help="Just show commands.")
+    sap.add_argument(
+        "--deps-generation",
+        action="store_true",
+        help="When true, do recursive dependency generation.",
+    )
+    sap.add_argument(
+        "--reverse-deps-generation",
+        action="store_true",
+        help=(
+            "When true, also regenerate packages that "
+            "immediate depends on the specified packages."
+        ),
+    )
+    sap.add_argument(
+        "--use-magic-mirror",
+        action="store_true",
+        help="Use magic mirror instead the public internet",
+    )
+    sap.add_argument("-v", "--verbose", action="store_true")
+    sap.add_argument("targets", nargs="+", help="A list of bazel targets.")
+    sap.set_defaults(
+        func=functools.partial(cmd_gen, generators=generators),
+        missing_build_file_ok=True,
+    )

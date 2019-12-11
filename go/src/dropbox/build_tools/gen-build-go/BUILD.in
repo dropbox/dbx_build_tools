@@ -1,0 +1,3 @@
+dbx_go_binary(
+    name = "gen-build-go",
+)

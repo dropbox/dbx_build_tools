@@ -1,0 +1,138 @@
+package main
+import (
+	"log"
+	"os"
+	"strconv"
+	"strings"
+	"testing"
+	"testing/internal/testdeps"
+
+	{{if .Names}}
+	"fmt"
+	undertest "{{.Package}}"
+	{{else if .Examples}}
+	undertest "{{.Package}}"
+	{{else if .BenchmarkNames }}
+	undertest "{{.Package}}"
+	{{end}}
+)
+
+{{range .Names}}
+// ensures that all tests end with a newline.
+func {{.}}WrapperFunc(t *testing.T) {
+	undertest.{{.}}(t)
+	fmt.Println("Test finished.")
+}
+{{end}}
+
+var tests = []testing.InternalTest{
+{{range .Names}}
+	{"{{.}}", {{.}}WrapperFunc },
+{{end}}
+}
+
+var examples = []testing.InternalExample{
+{{range .Examples}}
+	{"Example{{.Name}}", undertest.Example{{.Name}}, {{.Output | printf "%q" }}, {{.Unordered}} },
+{{end}}
+}
+
+var benchmarks = []testing.InternalBenchmark{
+{{range .BenchmarkNames}}
+	{"{{.}}", undertest.{{.}} },
+{{end}}
+}
+
+func parseIntFromEnv(envVar string, def int, failOnErr bool) int {
+	envValue := os.Getenv(envVar)
+	if envValue == "" {
+		return def
+	}
+
+	intValue, err := strconv.ParseUint(envValue, 10, 64)
+	if err != nil {
+		if failOnErr {
+			log.Fatal(err)
+		} else {
+			return def
+		}
+	}
+
+	return int(intValue)
+}
+
+{{if .CoverEnabled}}
+// Only updated by init functions, so no need for atomicity.
+var (
+	coverCounters = make(map[string][]uint32)
+	coverBlocks = make(map[string][]testing.CoverBlock)
+)
+
+func coverRegisterFile(fileName string, counter []uint32, pos []uint32, numStmts []uint16) {
+	if 3*len(counter) != len(pos) || len(counter) != len(numStmts) {
+		panic("coverage: mismatched sizes")
+	}
+	if coverCounters[fileName] != nil {
+		// Already registered.
+		return
+	}
+	coverCounters[fileName] = counter
+	block := make([]testing.CoverBlock, len(counter))
+	for i := range counter {
+		block[i] = testing.CoverBlock{
+			Line0: pos[3*i+0],
+			Col0: uint16(pos[3*i+2]),
+			Line1: pos[3*i+1],
+			Col1: uint16(pos[3*i+2]>>16),
+			Stmts: numStmts[i],
+		}
+	}
+	coverBlocks[fileName] = block
+}
+{{end}}
+
+func init() {
+{{if .Names}}
+{{if .CoverEnabled}}
+{{range $file, $var := .CoverVars}}
+	coverRegisterFile({{printf "%q" $file}}, undertest.{{$var}}.Count[:], undertest.{{$var}}.Pos[:], undertest.{{$var}}.NumStmt[:])
+{{end}}
+{{end}}
+{{end}}
+}
+
+func main() {
+{{if .CoverEnabled}}
+	testing.RegisterCover(testing.Cover{
+		Mode: "count",
+		Counters: coverCounters,
+		Blocks: coverBlocks,
+		CoveredPackages: "",
+	})
+{{end}}
+
+	totalShards := parseIntFromEnv("TEST_TOTAL_SHARDS", 1, true)
+	shardId := parseIntFromEnv("TEST_SHARD_INDEX", 0, true)
+	if testFilter := os.Getenv("TESTBRIDGE_TEST_ONLY"); testFilter != "" {
+		var filteredTests []testing.InternalTest
+		for _, test := range tests {
+			if strings.Contains(test.Name, testFilter) {
+				filteredTests = append(filteredTests, test)
+			}
+		}
+
+		tests = filteredTests
+	}
+
+	var realTests []testing.InternalTest
+
+	for i := shardId; i < len(tests); i += totalShards {
+		realTests = append(realTests, tests[i])
+	}
+	m := testing.MainStart(testdeps.TestDeps{}, realTests, benchmarks, examples)
+	{{if .TestMain}}
+	undertest.TestMain(m)
+	{{else}}
+	os.Exit(m.Run())
+	{{end}}
+}

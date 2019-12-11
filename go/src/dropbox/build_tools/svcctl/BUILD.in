@@ -1,0 +1,7 @@
+dbx_go_test(
+    name = "svcctl_test",
+    data = [
+        "//dropbox/build_tools/echo_server",
+        "//dropbox/build_tools/echo_server:echo_client",
+    ],
+)

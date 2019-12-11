@@ -1,0 +1,75 @@
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "everything",
+    srcs = glob(
+        ["**"],
+        exclude = ["go/test/**"],
+    ),
+)
+
+filegroup(
+    name = "stdlib",
+    srcs = glob(["go/pkg/linux_amd64/**/*.a"]),
+)
+
+filegroup(
+    name = "stdlib-race",
+    srcs = glob(["go/pkg/linux_amd64_race/**/*.a"]),
+)
+
+filegroup(
+    name = "gotool",
+    srcs = ["go/bin/go"],
+)
+
+filegroup(
+    name = "asm",
+    srcs = ["go/pkg/tool/linux_amd64/asm"],
+)
+
+filegroup(
+    name = "asm-inputs",
+    srcs = glob(["go/pkg/include/*.h"]),
+)
+
+filegroup(
+    name = "cgo",
+    srcs = ["go/pkg/tool/linux_amd64/cgo"],
+)
+
+filegroup(
+    name = "compile",
+    srcs = ["go/pkg/tool/linux_amd64/compile"],
+)
+
+filegroup(
+    name = "cover",
+    srcs = ["go/pkg/tool/linux_amd64/cover"],
+)
+
+filegroup(
+    name = "link",
+    srcs = ["go/pkg/tool/linux_amd64/link"],
+)
+
+filegroup(
+    name = "pack",
+    srcs = ["go/pkg/tool/linux_amd64/pack"],
+)
+
+filegroup(
+    name = "pprof",
+    srcs = ["go/pkg/tool/linux_amd64/pprof"],
+)
+
+filegroup(
+    name = "test2json",
+    testonly = True,
+    srcs = ["go/pkg/tool/linux_amd64/test2json"],
+)
+
+filegroup(
+    name = "trace",
+    srcs = ["go/pkg/tool/linux_amd64/trace"],
+)

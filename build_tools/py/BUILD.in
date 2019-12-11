@@ -1,0 +1,111 @@
+package(default_visibility = ["//visibility:public"])
+
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary", "dbx_py_binary", "dbx_py_library")
+
+py_binary(
+    name = "blank_py_binary",
+    srcs = ["blank_py_binary.py"],
+)
+
+sh_binary(
+    name = "ldshared-wrapper",
+    srcs = ["ldshared-wrapper.sh"],
+)
+
+py_binary(
+    name = "vpip",
+    srcs = ["vpip.py"],
+    data = [
+        ":ldshared-wrapper",
+        ":sanitizer-extra-runfiles",
+        "@io_pypa_pip_whl//file",
+        "@io_pypa_setuptools_whl//file",
+        "@io_pypa_wheel_whl//file",
+    ],
+)
+
+dbx_py_library(
+    name = "vinst_lib",
+    srcs = ["vinst.py"],
+    python3_compatible = True,
+)
+
+py_binary(
+    name = "vinst",
+    srcs = ["vinst.py"],
+)
+
+py_binary(
+    name = "check_conflicts",
+    srcs = ["check_conflicts.py"],
+)
+
+dbx_py_binary(
+    name = "build_cffi_binding",
+    srcs = ["build_cffi_binding.py"],
+    main = "build_cffi_binding.py",
+    python = "//thirdparty/cpython:drte-interpreter-37",
+    python2_compatible = False,
+    python3_compatible = True,
+    validate = "strict",
+)
+
+filegroup(
+    name = "sanitizer-extra-runfiles",
+    srcs = select({
+        "//build_tools:use-asan": [
+            ":asan-suppressions.txt",
+        ],
+        "//conditions:default": [],
+    }),
+    visibility = ["//visibility:public"],
+)
+
+# All Python 2.7 dbx_py_binarys implicitly depend on this target in
+# order to 1) provide the import hook that loads our custom pycs 2)
+# pick up Bazel's magic builtin __init__.py generation behavior.
+py_binary(
+    name = "dbx_importer",
+    srcs = ["dbx_importer.py"],
+)
+
+dbx_internal_bootstrap_py_binary(
+    name = "dbx_compile",
+    srcs = ["dbx_compile.py"],
+    main = "dbx_compile.py",
+    deps = [
+        ":dbx_importer",
+        # copybara:strip-begin
+        "//dropbox/pyxl/codec",
+        # copybara:strip-end
+    ],
+)
+
+dbx_internal_bootstrap_py_binary(
+    name = "py3_compile_37",
+    srcs = ["py3_compile.py"],
+    main = "py3_compile.py",
+    python2_compatible = False,
+    python3_compatible = True,
+)
+
+toolchain_type(
+    name = "toolchain_27",
+)
+
+toolchain_type(
+    name = "toolchain_37",
+)
+
+bzl_library(
+    name = "py_bzl",
+    srcs = glob([
+        "*.bzl",
+    ]),
+    deps = [
+        "//build_tools/bazel:bazel_bzl",
+    ],
+)
+
+exports_files(["import_check.py"])

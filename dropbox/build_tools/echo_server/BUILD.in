@@ -1,0 +1,32 @@
+package(default_visibility = ["//visibility:public"])
+
+load("//build_tools/services:svc.bzl", "dbx_service_daemon")
+
+dbx_py_binary(
+    name = "echo_server",
+    main = "echo_server.py",
+    python2_compatible = False,
+)
+
+# this is used by a `bzl itest` tutorial
+dbx_py_binary(
+    name = "echo_client",
+    srcs = ["echo_client.py"],
+    main = "echo_client.py",
+    python2_compatible = False,
+)
+
+# this is used by a `bzl itest` tutorial
+dbx_service_daemon(
+    name = "echo_service_1234",
+    args = [
+        "--port",
+        "1234",
+    ],
+    data = [
+        ":echo_client",
+    ],
+    exe = ":echo_server",
+    owner = "devbox-team",
+    verify_cmds = ["$RUNFILES/dropbox/build_tools/echo_server/echo_client --port 1234 'test'"],
+)

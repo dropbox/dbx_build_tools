@@ -1,0 +1,244 @@
+load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
+
+cc_binary(
+    name = "rl",
+    srcs = ["examples/rlbasic.c"],
+    copts = ["-DHAVE_STDLIB_H"],
+    deps = [
+        ":readline",
+    ],
+)
+
+dbx_shelflife_version_tag = "dbx-shelflife-version:readline=8.0"
+
+dbx_thirdparty_cc_library(
+    name = "textual-includes",
+    tags = [dbx_shelflife_version_tag],
+    textual_hdrs = [
+        "emacs_keymap.c",
+        "vi_keymap.c",
+    ],
+)
+
+PUBLIC_HDRS = [
+    "chardefs.h",
+    "history.h",
+    "keymaps.h",
+    "readline.h",
+    "rlconf.h",
+    "rlstdc.h",
+    "rltypedefs.h",
+    "tilde.h",
+]
+
+COPTS = [
+    "-DHAVE_CONFIG_H",
+    "-I",
+    "$(GENDIR)/external/org_gnu_readline",
+    "-Wno-parentheses",
+    "-Wno-unused-variable",
+    "-Wno-unused-function",
+    "-Wno-maybe-uninitialized",
+    "-Wno-unused-label",
+    "-Wno-unused-but-set-variable",
+    "-Wno-stringop-truncation",
+]
+
+# The main export of this BUILD file: the readline library.
+cc_library(
+    name = "readline",
+    srcs = [
+        "ansi_stdlib.h",
+        "bind.c",
+        "callback.c",
+        "chardefs.h",
+        "colors.c",
+        "colors.h",
+        "compat.c",
+        "complete.c",
+        "display.c",
+        "funmap.c",
+        "histexpand.c",
+        "histfile.c",
+        "histlib.h",
+        "history.c",
+        "history.h",
+        "histsearch.c",
+        "input.c",
+        "isearch.c",
+        "keymaps.c",
+        "keymaps.h",
+        "kill.c",
+        "macro.c",
+        "mbutil.c",
+        "misc.c",
+        "nls.c",
+        "parens.c",
+        "parse-colors.c",
+        "parse-colors.h",
+        "posixdir.h",
+        "posixjmp.h",
+        "posixselect.h",
+        "posixstat.h",
+        "readline.c",
+        "readline.h",
+        "rlconf.h",
+        "rldefs.h",
+        "rlmbutil.h",
+        "rlprivate.h",
+        "rlshell.h",
+        "rlstdc.h",
+        "rltty.c",
+        "rltty.h",
+        "rltypedefs.h",
+        "rlwinsize.h",
+        "savestring.c",
+        "search.c",
+        "shell.c",
+        "signals.c",
+        "tcap.h",
+        "terminal.c",
+        "text.c",
+        "tilde.c",
+        "tilde.h",
+        "undo.c",
+        "util.c",
+        "vi_mode.c",
+        "xfree.c",
+        "xmalloc.c",
+        "xmalloc.h",
+        ":config.h",
+    ],
+    hdrs = PUBLIC_HDRS,
+    copts = COPTS,
+    include_prefix = "readline",
+    strip_include_prefix = "",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":textual-includes",
+        ":tilde",
+        "@org_gnu_ncurses//:ncursesw",
+    ],
+)
+
+# This is the same as :readline, but the public headers aren't in a
+# readline/ subdirectory. Some software requires the headers to be
+# top-level.
+cc_library(
+    name = "readline_unprefixed",
+    hdrs = PUBLIC_HDRS,
+    strip_include_prefix = "",
+    visibility = ["//visibility:public"],
+    deps = [
+        ":readline",
+    ],
+)
+
+dbx_thirdparty_cc_library(
+    name = "tilde",
+    srcs = [
+        "ansi_stdlib.h",
+        "rlstdc.h",
+        "tilde.c",
+        "tilde.h",
+        "xmalloc.h",
+        ":config.h",
+    ],
+    copts = COPTS + [
+        "-DREADLINE_LIBRARY",
+    ],
+    tags = [dbx_shelflife_version_tag],
+)
+
+# Straight from readline ./configure.
+genrule(
+    name = "cat-config",
+    outs = ["config.h"],
+    cmd = """
+cat <<'EOF' > $@
+#define __EXTENSIONS__ 1
+#define _ALL_SOURCE 1
+#define _GNU_SOURCE 1
+#define _POSIX_PTHREAD_SEMANTICS 1
+#define _TANDEM_SOURCE 1
+#define RETSIGTYPE void
+#define VOID_SIGHANDLER 1
+#define PROTOTYPES 1
+#define __PROTOTYPES 1
+#define HAVE_CHOWN 1
+#define HAVE_FCNTL 1
+#define HAVE_FNMATCH 1
+#define HAVE_GETPWENT 1
+#define HAVE_GETPWNAM 1
+#define HAVE_GETPWUID 1
+#define HAVE_ISASCII 1
+#define HAVE_ISWCTYPE 1
+#define HAVE_ISWLOWER 1
+#define HAVE_ISWUPPER 1
+#define HAVE_ISXDIGIT 1
+#define HAVE_KILL 1
+#define HAVE_LSTAT 1
+#define HAVE_MBRLEN 1
+#define HAVE_MBRTOWC 1
+#define HAVE_MBSRTOWCS 1
+#define HAVE_MEMMOVE 1
+#define HAVE_PSELECT 1
+#define HAVE_PUTENV 1
+#define HAVE_READLINK 1
+#define HAVE_SELECT 1
+#define HAVE_SETENV 1
+#define HAVE_SETLOCALE 1
+#define HAVE_STRCASECMP 1
+#define HAVE_STRCOLL 1
+#define HAVE_STRPBRK 1
+#define HAVE_TCGETATTR 1
+#define HAVE_TOWLOWER 1
+#define HAVE_TOWUPPER 1
+#define HAVE_VSNPRINTF 1
+#define HAVE_WCRTOMB 1
+#define HAVE_WCSCOLL 1
+#define HAVE_WCTYPE 1
+#define HAVE_WCWIDTH 1
+#define STDC_HEADERS 1
+#define HAVE_DIRENT_H 1
+#define HAVE_FCNTL_H 1
+#define HAVE_LANGINFO_H 1
+#define HAVE_LIMITS_H 1
+#define HAVE_LOCALE_H 1
+#define HAVE_MEMORY_H 1
+#define HAVE_PWD_H 1
+#define HAVE_STDARG_H 1
+#define HAVE_STDBOOL_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRING_H 1
+#define HAVE_STRINGS_H 1
+#define HAVE_SYS_FILE_H 1
+#define HAVE_SYS_IOCTL_H 1
+#define HAVE_SYS_SELECT_H 1
+#define HAVE_TERMCAP_H 1
+#define HAVE_TERMIO_H 1
+#define HAVE_TERMIOS_H 1
+#define HAVE_UNISTD_H 1
+#define HAVE_WCHAR_H 1
+#define HAVE_WCTYPE_H 1
+#define HAVE_MBSTATE_T 1
+#define HAVE_WCHAR_T 1
+#define HAVE_WCTYPE_T 1
+#define HAVE_WINT_T 1
+#define HAVE_LANGINFO_CODESET 1
+#define HAVE_DECL_AUDIT_USER_TTY 1
+#define VOID_SIGHANDLER 1
+#define GWINSZ_IN_SYS_IOCTL 1
+#define STRUCT_WINSIZE_IN_SYS_IOCTL 1
+#define FIONREAD_IN_SYS_IOCTL 1
+#define HAVE_GETPW_DECLS 1
+#define HAVE_STRUCT_DIRENT_D_INO 1
+#define HAVE_STRUCT_DIRENT_D_FILENO 1
+#define HAVE_POSIX_SIGNALS 1
+#define HAVE_POSIX_SIGSETJMP 1
+#if !defined (HAVE_TERMIOS_H) || !defined (HAVE_TCGETATTR) || defined (ultrix)
+#  define TERMIOS_MISSING
+#endif
+EOF
+""",
+)

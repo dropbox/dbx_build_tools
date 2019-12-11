@@ -1,0 +1,13 @@
+dbx_go_library(
+    name = "svclib",
+    testonly = True,
+)
+
+dbx_go_test(
+    name = "svclib_test",
+    data = [
+        "//dropbox/build_tools/echo_server",
+        "//dropbox/build_tools/echo_server:echo_client",
+    ],
+    force_launch_svcctl = True,
+)

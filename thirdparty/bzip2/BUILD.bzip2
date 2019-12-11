@@ -1,0 +1,35 @@
+load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
+
+cc_binary(
+    name = "bzip2",
+    srcs = ["bzip2.c"],
+    copts = [
+        "-D_FILE_OFFSET_BITS=64",
+    ],
+    deps = [
+        ":bz2",
+    ],
+)
+
+dbx_thirdparty_cc_library(
+    name = "bz2",
+    srcs = [
+        "blocksort.c",
+        "bzlib.c",
+        "bzlib_private.h",
+        "compress.c",
+        "crctable.c",
+        "decompress.c",
+        "huffman.c",
+        "randtable.c",
+    ],
+    hdrs = [
+        "bzlib.h",
+    ],
+    copts = [
+        "-D_FILE_OFFSET_BITS=64",
+    ],
+    strip_include_prefix = "",
+    tags = ["dbx-shelflife-version:bzip2=1.0.7"],
+    visibility = ["//visibility:public"],
+)

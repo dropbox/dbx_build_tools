@@ -1,0 +1,52 @@
+load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
+
+dbx_thirdparty_cc_library(
+    name = "sqlite3",
+    srcs = ["sqlite3.c"],
+    hdrs = [
+        "sqlite3.h",
+        "sqlite3ext.h",
+    ],
+    # See http://sqlite.org/compile.html for fun things to put in here.
+    copts = [
+        "-DHAVE_FDATASYNC",
+        "-DHAVE_GETTIME_R",
+        "-DHAVE_INTTYPES_H",
+        "-DHAVE_ISNAN",
+        "-DHAVE_LOCALTIME_R",
+        "-DHAVE_MALLOC_H",
+        "-DHAVE_MALLOC_USABLE_SIZE",
+        "-DHAVE_STDINT_H",
+        "-DHAVE_STRCHRNUL",
+        "-DHAVE_STRERROR_R",
+        "-DHAVE_USLEEP",
+        "-DHAVE_UNISTD_H",
+        "-DHAVE_UTIME",
+        "-DHAVE_POSIX_FALLOCATE",
+        "-DSQLITE_DEFAULT_MEMSTATUS=0",
+        "-DSQLITE_OMIT_LOAD_EXTENSION",
+    ],
+    linkopts = ["-pthread"],
+    tags = ["dbx-shelflife-version:sqlite=3.30.0"],
+    visibility = ["//visibility:public"],
+)
+
+# TensorFlow wants to see this target under the name `@org_sqlite`.
+cc_library(
+    name = "org_sqlite",
+    visibility = ["@org_tensorflow//:__subpackages__"],
+    deps = [":sqlite3"],
+)
+
+cc_binary(
+    name = "shell",
+    srcs = ["shell.c"],
+    copts = [
+        "-DHAVE_READLINE",
+        "-DSQLITE_OMIT_LOAD_EXTENSION",
+    ],
+    deps = [
+        ":sqlite3",
+        "@org_gnu_readline//:readline",
+    ],
+)

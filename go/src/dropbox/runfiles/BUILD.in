@@ -1,0 +1,12 @@
+dbx_go_library(
+    name = "runfiles",
+    visibility = [
+        "//go/src/dropbox:__subpackages__",
+        "//go/src/github.com/dropbox:__subpackages__",
+    ],
+)
+
+dbx_go_test(
+    name = "runfiles_test",
+    data = ["test_data.empty"] + glob(["data/**"]),
+)
