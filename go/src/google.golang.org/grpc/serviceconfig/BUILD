@@ -12,6 +12,5 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
-        "//go/src/google.golang.org/grpc/internal",
     ],
 )

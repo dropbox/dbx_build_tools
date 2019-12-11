@@ -13,7 +13,8 @@ dbx_go_library(
     ],
     deps = [
         "//go/src/github.com/golang/protobuf/proto",
-        "//go/src/golang.org/x/net/context",
         "//go/src/google.golang.org/grpc",
+        "//go/src/google.golang.org/grpc/codes",
+        "//go/src/google.golang.org/grpc/status",
     ],
 )
