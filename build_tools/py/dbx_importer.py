@@ -163,7 +163,7 @@ def install():
             sys.path_importer_cache[p] = DBXImporter(p, True)
 
 
-DOCSTING_STRIP_EXCEPTIONS = [
+DOCSTRING_STRIP_EXCEPTIONS = [
 ]
 
 
@@ -175,7 +175,7 @@ def dbx_compile(src_path, dest_path, compiled_path, allow_failure):
 
         root = ast.parse(src)
 
-        if not any(lib in src_path for lib in DOCSTING_STRIP_EXCEPTIONS):
+        if not any(lib in src_path for lib in DOCSTRING_STRIP_EXCEPTIONS):
             # Strip the docstrings to reduce binary size and memory usage.
             for node in ast.walk(root):
                 # See https://github.com/python/cpython/blob/2.7/Lib/ast.py#L187
