@@ -14,6 +14,7 @@ import subprocess
 import sys
 
 from collections import defaultdict
+from typing import Text, Union
 
 import six
 
@@ -40,6 +41,7 @@ def sha256_file(path):
 
 # Make a directory, but allow that there might be a race creating it.
 def _maybe_makedirs(path):
+    # type: (Union[str, Text]) -> None
     try:
         os.makedirs(path)
     except OSError as e:

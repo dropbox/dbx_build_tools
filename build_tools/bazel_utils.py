@@ -65,6 +65,7 @@ class BazelRule(object):
 def expand_bazel_target_dirs(
     workspace, targets, normalize=True, require_build_file=True, cwd="."
 ):
+    # type: (Text, List[Any], bool, bool, Text) -> List[Any]
     ntargets = expand_bazel_targets(
         workspace,
         targets,
@@ -84,6 +85,7 @@ def expand_bazel_target_dirs(
 def expand_bazel_targets(
     workspace, targets, normalize=True, require_build_file=True, cwd="."
 ):
+    # type: (Text, List[Any], bool, bool, Text) -> List[Any]
     matched = set()  # type: ignore[var-annotated]
     filtered = set()  # type: ignore[var-annotated]
     for target in targets:
@@ -115,7 +117,7 @@ def expand_bazel_targets(
 def _expand_bazel_target(
     workspace, target, normalize=True, require_build_file=True, cwd="."
 ):
-
+    # type: (Text, Any, bool, bool, Text) -> List[Any]
     if target.endswith("..."):
         recursive = True
         target_dir = target[:-3]

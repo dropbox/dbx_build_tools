@@ -7,7 +7,7 @@ import os
 import os.path
 import sys
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Text
 
 import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
@@ -518,6 +518,7 @@ class PythonPathMapping(AbstractPythonPath):
         self.invalid_modules = set()
 
     def _to_pkg(self, directory):
+        # type: (Text) -> Text
         directory = os.path.realpath(directory)
         assert directory.startswith(self.workspace_dir), (
             "Programming error: " + directory

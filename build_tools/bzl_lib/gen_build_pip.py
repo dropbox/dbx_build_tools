@@ -6,6 +6,8 @@ import os.path
 import subprocess
 import zipfile
 
+from typing import List
+
 import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
 
@@ -123,6 +125,7 @@ class PipBuildGenerator(BasePipBuildGenerator):
         self.generate_build_file(target_dir, pip_rules)
 
     def build(self, targets):
+        # type: (List[str]) -> None
         subprocess.check_call(["bazel", "build"] + targets)
 
     def exclude_path(self, excludes, path):

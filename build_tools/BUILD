@@ -40,6 +40,7 @@ dbx_py_library(
         ":bazel_utils",
         ":build_parser_lib",
         "//pip/six",
+        "//pip/typing",
     ],
 )
 

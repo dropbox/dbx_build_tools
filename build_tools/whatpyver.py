@@ -153,6 +153,7 @@ class PythonVersionCache(object):
             self.parse_build_file(build_file)
 
     def parse_build_file(self, build_file):
+        # type: (str) -> None
         if not os.path.isfile(build_file):
             return
         if self._verbose:

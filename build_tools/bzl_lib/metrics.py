@@ -10,7 +10,7 @@ import sys
 import time
 
 from collections import defaultdict, namedtuple
-from typing import Text
+from typing import Any, Optional, Text
 
 
 class StatsError(Exception):
@@ -35,6 +35,7 @@ _stats = Stats()
 
 class Timer(object):
     def __init__(self, name, interval_ms=None):
+        # type: (str, Optional[Any]) -> None
         if not name.endswith("_ms"):
             raise StatsError("By convention, Timer names must end with _ms")
         self.name = name
@@ -81,6 +82,7 @@ class GenMetrics(object):
         self.timer = None
 
     def _create_and_start_timer_for_generator(self, generator_name):
+        # type: (object) -> None
         timer_name = "bzl_gen_{}_ms".format(generator_name)
         self.timer = Timer(timer_name)
         self.timer.start()
@@ -94,6 +96,7 @@ class GenMetrics(object):
             log_cumulative_rate(self.timer.name[:-3] + "_called", 1)
 
     def enter_generator(self, generator_name):
+        # type: (object) -> None
         if self.generator_queue:
             self._stop_current_timer_and_update(is_exit=False)
         self.generator_queue.append(generator_name)

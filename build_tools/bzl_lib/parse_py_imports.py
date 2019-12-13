@@ -9,6 +9,7 @@ import os
 
 
 def normalize_module(src, module_path):
+    # type: (str, str) -> str
     if not module_path.startswith("."):
         return module_path
 

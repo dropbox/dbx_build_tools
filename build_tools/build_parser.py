@@ -165,6 +165,7 @@ class BuildParser(object):
 
     # Return a rule by name.
     def get_rule(self, name):
+        # type: (object) -> Rule
         for rule_type, args, kargs in self.clauses:
             if kargs.get("name") == name:
                 return Rule(rule_type, kargs)

@@ -9,6 +9,7 @@ import py
 
 class _SymlinkPhilicPath(py.path.local):
     def realpath(self):
+        # type: () -> _SymlinkPhilicPath
         return self
 
 
