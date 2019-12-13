@@ -7,5 +7,9 @@ build --sandbox_fake_username
 # Block networking in tests.
 build --modify_execution_info=TestRunner=+block-network
 
+# Work around https://github.com/bazelbuild/bazel/issues/6293 by setting a
+# dummy lcov.
+coverage --test_env=LCOV_MERGER=/bin/true
+
 build:changes --remote_http_cache=http://10.0.3.1:8000
 build:changes --define svc.version-file=0

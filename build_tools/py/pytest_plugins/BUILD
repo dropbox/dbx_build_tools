@@ -6,6 +6,17 @@ package(default_visibility = ["//visibility:public"])
 load("//build_tools/py:py.bzl", "dbx_py_library")
 
 dbx_py_library(
+    name = "codecoverage",
+    testonly = True,
+    srcs = ["codecoverage.py"],
+    python3_compatible = True,
+    validate = "strict",
+    deps = [
+        "//pip/coverage",
+    ],
+)
+
+dbx_py_library(
     name = "preserve_symlinks",
     testonly = True,
     srcs = [
