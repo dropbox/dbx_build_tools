@@ -15,8 +15,6 @@ exports_files([
     "zip_stdlib.py",
     "symbols.lds",
     "gen_2to3_grammar.py",
-    "empty-file",
-    "empty-file2",
 ])
 
 config_setting(
