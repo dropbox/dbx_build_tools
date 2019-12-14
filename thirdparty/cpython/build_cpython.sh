@@ -1,9 +1,9 @@
 #!/bin/bash -eu
 
 # This takes care of building CPython with all the right compiler flags
-# including PGO and LTO. It needs to be run from rSERVER workspace root. The
-# output is a python-$version.tar.xz file in the workspace root. It will also
-# produce a bunch of intermediate artifacts in a build-temp/ directory.
+# including PGO and LTO. It needs to be run from the workspace root. The output
+# is a python-$version.tar.xz file in the workspace root. It will also produce a
+# bunch of intermediate artifacts in a build-temp/ directory.
 
 if [[ $# != 2 ]]; then
     echo "pass version to build (2.7, 3.6, or 3.7) as the first argument and drte version (e.g., v2) as the second"
