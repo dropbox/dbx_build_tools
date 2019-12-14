@@ -99,8 +99,6 @@ cc_library(
         "tcap.h",
         "terminal.c",
         "text.c",
-        "tilde.c",
-        "tilde.h",
         "undo.c",
         "util.c",
         "vi_mode.c",
