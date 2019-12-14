@@ -105,4 +105,4 @@ with open('../BUILD.ncurses', 'w') as generated:
                     body=src.read().replace('$', '$$'),
                 ))
 
-print("Generated 'BUILD.ncureses'")
+print("Generated 'BUILD.ncurses'")
