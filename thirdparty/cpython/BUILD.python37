@@ -230,6 +230,7 @@ cc_binary(
         "Modules/_json.c",
         "Modules/_localemodule.c",
         "Modules/_lsprof.c",
+        "Modules/_lzmamodule.c",
         "Modules/_math.c",
         "Modules/_math.h",
         "Modules/_multiprocessing/multiprocessing.c",
@@ -283,6 +284,7 @@ cc_binary(
         "Modules/clinic/_cursesmodule.c.h",
         "Modules/clinic/_datetimemodule.c.h",
         "Modules/clinic/_hashopenssl.c.h",
+        "Modules/clinic/_lzmamodule.c.h",
         "Modules/clinic/_opcode.c.h",
         "Modules/clinic/_operator.c.h",
         "Modules/clinic/_pickle.c.h",
@@ -552,6 +554,7 @@ cc_binary(
         "@org_gnu_ncurses//:panel",
         "@org_gnu_readline//:readline",
         "@org_openssl//:crypto_ssl",
+        "@org_tukaani//:lzma",
     ],
 )
 
@@ -839,6 +842,7 @@ extern PyObject* PyInit__io(void);
 extern PyObject* PyInit__json(void);
 extern PyObject* PyInit__locale(void);
 extern PyObject* PyInit__lsprof(void);
+extern PyObject* PyInit__lzma(void);
 extern PyObject* PyInit__multibytecodec(void);
 extern PyObject* PyInit__multiprocessing(void);
 extern PyObject* PyInit__opcode(void);
@@ -922,6 +926,7 @@ struct _inittab _PyImport_Inittab[] = {
     {"_json", PyInit__json},
     {"_locale", PyInit__locale},
     {"_lsprof", PyInit__lsprof},
+    {"_lzma", PyInit__lzma},
     {"_multibytecodec", PyInit__multibytecodec},
     {"_multiprocessing", PyInit__multiprocessing},
     {"_opcode", PyInit__opcode},

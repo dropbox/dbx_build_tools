@@ -22,6 +22,7 @@ DEFAULT_EXTERNAL_URLS = {
     "org_openssl": "https://www.openssl.org/source/openssl-1.1.1d.tar.gz",
     "org_sourceware_libffi": "https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz",
     "org_sqlite": "https://sqlite.org/2019/sqlite-amalgamation-3300100.zip",
+    "org_tukaani": "https://tukaani.org/xz/xz-5.2.4.tar.gz",
     "rules_pkg": "https://github.com/bazelbuild/rules_pkg/archive/2f09779667f0d6644c2ca5914d6113a82666ec63.zip",
     "six_archive": "https://pypi.python.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz",
 }
@@ -129,6 +130,14 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
         sha256 = "ab5a03176ee106d3f0fa90e381da478ddae405918153cca248e682cd0c4a2269",
         strip_prefix = "bzip2-1.0.8",
         build_file = filename_from_label("//thirdparty/bzip2:BUILD.bzip2"),
+    )
+
+    http_archive(
+        name = "org_tukaani",
+        urls = [urls["org_tukaani"]],
+        strip_prefix = "xz-5.2.4",
+        sha256 = "b512f3b726d3b37b6dc4c8570e137b9311e7552e8ccbab4d39d47ce5f4177145",
+        build_file = filename_from_label("//thirdparty/xz:BUILD.xz"),
     )
 
     http_archive(
