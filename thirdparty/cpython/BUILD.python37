@@ -1003,9 +1003,9 @@ genrule(
         ":sysconfigdata",
     ],
     outs = ["test-stdlib.zip"],
-    cmd = "$(location :zip-stdlib) sloppy $@ $(SRCS)",
+    cmd = "$(location @dbx_build_tools//thirdparty/cpython:zip-stdlib) sloppy $@ $(SRCS)",
     output_to_bindir = True,
-    tools = [":zip-stdlib"],
+    tools = ["@dbx_build_tools//thirdparty/cpython:zip-stdlib"],
 )
 
 filegroup(
