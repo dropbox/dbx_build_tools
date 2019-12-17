@@ -13,11 +13,11 @@ fi
 ver="$1"
 if [[ "$ver" = "2.7" ]]; then
     repo=org_python_cpython_27
-    version=2.7.16-dbx2
+    version=2.7.16-dbx3
     abitag=2.7
 elif [[ "$ver" = "3.7" ]]; then
     repo=org_python_cpython_37
-    version=3.7.5-dbx2
+    version=3.7.6-dbx1
     abitag=3.7m
 fi
 
