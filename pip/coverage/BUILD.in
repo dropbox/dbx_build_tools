@@ -2,6 +2,6 @@ licenses(["notice"])  # Apache 2.0
 
 dbx_py_pypi_piplib(
     name = "coverage",
-    pip_version = "4.5.4",
+    pip_version = "5.0.1",
     visibility = ["//visibility:public"],
 )
