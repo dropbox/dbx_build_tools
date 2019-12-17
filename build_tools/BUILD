@@ -104,8 +104,6 @@ dbx_py_library(
     srcs = ["whatpyver.py"],
     # This must not have further dependencies.
     autogen_deps = False,
-    python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [":build_parser_lib"],
 )
@@ -114,7 +112,7 @@ dbx_py_binary(
     name = "whatpyver",
     srcs = ["whatpyver.py"],
     main = "whatpyver.py",
-    python3_compatible = False,
+    python2_compatible = False,
     deps = [
         ":build_parser_lib",
         "//pip/typing",

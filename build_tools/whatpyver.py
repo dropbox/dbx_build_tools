@@ -1,5 +1,3 @@
-# mypy: allow-untyped-defs
-
 """Tool to print the Python version for one or more files.
 
 The information is taken from the BUILD files, specifically the
@@ -26,7 +24,7 @@ import stat
 import sys
 import time
 
-from typing import Text, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 
 from build_tools import build_parser
 
@@ -58,13 +56,15 @@ class PythonVersionCache(object):
         self.clear()
 
     def clear(self):
-        self._files_to_build_files = {}
-        self._build_file_mtimes = {}
-        self._build_file_parsers = {}
-        self._py2_files = set()
-        self._py3_files = set()
+        # type: () -> None
+        self._files_to_build_files = {}  # type: Dict[str, str]
+        self._build_file_mtimes = {}  # type: Dict[str, Optional[float]]
+        self._build_file_parsers = {}  # type: Dict[str, build_parser.BuildParser]
+        self._py2_files = set()  # type: Set[str]
+        self._py3_files = set()  # type: Set[str]
 
     def _get_build_file_and_mtime(self, dir):
+        # type: (str) -> Tuple[str, Optional[float]]
         # On macOS, os.stat('BUILD') will return a result if 'build'
         # exists.  In most cases, only BUILD exists and is a file, and
         # that's what we want.  In a few rare cases, 'build' is a
@@ -89,7 +89,7 @@ class PythonVersionCache(object):
 
         for build_file in possibilities:
             if build_file in self._build_file_mtimes:
-                mtime = self._build_file_mtimes[build_file]
+                mtime = self._build_file_mtimes[build_file]  # type: Optional[float]
                 if self._verbose > 1:
                     print("%s: cached mtime %s" % (build_file, mtime), file=sys.stderr)
                 return build_file, mtime
@@ -114,6 +114,7 @@ class PythonVersionCache(object):
         return build_file, mtime
 
     def find_build_files(self, file):
+        # type: (str) -> Optional[List[Tuple[str, Optional[float]]]]
         dir = os.path.dirname(file)
         trail = []
         while dir:
@@ -135,14 +136,14 @@ class PythonVersionCache(object):
         return None
 
     def add_file(self, file):
+        # type: (str) -> Optional[str]
         if file in self._files_to_build_files:
             return self._files_to_build_files[file]
         build_file_trail = self.find_build_files(file)
-        if build_file_trail:
-            build_file = build_file_trail[-1][0]
-            self._files_to_build_files[file] = build_file
-        else:
-            build_file = None
+        if not build_file_trail:
+            return None
+        build_file = build_file_trail[-1][0]
+        self._files_to_build_files[file] = build_file
         return build_file
 
     def parse_build_files(self):
@@ -198,7 +199,7 @@ class PythonVersionCache(object):
                     self._py3_files.add(src)
 
     def get_flags(self, file):
-        # type: (Text) -> Tuple[bool, bool]
+        # type: (str) -> Tuple[bool, bool]
         if file not in self._files_to_build_files:
             build_file = self.add_file(file)
             if build_file and build_file not in self._build_file_parsers:
@@ -207,6 +208,7 @@ class PythonVersionCache(object):
 
 
 def find_python_files(dir):
+    # type: (str) -> Iterable[str]
     for root, dirs, files in os.walk(dir):
         for file in files:
             if file.endswith(".py"):
@@ -214,6 +216,7 @@ def find_python_files(dir):
 
 
 def main():
+    # type: () -> int
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "-v",
@@ -257,6 +260,8 @@ def main():
     for file in all_files:
         py2, py3 = pvc.get_flags(file)
         print("%s:%s:%s:" % (file, "py2" if py2 else "", "py3" if py3 else ""))
+
+    return 0
 
 
 if __name__ == "__main__":
