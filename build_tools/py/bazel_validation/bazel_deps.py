@@ -68,7 +68,7 @@ def parse_imports(
     if not pythonpath:
         pythonpath = "."
 
-    if py3_compatible:
+    if py3_compatible or source_file.suffix == ".pyi":
         ast = ast3
     else:
         ast = ast27  # type: ignore

@@ -811,8 +811,8 @@ class PythonPathMapping(AbstractPythonPath):
     @classmethod
     # convert from /a/b/c.stoneg.py -> a.b.c\.stoneg
     def convert_from_file_path_to_module(cls, file_path):
-        assert file_path.endswith(".py"), "Invalid src: " + file_path
-        path_without_extension = file_path[:-3]
+        assert file_path.endswith((".py", ".pyi")), "Invalid src: " + file_path
+        path_without_extension = file_path.rsplit(".", 1)[0]
         if path_without_extension.endswith("__init__"):
             path_without_extension = os.path.dirname(path_without_extension)
         return PythonPathMapping.escaped_replace(path_without_extension, "/", ".")
@@ -1023,6 +1023,7 @@ class PyBuildGenerator(object):
             main = rule.attr_map.get("main", None)
             pip_main = rule.attr_map.get("pip_main", None)
             srcs = rule.attr_map.get("srcs", None)
+            stub_srcs = rule.attr_map.get("stub_srcs", None)
             autogen_deps = rule.attr_map.get("autogen_deps", True)
             deps = rule.attr_map.get("deps", [])
             validate = "strict" in rule.attr_map.get("validate", "strict")
@@ -1048,6 +1049,7 @@ class PyBuildGenerator(object):
                     rule.rule_type,
                     name,
                     srcs,
+                    stub_srcs,
                     main,
                     pip_main,
                     validate,
@@ -1118,12 +1120,13 @@ class PyBuildGenerator(object):
         rule_type,
         name,
         srcs,
+        stub_srcs,
         main,
         pip_main,
         validate,
         is_py2_compatible,
     ):
-        srcs = srcs or []
+        srcs = (srcs or []) + (stub_srcs or [])
         if main:
             srcs = srcs + [main]
 
@@ -1160,7 +1163,7 @@ class PyBuildGenerator(object):
                 )
                 continue
 
-            if is_py2_compatible:
+            if is_py2_compatible and not src.endswith(".pyi"):
                 import_set, from_set = parse_imports(self.workspace_dir, src)
             else:
                 import_set, from_set = parse_imports_py3(self.workspace_dir, src)

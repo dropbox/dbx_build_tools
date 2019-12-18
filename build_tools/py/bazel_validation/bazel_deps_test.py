@@ -194,6 +194,7 @@ async def foo() -> None:
 class MockPath:
     def __init__(self, file_content: bytes):
         self.file_content = file_content
+        self.suffix = ".py"
 
     def open(self, mode: str = "r") -> ContextManager[BytesIO]:
         @contextmanager

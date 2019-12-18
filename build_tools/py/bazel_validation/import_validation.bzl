@@ -99,13 +99,14 @@ def _dbx_py_validate_imports_impl(target, ctx):
         args.add_all(self_provides.provides_exact_modules, format_each = "--target-provides={}=%s".format(target.label))
 
         args.add_all(rule.files.srcs, before_each = "--src")
+        args.add_all(rule.files.stub_srcs, before_each = "--src")
         args.add("--target={}".format(target.label))
 
         outfile = ctx.actions.declare_file(target.label.name + ".validate_imports.out")
         shell_content = validate_imports_tmpl.format(out = outfile.path, import_validation_bin_path = ctx.executable._test_bin.path)
 
         ctx.actions.run_shell(
-            inputs = rule.files.srcs,
+            inputs = rule.files.srcs + rule.files.stub_srcs,
             tools = [ctx.executable._test_bin],
             outputs = [outfile],
             mnemonic = "CheckPyImports",
