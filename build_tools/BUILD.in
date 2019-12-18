@@ -77,6 +77,13 @@ config_setting(
     },
 )
 
+config_setting(
+    name = "dbxperf-plugin",
+    define_values = {
+        "profile-pytest": "1",
+    },
+)
+
 dbx_string_value(
     name = "py_link_dynamic_libs",
     # Cannot be overridden in rSERVER.
