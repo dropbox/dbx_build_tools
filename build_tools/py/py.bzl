@@ -538,12 +538,12 @@ dbx_py_local_piplib_internal = rule(
 )
 
 def _dbx_py_binary_impl(ctx):
-    return _dbx_py_binary_base_impl(ctx, internal_bootstrap = False)
+    return dbx_py_binary_base_impl(ctx, internal_bootstrap = False)
 
 def _dbx_py_internal_bootstrap_binary_impl(ctx):
-    return _dbx_py_binary_base_impl(ctx, internal_bootstrap = True)
+    return dbx_py_binary_base_impl(ctx, internal_bootstrap = True)
 
-def _dbx_py_binary_base_impl(ctx, internal_bootstrap = False):
+def dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = None):
     # Get the toolchain name for either the bootstrap or normal py
     # toolchain. Both toolchains have `interpreter` defined as the
     # same attribute.
@@ -587,6 +587,7 @@ def _dbx_py_binary_base_impl(ctx, internal_bootstrap = False):
         pythonpath = ctx.attr.pythonpath,
         deps = ctx.attr.deps,
         data = ctx.attr.data,
+        ext_modules = ext_modules,
         python = python,
         internal_bootstrap = internal_bootstrap,
         python2_compatible = ctx.attr.python2_compatible,
@@ -646,17 +647,16 @@ doc.
     """,
 )
 
-_dbx_py_binary_attrs = dict(_dbx_py_binary_base_attrs)
-_dbx_py_binary_attrs.update(py_binary_attrs)
+dbx_py_binary_attrs = dict(_dbx_py_binary_base_attrs)
+dbx_py_binary_attrs.update(py_binary_attrs)
 dbx_py_binary = rule(
     implementation = _dbx_py_binary_impl,
-    attrs = _dbx_py_binary_attrs,
+    attrs = dbx_py_binary_attrs,
     toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
     executable = True,
 )
-
-_test_attrs = dict(_dbx_py_binary_attrs)
-_test_attrs.update({
+dbx_py_test_attrs = dict(dbx_py_binary_attrs)
+dbx_py_test_attrs.update({
     "quarantine": attr.string_dict(),
     # List of targets other than srcs and deps that need to be instrumented to capture coverage.
     # Note, it is test responsibility to copy or merge coverage data. Currently only dbx_docker_test
@@ -668,7 +668,7 @@ dbx_py_test = rule(
     implementation = _dbx_py_binary_impl,
     toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
     test = True,
-    attrs = _test_attrs,
+    attrs = dbx_py_test_attrs,
 )
 
 # Wrapper around dbx_py_test that handles the quarantine attr correctly.
@@ -797,6 +797,7 @@ dbx_py_library_attrs = {
     # This is available for a few odd cases like tensorflow and opencv which use
     # a wrapper library to expose a piplib
     "provides": attr.string_list(),
+    "compiled": attr.bool(default = False),
 }
 
 def _dbx_py_library_impl(ctx):
@@ -861,23 +862,10 @@ dbx_py_library = rule(
     toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
 )
 
-def dbx_py_pytest_test(
-        name,
-        deps = [],
+def extract_pytest_args(
         args = [],
-        size = "small",
-        services = [],
-        start_services = True,
-        tags = [],
         test_root = None,
-        local = 0,
-        flaky = 0,
-        quarantine = {},
-        python = None,
         plugins = [],
-        python2_compatible = True,
-        python3_compatible = True,
-        visibility = None,
         **kwargs):
     if test_root:
         root = test_root + ("/" + native.package_name() if native.package_name() else "")
@@ -912,6 +900,44 @@ def dbx_py_pytest_test(
         "-vvv",
     ]
 
+    for plugin in plugins:
+        if not plugin.startswith("//"):
+            fail("plugin %r should be a target" % (plugin,))
+        plugin_arg = plugin[2:].replace("/", ".").replace(":", ".")
+        pytest_args += ["-p", plugin_arg]
+
+    pytest_deps = GLOBAL_PYTEST_PLUGINS + plugins + ["@dbx_build_tools//pip/pytest:pytest_fake"]
+
+    pytest_args += [
+        "--junitxml",
+        "${XML_OUTPUT_FILE:-/dev/null}",
+        # $TESTBRIDGE_TEST_ONLY is set to the exact string sent to `--test_filter`.
+        "-k",
+        "${TESTBRIDGE_TEST_ONLY:-.}",
+    ]
+
+    return pytest_args, pytest_deps
+
+def dbx_py_pytest_test(
+        name,
+        deps = [],
+        args = [],
+        size = "small",
+        services = [],
+        start_services = True,
+        tags = [],
+        test_root = None,
+        local = 0,
+        flaky = 0,
+        quarantine = {},
+        python = None,
+        plugins = [],
+        python2_compatible = True,
+        python3_compatible = True,
+        visibility = None,
+        **kwargs):
+    pytest_args, pytest_deps = extract_pytest_args(args, test_root, plugins, **kwargs)
+
     tags = tags + process_quarantine_attr(quarantine)
 
     pythons = []
@@ -929,26 +955,14 @@ def dbx_py_pytest_test(
             fail('Cannot use a custom "python" attribute and set python(2|3)_compatible.')
         pythons.append((python, ""))
 
-    for plugin in plugins:
-        if not plugin.startswith("//"):
-            fail("plugin %r should be a target" % (plugin,))
-        plugin_arg = plugin[2:].replace("/", ".").replace(":", ".")
-        pytest_args += ["-p", plugin_arg]
-
-    all_deps = deps + GLOBAL_PYTEST_PLUGINS + plugins + ["@dbx_build_tools//pip/pytest:pytest_fake"]
+    all_deps = deps + pytest_deps
     for python, variant in pythons:
-        extra_args = pytest_args + [
-            "--junitxml",
-            "${XML_OUTPUT_FILE:-/dev/null}",
-            # $TESTBRIDGE_TEST_ONLY is set to the exact string sent to `--test_filter`.
-            "-k",
-            "${TESTBRIDGE_TEST_ONLY:-.}",
-        ]
         if variant:
-            extra_args += ["--junitprefix", variant + ":"]
+            extra_args = pytest_args + ["--junitprefix", variant + ":"]
             suffix = "-" + variant
             variant_tags = tags + ["alternative_py_version"]
         else:
+            extra_args = pytest_args
             suffix = ""
             variant_tags = tags
         if len(services) > 0:

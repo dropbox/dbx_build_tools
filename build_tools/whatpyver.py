@@ -36,6 +36,7 @@ RULE_TYPES = [
     "dbx_py_library",
     "dbx_py_pytest_test",
     "dbx_py_test",
+    "dbx_py_compiled_pytest_test",
     "py_library",
     "py_binary",
     "nagios_py_plugin",

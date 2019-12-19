@@ -267,6 +267,7 @@ def emit_py_binary(
         pythonpath,
         deps,
         data,
+        ext_modules,
         python,
         internal_bootstrap,
         python2_compatible,
@@ -398,6 +399,9 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
 
         runfiles_trans.append(python.runtime)
         runfiles_trans.append(ctx.attr._sanitizer_extra_runfiles.files)
+
+        if ext_modules:
+            runfiles_trans.append(ext_modules)
 
         if ctx.attr._stamp_pypi:
             runfiles_direct.append(_produce_versioned_deps_output(ctx, out_file, versioned_deps))

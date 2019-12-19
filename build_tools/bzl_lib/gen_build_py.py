@@ -34,7 +34,9 @@ PIP_RULE_TYPES = ("dbx_py_pypi_piplib", "dbx_py_local_piplib", "dbx_py_piplib_al
 PY_RULE_TYPES = (
     "dbx_py_library",
     "dbx_py_binary",
+    "dbx_py_compiled_binary",
     "dbx_py_pytest_test",
+    "dbx_py_compiled_pytest_test",
 )
 
 PY_BIN_RULE_TYPES = [

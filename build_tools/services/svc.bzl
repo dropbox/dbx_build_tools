@@ -140,6 +140,7 @@ def _apply_service_extensions(ctx, services, extensions):
             pythonpath = None,
             deps = depset(direct = info.libs).to_list(),
             data = [],
+            ext_modules = None,
             python = python,
             internal_bootstrap = False,
             python2_compatible = info.python2_compatible,
