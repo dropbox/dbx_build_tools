@@ -215,6 +215,9 @@ def collect_required_piplibs(deps):
 def _pyc_path(src, build_tag):
     return "__pycache__/" + src.basename[:-2] + build_tag + ".pyc"
 
+def _short_path(src):
+    return src.short_path
+
 def compile_pycs(ctx, srcs, build_tag, allow_failures = False):
     # For CPython 2, we build custom pydbxc files that us the md5 of the source instead of the mtime
     # for the py file for invalidation. This allows the files to be remotely cached. We need to
@@ -237,7 +240,7 @@ def compile_pycs(ctx, srcs, build_tag, allow_failures = False):
     else:
         lib_args.add("--noallow-failures")
     lib_args.add_all(srcs)
-    lib_args.add_all([f.short_path for f in srcs])
+    lib_args.add_all(srcs, map_each = _short_path)
     lib_args.add_all(new_pyc_files)
 
     ctx.actions.run(
