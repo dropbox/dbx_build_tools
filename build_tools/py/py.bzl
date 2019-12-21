@@ -924,6 +924,11 @@ def dbx_py_pytest_test(
         args = [],
         size = "small",
         services = [],
+        # if 'services' is a select, we can't calculate len, this works around
+        # by telling the test that there are services. Note that you still can't
+        # select between no-services and some-services, but if you know you will
+        # have services either way, this works.
+        force_services = False,
         start_services = True,
         tags = [],
         test_root = None,
@@ -965,7 +970,7 @@ def dbx_py_pytest_test(
             extra_args = pytest_args
             suffix = ""
             variant_tags = tags
-        if len(services) > 0:
+        if force_services or len(services) > 0:
             dbx_py_dbx_test(
                 name = name + "_bin" + suffix,
                 pip_main = "@dbx_build_tools//pip/pytest",
