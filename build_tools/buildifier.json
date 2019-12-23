@@ -8,8 +8,6 @@
     "additional_data": true
   },
   "SortableBlacklist": {
-    "dbx_javascript_amd_bundle.srcs": true,
-    "dbx_javascript_bundle.srcs": true,
-    "dbx_webpack_build.deps": true
+    "dbx_javascript_amd_bundle.srcs": true
   }
 }
