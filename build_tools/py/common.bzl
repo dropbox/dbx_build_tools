@@ -280,6 +280,10 @@ def emit_py_binary(
             fail("`python` arg must be None when internal_bootstrap is True")
     elif not python:
         fail("`python` arg must be truthy when internal_bootstrap is False")
+    if internal_bootstrap:
+        py_toolchain = None
+    else:
+        py_toolchain = ctx.toolchains[get_py_toolchain_name(python.build_tag)]
 
     if python:
         # Only check python compatibility for non-bootstrap py
@@ -297,6 +301,7 @@ def emit_py_binary(
 
     if not pythonpath:
         pythonpath = workspace_root_to_pythonpath(ctx.label.workspace_root)
+
     runfiles_direct = [main] + srcs
     runfiles_trans = []
     piplib_paths = []
@@ -308,6 +313,7 @@ def emit_py_binary(
 
     if internal_bootstrap:
         extra_pythonpath = depset(direct = [pythonpath])
+        dbx_importer = ""
     else:
         # Only collect dependencies from dbx_py_library and
         # dbx_py_pypi* rules for non-bootstrap binaries. Those
@@ -327,7 +333,17 @@ def emit_py_binary(
             python3_compatible = python3_compatible,
             is_local_piplib = False,
         )
-        extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath])
+        if py_toolchain.dbx_importer:
+            # The importer is only used on py2 non-bootstrap builds
+            # (bootstrap builds don't read dropbox's pyc).
+            extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath, workspace_root_to_pythonpath(py_toolchain.dbx_importer.label.workspace_root)])
+            dbx_importer = _setup_dbx_importer.format(
+                workspace = py_toolchain.dbx_importer.label.workspace_name,
+            )
+        else:
+            extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath])
+            dbx_importer = ""
+
         piplib_contents_map = piplib_contents[build_tag]
         runfiles_trans.append(pyc_files_by_build_tag[build_tag])
 
@@ -422,16 +438,6 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
     inner_wrapper = ctx.actions.declare_file(out_file.basename + "-wrapper.py", sibling = out_file)
     runfiles_direct.append(inner_wrapper)
 
-    py_toolchain = ctx.toolchains[get_py_toolchain_name(build_tag)] if not internal_bootstrap else None
-
-    if py_toolchain and py_toolchain.dbx_importer:
-        # The importer is only used on py2 non-bootstrap builds
-        # (bootstrap builds don't read dropbox's pyc).
-        dbx_importer = _setup_dbx_importer.format(
-            workspace = py_toolchain.dbx_importer.label.workspace_name,
-        )
-    else:
-        dbx_importer = ""
     ctx.actions.write(
         inner_wrapper,
         _inner_wrapper.format(
