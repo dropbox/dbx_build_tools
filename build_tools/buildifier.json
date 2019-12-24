@@ -8,6 +8,6 @@
     "additional_data": true
   },
   "SortableBlacklist": {
-    "dbx_javascript_amd_bundle.srcs": true
+    "dbx_deprecated_metaserver_js_amd_bundle.srcs": true
   }
 }
