@@ -71,7 +71,6 @@ dbx_py_library(
 dbx_py_library(
     name = "exec_wrapper",
     srcs = ["exec_wrapper.py"],
-    python3_compatible = False,
     validate = "strict",
     deps = [
         ":metrics",
@@ -91,7 +90,6 @@ dbx_py_library(
 dbx_py_library(
     name = "run",
     srcs = ["run.py"],
-    python3_compatible = False,
     validate = "strict",
     deps = [
         "//build_tools/go:env",
