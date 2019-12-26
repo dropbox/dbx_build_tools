@@ -84,7 +84,8 @@ class GoBuildGenerator(object):
         if not go_packages:
             return
 
-        tool_path = runfiles.data_path("@dbx_build_tools//go/src/dropbox/build_tools/gen-build-go/gen-build-go"
+        tool_path = runfiles.data_path(
+            "@dbx_build_tools//go/src/dropbox/build_tools/gen-build-go/gen-build-go"
         )
 
         args = [tool_path]

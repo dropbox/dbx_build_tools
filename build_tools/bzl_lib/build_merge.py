@@ -9,7 +9,8 @@ from dropbox import runfiles
 def merge_build_files(new_build_filename, annotation_build_filename, output_filename):
     # type: (str, str, str) -> None
 
-    tool_path = runfiles.data_path("@dbx_build_tools//go/src/dropbox/build_tools/build-merge/build-merge"
+    tool_path = runfiles.data_path(
+        "@dbx_build_tools//go/src/dropbox/build_tools/build-merge/build-merge"
     )
 
     args = [tool_path, new_build_filename, annotation_build_filename, output_filename]

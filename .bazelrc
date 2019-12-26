@@ -1,5 +1,3 @@
-common --incompatible_remap_main_repo
-
 build --experimental_strict_action_env
 build --platforms //build_tools/cc:linux-x64-drte-off
 build --host_platform //build_tools/cc:linux-x64-drte-off
