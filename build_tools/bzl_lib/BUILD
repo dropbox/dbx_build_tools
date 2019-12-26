@@ -62,7 +62,6 @@ dbx_py_library(
         "build_merge.py",
     ],
     data = ["//go/src/dropbox/build_tools/build-merge"],
-    python3_compatible = False,
     validate = "strict",
     deps = [
         "//dropbox:runfiles",
