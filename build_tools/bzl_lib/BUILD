@@ -82,7 +82,6 @@ dbx_py_library(
 dbx_py_library(
     name = "metrics",
     srcs = ["metrics.py"],
-    python3_compatible = False,
     validate = "strict",
     deps = [
         "//pip/typing",

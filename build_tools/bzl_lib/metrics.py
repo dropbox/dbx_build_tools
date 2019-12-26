@@ -1,16 +1,16 @@
-# mypy: allow-untyped-defs, allow-untyped-globals, no-check-untyped-defs
-
 """
 Metrics library for bzl.
 This will log timing metrics to multiple locations, including stderr and (later) logpusher
 """
+from __future__ import absolute_import, print_function
+
 import contextlib
 import os
 import sys
 import time
 
 from collections import defaultdict, namedtuple
-from typing import Any, Optional, Text
+from typing import Any, Callable, DefaultDict, Dict, Iterator, List, Optional, Set
 
 
 class StatsError(Exception):
@@ -19,14 +19,15 @@ class StatsError(Exception):
 
 class Stats(object):
     def __init__(self):
+        # type: () -> None
         self.mode = "_bzl_unknown"
-        self.extra_attributes_map = {}
-        self.recorded_timers = []
-        self.cumulative_rates = defaultdict(int)
-        self.gauges = []
-        self.seen_stats_keys = set()
-        self.error_type = None
-        self.error_text = None
+        self.extra_attributes_map = {}  # type: Dict[str, str]
+        self.recorded_timers = []  # type: List[Timer]
+        self.cumulative_rates = defaultdict(int)  # type: DefaultDict[str, int]
+        self.gauges = []  # type: List[Gauge]
+        self.seen_stats_keys = set()  # type: Set[str]
+        self.error_type = None  # type: Optional[str]
+        self.error_text = None  # type: Optional[str]
         self.reported = False
 
 
@@ -35,7 +36,7 @@ _stats = Stats()
 
 class Timer(object):
     def __init__(self, name, interval_ms=None):
-        # type: (str, Optional[Any]) -> None
+        # type: (str, Optional[int]) -> None
         if not name.endswith("_ms"):
             raise StatsError("By convention, Timer names must end with _ms")
         self.name = name
@@ -51,6 +52,7 @@ class Timer(object):
         self.interval_ms = int(time.time() * 1000) - self.start_ms
 
     def get_interval_ms(self):
+        # type: () -> int
         if self.interval_ms is None:
             return int(time.time() * 1000) - self.start_ms
         return self.interval_ms
@@ -61,6 +63,7 @@ class Timer(object):
         return self
 
     def __exit__(self, *args):
+        # type: (*Any) -> None
         self.stop()
 
     def __str__(self):
@@ -78,17 +81,19 @@ class GenMetrics(object):
     """
 
     def __init__(self):
-        self.generator_queue = []
-        self.timer = None
+        # type: () -> None
+        self.generator_queue = []  # type: List[str]
+        self.timer = None  # type: Optional[Timer]
 
     def _create_and_start_timer_for_generator(self, generator_name):
-        # type: (object) -> None
+        # type: (str) -> None
         timer_name = "bzl_gen_{}_ms".format(generator_name)
         self.timer = Timer(timer_name)
         self.timer.start()
 
     def _stop_current_timer_and_update(self, is_exit=True):
         # type: (bool) -> None
+        assert self.timer is not None
         self.timer.stop()
         log_cumulative_rate(self.timer.name, self.timer.get_interval_ms())
         # Do not increment the _called metric if entering a recursive call.
@@ -96,7 +101,7 @@ class GenMetrics(object):
             log_cumulative_rate(self.timer.name[:-3] + "_called", 1)
 
     def enter_generator(self, generator_name):
-        # type: (object) -> None
+        # type: (str) -> None
         if self.generator_queue:
             self._stop_current_timer_and_update(is_exit=False)
         self.generator_queue.append(generator_name)
@@ -116,6 +121,7 @@ _generator_metrics = GenMetrics()
 
 @contextlib.contextmanager
 def generator_metric_context(generator_name):
+    # type: (str) -> Iterator[None]
     _generator_metrics.enter_generator(generator_name)
     try:
         yield
@@ -123,8 +129,9 @@ def generator_metric_context(generator_name):
         _generator_metrics.exit_generator()
 
 
-def create_and_register_timer(*args, **kwargs):
-    timer = Timer(*args, **kwargs)
+def create_and_register_timer(name, interval_ms=None):
+    # type: (str, Optional[int]) -> Timer
+    timer = Timer(name, interval_ms)
     if timer.name in _stats.seen_stats_keys:
         raise StatsError("duplicate stats name {}".format(timer.name))
     _stats.seen_stats_keys.add(timer.name)
@@ -133,7 +140,7 @@ def create_and_register_timer(*args, **kwargs):
 
 
 def set_gauge(key, value):
-    # type: (Text, int) -> None
+    # type: (str, int) -> None
     if key in _stats.seen_stats_keys:
         raise StatsError("duplicate stats name {}".format(key))
     _stats.seen_stats_keys.add(key)
@@ -141,6 +148,7 @@ def set_gauge(key, value):
 
 
 def log_cumulative_rate(key, value):
+    # type: (str, int) -> None
     if key in _stats.seen_stats_keys and key not in _stats.cumulative_rates:
         raise StatsError("non-cumulative stat {} already exists".format(key))
     _stats.seen_stats_keys.add(key)
@@ -148,12 +156,12 @@ def log_cumulative_rate(key, value):
 
 
 def set_mode(new_mode):
-    # type: (Text) -> None
+    # type: (str) -> None
     _stats.mode = new_mode
 
 
 def set_extra_attributes(key, value):
-    # type: (Text, Text) -> None
+    # type: (str, str) -> None
     _stats.extra_attributes_map[key] = value
 
 
@@ -163,11 +171,13 @@ def has_error():
 
 
 def set_error(error_type, error_text):
+    # type: (str, str) -> None
     _stats.error_type = error_type
     _stats.error_text = error_text
 
 
 def report_metrics():
+    # type: () -> None
     """
     Report all metrics recorded so far. This should only be called at the end of a program's
     lifetime.
@@ -183,22 +193,23 @@ def report_metrics():
     _stats.reported = True
     if os.getenv("BZL_DEBUG"):
         if _stats.recorded_timers:
-            print >>sys.stderr, "Timers:"
+            print("Timers:", file=sys.stderr)
             for timer in _stats.recorded_timers:
-                print >>sys.stderr, "    {}".format(timer)
+                print("    {}".format(timer), file=sys.stderr)
         if _stats.gauges:
-            print >>sys.stderr, "Gauges:"
+            print("Gauges:", file=sys.stderr)
             for (key, value) in _stats.gauges:
-                print >>sys.stderr, "    {}: {}".format(key, value)
+                print("    {}: {}".format(key, value), file=sys.stderr)
         if _stats.cumulative_rates:
-            print >>sys.stderr, "Cumulative rates:"
+            print("Cumulative rates:", file=sys.stderr)
             for (key, value) in _stats.cumulative_rates.items():
-                print >>sys.stderr, "    {}: {}".format(key, value)
+                print("    {}: {}".format(key, value), file=sys.stderr)
         if _stats.extra_attributes_map:
-            print >>sys.stderr, "Extra Attributes:"
+            print("Extra Attributes:", file=sys.stderr)
             for key in sorted(_stats.extra_attributes_map.keys()):
-                print >>sys.stderr, "    {}: {}".format(
-                    key, _stats.extra_attributes_map[key]
+                print(
+                    "    {}: {}".format(key, _stats.extra_attributes_map[key]),
+                    file=sys.stderr,
                 )
     logpusher_data = {
         "bzl": {
@@ -207,7 +218,7 @@ def report_metrics():
             "extra_attributes": _stats.extra_attributes_map,
         },
         "metrics": {},
-    }
+    }  # type: Dict[str, Any]
     if has_error():
         logpusher_data["error"] = {"text": _stats.error_text, "type": _stats.error_type}
     for timer in _stats.recorded_timers:
@@ -220,16 +231,18 @@ def report_metrics():
         _write_metrics("bzl", logpusher_data)
 
 
-_write_metrics = None
+_write_metrics = None  # type: Optional[Callable[[str, Dict[str, Any]], None]]
 
 
 def set_write_metrics(write_metrics):
+    # type: (Callable[[str, Dict[str, Any]], None]) -> None
     global _write_metrics
     _write_metrics = write_metrics
 
 
 @contextlib.contextmanager
 def main_metrics_scope():
+    # type: () -> Iterator[None]
     create_and_register_timer("total_duration_ms").start()
     try:
         yield

@@ -51,7 +51,6 @@ dbx_py_library(
 dbx_py_library(
     name = "metrics",
     srcs = ["metrics.py"],
-    python3_compatible = False,
 )
 
 dbx_py_library(
