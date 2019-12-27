@@ -10,7 +10,7 @@ dbx_py_library(
         ":bzl-itest-init",
         ":bzl-itest-wait",
     ],
-    python3_compatible = False,
+    python2_compatible = False,
 )
 
 dbx_sh_binary(

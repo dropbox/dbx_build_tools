@@ -2,7 +2,7 @@
 Helper functions that replace os.exec* functions. This is mostly for debugging
 and metrics purposes.
 """
-from __future__ import absolute_import, print_function
+from __future__ import print_function
 
 import os
 import pipes

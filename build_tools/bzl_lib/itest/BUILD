@@ -14,13 +14,14 @@ dbx_py_library(
         ":bzl-itest-init",
         ":bzl-itest-wait",
     ],
-    python3_compatible = False,
+    python2_compatible = False,
     validate = "strict",
     deps = [
         "//build_tools:bazel_utils",
         "//build_tools/bzl_lib:exec_wrapper",
         "//build_tools/bzl_lib:metrics",
         "//dropbox:runfiles",
+        "//pip/six",
     ],
 )
 

@@ -43,7 +43,7 @@ def _merge_history_lines(lines):
         # make sure the line map has the latest timestamp for a given command.
         if line_map.get(line, 0) <= i:
             line_map[line] = i
-    items = line_map.items()
+    items = list(line_map.items())
     items.sort(key=lambda x: x[-1])
 
     lines = []

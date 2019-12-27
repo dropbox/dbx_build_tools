@@ -67,7 +67,7 @@ dbx_py_binary(
         "bzl.py",
     ],
     main = "bzl.py",
-    python3_compatible = False,
+    python2_compatible = False,
     deps = [
         "//build_tools/bzl_lib:commands",
         "//build_tools/bzl_lib:core",

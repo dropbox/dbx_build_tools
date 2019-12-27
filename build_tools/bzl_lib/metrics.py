@@ -2,7 +2,7 @@
 Metrics library for bzl.
 This will log timing metrics to multiple locations, including stderr and (later) logpusher
 """
-from __future__ import absolute_import, print_function
+from __future__ import print_function
 
 import contextlib
 import os

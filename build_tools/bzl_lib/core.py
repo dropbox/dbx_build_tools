@@ -1,5 +1,7 @@
 # mypy: allow-untyped-defs
 
+from __future__ import print_function
+
 import argparse
 import os
 import subprocess
@@ -90,7 +92,7 @@ def parse_bazel_args(argv):
         elif x.startswith(global_bazel_args):
             global_args.append(x)
             if "=" not in x:
-                global_args.append(argiter.next())
+                global_args.append(next(argiter))
         else:
             mode_args.append(x)
     return (global_args, mode_args)
@@ -122,7 +124,10 @@ def run_build_tool(bazel_path, target, targets, squelch_output=False):
                 "bzl_bootstrap_ms", interval_ms=bootstrap_ms
             )
     except subprocess.CalledProcessError:
-        print >>sys.stderr, "WARN: Failed to build %s, continuing without self-update." % target
+        print(
+            "WARN: Failed to build %s, continuing without self-update." % target,
+            file=sys.stderr,
+        )
         # If something goes wrong during rebuild, just run this version.
         pass
 
@@ -188,7 +193,7 @@ def main(ap, self_target):
     if args.mode in (None, "help"):
         if not mode_args:
             ap.print_help()
-            print
+            print()
             sys.stdout.flush()
         elif len(mode_args) == 1 and mode_args[0] not in bazel_modes:
             help_mode_parser = subparser_map[mode_args[0]]
@@ -218,11 +223,11 @@ def main(ap, self_target):
             raise
         sys.exit("ERROR: " + str(e))
     except subprocess.CalledProcessError as e:
-        print >>sys.stderr, e
+        print(e, file=sys.stderr)
         if e.output:
-            print >>sys.stderr, e.output
+            print(e.output, file=sys.stderr)
         if os.environ.get("BZL_DEBUG"):
             raise
         sys.exit(e.returncode)
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         sys.exit("ERROR: interrupted")

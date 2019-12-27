@@ -1,5 +1,7 @@
 # mypy: allow-untyped-defs
 
+from __future__ import print_function
+
 import argparse
 import multiprocessing
 import os
@@ -10,6 +12,7 @@ import sys
 from build_tools import bazel_utils
 from build_tools.bzl_lib import exec_wrapper, metrics
 from build_tools.bzl_lib.itest import bash_history
+from six.moves import input
 
 from dropbox import runfiles
 
@@ -26,7 +29,7 @@ SVCCTL_TARGET = "@dbx_build_tools//go/src/dropbox/build_tools/svcctl/cmd/svcctl"
 
 DEFAULT_IMAGE = "ubuntu:19.10"
 # NOTE: Must be kept up-to-date with the path in rSERVER/dropbox/provost/socket_util.py
-DEFAULT_SOCKET_DIRECTORY_PATH = "/run/dropbox/sock-drawer/"
+DEFAULT_SOCKET_DIRECTORY_PATH = b"/run/dropbox/sock-drawer/"
 
 
 class ITestTarget(object):
@@ -150,7 +153,7 @@ def _build_target(args, bazel_args, mode_args, target):
             # or tweaking any cmd args above without investigating the self-build code in bzl.py.
             return
         if os.environ.get("BZL_DEBUG"):
-            print >> sys.stderr, "exec:", " ".join(cmd)
+            print("exec:", " ".join(cmd), file=sys.stderr)
         subprocess.check_call(cmd)
 
 
@@ -301,7 +304,9 @@ def _get_all_containers_targets(docker_path):
         "--format",
         '{{.Names}} {{.Label "itest-target"}}',
     ]
-    for line in subprocess.check_output(args).strip().split("\n"):
+    for line in (
+        subprocess.check_output(args, universal_newlines=True).strip().split("\n")
+    ):
         if line.startswith(POSSIBLE_CONTAINER_NAME_PREFIXES):
             fields = line.split()
             if len(fields) == 2:
@@ -442,7 +447,7 @@ exec {test} "$@"
                 test=" ".join(itest_target.test_cmd),
             )
         )
-    os.chmod(test_bin, 0755)
+    os.chmod(test_bin, 0o755)
     test_cmd_str = " ".join(
         pipes.quote(x)
         for x in [os.path.join(IN_CONTAINER_DATA_DIR, RUN_TEST_BIN_NAME)]
@@ -518,7 +523,7 @@ exec {test} "$@"
         docker_run_args += ["--privileged"]
 
     # set env variables. This will also set it for subsequent `docker exec` commands
-    for k, v in env.iteritems():
+    for k, v in env.items():
         docker_run_args += ["-e", "{}={}".format(k, v)]
 
     with metrics.create_and_register_timer("bazel_info_ms"):
@@ -531,27 +536,27 @@ exec {test} "$@"
             ).strip()
 
     mounts = [
-        (workspace, "ro"),
-        ("/sqpkg", "ro"),
-        (output_base, "ro"),
-        (install_base, "ro"),
-        ("/etc/ssl", "ro"),
-        ("/usr/share/ca-certificates", "ro"),
+        (os.fsencode(workspace), b"ro"),
+        (b"/sqpkg", b"ro"),
+        (output_base, b"ro"),
+        (install_base, b"ro"),
+        (b"/etc/ssl", b"ro"),
+        (b"/usr/share/ca-certificates", b"ro"),
         # We bind mount /run/dropbox/sock-drawer/ as read-write so that services outside
         # itest (ie ULXC jails) can publish sockets here that can be used from the inside
         # (bind mount), and so that services inside itest (ie RivieraFS) can publish
         # sockets here (read-write) that can be used from the outside
-        (DEFAULT_SOCKET_DIRECTORY_PATH, "rw"),
+        (DEFAULT_SOCKET_DIRECTORY_PATH, b"rw"),
     ]
 
     for path, perms in mounts:
         # Docker will happily create a mount source that is nonexistent, but it may not have the
         # right permissions.  Better to just mount nothing.
         if not os.path.exists(path):
-            print >> sys.stderr, "missing mount point:", path
+            print("missing mount point:", path, file=sys.stderr)
             continue
         src = os.path.realpath(path)
-        docker_run_args += ["-v", "{}:{}:{}".format(src, path, perms)]
+        docker_run_args += ["-v", b"%s:%s:%s" % (src, path, perms)]
     # Allow bzl itest containers to observe external changes to the mount table.
     if os.path.exists("/mnt/sqpkg"):
         docker_run_args += ["-v", "/mnt/sqpkg:/mnt/sqpkg:rslave"]
@@ -597,7 +602,8 @@ exec {test} "$@"
                     "status",
                     "--all",
                     "--format={{.Name}}",
-                ]
+                ],
+                universal_newlines=True,
             )
             .strip()
             .split("\n")
@@ -624,7 +630,7 @@ exec {test} "$@"
 
 
 def _confirm_directory_delete(dirname):
-    reply = raw_input(
+    reply = input(
         "Deleting data directory at {}\n  This will cause PERMANENT data loss. Continue? [y/N] ".format(
             dirname
         )
@@ -665,8 +671,15 @@ bzl itest-stop {target}""".format(
             "/usr/bin/sudo", ["/usr/bin/sudo", "rm", "-rf", host_data_dir]
         )
     else:
-        print >> sys.stderr, "WARN: Skipping containers with persistent data", host_data_dir
-        print >> sys.stderr, "  bzl itest-clean --expunge %s - remove persistent data" % args.target
+        print(
+            "WARN: Skipping containers with persistent data",
+            host_data_dir,
+            file=sys.stderr,
+        )
+        print(
+            "  bzl itest-clean --expunge %s - remove persistent data" % args.target,
+            file=sys.stderr,
+        )
 
 
 def cmd_itest_clean_all(args, bazel_args, mode_args):
@@ -677,10 +690,12 @@ def cmd_itest_clean_all(args, bazel_args, mode_args):
     idle_container_names = disk_container_names - running_container_names
 
     if running_container_names:
-        print >> sys.stderr, "WARN: Skipping running containers", ", ".join(
-            sorted(running_container_names)
+        print(
+            "WARN: Skipping running containers",
+            ", ".join(sorted(running_container_names)),
+            file=sys.stderr,
         )
-        print >> sys.stderr, "  Run bzl itest-stop-all to stop all of them."
+        print("  Run bzl itest-stop-all to stop all of them.", file=sys.stderr)
 
     delete_dir_list = []
     skipped_persistent_dirs = []
@@ -692,10 +707,15 @@ def cmd_itest_clean_all(args, bazel_args, mode_args):
             skipped_persistent_dirs.append(host_data_dir)
 
     if skipped_persistent_dirs:
-        print >> sys.stderr, "WARN: Skipping containers with persistent data", ", ".join(
-            sorted(skipped_persistent_dirs)
+        print(
+            "WARN: Skipping containers with persistent data",
+            ", ".join(sorted(skipped_persistent_dirs)),
+            file=sys.stderr,
         )
-        print >> sys.stderr, "  bzl itest-clean-all --expunge will remove persistent data."
+        print(
+            "  bzl itest-clean-all --expunge will remove persistent data.",
+            file=sys.stderr,
+        )
 
     if delete_dir_list:
         delete_dir_list.sort()
@@ -835,17 +855,19 @@ def cmd_itest_stop_all(args, bazel_args, mode_args):
     containers = _get_all_containers(args.docker_path)
     if containers:
         if not args.force:
-            print """Will stop the following containers:
+            print(
+                """Will stop the following containers:
 
 {}
 """.format(
-                "\n".join(containers)
+                    "\n".join(containers)
+                )
             )
-            reply = raw_input("Continue? [y/N] ")
+            reply = input("Continue? [y/N] ")
             if reply.strip().lower() not in ("y", "yes"):
                 sys.exit("Aborted.")
         exec_wrapper.execv(
             args.docker_path, [args.docker_path, "rm", "-f"] + containers
         )
     else:
-        print "No containers to stop"
+        print("No containers to stop")

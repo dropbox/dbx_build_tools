@@ -8,7 +8,6 @@ load("//build_tools/py:py.bzl", "dbx_py_binary", "dbx_py_library")
 dbx_py_library(
     name = "commands",
     srcs = ["commands.py"],
-    python3_compatible = False,
     validate = "strict",
     deps = [
         ":exec_wrapper",
@@ -100,7 +99,7 @@ dbx_py_library(
 dbx_py_library(
     name = "core",
     srcs = ["core.py"],
-    python3_compatible = False,
+    python2_compatible = False,
     validate = "strict",
     deps = [
         ":commands",

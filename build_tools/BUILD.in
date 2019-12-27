@@ -164,7 +164,7 @@ dbx_py_binary(
         "bzl.py",
     ],
     main = "bzl.py",
-    python3_compatible = False,
+    python2_compatible = False,
 )
 
 dbx_py_binary(
