@@ -28,7 +28,7 @@ type Config struct {
 	// dependencies of any main package may still affect the
 	// analysis result, because they contribute runtime types and
 	// thus methods.
-	// TODO: investigate whether this is desirable.
+	// TODO(adonovan): investigate whether this is desirable.
 	Mains []*ssa.Package
 
 	// Reflection determines whether to handle reflection
@@ -56,7 +56,7 @@ type Config struct {
 	// variable for v or *v.  Upon completion the client can
 	// inspect that map for the results.
 	//
-	// TODO: this API doesn't scale well for batch tools
+	// TODO(adonovan): this API doesn't scale well for batch tools
 	// that want to dump the entire solution.  Perhaps optionally
 	// populate a map[*ssa.DebugRef]Pointer in the Result, one
 	// entry per source expression.

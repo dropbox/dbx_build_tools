@@ -4,7 +4,7 @@ package describe // @describe pkgdecl "describe"
 // See go.tools/guru/guru_test.go for explanation.
 // See describe.golden for expected query results.
 
-// TODO: more coverage of the (extensive) logic.
+// TODO(adonovan): more coverage of the (extensive) logic.
 
 import (
 	"lib"

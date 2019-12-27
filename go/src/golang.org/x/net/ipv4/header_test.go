@@ -27,7 +27,7 @@ type headerTest struct {
 }
 
 var headerLittleEndianTests = []headerTest{
-	// TODO: Add platform dependent wire header formats when
+	// TODO(mikio): Add platform dependent wire header formats when
 	// we support new platforms.
 	{
 		wireHeaderFromKernel: []byte{

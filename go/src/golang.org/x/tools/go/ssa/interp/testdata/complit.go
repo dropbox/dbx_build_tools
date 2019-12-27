@@ -5,7 +5,7 @@ package main
 import "fmt"
 
 // Map literals.
-// TODO: we can no longer print maps
+// TODO(adonovan): we can no longer print maps
 // until the interpreter supports (reflect.Value).MapRange.
 func _() {
 	type M map[int]int

@@ -34,7 +34,7 @@ import (
 // network connection) and provides utility methods to read and write
 // http2 frames.
 //
-// NOTE: this could eventually be exported somewhere. Others
+// NOTE(bradfitz): this could eventually be exported somewhere. Others
 // have asked for it too. For now I'm still experimenting with the
 // API and don't feel like maintaining a stable testing API.
 

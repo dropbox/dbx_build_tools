@@ -24,7 +24,7 @@ import (
 // doCallgraph computes the CALLEES and CALLERS relations.
 func (a *analysis) doCallgraph(cg *callgraph.Graph) {
 	log.Print("Deleting synthetic nodes...")
-	// TODO: opt: DeleteSyntheticNodes is asymptotically
+	// TODO(adonovan): opt: DeleteSyntheticNodes is asymptotically
 	// inefficient and can be (unpredictably) slow.
 	cg.DeleteSyntheticNodes()
 	log.Print("Synthetic nodes deleted")
@@ -174,7 +174,7 @@ func (a *analysis) doCallgraph(cg *callgraph.Graph) {
 
 		json := a.pcgJSON(pcg)
 
-		// TODO: pkg.Path() is not unique!
+		// TODO(adonovan): pkg.Path() is not unique!
 		// It is possible to declare a non-test package called x_test.
 		a.result.pkgInfo(pkg.Pkg.Path()).setCallGraph(json, index)
 	}
@@ -233,7 +233,7 @@ func funcToken(fn *ssa.Function) token.Pos {
 }
 
 // prettyFunc pretty-prints fn for the user interface.
-// TODO: return HTML so we have more markup freedom.
+// TODO(adonovan): return HTML so we have more markup freedom.
 func prettyFunc(this *types.Package, fn *ssa.Function) string {
 	if fn.Parent() != nil {
 		return fmt.Sprintf("%s in %s",
@@ -319,7 +319,7 @@ func (a *analysis) pcgJSON(pcg *packageCallGraph) []*PCGNodeJSON {
 	var nodes []*PCGNodeJSON
 	for _, n := range pcg.nodes {
 
-		// TODO: why is there no good way to iterate
+		// TODO(adonovan): why is there no good way to iterate
 		// over the set bits of a big.Int?
 		var callees []int
 		nbits := n.edges.BitLen()

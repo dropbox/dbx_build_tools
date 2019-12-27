@@ -28,7 +28,7 @@ func reflectTypeOf() {
 	if unknown {
 		t = reflect.TypeOf("foo")
 	}
-	// TODO: make types.Eval let us refer to unexported types.
+	// TODO(adonovan): make types.Eval let us refer to unexported types.
 	print(t)                             // #@types *reflect.rtype
 	print(reflect.Zero(t).Interface())   // @types int | string
 	newint := reflect.New(t).Interface() // @line rtonew

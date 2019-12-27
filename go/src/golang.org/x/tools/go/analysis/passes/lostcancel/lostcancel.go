@@ -69,7 +69,7 @@ func runFunc(pass *analysis.Pass, node ast.Node) {
 	// Maps each cancel variable to its defining ValueSpec/AssignStmt.
 	cancelvars := make(map[*types.Var]ast.Node)
 
-	// TODO: opt: refactor to make a single pass
+	// TODO(adonovan): opt: refactor to make a single pass
 	// over the AST using inspect.WithStack and node types
 	// {FuncDecl,FuncLit,CallExpr,SelectorExpr}.
 

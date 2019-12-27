@@ -257,7 +257,7 @@ func (c *Conn) Reply(ctx context.Context, req *Request, result interface{}, err 
 	}
 	c.log(Send, response.ID, elapsed, req.Method, response.Result, response.Error)
 	if err = c.stream.Write(ctx, data); err != nil {
-		// TODO: if a stream write fails, we really need to shut down
+		// TODO(iancottrell): if a stream write fails, we really need to shut down
 		// the whole stream
 		return err
 	}

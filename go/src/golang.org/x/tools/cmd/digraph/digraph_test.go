@@ -57,7 +57,7 @@ d c
 		}
 	}
 
-	// TODO:
+	// TODO(adonovan):
 	// - test somepath (it's nondeterministic).
 	// - test errors
 }

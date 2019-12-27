@@ -28,7 +28,7 @@ import (
 // filenames comprising the main package of a program.
 // They are ordered quickest-first, roughly.
 //
-// TODO: integrate into the $GOROOT/test driver scripts,
+// TODO(adonovan): integrate into the $GOROOT/test driver scripts,
 // golden file checking, etc.
 var gorootTestTests = []string{
 	"235.go",
@@ -123,14 +123,14 @@ var gorootTestTests = []string{
 	// "64bit.go",             // emits source for a test
 	// "run.go",               // test driver, not a test.
 
-	// Broken.  TODO: fix.
+	// Broken.  TODO(adonovan): fix.
 	// copy.go         // very slow; but with N=4 quickly crashes, slice index out of range.
 	// nilptr.go       // interp: V > uintptr not implemented. Slow test, lots of mem
 	// args.go         // works, but requires specific os.Args from the driver.
 	// index.go        // a template, not a real test.
 	// mallocfin.go    // SetFinalizer not implemented.
 
-	// TODO: add tests from $GOROOT/test/* subtrees:
+	// TODO(adonovan): add tests from $GOROOT/test/* subtrees:
 	// bench chan bugs fixedbugs interface ken.
 }
 

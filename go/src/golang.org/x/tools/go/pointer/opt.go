@@ -7,7 +7,7 @@ package pointer
 // This file implements renumbering, a pre-solver optimization to
 // improve the efficiency of the solver's points-to set representation.
 //
-// TODO: rename file "renumber.go"
+// TODO(adonovan): rename file "renumber.go"
 
 import "fmt"
 

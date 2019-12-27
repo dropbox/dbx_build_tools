@@ -210,7 +210,7 @@ func For(obj types.Object) (Path, error) {
 		if recv := obj.Type().(*types.Signature).Recv(); recv == nil {
 			return "", fmt.Errorf("func is not a method: %v", obj)
 		}
-		// TODO: opt: if the method is concrete,
+		// TODO(adonovan): opt: if the method is concrete,
 		// do a specialized version of the rest of this function so
 		// that it's O(1) not O(|scope|).  Basically 'find' is needed
 		// only for struct fields and interface methods.

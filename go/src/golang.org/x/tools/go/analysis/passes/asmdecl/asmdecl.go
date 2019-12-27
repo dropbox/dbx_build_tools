@@ -110,7 +110,7 @@ func init() {
 	for _, arch := range arches {
 		arch.sizes = types.SizesFor("gc", arch.name)
 		if arch.sizes == nil {
-			// TODO: fix: now that asmdecl is not in the standard
+			// TODO(adonovan): fix: now that asmdecl is not in the standard
 			// library we cannot assume types.SizesFor is consistent with arches.
 			// For now, assume 64-bit norms and print a warning.
 			// But this warning should really be deferred until we attempt to use
@@ -508,7 +508,7 @@ func asmParseDecl(pass *analysis.Pass, decl *ast.FuncDecl) map[string]*asmFunc {
 
 	// addParams adds asmVars for each of the parameters in list.
 	// isret indicates whether the list are the arguments or the return values.
-	// TODO: simplify by passing (*types.Signature).{Params,Results}
+	// TODO(adonovan): simplify by passing (*types.Signature).{Params,Results}
 	// instead of list.
 	addParams := func(list []*ast.Field, isret bool) {
 		argnum := 0

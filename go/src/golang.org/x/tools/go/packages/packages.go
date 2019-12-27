@@ -286,7 +286,7 @@ func (err Error) Error() string {
 // flatPackage is the JSON form of Package
 // It drops all the type and syntax fields, and transforms the Imports
 //
-// TODO: identify this struct with Package, effectively
+// TODO(adonovan): identify this struct with Package, effectively
 // publishing the JSON protocol.
 type flatPackage struct {
 	ID              string
@@ -435,7 +435,7 @@ func (ld *loader) refine(roots []string, list ...*Package) ([]*Package, error) {
 				ld.Mode >= LoadTypes && rootIndex >= 0,
 			needsrc: ld.Mode >= LoadAllSyntax ||
 				ld.Mode >= LoadSyntax && rootIndex >= 0 ||
-				len(ld.Overlay) > 0 || // Overlays can invalidate export data. TODO: make this check fine-grained based on dependencies on overlaid files
+				len(ld.Overlay) > 0 || // Overlays can invalidate export data. TODO(matloob): make this check fine-grained based on dependencies on overlaid files
 				pkg.ExportFile == "" && pkg.PkgPath != "unsafe",
 		}
 		ld.pkgs[lpkg.ID] = lpkg
@@ -723,7 +723,7 @@ func (ld *loader) loadPackage(lpkg *loaderPackage) {
 	// or for any undefined C.f reference.
 	// We must detect this explicitly and correctly
 	// mark the package as IllTyped (by reporting an error).
-	// TODO: if these errors are annoying,
+	// TODO(adonovan): if these errors are annoying,
 	// we could just set IllTyped quietly.
 	if tc.FakeImportC {
 	outer:
@@ -915,7 +915,7 @@ func (ld *loader) loadFromExportData(lpkg *loaderPackage) (*types.Package, error
 	// each dependency so that export data loading does not
 	// create new ones.
 	//
-	// TODO: it would be simpler and more efficient
+	// TODO(adonovan): it would be simpler and more efficient
 	// if the export data machinery invoked a callback to
 	// get-or-create a package instead of a map.
 	//

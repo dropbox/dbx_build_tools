@@ -48,7 +48,7 @@ type ipv6Mtuinfo struct {
 }
 
 type icmpv6Filter struct {
-	// TODO: implement this
+	// TODO(mikio): implement this
 }
 
 var (

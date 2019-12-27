@@ -1,6 +1,6 @@
 from typing import Set, Text
 
-# NOTE sourced from https://github.com/jackmaney/python-stdlib-list
+# NOTE(jhance) sourced from https://github.com/jackmaney/python-stdlib-list
 # and added some additional modules to the list:
 ADDITIONAL_MISSING_MODULES = [
     "concurrent",

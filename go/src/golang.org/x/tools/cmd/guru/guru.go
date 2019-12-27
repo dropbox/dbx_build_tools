@@ -4,7 +4,7 @@
 
 package main
 
-// TODO: new queries
+// TODO(adonovan): new queries
 // - show all statements that may update the selected lvalue
 //   (local, global, field, etc).
 // - show all places where an object of type T is created
@@ -252,7 +252,7 @@ func parseQueryPos(lprog *loader.Program, pos string, needExact bool) (*queryPos
 // ---------- Utilities ----------
 
 // loadWithSoftErrors calls lconf.Load, suppressing "soft" errors.  (See Go issue 16530.)
-// TODO: Once the loader has an option to allow soft errors,
+// TODO(adonovan): Once the loader has an option to allow soft errors,
 // replace calls to loadWithSoftErrors with loader calls with that parameter.
 func loadWithSoftErrors(lconf *loader.Config) (*loader.Program, error) {
 	lconf.AllowErrors = true
@@ -383,7 +383,7 @@ func fprintf(w io.Writer, fset *token.FileSet, pos interface{}, format string, a
 		// The -1 below is a concession to Emacs's broken use of
 		// inclusive (not half-open) intervals.
 		// Other editors may not want it.
-		// TODO: add an -editor=vim|emacs|acme|auto
+		// TODO(adonovan): add an -editor=vim|emacs|acme|auto
 		// flag; auto uses EMACS=t / VIM=... / etc env vars.
 		fmt.Fprintf(w, "%s:%d.%d-%d.%d: ",
 			sp.Filename, sp.Line, sp.Column, ep.Line, ep.Column-1)

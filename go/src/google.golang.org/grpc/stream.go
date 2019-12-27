@@ -280,7 +280,7 @@ func newClientStream(ctx context.Context, desc *StreamDesc, cc *ClientConn, meth
 
 	cs.callInfo.stream = cs
 	// Only this initial attempt has stats/tracing.
-	// TODO: move to newAttempt when per-attempt stats are implemented.
+	// TODO(dfawley): move to newAttempt when per-attempt stats are implemented.
 	if err := cs.newAttemptLocked(sh, trInfo); err != nil {
 		cs.finish(err)
 		return nil, err
@@ -418,7 +418,7 @@ type clientStream struct {
 	// then newClientStream calls finish on the clientStream and returns. So, finish method is the only
 	// place where we need to check if the attempt is nil.
 	attempt *csAttempt
-	// TODO: hedging will have multiple attempts simultaneously.
+	// TODO(hedging): hedging will have multiple attempts simultaneously.
 	committed  bool                       // active attempt committed for retry?
 	buffer     []func(a *csAttempt) error // operations to replay on retry
 	bufferSize int                        // current size of buffer
@@ -492,7 +492,7 @@ func (cs *clientStream) shouldRetry(err error) error {
 			return err
 		}
 
-		// TODO: Move down if the spec changes to not check server pushback
+		// TODO(retry): Move down if the spec changes to not check server pushback
 		// before considering this a failure for throttling.
 		sps := cs.attempt.s.Trailer()["grpc-retry-pushback-ms"]
 		if len(sps) == 1 {
@@ -545,7 +545,7 @@ func (cs *clientStream) shouldRetry(err error) error {
 		cs.numRetriesSincePushback++
 	}
 
-	// TODO: we could eagerly fail here if dur puts us past the
+	// TODO(dfawley): we could eagerly fail here if dur puts us past the
 	// deadline, but unsure if it is worth doing.
 	t := time.NewTimer(dur)
 	select {
@@ -701,7 +701,7 @@ func (cs *clientStream) SendMsg(m interface{}) (err error) {
 		return err
 	}
 
-	// TODO: should we be checking len(data) instead?
+	// TODO(dfawley): should we be checking len(data) instead?
 	if len(payload) > *cs.callInfo.maxSendMessageSize {
 		return status.Errorf(codes.ResourceExhausted, "trying to send message larger than max (%d vs. %d)", len(payload), *cs.callInfo.maxSendMessageSize)
 	}
@@ -1171,7 +1171,7 @@ func (as *addrConnStream) SendMsg(m interface{}) (err error) {
 		return err
 	}
 
-	// TODO: should we be checking len(data) instead?
+	// TODO(dfawley): should we be checking len(data) instead?
 	if len(payld) > *as.callInfo.maxSendMessageSize {
 		return status.Errorf(codes.ResourceExhausted, "trying to send message larger than max (%d vs. %d)", len(payld), *as.callInfo.maxSendMessageSize)
 	}
@@ -1414,7 +1414,7 @@ func (ss *serverStream) SendMsg(m interface{}) (err error) {
 		return err
 	}
 
-	// TODO: should we be checking len(data) instead?
+	// TODO(dfawley): should we be checking len(data) instead?
 	if len(payload) > ss.maxSendMessageSize {
 		return status.Errorf(codes.ResourceExhausted, "trying to send message larger than max (%d vs. %d)", len(payload), ss.maxSendMessageSize)
 	}

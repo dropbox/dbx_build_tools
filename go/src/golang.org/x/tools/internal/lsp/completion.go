@@ -29,7 +29,7 @@ func toProtocolCompletionItems(candidates []source.CompletionItem, prefix string
 			continue
 		}
 		// InsertText is deprecated in favor of TextEdits.
-		// TODO: Remove this logic when we are confident that we no
+		// TODO(rstambler): Remove this logic when we are confident that we no
 		// longer need to support it.
 		insertText, triggerSignatureHelp := labelToProtocolSnippets(candidate.Label, candidate.Kind, insertTextFormat, signatureHelpEnabled)
 		if strings.HasPrefix(insertText, prefix) {

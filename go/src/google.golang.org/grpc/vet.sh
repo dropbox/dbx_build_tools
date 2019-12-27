@@ -111,7 +111,7 @@ if go help mod >& /dev/null; then
 fi
 
 # - Collection of static analysis checks
-# TODO: don't use deprecated functions in examples.
+# TODO(dfawley): don't use deprecated functions in examples.
 staticcheck -go 1.9 -checks 'inherit,-ST1015' -ignore '
 google.golang.org/grpc/balancer.go:SA1019
 google.golang.org/grpc/balancer/grpclb/grpclb_remote_balancer.go:SA1019

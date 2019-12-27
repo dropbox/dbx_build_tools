@@ -116,18 +116,18 @@ const (
 // the same node, an ancestor or a descendent.
 //
 func findInterestingNode(pkginfo *loader.PackageInfo, path []ast.Node) ([]ast.Node, action) {
-	// TODO: integrate with go/types/stdlib_test.go and
+	// TODO(adonovan): integrate with go/types/stdlib_test.go and
 	// apply this to every AST node we can find to make sure it
 	// doesn't crash.
 
-	// TODO: audit for ParenExpr safety, esp. since we
+	// TODO(adonovan): audit for ParenExpr safety, esp. since we
 	// traverse up and down.
 
-	// TODO: if the users selects the "." in
+	// TODO(adonovan): if the users selects the "." in
 	// "fmt.Fprintf()", they'll get an ambiguous selection error;
 	// we won't even reach here.  Can we do better?
 
-	// TODO: describing a field within 'type T struct {...}'
+	// TODO(adonovan): describing a field within 'type T struct {...}'
 	// describes the (anonymous) struct type and concludes "no methods".
 	// We should ascend to the enclosing type decl, if any.
 
@@ -183,7 +183,7 @@ func findInterestingNode(pkginfo *loader.PackageInfo, path []ast.Node) ([]ast.No
 			//      f(x...T) in FuncType
 
 		case *ast.Field:
-			// TODO: this needs more thought,
+			// TODO(adonovan): this needs more thought,
 			// since fields can be so many things.
 			if len(n.Names) == 1 {
 				// Descend to sole Ident child.
@@ -205,9 +205,9 @@ func findInterestingNode(pkginfo *loader.PackageInfo, path []ast.Node) ([]ast.No
 			return path, actionExpr
 
 		case *ast.SelectorExpr:
-			// TODO: use Selections info directly.
+			// TODO(adonovan): use Selections info directly.
 			if pkginfo.Uses[n.Sel] == nil {
-				// TODO: is this reachable?
+				// TODO(adonovan): is this reachable?
 				return path, actionUnknown
 			}
 			// Descend to .Sel child.
@@ -257,7 +257,7 @@ func findInterestingNode(pkginfo *loader.PackageInfo, path []ast.Node) ([]ast.No
 				return path[1:], actionExpr
 
 			case *ast.Field:
-				// TODO: test this.
+				// TODO(adonovan): test this.
 				// e.g. all f in:
 				//  struct { f, g int }
 				//  interface { f() }
@@ -323,7 +323,7 @@ func describeValue(qpos *queryPos, path []ast.Node) (*describeValueResult, error
 	case ast.Expr:
 		expr = n
 	default:
-		// TODO: is this reachable?
+		// TODO(adonovan): is this reachable?
 		return nil, fmt.Errorf("unexpected AST for expr: %T", n)
 	}
 
@@ -577,7 +577,7 @@ func (r *describeTypeResult) PrintPlain(printf printfFunc) {
 
 	// Show the underlying type for a reference to a named type.
 	if nt, ok := r.typ.(*types.Named); ok && r.node.Pos() != nt.Obj().Pos() {
-		// TODO: improve display of complex struct/interface types.
+		// TODO(adonovan): improve display of complex struct/interface types.
 		printf(nt.Obj(), "defined as %s", r.qpos.typeString(nt.Underlying()))
 	}
 

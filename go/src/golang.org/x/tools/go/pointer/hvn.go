@@ -496,7 +496,7 @@ func (h *hvn) markIndirectNodes() {
 	for id := 0; id < h.N; id++ {
 		obj := h.a.nodes[id].obj
 
-		// TODO: opt: if obj.cgn.fn is a method and
+		// TODO(adonovan): opt: if obj.cgn.fn is a method and
 		// obj.cgn is not its shared contour, this is an
 		// "inlined" static method call.  We needn't consider it
 		// address-taken since no invokeConstraint will affect it.
@@ -527,7 +527,7 @@ func (h *hvn) markIndirectNodes() {
 	}
 
 	// (d) all array element objects.
-	// TODO: opt: can we do better?
+	// TODO(adonovan): opt: can we do better?
 	for id := 0; id < h.N; id++ {
 		// Identity node for an object of array type?
 		if tArray, ok := h.a.nodes[id].typ.(*types.Array); ok {
@@ -802,7 +802,7 @@ func (h *hvn) simplify() {
 			h.a.nodes[id].solve = h.a.nodes[canonId].solve
 
 			if h.a.log != nil {
-				// TODO: debug: reorganize the log so it prints
+				// TODO(adonovan): debug: reorganize the log so it prints
 				// one line:
 				// 	pe y = x1, ..., xn
 				// for each canonical y.  Requires allocation.
@@ -912,13 +912,13 @@ func (h *hvn) simplify() {
 			// We use reflection to find the fields to avoid
 			// adding yet another method to constraint.
 			//
-			// TODO: experiment with a constraint
+			// TODO(adonovan): experiment with a constraint
 			// method that returns a slice of pointers to
 			// nodeids fields to enable uniform iteration;
 			// the renumber() method could be removed and
 			// implemented using the new one.
 			//
-			// TODO: opt: this is unsound since
+			// TODO(adonovan): opt: this is unsound since
 			// some constraints still have an effect if one
 			// of the operands is zero: rVCall, rVMapIndex,
 			// rvSetMapIndex.  Handle them specially.
@@ -950,7 +950,7 @@ func (h *hvn) simplify() {
 // find returns the canonical onodeid for x.
 // (The onodes form a disjoint set forest.)
 func (h *hvn) find(x onodeid) onodeid {
-	// TODO: opt: this is a CPU hotspot.  Try "union by rank".
+	// TODO(adonovan): opt: this is a CPU hotspot.  Try "union by rank".
 	xo := h.onodes[x]
 	rep := xo.rep
 	if rep != x {

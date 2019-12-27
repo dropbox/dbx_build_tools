@@ -138,7 +138,7 @@ func TestFindAgreedAlgorithms(t *testing.T) {
 			},
 		},
 
-		// TODO: fix and add tests for AEAD ignoring
+		// TODO(hanwen): fix and add tests for AEAD ignoring
 		// the MACs field
 	}
 

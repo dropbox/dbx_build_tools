@@ -102,5 +102,5 @@ package html // import "golang.org/x/net/html"
 // node. Specification compliance is verified by checking expected and actual
 // outputs over a test suite rather than aiming for algorithmic fidelity.
 
-// TODO: Does a DOM API belong in this package or a separate one?
-// TODO: How does parsing interact with a JavaScript engine?
+// TODO(nigeltao): Does a DOM API belong in this package or a separate one?
+// TODO(nigeltao): How does parsing interact with a JavaScript engine?

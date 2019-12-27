@@ -460,7 +460,7 @@ func div(d, r time.Duration) int64 {
 	return int64(d / r)
 }
 
-// TODO: It is the simplistic and not bandwidth efficient. Improve it.
+// TODO(zhaoq): It is the simplistic and not bandwidth efficient. Improve it.
 func encodeTimeout(t time.Duration) string {
 	if t <= 0 {
 		return "0n"

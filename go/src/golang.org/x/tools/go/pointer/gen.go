@@ -6,7 +6,7 @@ package pointer
 
 // This file defines the constraint generation phase.
 
-// TODO: move the constraint definitions and the store() etc
+// TODO(adonovan): move the constraint definitions and the store() etc
 // functions which add them (and are also used by the solver) into a
 // new file, constraints.go.
 
@@ -189,7 +189,7 @@ func (a *analysis) makeTagged(typ types.Type, cgn *cgnode, data interface{}) nod
 // makeRtype returns the canonical tagged object of type *rtype whose
 // payload points to the sole rtype object for T.
 //
-// TODO: move to reflect.go; it's part of the solver really.
+// TODO(adonovan): move to reflect.go; it's part of the solver really.
 //
 func (a *analysis) makeRtype(T types.Type) nodeid {
 	if v := a.rtypes.At(T); v != nil {
@@ -498,7 +498,7 @@ func (a *analysis) genAppend(instr *ssa.Call, cgn *cgnode) {
 		return // no allocation for z = append(x) or _ = append(x).
 	}
 
-	// TODO: test append([]byte, ...string) []byte.
+	// TODO(adonovan): test append([]byte, ...string) []byte.
 
 	y := instr.Call.Args[1]
 	tArray := sliceToArray(instr.Call.Args[0].Type())
@@ -776,7 +776,7 @@ func (a *analysis) genCall(caller *cgnode, instr ssa.CallInstruction) {
 	caller.sites = append(caller.sites, site)
 
 	if a.log != nil {
-		// TODO: debug: improve log message.
+		// TODO(adonovan): debug: improve log message.
 		fmt.Fprintf(a.log, "\t%s to targets %s from %s\n", site, site.targets, caller)
 	}
 }
@@ -884,7 +884,7 @@ func (a *analysis) objectNode(cgn *cgnode, v ssa.Value) nodeid {
 			obj = a.objectNode(cgn, v.X)
 
 		case *ssa.Convert:
-			// TODO: opt: handle these cases too:
+			// TODO(adonovan): opt: handle these cases too:
 			// - unsafe.Pointer->*T conversion acts like Alloc
 			// - string->[]byte/[]rune conversion acts like MakeSlice
 		}
@@ -1125,7 +1125,7 @@ func (a *analysis) genRootCalls() *cgnode {
 	r := a.prog.NewFunction("<root>", new(types.Signature), "root of callgraph")
 	root := a.makeCGNode(r, 0, nil)
 
-	// TODO: make an ssa utility to construct an actual
+	// TODO(adonovan): make an ssa utility to construct an actual
 	// root function so we don't need to special-case site-less
 	// call edges.
 
@@ -1199,7 +1199,7 @@ func (a *analysis) genFunc(cgn *cgnode) {
 	// the outer function sets them with MakeClosure;
 	// the inner function accesses them with FreeVar.
 	//
-	// TODO: treat free vars context-sensitively.
+	// TODO(adonovan): treat free vars context-sensitively.
 
 	// Create value nodes for all value instructions
 	// since SSA may contain forward references.
@@ -1224,7 +1224,7 @@ func (a *analysis) genFunc(cgn *cgnode) {
 			rands := instr.Operands(space[:0])
 			if call, ok := instr.(ssa.CallInstruction); ok && !call.Common().IsInvoke() {
 				// Skip CallCommon.Value in "call" mode.
-				// TODO: fix: relies on unspecified ordering.  Specify it.
+				// TODO(adonovan): fix: relies on unspecified ordering.  Specify it.
 				rands = rands[1:]
 			}
 			for _, rand := range rands {
@@ -1250,7 +1250,7 @@ func (a *analysis) genFunc(cgn *cgnode) {
 func (a *analysis) genMethodsOf(T types.Type) {
 	itf := isInterface(T)
 
-	// TODO: can we skip this entirely if itf is true?
+	// TODO(adonovan): can we skip this entirely if itf is true?
 	// I think so, but the answer may depend on reflection.
 	mset := a.prog.MethodSets.MethodSet(T)
 	for i, n := 0, mset.Len(); i < n; i++ {

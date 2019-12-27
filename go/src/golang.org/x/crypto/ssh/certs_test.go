@@ -158,7 +158,7 @@ func TestValidateCertTime(t *testing.T) {
 	}
 }
 
-// TODO: tests for
+// TODO(hanwen): tests for
 //
 // host keys:
 // * fallbacks

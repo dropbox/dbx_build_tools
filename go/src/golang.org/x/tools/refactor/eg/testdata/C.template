@@ -4,7 +4,7 @@ package template
 
 // NB: multiple patterns would be required to handle variants such as
 // s[:len(s)], s[x:len(s)], etc, since a wildcard can't match nothing at all.
-// TODO: support multiple templates in a single pass.
+// TODO(adonovan): support multiple templates in a single pass.
 
 func before(s string) string { return s[:len(s)] }
 func after(s string) string  { return s }

@@ -278,13 +278,13 @@ func constantToFloat(x constant.Value) *big.Float {
 		// float64
 		f.SetFloat64(v)
 	} else if num, denom := constant.Num(x), constant.Denom(x); num.Kind() == constant.Int {
-		// TODO: add big.Rat accessor to constant.Value.
+		// TODO(gri): add big.Rat accessor to constant.Value.
 		n := valueToRat(num)
 		d := valueToRat(denom)
 		f.SetRat(n.Quo(n, d))
 	} else {
 		// Value too large to represent as a fraction => inaccessible.
-		// TODO: add big.Float accessor to constant.Value.
+		// TODO(gri): add big.Float accessor to constant.Value.
 		_, ok := f.SetString(x.ExactString())
 		if !ok {
 			panic("should not reach here")

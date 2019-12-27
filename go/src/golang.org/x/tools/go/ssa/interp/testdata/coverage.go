@@ -2,7 +2,7 @@
 // some coverage of a broad selection of constructs.
 //
 // Validate this file with 'go run' after editing.
-// TODO: break this into small files organized by theme.
+// TODO(adonovan): break this into small files organized by theme.
 
 package main
 

@@ -87,7 +87,7 @@ type Corpus struct {
 	// If nil, all directories are indexed if indexing is enabled.
 	IndexDirectory func(dir string) bool
 
-	testDir string // TODO: migrate old godoc flag? looks unused.
+	testDir string // TODO(bradfitz,adg): migrate old godoc flag? looks unused.
 
 	// Send a value on this channel to trigger a metadata refresh.
 	// It is buffered so that if a signal is not lost if sent

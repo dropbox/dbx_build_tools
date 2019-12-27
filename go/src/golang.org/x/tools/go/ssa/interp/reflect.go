@@ -100,8 +100,8 @@ func ext۰reflect۰rtype۰Field(fr *frame, args []value) value {
 		f.Pkg().Path(),
 		makeReflectType(rtype{f.Type()}),
 		st.Tag(i),
-		0,         // TODO: offset
-		[]value{}, // TODO: indices
+		0,         // TODO(adonovan): offset
+		[]value{}, // TODO(adonovan): indices
 		f.Anonymous(),
 	}
 }
@@ -491,7 +491,7 @@ func ext۰reflect۰Value۰IsValid(fr *frame, args []value) value {
 }
 
 func ext۰reflect۰Value۰Set(fr *frame, args []value) value {
-	// TODO: implement.
+	// TODO(adonovan): implement.
 	return nil
 }
 
@@ -507,7 +507,7 @@ func ext۰reflect۰error۰Error(fr *frame, args []value) value {
 
 // newMethod creates a new method of the specified name, package and receiver type.
 func newMethod(pkg *ssa.Package, recvType types.Type, name string) *ssa.Function {
-	// TODO: fix: hack: currently the only part of Signature
+	// TODO(adonovan): fix: hack: currently the only part of Signature
 	// that is needed is the "pointerness" of Recv.Type, and for
 	// now, we'll set it to always be false since we're only
 	// concerned with rtype.  Encapsulate this better.
@@ -533,7 +533,7 @@ func initReflect(i *interpreter) {
 	// fake type so that correct "shape" is used when allocating
 	// variables, making zero values, loading, and storing.
 	//
-	// TODO: obviously this is a hack.  We need a cleaner
+	// TODO(adonovan): obviously this is a hack.  We need a cleaner
 	// way to fake the reflect package (almost---DeepEqual is fine).
 	// One approach would be not to even load its source code, but
 	// provide fake source files.  This would guarantee that no bad

@@ -94,7 +94,7 @@ func (p *Presentation) funcSnippet(fset *token.FileSet, d *ast.FuncDecl, id *ast
 // identifier id. Parts of the declaration not containing the identifier
 // may be removed for a more compact snippet.
 func NewSnippet(fset *token.FileSet, decl ast.Decl, id *ast.Ident) *Snippet {
-	// TODO: remove this function.  But it's used by indexer, which
+	// TODO(bradfitz, adg): remove this function.  But it's used by indexer, which
 	// doesn't have a *Presentation, and NewSnippet needs a TabWidth.
 	var p Presentation
 	p.TabWidth = 4

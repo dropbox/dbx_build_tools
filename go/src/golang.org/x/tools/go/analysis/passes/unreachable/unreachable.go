@@ -5,7 +5,7 @@
 // Package unreachable defines an Analyzer that checks for unreachable code.
 package unreachable
 
-// TODO: use the new cfg package, which is more precise.
+// TODO(adonovan): use the new cfg package, which is more precise.
 
 import (
 	"go/ast"

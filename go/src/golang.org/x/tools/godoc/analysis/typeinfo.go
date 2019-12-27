@@ -29,9 +29,9 @@ import (
 	"golang.org/x/tools/go/types/typeutil"
 )
 
-// TODO: audit to make sure it's safe on ill-typed packages.
+// TODO(adonovan): audit to make sure it's safe on ill-typed packages.
 
-// TODO: use same Sizes as loader.Config.
+// TODO(adonovan): use same Sizes as loader.Config.
 var sizes = types.StdSizes{WordSize: 8, MaxAlign: 8}
 
 func (a *analysis) doTypeInfo(info *loader.PackageInfo, implements map[*types.Named]implementsFacts) {
@@ -46,7 +46,7 @@ func (a *analysis) doTypeInfo(info *loader.PackageInfo, implements map[*types.Na
 			start: offset,
 			end:   offset + len(f.Name.Name),
 			title: "Package docs for " + info.Pkg.Path(),
-			// TODO: fix: we're putting the untrusted Path()
+			// TODO(adonovan): fix: we're putting the untrusted Path()
 			// into a trusted field.  What's the appropriate sanitizer?
 			href: "/pkg/" + info.Pkg.Path(),
 		})
@@ -61,7 +61,7 @@ func (a *analysis) doTypeInfo(info *loader.PackageInfo, implements map[*types.Na
 				start: offset + 1,
 				end:   offset + 1 + L,
 				title: "Package docs for " + path,
-				// TODO: fix: we're putting the untrusted path
+				// TODO(adonovan): fix: we're putting the untrusted path
 				// into a trusted field.  What's the appropriate sanitizer?
 				href: "/pkg/" + path,
 			})
@@ -210,7 +210,7 @@ func (a *analysis) namedType(T *types.Named, implements map[*types.Named]impleme
 
 	// Add info for exported package-level types to the package info.
 	if obj.Exported() && isPackageLevel(obj) {
-		// TODO: Path is not unique!
+		// TODO(adonovan): Path is not unique!
 		// It is possible to declare a non-test package called x_test.
 		a.result.pkgInfo(obj.Pkg().Path()).addType(v)
 	}

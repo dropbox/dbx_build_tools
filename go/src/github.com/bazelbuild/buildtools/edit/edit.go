@@ -52,7 +52,7 @@ func ParseLabel(target string) (string, string, string) {
 		repo = parts[0]
 		target = "/" + parts[1]
 	}
-	// TODO: check if the next line can now be deleted
+	// TODO(bazel-team): check if the next line can now be deleted
 	target = strings.TrimRight(target, ":") // labels can end with ':'
 	parts := strings.SplitN(target, ":", 2)
 	parts[0] = strings.TrimPrefix(parts[0], "//")
@@ -132,7 +132,7 @@ func InterpretLabelForWorkspaceLocation(root string, target string) (buildFile s
 				return buildFile, pkg, rule
 			}
 		}
-		// TODO: report error for other repos
+		// TODO(rodrigoq): report error for other repos
 	}
 
 	if strings.HasPrefix(target, "//") {
@@ -793,7 +793,7 @@ func sortedInsert(list []build.Expr, item build.Expr) []build.Expr {
 // (e.g. deps), even when buildifier will not sort it for conservative reasons.
 // For a few attributes, sorting will never make sense.
 func attributeMustNotBeSorted(rule, attr string) bool {
-	// TODO: Come up with a more complete list.
+	// TODO(bazel-team): Come up with a more complete list.
 	return attr == "args"
 }
 

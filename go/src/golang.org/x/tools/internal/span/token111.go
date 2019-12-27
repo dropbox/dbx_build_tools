@@ -12,7 +12,7 @@ import (
 
 // lineStart is the pre-Go 1.12 version of (*token.File).LineStart. For Go
 // versions <= 1.11, we borrow logic from the analysisutil package.
-// TODO: Delete this file when we no longer support Go 1.11.
+// TODO(rstambler): Delete this file when we no longer support Go 1.11.
 func lineStart(f *token.File, line int) token.Pos {
 	// Use binary search to find the start offset of this line.
 

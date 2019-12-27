@@ -260,7 +260,7 @@ func (h *Handler) handlePut(w http.ResponseWriter, r *http.Request) (status int,
 		return status, err
 	}
 	defer release()
-	// TODO: Support the If-Match, If-None-Match headers? See bradfitz'
+	// TODO(rost): Support the If-Match, If-None-Match headers? See bradfitz'
 	// comments in http.checkEtag.
 	ctx := getContext(r)
 
@@ -271,7 +271,7 @@ func (h *Handler) handlePut(w http.ResponseWriter, r *http.Request) (status int,
 	_, copyErr := io.Copy(f, r.Body)
 	fi, statErr := f.Stat()
 	closeErr := f.Close()
-	// TODO: Returning 405 Method Not Allowed might not be appropriate.
+	// TODO(rost): Returning 405 Method Not Allowed might not be appropriate.
 	if copyErr != nil {
 		return http.StatusMethodNotAllowed, copyErr
 	}

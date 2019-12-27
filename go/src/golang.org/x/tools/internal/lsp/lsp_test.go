@@ -24,7 +24,7 @@ import (
 	"golang.org/x/tools/internal/span"
 )
 
-// TODO: Remove this once Go 1.12 is released as we end support for
+// TODO(rstambler): Remove this once Go 1.12 is released as we end support for
 // versions of Go <= 1.10.
 var goVersion111 = true
 
@@ -100,7 +100,7 @@ func testLSP(t *testing.T, exporter packagestest.Exporter) {
 
 	t.Run("Completion", func(t *testing.T) {
 		t.Helper()
-		if goVersion111 { // TODO: Remove this when we no longer support Go 1.10.
+		if goVersion111 { // TODO(rstambler): Remove this when we no longer support Go 1.10.
 			if len(expectedCompletions) != expectedCompletionsCount {
 				t.Errorf("got %v completions expected %v", len(expectedCompletions), expectedCompletionsCount)
 			}
@@ -111,7 +111,7 @@ func testLSP(t *testing.T, exporter packagestest.Exporter) {
 	t.Run("Diagnostics", func(t *testing.T) {
 		t.Helper()
 		diagnosticsCount := expectedDiagnostics.test(t, s.view)
-		if goVersion111 { // TODO: Remove this when we no longer support Go 1.10.
+		if goVersion111 { // TODO(rstambler): Remove this when we no longer support Go 1.10.
 			if diagnosticsCount != expectedDiagnosticsCount {
 				t.Errorf("got %v diagnostics expected %v", diagnosticsCount, expectedDiagnosticsCount)
 			}
@@ -128,7 +128,7 @@ func testLSP(t *testing.T, exporter packagestest.Exporter) {
 			}
 		}
 		t.Helper()
-		if goVersion111 { // TODO: Remove this when we no longer support Go 1.10.
+		if goVersion111 { // TODO(rstambler): Remove this when we no longer support Go 1.10.
 			if len(expectedFormat) != expectedFormatCount {
 				t.Errorf("got %v formats expected %v", len(expectedFormat), expectedFormatCount)
 			}
@@ -138,7 +138,7 @@ func testLSP(t *testing.T, exporter packagestest.Exporter) {
 
 	t.Run("Definitions", func(t *testing.T) {
 		t.Helper()
-		if goVersion111 { // TODO: Remove this when we no longer support Go 1.10.
+		if goVersion111 { // TODO(rstambler): Remove this when we no longer support Go 1.10.
 			if len(expectedDefinitions) != expectedDefinitionsCount {
 				t.Errorf("got %v definitions expected %v", len(expectedDefinitions), expectedDefinitionsCount)
 			}
@@ -148,7 +148,7 @@ func testLSP(t *testing.T, exporter packagestest.Exporter) {
 
 	t.Run("TypeDefinitions", func(t *testing.T) {
 		t.Helper()
-		if goVersion111 { // TODO: Remove this when we no longer support Go 1.10.
+		if goVersion111 { // TODO(rstambler): Remove this when we no longer support Go 1.10.
 			if len(expectedTypeDefinitions) != expectedTypeDefinitionsCount {
 				t.Errorf("got %v type definitions expected %v", len(expectedTypeDefinitions), expectedTypeDefinitionsCount)
 			}

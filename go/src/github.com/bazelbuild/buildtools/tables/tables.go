@@ -170,7 +170,7 @@ var SortableWhitelist = map[string]bool{
 
 // NamePriority maps an argument name to its sorting priority.
 //
-// NOTE: These are the old buildifier rules. It is likely that this table
+// NOTE(bazel-team): These are the old buildifier rules. It is likely that this table
 // will change, perhaps swapping in a separate table for each call,
 // derived from the order used in the Build Encyclopedia.
 var NamePriority = map[string]int{

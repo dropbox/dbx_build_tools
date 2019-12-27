@@ -293,7 +293,7 @@ func (b *builder) typeCaseBody(cc *ast.CaseClause, done *Block) {
 
 func (b *builder) selectStmt(s *ast.SelectStmt, label *lblock) {
 	// First evaluate channel expressions.
-	// TODO: fix: evaluate only channel exprs here.
+	// TODO(adonovan): fix: evaluate only channel exprs here.
 	for _, clause := range s.Body.List {
 		if comm := clause.(*ast.CommClause).Comm; comm != nil {
 			b.stmt(comm)

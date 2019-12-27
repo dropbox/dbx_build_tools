@@ -69,12 +69,12 @@ func pointsto(q *Query) error {
 	case ast.Expr:
 		expr = n
 	default:
-		// TODO: is this reachable?
+		// TODO(adonovan): is this reachable?
 		return fmt.Errorf("unexpected AST for expr: %T", n)
 	}
 
 	// Reject non-pointerlike types (includes all constants---except nil).
-	// TODO: reject nil too.
+	// TODO(adonovan): reject nil too.
 	typ := qpos.info.TypeOf(expr)
 	if !pointer.CanPoint(typ) {
 		return fmt.Errorf("pointer analysis wants an expression of reference type; got %s", typ)
@@ -129,7 +129,7 @@ func ssaValueForIdent(prog *ssa.Program, qinfo *loader.PackageInfo, obj types.Ob
 		if fn == nil {
 			return nil, false, fmt.Errorf("%s is an interface method", obj)
 		}
-		// TODO: there's no point running PTA on a *Func ident.
+		// TODO(adonovan): there's no point running PTA on a *Func ident.
 		// Eliminate this feature.
 		return fn, false, nil
 	}
@@ -282,7 +282,7 @@ func (a byPosAndString) Less(i, j int) bool {
 func (a byPosAndString) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 func printLabels(printf printfFunc, labels []*pointer.Label, prefix string) {
-	// TODO: due to context-sensitivity, many of these
+	// TODO(adonovan): due to context-sensitivity, many of these
 	// labels may differ only by context, which isn't apparent.
 	for _, label := range labels {
 		printf(label, "%s%s", prefix, label)

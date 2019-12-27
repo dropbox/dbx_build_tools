@@ -19,7 +19,7 @@ import (
 // This use of a semaphore mimics a typical “worker pool” pattern, but without
 // the need to explicitly shut down idle workers when the work is done.
 func Example_workerPool() {
-	ctx := context.TODO
+	ctx := context.TODO()
 
 	var (
 		maxWorkers = runtime.GOMAXPROCS(0)

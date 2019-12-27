@@ -138,7 +138,7 @@ $ gorename -from '"bytes".Buffer.Len' -to Size
 var (
 	// Force enables patching of the source files even if conflicts were reported.
 	// The resulting program may be ill-formed.
-	// It may even cause gorename to crash.  TODO: fix that.
+	// It may even cause gorename to crash.  TODO(adonovan): fix that.
 	Force bool
 
 	// Diff causes the tool to display diffs instead of rewriting files.
@@ -291,7 +291,7 @@ func Main(ctxt *build.Context, offsetFlag, fromFlag, to string) error {
 			}
 		}
 
-		// TODO: allow the user to specify the scope,
+		// TODO(adonovan): allow the user to specify the scope,
 		// or -ignore patterns?  Computing the scope when we
 		// don't (yet) support inputs containing errors can make
 		// the tool rather brittle.
@@ -360,7 +360,7 @@ func loadProgram(ctxt *build.Context, pkgs map[string]bool) (*loader.Program, er
 		Build:      ctxt,
 		ParserMode: parser.ParseComments,
 
-		// TODO: enable this.  Requires making a lot of code more robust!
+		// TODO(adonovan): enable this.  Requires making a lot of code more robust!
 		AllowErrors: false,
 	}
 	// Optimization: don't type-check the bodies of functions in our

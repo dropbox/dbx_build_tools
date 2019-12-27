@@ -8,7 +8,7 @@ package analysis
 // channel operations in the program.  The peers are displayed in the
 // lower pane when a channel operation (make, <-, close) is clicked.
 
-// TODO: handle calls to reflect.{Select,Recv,Send,Close} too,
+// TODO(adonovan): handle calls to reflect.{Select,Recv,Send,Close} too,
 // then enable reflection in PTA.
 
 import (
@@ -34,7 +34,7 @@ func (a *analysis) doChannelPeers(ptsets map[ssa.Value]pointer.Pointer) {
 	// Build an undirected bipartite multigraph (binary relation)
 	// of MakeChan ops and send/recv/close ops.
 	//
-	// TODO: opt: use channel element types to partition
+	// TODO(adonovan): opt: use channel element types to partition
 	// the O(n^2) problem into subproblems.
 	aliasedOps := make(map[*ssa.MakeChan][]chanOp)
 	opToMakes := make(map[chanOp][]*ssa.MakeChan)
@@ -130,7 +130,7 @@ func chanOps(instr ssa.Instruction) []chanOp {
 	switch instr := instr.(type) {
 	case *ssa.UnOp:
 		if instr.Op == token.ARROW {
-			// TODO: don't assume <-ch; could be 'range ch'.
+			// TODO(adonovan): don't assume <-ch; could be 'range ch'.
 			ops = append(ops, chanOp{instr.X, "received", instr.Pos(), len("<-"), fn})
 		}
 	case *ssa.Send:

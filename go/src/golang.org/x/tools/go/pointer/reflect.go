@@ -15,7 +15,7 @@ package pointer
 // memoize as much as possible, like TypeOf and Zero do for their
 // tagged objects.
 //
-// TODO: this file is rather subtle.  Explain how we derive
+// TODO(adonovan): this file is rather subtle.  Explain how we derive
 // the implementation of each reflect operator from its spec,
 // including the subtleties of reflect.flag{Addr,RO,Indir}.
 // [Hint: our implementation is as if reflect.flagIndir was always
@@ -25,7 +25,7 @@ package pointer
 // reflect.flagAddr.]
 // A picture would help too.
 //
-// TODO: try factoring up the common parts of the majority of
+// TODO(adonovan): try factoring up the common parts of the majority of
 // these constraints that are single input, single output.
 
 import (
@@ -156,7 +156,7 @@ func init() {
 
 // -------------------- (reflect.Value) --------------------
 
-func ext۰reflect۰Value۰Addr(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰Value۰Addr(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func (Value).Bytes() Value ----------
 
@@ -185,7 +185,7 @@ func (c *rVBytesConstraint) solve(a *analysis, delta *nodeset) {
 		vObj := nodeid(x)
 		tDyn, slice, indirect := a.taggedValue(vObj)
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -247,7 +247,7 @@ func (c *rVCallConstraint) solve(a *analysis, delta *nodeset) {
 		vObj := nodeid(x)
 		tDyn, fn, indirect := a.taggedValue(vObj)
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -257,13 +257,13 @@ func (c *rVCallConstraint) solve(a *analysis, delta *nodeset) {
 			continue // not a function
 		}
 		if tSig.Recv() != nil {
-			panic(tSig) // TODO: rethink when we implement Method()
+			panic(tSig) // TODO(adonovan): rethink when we implement Method()
 		}
 
 		// Add dynamic call target.
 		if a.onlineCopy(c.targets, fn) {
 			a.addWork(c.targets)
-			// TODO: is 'else continue' a sound optimisation here?
+			// TODO(adonovan): is 'else continue' a sound optimisation here?
 		}
 
 		// Allocate a P/R block.
@@ -351,13 +351,13 @@ func ext۰reflect۰Value۰Call(a *analysis, cgn *cgnode) {
 }
 
 func ext۰reflect۰Value۰CallSlice(a *analysis, cgn *cgnode) {
-	// TODO: implement.  Also, inline direct calls in gen.go too.
+	// TODO(adonovan): implement.  Also, inline direct calls in gen.go too.
 	if false {
 		reflectCall(a, cgn, true)
 	}
 }
 
-func ext۰reflect۰Value۰Convert(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰Value۰Convert(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func (Value).Elem() Value ----------
 
@@ -387,7 +387,7 @@ func (c *rVElemConstraint) solve(a *analysis, delta *nodeset) {
 		vObj := nodeid(x)
 		tDyn, payload, indirect := a.taggedValue(vObj)
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -419,10 +419,10 @@ func ext۰reflect۰Value۰Elem(a *analysis, cgn *cgnode) {
 	})
 }
 
-func ext۰reflect۰Value۰Field(a *analysis, cgn *cgnode)           {} // TODO
-func ext۰reflect۰Value۰FieldByIndex(a *analysis, cgn *cgnode)    {} // TODO
-func ext۰reflect۰Value۰FieldByName(a *analysis, cgn *cgnode)     {} // TODO
-func ext۰reflect۰Value۰FieldByNameFunc(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰Value۰Field(a *analysis, cgn *cgnode)           {} // TODO(adonovan)
+func ext۰reflect۰Value۰FieldByIndex(a *analysis, cgn *cgnode)    {} // TODO(adonovan)
+func ext۰reflect۰Value۰FieldByName(a *analysis, cgn *cgnode)     {} // TODO(adonovan)
+func ext۰reflect۰Value۰FieldByNameFunc(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func (Value).Index() Value ----------
 
@@ -452,7 +452,7 @@ func (c *rVIndexConstraint) solve(a *analysis, delta *nodeset) {
 		vObj := nodeid(x)
 		tDyn, payload, indirect := a.taggedValue(vObj)
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -516,7 +516,7 @@ func (c *rVInterfaceConstraint) solve(a *analysis, delta *nodeset) {
 		vObj := nodeid(x)
 		tDyn, payload, indirect := a.taggedValue(vObj)
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -575,7 +575,7 @@ func (c *rVMapIndexConstraint) solve(a *analysis, delta *nodeset) {
 			continue // not a map
 		}
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -631,7 +631,7 @@ func (c *rVMapKeysConstraint) solve(a *analysis, delta *nodeset) {
 			continue // not a map
 		}
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -662,8 +662,8 @@ func ext۰reflect۰Value۰MapKeys(a *analysis, cgn *cgnode) {
 	})
 }
 
-func ext۰reflect۰Value۰Method(a *analysis, cgn *cgnode)       {} // TODO
-func ext۰reflect۰Value۰MethodByName(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰Value۰Method(a *analysis, cgn *cgnode)       {} // TODO(adonovan)
+func ext۰reflect۰Value۰MethodByName(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func (Value).Recv(Value) Value ----------
 
@@ -697,7 +697,7 @@ func (c *rVRecvConstraint) solve(a *analysis, delta *nodeset) {
 			continue // not a channel
 		}
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -751,7 +751,7 @@ func (c *rVSendConstraint) solve(a *analysis, delta *nodeset) {
 			continue // not a channel
 		}
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -773,7 +773,7 @@ func ext۰reflect۰Value۰Send(a *analysis, cgn *cgnode) {
 	})
 }
 
-func ext۰reflect۰Value۰Set(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰Value۰Set(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func (Value).SetBytes(x []byte) ----------
 
@@ -800,7 +800,7 @@ func (c *rVSetBytesConstraint) solve(a *analysis, delta *nodeset) {
 		vObj := nodeid(x)
 		tDyn, slice, indirect := a.taggedValue(vObj)
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -854,7 +854,7 @@ func (c *rVSetMapIndexConstraint) solve(a *analysis, delta *nodeset) {
 			continue // not a map
 		}
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -883,7 +883,7 @@ func ext۰reflect۰Value۰SetMapIndex(a *analysis, cgn *cgnode) {
 	})
 }
 
-func ext۰reflect۰Value۰SetPointer(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰Value۰SetPointer(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func (Value).Slice(v Value, i, j int) Value ----------
 
@@ -913,7 +913,7 @@ func (c *rVSliceConstraint) solve(a *analysis, delta *nodeset) {
 		vObj := nodeid(x)
 		tDyn, payload, indirect := a.taggedValue(vObj)
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -930,7 +930,7 @@ func (c *rVSliceConstraint) solve(a *analysis, delta *nodeset) {
 			}
 
 		case *types.Array:
-			// TODO: implement addressable
+			// TODO(adonovan): implement addressable
 			// arrays when we do indirect tagged objects.
 
 		case *types.Slice:
@@ -961,9 +961,9 @@ func ext۰reflect۰Value۰Slice(a *analysis, cgn *cgnode) {
 
 // -------------------- Standalone reflect functions --------------------
 
-func ext۰reflect۰Append(a *analysis, cgn *cgnode)      {} // TODO
-func ext۰reflect۰AppendSlice(a *analysis, cgn *cgnode) {} // TODO
-func ext۰reflect۰Copy(a *analysis, cgn *cgnode)        {} // TODO
+func ext۰reflect۰Append(a *analysis, cgn *cgnode)      {} // TODO(adonovan)
+func ext۰reflect۰AppendSlice(a *analysis, cgn *cgnode) {} // TODO(adonovan)
+func ext۰reflect۰Copy(a *analysis, cgn *cgnode)        {} // TODO(adonovan)
 
 // ---------- func ChanOf(ChanDir, Type) Type ----------
 
@@ -1152,7 +1152,7 @@ func ext۰reflect۰MakeChan(a *analysis, cgn *cgnode) {
 	})
 }
 
-func ext۰reflect۰MakeFunc(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰MakeFunc(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func MakeMap(Type) Value ----------
 
@@ -1270,7 +1270,7 @@ func ext۰reflect۰MakeSlice(a *analysis, cgn *cgnode) {
 	})
 }
 
-func ext۰reflect۰MapOf(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰MapOf(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func New(Type) Value ----------
 
@@ -1330,7 +1330,7 @@ func ext۰reflect۰New(a *analysis, cgn *cgnode) {
 func ext۰reflect۰NewAt(a *analysis, cgn *cgnode) {
 	ext۰reflect۰New(a, cgn)
 
-	// TODO: also report dynamic calls to unsound intrinsics.
+	// TODO(adonovan): also report dynamic calls to unsound intrinsics.
 	if site := cgn.callersite; site != nil {
 		a.warnf(site.pos(), "unsound: %s contains a reflect.NewAt() call", site.instr.Parent())
 	}
@@ -1385,7 +1385,7 @@ func ext۰reflect۰PtrTo(a *analysis, cgn *cgnode) {
 	})
 }
 
-func ext۰reflect۰Select(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰Select(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func SliceOf(Type) Type ----------
 
@@ -1483,7 +1483,7 @@ func ext۰reflect۰TypeOf(a *analysis, cgn *cgnode) {
 // ---------- func ValueOf(interface{}) Value ----------
 
 func ext۰reflect۰ValueOf(a *analysis, cgn *cgnode) {
-	// TODO: when we start creating indirect tagged
+	// TODO(adonovan): when we start creating indirect tagged
 	// objects, we'll need to handle them specially here since
 	// they must never appear in the PTS of an interface{}.
 	a.copy(a.funcResults(cgn.obj), a.funcParams(cgn.obj), 1)
@@ -1517,7 +1517,7 @@ func (c *reflectZeroConstraint) solve(a *analysis, delta *nodeset) {
 		typObj := nodeid(x)
 		T := a.rtypeTaggedValue(typObj)
 
-		// TODO: if T is an interface type, we need
+		// TODO(adonovan): if T is an interface type, we need
 		// to create an indirect tagged object containing
 		// new(T).  To avoid updates of such shared values,
 		// we'll need another flag on indirect tagged objects
@@ -1655,7 +1655,7 @@ func (c *rtypeFieldByNameConstraint) solve(a *analysis, delta *nodeset) {
 				if id := c.result + 3; a.addLabel(id, a.makeRtype(f.Type())) {
 					a.addWork(id)
 				}
-				// TODO: StructField.Index should be non-nil.
+				// TODO(adonovan): StructField.Index should be non-nil.
 			}
 		}
 	}
@@ -1690,8 +1690,8 @@ func ext۰reflect۰rtype۰Field(a *analysis, cgn *cgnode) {
 	})
 }
 
-func ext۰reflect۰rtype۰FieldByIndex(a *analysis, cgn *cgnode)    {} // TODO
-func ext۰reflect۰rtype۰FieldByNameFunc(a *analysis, cgn *cgnode) {} // TODO
+func ext۰reflect۰rtype۰FieldByIndex(a *analysis, cgn *cgnode)    {} // TODO(adonovan)
+func ext۰reflect۰rtype۰FieldByNameFunc(a *analysis, cgn *cgnode) {} // TODO(adonovan)
 
 // ---------- func (*rtype) In/Out(i int) Type ----------
 

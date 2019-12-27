@@ -10,7 +10,7 @@ package xml
 //    Annotated XML spec: http://www.xml.com/axml/testaxml.htm
 //    XML name spaces: http://www.w3.org/TR/REC-xml-names/
 
-// TODO:
+// TODO(rsc):
 //	Test error handling.
 
 import (

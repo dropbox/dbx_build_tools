@@ -21,7 +21,7 @@ passing a 24-byte slice as the nonce triggers XSalsa20.
 */
 package salsa20 // import "golang.org/x/crypto/salsa20"
 
-// TODO: implement XORKeyStream12 and XORKeyStream8 - the reduced round variants of Salsa20.
+// TODO(agl): implement XORKeyStream12 and XORKeyStream8 - the reduced round variants of Salsa20.
 
 import (
 	"golang.org/x/crypto/internal/subtle"

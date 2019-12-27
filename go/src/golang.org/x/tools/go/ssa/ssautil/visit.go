@@ -9,7 +9,7 @@ import "golang.org/x/tools/go/ssa"
 // This file defines utilities for visiting the SSA representation of
 // a Program.
 //
-// TODO: test coverage.
+// TODO(adonovan): test coverage.
 
 // AllFunctions finds and returns the set of functions potentially
 // needed by program prog, as determined by a simple linker-style

@@ -58,7 +58,7 @@ func recvType(obj *types.Func) types.Type {
 //
 // Exported to ssa/interp.
 //
-// TODO: use go/types.DefaultType after 1.8.
+// TODO(adonovan): use go/types.DefaultType after 1.8.
 //
 func DefaultType(typ types.Type) types.Type {
 	if t, ok := typ.(*types.Basic); ok {

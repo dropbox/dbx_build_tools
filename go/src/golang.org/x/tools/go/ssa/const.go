@@ -77,7 +77,7 @@ func (c *Const) RelString(from *types.Package) string {
 	} else if c.Value.Kind() == constant.String {
 		s = constant.StringVal(c.Value)
 		const max = 20
-		// TODO: don't cut a rune in half.
+		// TODO(adonovan): don't cut a rune in half.
 		if len(s) > max {
 			s = s[:max-3] + "..." // abbreviate
 		}
@@ -115,7 +115,7 @@ func (c *Const) IsNil() bool {
 	return c.Value == nil
 }
 
-// TODO: move everything below into golang.org/x/tools/go/ssa/interp.
+// TODO(adonovan): move everything below into golang.org/x/tools/go/ssa/interp.
 
 // Int64 returns the numeric value of this constant truncated to fit
 // a signed 64-bit integer.

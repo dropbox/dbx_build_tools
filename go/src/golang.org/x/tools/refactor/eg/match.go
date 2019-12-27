@@ -54,7 +54,7 @@ func (tr *Transformer) matchExpr(x, y ast.Expr) bool {
 		return false
 	}
 
-	// TODO: audit: we cannot assume these ast.Exprs
+	// TODO(adonovan): audit: we cannot assume these ast.Exprs
 	// contain non-nil pointers.  e.g. ImportSpec.Name may be a
 	// nil *ast.Ident.
 

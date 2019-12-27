@@ -441,7 +441,7 @@ var _ foo.T
 			gotContent, ok := got[k]
 			delete(got, k)
 			if !ok {
-				// TODO: some testcases might have files that won't be
+				// TODO(matloob): some testcases might have files that won't be
 				// rewritten
 				t.Errorf("%s: file %s not rewritten", prefix, file)
 				continue

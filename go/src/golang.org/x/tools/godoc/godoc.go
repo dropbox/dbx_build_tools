@@ -349,7 +349,7 @@ func isDigit(ch rune) bool {
 
 func comment_htmlFunc(comment string) string {
 	var buf bytes.Buffer
-	// TODO Provide list of words (e.g. function parameters)
+	// TODO(gri) Provide list of words (e.g. function parameters)
 	//           to be emphasized by ToHTML.
 	doc.ToHTML(&buf, comment, nil) // does html-escaping
 	return buf.String()
@@ -871,7 +871,7 @@ func (p *Presentation) writeNode(w io.Writer, pageInfo *PageInfo, fset *token.Fi
 	// be tabs in comments and strings, but converting those into
 	// the right number of spaces is much harder)
 	//
-	// TODO rethink printer flags - perhaps tconv can be eliminated
+	// TODO(gri) rethink printer flags - perhaps tconv can be eliminated
 	//           with an another printer mode (which is more efficiently
 	//           implemented in the printer than here with another layer)
 
@@ -943,7 +943,7 @@ func (p *Presentation) writeNode(w io.Writer, pageInfo *PageInfo, fset *token.Fi
 var slashSlash = []byte("//")
 
 // WriteNode writes x to w.
-// TODO Is this method needed? It's just a wrapper for p.writeNode.
+// TODO(bgarcia) Is this method needed? It's just a wrapper for p.writeNode.
 func (p *Presentation) WriteNode(w io.Writer, fset *token.FileSet, x interface{}) {
 	p.writeNode(w, nil, fset, x)
 }

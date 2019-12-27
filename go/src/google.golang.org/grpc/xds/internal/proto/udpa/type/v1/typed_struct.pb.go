@@ -42,7 +42,7 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 // When a DPLB receives a TypedStruct in Any, it should:
 // - Check if the type_url of the TypedStruct matches the type the extension expects.
 // - Convert value to the type described in type_url and perform validation.
-// TODO: Figure out how TypeStruct should be used with DPLB extensions that doesn't link
+// TODO(lizan): Figure out how TypeStruct should be used with DPLB extensions that doesn't link
 // protobuf descriptor with DPLB itself, (e.g. gRPC LB Plugin, Envoy WASM extensions).
 type TypedStruct struct {
 	// A URL that uniquely identifies the type of the serialize protocol buffer message.

@@ -19,7 +19,7 @@ func TestParseIPv4Header(t *testing.T) {
 	switch socket.NativeEndian {
 	case binary.LittleEndian:
 		t.Run("LittleEndian", func(t *testing.T) {
-			// TODO: Add platform dependent wire
+			// TODO(mikio): Add platform dependent wire
 			// header formats when we support new
 			// platforms.
 			wireHeaderFromKernel := [ipv4.HeaderLen]byte{

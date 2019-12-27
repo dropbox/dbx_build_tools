@@ -104,7 +104,7 @@ func (tr *Transformer) Transform(info *types.Info, pkg *types.Package, file *ast
 	}
 
 	// Add any necessary imports.
-	// TODO: remove no-longer needed imports too.
+	// TODO(adonovan): remove no-longer needed imports too.
 	if tr.nsubsts > 0 {
 		pkgs := make(map[string]*types.Package)
 		for obj := range tr.importedObjs {
@@ -288,7 +288,7 @@ func (tr *Transformer) subst(env map[string]ast.Expr, pattern, pos reflect.Value
 	// imports in the input code, nor are any imported package
 	// names shadowed, so the usual normal qualified identifier
 	// syntax may be used.
-	// TODO: fix: avoid this assumption.
+	// TODO(adonovan): fix: avoid this assumption.
 	//
 	// A refactoring may be applied to a package referenced by the
 	// template.  Objects belonging to the current package are

@@ -212,7 +212,7 @@ func check(t Testing, gopath string, pass *analysis.Pass, diagnostics []analysis
 	}
 
 	// Extract 'want' comments from non-Go files.
-	// TODO: we may need to handle //line directives.
+	// TODO(adonovan): we may need to handle //line directives.
 	for _, filename := range pass.OtherFiles {
 		data, err := ioutil.ReadFile(filename)
 		if err != nil {
@@ -297,7 +297,7 @@ func check(t Testing, gopath string, pass *analysis.Pass, diagnostics []analysis
 	// Sometimes an Analyzer reports two similar diagnostics on a
 	// line with only one expectation. The reader may be confused by
 	// the error message.
-	// TODO: print a better error:
+	// TODO(adonovan): print a better error:
 	// "got 2 diagnostics here; each one needs its own expectation".
 	var surplus []string
 	for key, expects := range want {

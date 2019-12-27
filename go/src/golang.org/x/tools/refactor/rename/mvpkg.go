@@ -7,7 +7,7 @@
 
 package rename
 
-// TODO:
+// TODO(matloob):
 // - think about what happens if the package is moving across version control systems.
 // - dot imports are not supported. Make sure it's clearly documented.
 
@@ -329,11 +329,11 @@ func (m *mover) move() error {
 	// If either the fromDir or toDir are contained under version control it is
 	// the user's responsibility to provide a custom move command that updates
 	// version control to reflect the move.
-	// TODO: If the parent directory of toDir does not exist, create it.
+	// TODO(matloob): If the parent directory of toDir does not exist, create it.
 	//      For now, it's required that it does exist.
 
 	if m.cmd != "" {
-		// TODO: Verify that the windows and plan9 cases are correct.
+		// TODO(matloob): Verify that the windows and plan9 cases are correct.
 		var cmd *exec.Cmd
 		switch runtime.GOOS {
 		case "windows":

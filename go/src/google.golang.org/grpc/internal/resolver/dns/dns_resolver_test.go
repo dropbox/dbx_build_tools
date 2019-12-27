@@ -880,7 +880,7 @@ func testIPResolver(t *testing.T) {
 		{"[2001:db8:85a3::8a2e:370:7334]", []resolver.Address{{Addr: "[2001:db8:85a3::8a2e:370:7334]" + colonDefaultPort}}},
 		{"[2001:db8:85a3::8a2e:370:7334]:12345", []resolver.Address{{Addr: "[2001:db8:85a3::8a2e:370:7334]:12345"}}},
 		{"[2001:db8::1]:http", []resolver.Address{{Addr: "[2001:db8::1]:http"}}},
-		// TODO: zone support?
+		// TODO(yuxuanli): zone support?
 	}
 
 	for _, v := range tests {
@@ -923,7 +923,7 @@ func TestResolveFunc(t *testing.T) {
 		addr string
 		want error
 	}{
-		// TODO: More false cases?
+		// TODO(yuxuanli): More false cases?
 		{"www.google.com", nil},
 		{"foo.bar:12345", nil},
 		{"127.0.0.1", nil},

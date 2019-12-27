@@ -5,7 +5,7 @@
 // Package assign defines an Analyzer that detects useless assignments.
 package assign
 
-// TODO: check also for assignments to struct fields inside
+// TODO(adonovan): check also for assignments to struct fields inside
 // methods that are on T instead of *T.
 
 import (

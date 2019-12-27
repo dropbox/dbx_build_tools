@@ -135,7 +135,7 @@ func runExtract(cmd *Command, args []string) error {
 					Position:         filepath.Join(info.Pkg.Path(), filepos),
 					Original:         Text{Msg: msg},
 					ExtractedComment: getComment(call.Args[0]),
-					// TODO: this doesn't get the before comment.
+					// TODO(fix): this doesn't get the before comment.
 					// Comment: getComment(call),
 				}
 

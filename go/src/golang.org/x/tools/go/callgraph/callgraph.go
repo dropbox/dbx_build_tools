@@ -34,7 +34,7 @@ language.
 */
 package callgraph // import "golang.org/x/tools/go/callgraph"
 
-// TODO: add a function to eliminate wrappers from the
+// TODO(adonovan): add a function to eliminate wrappers from the
 // callgraph, preserving topology.
 // More generally, we could eliminate "uninteresting" nodes such as
 // nodes from packages we don't care about.

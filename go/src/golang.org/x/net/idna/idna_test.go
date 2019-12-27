@@ -104,5 +104,5 @@ func TestIDNASeparators(t *testing.T) {
 	}
 }
 
-// TODO: test errors, once we've specified when ToASCII and ToUnicode
+// TODO(nigeltao): test errors, once we've specified when ToASCII and ToUnicode
 // return errors.

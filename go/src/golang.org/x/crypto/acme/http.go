@@ -226,7 +226,7 @@ func (c *Client) doNoRetry(ctx context.Context, req *http.Request) (*http.Respon
 			// Prefer the unadorned context error.
 			// (The acme package had tests assuming this, previously from ctxhttp's
 			// behavior, predating net/http supporting contexts natively)
-			// TODO: reconsider this in the future. But for now this
+			// TODO(bradfitz): reconsider this in the future. But for now this
 			// requires no test updates.
 			return nil, ctx.Err()
 		default:

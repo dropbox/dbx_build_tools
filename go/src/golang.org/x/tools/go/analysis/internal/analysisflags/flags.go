@@ -175,7 +175,7 @@ func (versionFlag) Set(s string) error {
 	// This replicates the miminal subset of
 	// cmd/internal/objabi.AddVersionFlag, which is private to the
 	// go tool yet forms part of our command-line interface.
-	// TODO: clarify the contract.
+	// TODO(adonovan): clarify the contract.
 
 	// Print the tool version so the build system can track changes.
 	// Formats:

@@ -20,8 +20,8 @@ import (
 // peers enumerates, for a given channel send (or receive) operation,
 // the set of possible receives (or sends) that correspond to it.
 //
-// TODO: support reflect.{Select,Recv,Send,Close}.
-// TODO: permit the user to query based on a MakeChan (not send/recv),
+// TODO(adonovan): support reflect.{Select,Recv,Send,Close}.
+// TODO(adonovan): permit the user to query based on a MakeChan (not send/recv),
 // or the implicit receive in "for v := range ch".
 func peers(q *Query) error {
 	lconf := loader.Config{Build: q.Build}
@@ -141,7 +141,7 @@ func peers(q *Query) error {
 // For send and receive operations, this is the position of the <- token;
 // for close operations, it's the Lparen of the function call.
 //
-// TODO: handle implicit receive operations from 'for...range chan' statements.
+// TODO(adonovan): handle implicit receive operations from 'for...range chan' statements.
 func findOp(qpos *queryPos) token.Pos {
 	for _, n := range qpos.path {
 		switch n := n.(type) {
@@ -172,7 +172,7 @@ type chanOp struct {
 
 // chanOps returns a slice of all the channel operations in the instruction.
 func chanOps(instr ssa.Instruction) []chanOp {
-	// TODO: handle calls to reflect.{Select,Recv,Send,Close} too.
+	// TODO(adonovan): handle calls to reflect.{Select,Recv,Send,Close} too.
 	var ops []chanOp
 	switch instr := instr.(type) {
 	case *ssa.UnOp:
@@ -194,7 +194,7 @@ func chanOps(instr ssa.Instruction) []chanOp {
 	return ops
 }
 
-// TODO: show the line of text for each pos, like "referrers" does.
+// TODO(adonovan): show the line of text for each pos, like "referrers" does.
 type peersResult struct {
 	queryPos                       token.Pos   // of queried channel op
 	queryType                      types.Type  // type of queried channel

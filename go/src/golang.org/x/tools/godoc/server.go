@@ -187,7 +187,7 @@ func (h *handlerServer) GetPageInfo(abspath, relpath string, mode PageInfoMode, 
 
 		} else {
 			// show source code
-			// TODO Consider eliminating export filtering in this mode,
+			// TODO(gri) Consider eliminating export filtering in this mode,
 			//           or perhaps eliminating the mode altogether.
 			if mode&NoFiltering == 0 {
 				packageExports(fset, pkg)
@@ -208,7 +208,7 @@ func (h *handlerServer) GetPageInfo(abspath, relpath string, mode PageInfoMode, 
 		timestamp = ts
 	}
 	if dir == nil {
-		// TODO: handle this case better, now since there is no CLI mode.
+		// TODO(agnivade): handle this case better, now since there is no CLI mode.
 		// no directory tree present (happens in command-line mode);
 		// compute 2 levels for this page. The second level is to
 		// get the synopses of sub-directories.
@@ -591,7 +591,7 @@ func (p *Presentation) serveTextFile(w http.ResponseWriter, r *http.Request, abs
 
 		if status := p.Corpus.Analysis.Status(); status != "" {
 			buf.WriteString("<a href='/lib/godoc/analysis/help.html'>Static analysis features</a> ")
-			// TODO: show analysis status at per-file granularity.
+			// TODO(adonovan): show analysis status at per-file granularity.
 			fmt.Fprintf(&buf, "<span style='color: grey'>[%s]</span><br/>", htmlpkg.EscapeString(status))
 		}
 

@@ -54,7 +54,7 @@ type TypeCase struct {
 // In a value switch, the list of cases may contain duplicate constants.
 // A type switch may contain duplicate types, or types assignable
 // to an interface type also in the list.
-// TODO: eliminate such duplicates.
+// TODO(adonovan): eliminate such duplicates.
 //
 type Switch struct {
 	Start      *ssa.BasicBlock // block containing start of if/else chain
@@ -108,7 +108,7 @@ func Switches(fn *ssa.Function) []Switch {
 	// Traverse the CFG in dominance order, so we don't
 	// enter an if/else-chain in the middle.
 	var switches []Switch
-	seen := make(map[*ssa.BasicBlock]bool) // TODO: opt: use ssa.blockSet
+	seen := make(map[*ssa.BasicBlock]bool) // TODO(adonovan): opt: use ssa.blockSet
 	for _, b := range fn.DomPreorder() {
 		if x, k := isComparisonBlock(b); x != nil {
 			// Block b starts a switch.

@@ -366,7 +366,7 @@ type importerFunc func(path string) (*types.Package, error)
 
 func (f importerFunc) Import(path string) (*types.Package, error) { return f(path) }
 
-// TODO: make this a library function or method of Info.
+// TODO(adonovan): make this a library function or method of Info.
 func imported(info *types.Info, spec *ast.ImportSpec) *types.Package {
 	obj, ok := info.Implicits[spec]
 	if !ok {
@@ -377,7 +377,7 @@ func imported(info *types.Info, spec *ast.ImportSpec) *types.Package {
 
 // imports reports whether pkg has path among its direct imports.
 // It returns the imported package if so, or nil if not.
-// TODO: move to analysisutil.
+// TODO(adonovan): move to analysisutil.
 func imports(pkg *types.Package, path string) *types.Package {
 	for _, imp := range pkg.Imports() {
 		if imp.Path() == path {

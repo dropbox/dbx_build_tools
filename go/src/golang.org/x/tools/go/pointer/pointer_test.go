@@ -59,7 +59,7 @@ var inputs = []string{
 	"testdata/rtti.go",
 	"testdata/structreflect.go",
 	"testdata/structs.go",
-	// "testdata/timer.go", // TODO: fix broken assumptions about runtime timers
+	// "testdata/timer.go", // TODO(adonovan): fix broken assumptions about runtime timers
 }
 
 // Expectation grammar:
@@ -149,7 +149,7 @@ func findProbe(prog *ssa.Program, probes map[*ssa.CallCommon]bool, queries map[s
 	for call := range probes {
 		pos := prog.Fset.Position(call.Pos())
 		if pos.Line == e.linenum && pos.Filename == e.filename {
-			// TODO: send this to test log (display only on failure).
+			// TODO(adonovan): send this to test log (display only on failure).
 			// fmt.Printf("%s:%d: info: found probe for %s: %s\n",
 			// 	e.filename, e.linenum, e, p.arg0) // debugging
 			return call, queries[call.Args[0]].PointsTo()
@@ -264,7 +264,7 @@ func doOneInput(input, filename string) bool {
 
 			case "calls":
 				e.args = split(rest, "->")
-				// TODO: eagerly reject the
+				// TODO(adonovan): eagerly reject the
 				// expectation if fn doesn't denote
 				// existing function, rather than fail
 				// the expectation after analysis.
@@ -516,7 +516,7 @@ func checkCallsExpectation(prog *ssa.Program, e *expectation, cg *callgraph.Grap
 }
 
 func checkWarningExpectation(prog *ssa.Program, e *expectation, warnings []pointer.Warning) bool {
-	// TODO: check the position part of the warning too?
+	// TODO(adonovan): check the position part of the warning too?
 	re, err := regexp.Compile(e.args[0])
 	if err != nil {
 		e.errorf("invalid regular expression in @warning expectation: %s", err.Error())

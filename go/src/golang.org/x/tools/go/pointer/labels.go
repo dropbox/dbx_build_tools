@@ -94,7 +94,7 @@ func (l Label) Pos() token.Pos {
 //      append.y[*].z                           (array allocated by append)
 //      makeslice.y[*].z                        (array allocated via make)
 //
-// TODO: expose func LabelString(*types.Package, Label).
+// TODO(adonovan): expose func LabelString(*types.Package, Label).
 //
 func (l Label) String() string {
 	var s string

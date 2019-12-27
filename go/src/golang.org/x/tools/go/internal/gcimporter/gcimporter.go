@@ -200,7 +200,7 @@ func Import(packages map[string]*types.Package, path, srcDir string, lookup func
 			break
 		}
 
-		// TODO: allow clients of go/importer to provide a FileSet.
+		// TODO(gri): allow clients of go/importer to provide a FileSet.
 		// Or, define a new standard go/types/gcexportdata package.
 		fset := token.NewFileSet()
 
@@ -223,7 +223,7 @@ func Import(packages map[string]*types.Package, path, srcDir string, lookup func
 // ----------------------------------------------------------------------------
 // Parser
 
-// TODO Imported objects don't have position information.
+// TODO(gri) Imported objects don't have position information.
 //           Ideally use the debug table line info; alternatively
 //           create some fake position (or the position of the
 //           import). That way error messages referring to imported
@@ -624,7 +624,7 @@ func (p *parser) parseParameter() (par *types.Var, isVariadic bool) {
 	if p.tok == scanner.String {
 		p.next()
 	}
-	// TODO should we provide a package?
+	// TODO(gri) should we provide a package?
 	par = types.NewVar(token.NoPos, nil, name, typ)
 	return
 }
@@ -982,7 +982,7 @@ func (p *parser) parseMethodDecl() {
 
 	// add method to type unless type was imported before
 	// and method exists already
-	// TODO This leads to a quadratic algorithm - ok for now because method counts are small.
+	// TODO(gri) This leads to a quadratic algorithm - ok for now because method counts are small.
 	base.AddMethod(types.NewFunc(token.NoPos, pkg, name, sig))
 }
 

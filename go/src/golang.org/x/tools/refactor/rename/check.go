@@ -381,7 +381,7 @@ func enclosingBlock(info *types.Info, stack []ast.Node) *types.Scope {
 		n := stack[len(stack)-1-i]
 		// For some reason, go/types always associates a
 		// function's scope with its FuncType.
-		// TODO: feature or a bug?
+		// TODO(adonovan): feature or a bug?
 		switch f := n.(type) {
 		case *ast.FuncDecl:
 			n = f.Type
@@ -508,8 +508,8 @@ func (r *renamer) checkSelections(from types.Object) {
 			// this indicates ambiguity or shadowing,
 			// analogous to same- or super-block lexical conflict.
 
-			// TODO: fix: derive from Types[syntax.X].Mode
-			// TODO: test with pointer, value, addressable value.
+			// TODO(adonovan): fix: derive from Types[syntax.X].Mode
+			// TODO(adonovan): test with pointer, value, addressable value.
 			isAddressable := true
 
 			if sel.Obj() == from {
@@ -631,7 +631,7 @@ func (r *renamer) checkMethod(from *types.Func) {
 				if e, ok := e.(*ast.InterfaceType); ok {
 					_ = e
 					_ = tv.Type.(*types.Interface)
-					// TODO: implement same check as above.
+					// TODO(adonovan): implement same check as above.
 				}
 			}
 		}
@@ -691,7 +691,7 @@ func (r *renamer) checkMethod(from *types.Func) {
 						continue // no ambiguity
 					}
 
-					// TODO: record the constraint's position.
+					// TODO(adonovan): record the constraint's position.
 					keyPos := token.NoPos
 
 					r.errorf(from.Pos(), "renaming this method %q to %q",

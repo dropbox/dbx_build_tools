@@ -45,7 +45,7 @@ def main() -> None:
                     ):
                         # These libraries assume the existence of docstrings on their own methods
                         # and provide decorators that deprecate methods by munging their docstring.
-                        # TODO: remove these exceptions after sending patches upstream
+                        # TODO(zbarsky): remove these exceptions after sending patches upstream
                         if (
                             "pylons" in src_path
                             or "paste" in src_path
@@ -54,7 +54,7 @@ def main() -> None:
                         ):
                             new_docstring = " "
                         elif "scipy" in src_path:
-                            # TODO remove if https://github.com/scipy/scipy/pull/10848 is merged
+                            # TODO(zbarsky) remove if https://github.com/scipy/scipy/pull/10848 is merged
                             new_docstring = "Parameters\n%s"
                         else:
                             new_docstring = ""

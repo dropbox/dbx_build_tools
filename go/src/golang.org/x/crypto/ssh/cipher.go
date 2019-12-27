@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	packetSizeMultiple = 16 // TODO this should be determined by the cipher.
+	packetSizeMultiple = 16 // TODO(huin) this should be determined by the cipher.
 
 	// RFC 4253 section 6.1 defines a minimum packet size of 32768 that implementations
 	// MUST be able to process (plus a few more kilobytes for padding and mac). The RFC

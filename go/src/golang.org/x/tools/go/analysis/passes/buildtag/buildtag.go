@@ -135,7 +135,7 @@ func checkArguments(fields []string) error {
 	// be always ignored by "go build". However, drivers for the new
 	// analysis API will analyze only the files selected to form a
 	// package, so these checks will never fire.
-	// TODO: rethink this.
+	// TODO(adonovan): rethink this.
 
 	for _, arg := range fields[1:] {
 		for _, elem := range strings.Split(arg, ",") {

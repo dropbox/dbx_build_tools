@@ -51,7 +51,7 @@ func ext۰os۰Pipe(fr *frame, args []value) value {
 	// The portable POSIX pipe(2) call is good enough for our needs.
 	var p [2]int
 	if err := syscall.Pipe(p[:]); err != nil {
-		// TODO: fix: return an *os.SyscallError.
+		// TODO(adonovan): fix: return an *os.SyscallError.
 		return tuple{nil, nil, wrapError(err)}
 	}
 
@@ -73,7 +73,7 @@ var fillStat = func(st *syscall.Stat_t, stat structure) {
 	stat[8] = st.Size
 	stat[9] = st.Blksize
 	stat[10] = st.Blocks
-	// TODO: fix: copy Timespecs.
+	// TODO(adonovan): fix: copy Timespecs.
 	// stat[11] = st.Atim
 	// stat[12] = st.Mtim
 	// stat[13] = st.Ctim
@@ -245,7 +245,7 @@ func ext۰syscall۰UtimesNano(fr *frame, args []value) value {
 	path := args[0].(string)
 	var ts [2]syscall.Timespec
 	err := syscall.UtimesNano(path, ts[:])
-	// TODO: copy the Timespecs into args[1]
+	// TODO(adonovan): copy the Timespecs into args[1]
 	return wrapError(err)
 }
 

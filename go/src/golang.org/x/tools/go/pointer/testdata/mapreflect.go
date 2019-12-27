@@ -113,5 +113,5 @@ func main() {
 	reflectSetMapIndexInterface()
 	reflectSetMapIndexAssignable()
 	reflectMakeMap()
-	// TODO: reflect.MapOf(Type)
+	// TODO(adonovan): reflect.MapOf(Type)
 }

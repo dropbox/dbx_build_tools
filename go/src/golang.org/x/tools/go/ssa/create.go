@@ -258,7 +258,7 @@ func (prog *Program) AllPackages() []*Package {
 // considered importable. For example, no import declaration can resolve
 // to the ad-hoc main package created by 'go build foo.go'.
 //
-// TODO: rethink this function and the "importable" concept;
+// TODO(adonovan): rethink this function and the "importable" concept;
 // most packages are importable. This function assumes that all
 // types.Package.Path values are unique within the ssa.Program, which is
 // false---yet this function remains very convenient.

@@ -75,7 +75,7 @@ func main() {
 		var filter func(types.Object) bool
 		if name != "" {
 			filter = func(obj types.Object) bool {
-				// TODO perhaps use regular expression matching here?
+				// TODO(gri) perhaps use regular expression matching here?
 				return obj.Name() == name
 			}
 		}

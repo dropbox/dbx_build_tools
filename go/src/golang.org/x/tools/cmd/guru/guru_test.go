@@ -19,7 +19,7 @@ package main_test
 // .golden file.
 //
 // (Location information is not included because it's too fragile to
-// display as text.  TODO: think about how we can test its
+// display as text.  TODO(adonovan): think about how we can test its
 // correctness, since it is critical information.)
 //
 // Run this test with:
@@ -148,7 +148,7 @@ func parseQueries(t *testing.T, filename string) []*query {
 				continue
 			}
 
-			// Assumes ASCII. TODO: test on UTF-8.
+			// Assumes ASCII. TODO(adonovan): test on UTF-8.
 			linestart := posn.Offset - (posn.Column - 1)
 
 			// Compute the file offsets.
@@ -251,7 +251,7 @@ func TestGuru(t *testing.T) {
 		"testdata/src/whicherrs/main.go",
 		"testdata/src/softerrs/main.go",
 		// JSON:
-		// TODO: most of these are very similar; combine them.
+		// TODO(adonovan): most of these are very similar; combine them.
 		"testdata/src/calls-json/main.go",
 		"testdata/src/peers-json/main.go",
 		"testdata/src/definition-json/main.go",

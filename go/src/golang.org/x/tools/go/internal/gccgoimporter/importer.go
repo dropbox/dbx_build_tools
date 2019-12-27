@@ -133,7 +133,7 @@ type Importer func(imports map[string]*types.Package, path, srcDir string, looku
 
 func GetImporter(searchpaths []string, initmap map[*types.Package]InitData) Importer {
 	return func(imports map[string]*types.Package, pkgpath, srcDir string, lookup func(string) (io.ReadCloser, error)) (pkg *types.Package, err error) {
-		// TODO: Use srcDir.
+		// TODO(gri): Use srcDir.
 		// Or not. It's possible that srcDir will fade in importance as
 		// the go command and other tools provide a translation table
 		// for relative imports (like ./foo or vendored imports).

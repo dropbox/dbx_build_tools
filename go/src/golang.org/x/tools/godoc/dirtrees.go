@@ -201,7 +201,7 @@ func (b *treeBuilder) newDirTree(fset *token.FileSet, path, name string, depth i
 		Depth:    depth,
 		Path:     path,
 		Name:     name,
-		HasPkg:   hasPkgFiles && show, // TODO: add proper Hide field?
+		HasPkg:   hasPkgFiles && show, // TODO(bradfitz): add proper Hide field?
 		Synopsis: synopsis,
 		RootType: b.c.fs.RootType(path),
 		Dirs:     dirs,

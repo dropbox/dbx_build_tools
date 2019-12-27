@@ -133,7 +133,7 @@ changing the arguments as needed; (3) change the declaration of f to
 match f'; (4) use eg to rename f' to f in all calls; (5) delete f'.
 `
 
-// TODO: expand upon the above documentation as an HTML page.
+// TODO(adonovan): expand upon the above documentation as an HTML page.
 
 // A Transformer represents a single example-based transformation.
 type Transformer struct {
@@ -169,7 +169,7 @@ func NewTransformer(fset *token.FileSet, tmplPkg *types.Package, tmplFile *ast.F
 		return nil, fmt.Errorf("no 'after' func found in template")
 	}
 
-	// TODO: should we also check the names of the params match?
+	// TODO(adonovan): should we also check the names of the params match?
 	if !types.Identical(afterSig, beforeSig) {
 		return nil, fmt.Errorf("before %s and after %s functions have different signatures",
 			beforeSig, afterSig)
@@ -259,7 +259,7 @@ func NewTransformer(fset *token.FileSet, tmplPkg *types.Package, tmplFile *ast.F
 	mergeTypeInfo(tr.info, tmplInfo)
 
 	// Compute set of imported objects required by after().
-	// TODO: reject dot-imports in pattern
+	// TODO(adonovan): reject dot-imports in pattern
 	ast.Inspect(after, func(n ast.Node) bool {
 		if n, ok := n.(*ast.SelectorExpr); ok {
 			if _, ok := tr.info.Selections[n]; !ok {

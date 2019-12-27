@@ -30,7 +30,7 @@ import (
 // Currently, only the Context.OpenFile function will respect the
 // overlay. This may change in the future.
 func OverlayContext(orig *build.Context, overlay map[string][]byte) *build.Context {
-	// TODO: Implement IsDir, HasSubdir and ReadDir
+	// TODO(dominikh): Implement IsDir, HasSubdir and ReadDir
 
 	rc := func(data []byte) (io.ReadCloser, error) {
 		return ioutil.NopCloser(bytes.NewBuffer(data)), nil

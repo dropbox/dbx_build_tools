@@ -106,7 +106,7 @@ func Build(ctxt *build.Context) (forward, reverse Graph, errors map[string]error
 				//     880ms: with a nonblocking cache around ctxt.IsDir
 				//     840ms: nonblocking cache with duplicate suppression
 				//     340ms: original code (no vendor check)
-				// TODO: optimize, somehow.
+				// TODO(adonovan): optimize, somehow.
 				memo := make(map[string]string)
 				absolutize := func(path string) string {
 					canon, ok := memo[path]

@@ -178,7 +178,7 @@ func (a *analysis) warnf(pos token.Pos, format string, args ...interface{}) {
 // computeTrackBits sets a.track to the necessary 'track' bits for the pointer queries.
 func (a *analysis) computeTrackBits() {
 	if len(a.config.extendedQueries) != 0 {
-		// TODO: only track the types necessary for the query.
+		// TODO(dh): only track the types necessary for the query.
 		a.track = trackAll
 		return
 	}
@@ -370,7 +370,7 @@ func (a *analysis) callEdge(caller *cgnode, site *callsite, calleeid nodeid) {
 	callee := obj.cgn
 
 	if cg := a.result.CallGraph; cg != nil {
-		// TODO: opt: I would expect duplicate edges
+		// TODO(adonovan): opt: I would expect duplicate edges
 		// (to wrappers) to arise due to the elimination of
 		// context information, but I haven't observed any.
 		// Understand this better.
@@ -382,7 +382,7 @@ func (a *analysis) callEdge(caller *cgnode, site *callsite, calleeid nodeid) {
 	}
 
 	// Warn about calls to non-intrinsic external functions.
-	// TODO: de-dup these messages.
+	// TODO(adonovan): de-dup these messages.
 	if fn := callee.fn; fn.Blocks == nil && a.findIntrinsic(fn) == nil {
 		a.warnf(site.pos(), "unsound call to unknown intrinsic: %s", fn)
 		a.warnf(fn.Pos(), " (declared here)")

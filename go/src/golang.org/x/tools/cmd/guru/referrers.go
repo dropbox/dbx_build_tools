@@ -153,7 +153,7 @@ func packageReferrers(q *Query, path string) error {
 
 	// Subtle!  AfterTypeCheck needs no mutex for qpkg because the
 	// topological import order gives us the necessary happens-before edges.
-	// TODO: what about import cycles?
+	// TODO(adonovan): what about import cycles?
 	var qpkg *types.Package
 
 	// For efficiency, we scan each package for references
@@ -177,7 +177,7 @@ func packageReferrers(q *Query, path string) error {
 		// declaring package (and thus were type-checked).
 		if lconf.TypeCheckFuncBodies(info.Pkg.Path()) {
 			// Find PkgNames that refer to qpkg.
-			// TODO: perhaps more useful would be to show imports
+			// TODO(adonovan): perhaps more useful would be to show imports
 			// of the package instead of qualified identifiers.
 			var refs []*ast.Ident
 			for id, obj := range info.Uses {
@@ -257,7 +257,7 @@ func globalReferrers(q *Query, qpkg, defpkg string, objposn token.Position) erro
 	// loader's AfterTypeCheck hook.  Most of guru's helper
 	// functions assume the entire program has already been loaded,
 	// so we can't use them here.
-	// TODO: smooth things out once the other changes have landed.
+	// TODO(adonovan): smooth things out once the other changes have landed.
 
 	// Results are reported concurrently from within the
 	// AfterTypeCheck hook.  The program may provide a useful stream
@@ -631,7 +631,7 @@ func sameObj(x, y types.Object) bool {
 }
 
 func clearInfoFields(info *loader.PackageInfo) {
-	// TODO: opt: save memory by eliminating unneeded scopes/objects.
+	// TODO(adonovan): opt: save memory by eliminating unneeded scopes/objects.
 	// (Requires go/types change for Go 1.7.)
 	//   info.Pkg.Scope().ClearChildren()
 

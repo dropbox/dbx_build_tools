@@ -527,10 +527,10 @@ func TestVendorCwdIssue16580(t *testing.T) {
 		}
 	}
 
-	// TODO: also test imports within XTestGoFiles.
+	// TODO(adonovan): also test imports within XTestGoFiles.
 }
 
-// TODO: more Load tests:
+// TODO(adonovan): more Load tests:
 //
 // failures:
 // - to parse package decl of *_test.go files
@@ -632,7 +632,7 @@ func TestErrorReporting(t *testing.T) {
 		t.Fatalf("Load returned nil *Program")
 	}
 
-	// TODO: test keys of ImportMap.
+	// TODO(adonovan): test keys of ImportMap.
 
 	// Check errors recorded in each PackageInfo.
 	for pkg, info := range prog.AllPackages {
@@ -696,7 +696,7 @@ func TestCycles(t *testing.T) {
 			}),
 			`import cycle: a -> a`,
 		},
-		// TODO: fix: these fail
+		// TODO(adonovan): fix: these fail
 		// {
 		// 	"two-package cycle in dependency of test file",
 		// 	buildutil.FakeContext(map[string]map[string]string{
@@ -748,7 +748,7 @@ func TestCycles(t *testing.T) {
 		}
 	}
 
-	// TODO:
+	// TODO(adonovan):
 	// - Test that in a legal test cycle, none of the symbols
 	//   defined by augmentation are visible via import.
 }

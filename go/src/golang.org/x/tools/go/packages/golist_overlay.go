@@ -11,7 +11,7 @@ import (
 // processGolistOverlay provides rudimentary support for adding
 // files that don't exist on disk to an overlay. The results can be
 // sometimes incorrect.
-// TODO: Handle unsupported cases, including the following:
+// TODO(matloob): Handle unsupported cases, including the following:
 // - test files
 // - adding test and non-test files to test variants of packages
 // - determining the correct package to add given a new import path
@@ -32,7 +32,7 @@ outer:
 		base := filepath.Base(path)
 		if strings.HasSuffix(path, "_test.go") {
 			// Overlays don't support adding new test files yet.
-			// TODO: support adding new test files.
+			// TODO(matloob): support adding new test files.
 			continue
 		}
 		dir := filepath.Dir(path)
@@ -48,7 +48,7 @@ outer:
 			}
 			if dirContains {
 				if !fileExists {
-					pkg.GoFiles = append(pkg.GoFiles, path) // TODO: should the file just be added to GoFiles?
+					pkg.GoFiles = append(pkg.GoFiles, path) // TODO(matloob): should the file just be added to GoFiles?
 					pkg.CompiledGoFiles = append(pkg.CompiledGoFiles, path)
 					modifiedPkgsSet[pkg.ID] = true
 				}
@@ -61,7 +61,7 @@ outer:
 					_, found := pkg.Imports[imp]
 					if !found {
 						needPkgsSet[imp] = true
-						// TODO: Handle cases when the following block isn't correct.
+						// TODO(matloob): Handle cases when the following block isn't correct.
 						// These include imports of test variants, imports of vendored packages, etc.
 						id, ok := havePkgs[imp]
 						if !ok {
@@ -87,7 +87,7 @@ outer:
 }
 
 func extractImports(filename string, contents []byte) ([]string, error) {
-	f, err := parser.ParseFile(token.NewFileSet(), filename, contents, parser.ImportsOnly) // TODO: reuse fileset?
+	f, err := parser.ParseFile(token.NewFileSet(), filename, contents, parser.ImportsOnly) // TODO(matloob): reuse fileset?
 	if err != nil {
 		return nil, err
 	}

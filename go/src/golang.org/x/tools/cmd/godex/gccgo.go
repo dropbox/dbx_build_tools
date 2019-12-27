@@ -18,7 +18,7 @@ func init() {
 // Print the extra gccgo compiler data for this package, if it exists.
 func (p *printer) printGccgoExtra(pkg *types.Package) {
 	// Disabled for now.
-	// TODO address this at some point.
+	// TODO(gri) address this at some point.
 
 	// if initdata, ok := initmap[pkg]; ok {
 	// 	p.printf("/*\npriority %d\n", initdata.Priority)

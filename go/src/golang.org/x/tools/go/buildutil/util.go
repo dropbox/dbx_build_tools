@@ -27,7 +27,7 @@ import (
 // The displayPath function, if provided, is used to transform the
 // filename that will be attached to the ASTs.
 //
-// TODO: call this from go/loader.parseFiles when the tree thaws.
+// TODO(adonovan): call this from go/loader.parseFiles when the tree thaws.
 //
 func ParseFile(fset *token.FileSet, ctxt *build.Context, displayPath func(string) string, dir string, file string, mode parser.Mode) (*ast.File, error) {
 	if !IsAbsPath(ctxt, file) {

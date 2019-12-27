@@ -6,7 +6,7 @@
 // the width of an integer.
 package shift
 
-// TODO: integrate with ctrflow (CFG-based) dead code analysis. May
+// TODO(adonovan): integrate with ctrflow (CFG-based) dead code analysis. May
 // have impedance mismatch due to its (non-)treatment of constant
 // expressions (such as runtime.GOARCH=="386").
 
@@ -38,7 +38,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		(*ast.SwitchStmt)(nil),
 	}
 	inspect.Preorder(nodeFilter, func(n ast.Node) {
-		// TODO: move updateDead into this file.
+		// TODO(adonovan): move updateDead into this file.
 		updateDead(pass.TypesInfo, dead, n)
 	})
 

@@ -29,7 +29,7 @@ func Format(ctx context.Context, f File, rng span.Range) ([]TextEdit, error) {
 	node := path[0]
 	// format.Node can fail when the AST contains a bad expression or
 	// statement. For now, we preemptively check for one.
-	// TODO: This should really return an error from format.Node.
+	// TODO(rstambler): This should really return an error from format.Node.
 	var isBad bool
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch n.(type) {

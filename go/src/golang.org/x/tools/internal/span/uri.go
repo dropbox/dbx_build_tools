@@ -55,7 +55,7 @@ func NewURI(s string) URI {
 // It will always have the file scheme.
 func FileURI(path string) URI {
 	// Handle standard library paths that contain the literal "$GOROOT".
-	// TODO: The go/packages API should allow one to determine a user's $GOROOT.
+	// TODO(rstambler): The go/packages API should allow one to determine a user's $GOROOT.
 	const prefix = "$GOROOT"
 	if len(path) >= len(prefix) && strings.EqualFold(prefix, path[:len(prefix)]) {
 		suffix := path[len(prefix):]

@@ -239,7 +239,7 @@ function PlaygroundOutput(el) {
 		}
 
 		if (m.indexOf('IMAGE:') === 0) {
-			// TODO: buffer all writes before creating image
+			// TODO(adg): buffer all writes before creating image
 			var url = 'data:image/png;base64,' + m.substr(6);
 			var img = document.createElement('img');
 			img.src = url;
@@ -342,7 +342,7 @@ function PlaygroundOutput(el) {
       }, 1);
     }
 
-    // NOTE: e is a jQuery event, not a DOM event.
+    // NOTE(cbro): e is a jQuery event, not a DOM event.
     function handleSaveShortcut(e) {
       if (e.isDefaultPrevented()) return false;
       if (!e.metaKey && !e.ctrlKey) return false;

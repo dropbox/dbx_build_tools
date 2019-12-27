@@ -7,7 +7,7 @@ package ssa
 // This file defines utilities for working with source positions
 // or source-level named entities ("objects").
 
-// TODO: test that {Value,Instruction}.Pos() positions match
+// TODO(adonovan): test that {Value,Instruction}.Pos() positions match
 // the originating syntax, as specified.
 
 import (
@@ -195,7 +195,7 @@ func (prog *Program) packageLevelValue(obj types.Object) Value {
 // FuncValue returns the concrete Function denoted by the source-level
 // named function obj, or nil if obj denotes an interface method.
 //
-// TODO: check the invariant that obj.Type() matches the
+// TODO(adonovan): check the invariant that obj.Type() matches the
 // result's Signature, both in the params/results and in the receiver.
 //
 func (prog *Program) FuncValue(obj *types.Func) *Function {
@@ -207,7 +207,7 @@ func (prog *Program) FuncValue(obj *types.Func) *Function {
 // constant obj.
 //
 func (prog *Program) ConstValue(obj *types.Const) *Const {
-	// TODO: opt: share (don't reallocate)
+	// TODO(adonovan): opt: share (don't reallocate)
 	// Consts for const objects and constant ast.Exprs.
 
 	// Universal constant? {true,false,nil}

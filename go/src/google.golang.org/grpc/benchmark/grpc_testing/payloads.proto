@@ -27,7 +27,7 @@ message SimpleProtoParams {
 }
 
 message ComplexProtoParams {
-  // TODO : Fill this in once the details of complex, representative
+  // TODO (vpai): Fill this in once the details of complex, representative
   //              protos are decided
 }
 

@@ -605,7 +605,7 @@ def dbx_service_daemon(
     if len(verify_cmds) == 0 and not http_health_check:
         fail("A health check is required.")
 
-    # TODO: default to public visibility while we fix sprawling dependencies.
+    # TODO(zbarsky): default to public visibility while we fix sprawling dependencies.
     visibility = kwargs.pop("visibility", ["//visibility:public"])
 
     service_internal(
@@ -657,7 +657,7 @@ def dbx_service_task(
     if not verbose:
         verbose = select(_svc_verbose_choices)
 
-    # TODO: default to public visibility while we fix sprawling dependencies.
+    # TODO(zbarsky): default to public visibility while we fix sprawling dependencies.
     visibility = kwargs.pop("visibility", ["//visibility:public"])
 
     service_internal(

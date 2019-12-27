@@ -30,7 +30,7 @@ func EnforceHosts() bool {
 func boolEnv(key string) bool {
 	v := os.Getenv(key)
 	if v == "" {
-		// TODO: In the future, consider detecting if running in App Engine,
+		// TODO(dmitshur): In the future, consider detecting if running in App Engine,
 		// and if so, making the environment variables mandatory rather than optional.
 		return false
 	}

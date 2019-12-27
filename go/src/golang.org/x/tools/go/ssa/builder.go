@@ -21,7 +21,7 @@ package ssa
 // The BUILD phases for distinct packages are independent and are
 // executed in parallel.
 //
-// TODO: indeed, building functions is now embarrassingly parallel.
+// TODO(adonovan): indeed, building functions is now embarrassingly parallel.
 // Audit for concurrency then benchmark using more goroutines.
 //
 // The builder's and Program's indices (maps) are populated and
@@ -124,7 +124,7 @@ func (b *builder) logicalBinop(fn *Function, e *ast.BinaryExpr) Value {
 
 	// T(e) = T(e.X) = T(e.Y) after untyped constants have been
 	// eliminated.
-	// TODO: not true; MyBool==MyBool yields UntypedBool.
+	// TODO(adonovan): not true; MyBool==MyBool yields UntypedBool.
 	t := fn.Pkg.typeOf(e)
 
 	var short Value // value of the short-circuit path
@@ -605,7 +605,7 @@ func (b *builder) expr0(fn *Function, e ast.Expr, tv types.TypeAndValue) Value {
 				// &*p must panic if p is nil (http://golang.org/s/go12nil).
 				// For simplicity, we'll just (suboptimally) rely
 				// on the side effects of a load.
-				// TODO: emit dedicated nilcheck.
+				// TODO(adonovan): emit dedicated nilcheck.
 				addr.load(fn)
 			}
 			return addr.address(fn)
@@ -855,7 +855,7 @@ func (b *builder) setCallFunc(fn *Function, e *ast.CallExpr, c *CallCommon) {
 		//
 		// For now, we evaluate it in the usual way.
 		//
-		// TODO: opt: inline expr() here, to make the
+		// TODO(adonovan): opt: inline expr() here, to make the
 		// call static and to avoid generation of wrappers.
 		// It's somewhat tricky as it may consume the first
 		// actual parameter if the call is "invoke" mode.
@@ -1283,7 +1283,7 @@ func (b *builder) switchStmt(fn *Function, s *ast.SwitchStmt, label *lblock) {
 		var nextCond *BasicBlock
 		for _, cond := range cc.List {
 			nextCond = fn.newBasicBlock("switch.next")
-			// TODO: opt: when tag==vTrue, we'd
+			// TODO(adonovan): opt: when tag==vTrue, we'd
 			// get better code if we use b.cond(cond)
 			// instead of BinOp(EQL, tag, b.expr(cond))
 			// followed by If.  Don't forget conversions
@@ -1448,7 +1448,7 @@ func (b *builder) typeCaseBody(fn *Function, cc *ast.CaseClause, x Value, done *
 func (b *builder) selectStmt(fn *Function, s *ast.SelectStmt, label *lblock) {
 	// A blocking select of a single case degenerates to a
 	// simple send or receive.
-	// TODO: opt: is this optimization worth its weight?
+	// TODO(adonovan): opt: is this optimization worth its weight?
 	if len(s.Body.List) == 1 {
 		clause := s.Body.List[0].(*ast.CommClause)
 		if clause.Comm != nil {
@@ -2173,7 +2173,7 @@ func (b *builder) buildFunction(fn *Function) {
 			// This condition ensures we add a non-empty
 			// params list once only, but we may attempt
 			// the degenerate empty case repeatedly.
-			// TODO: opt: don't do that.
+			// TODO(adonovan): opt: don't do that.
 
 			// We set Function.Params even though there is no body
 			// code to reference them.  This simplifies clients.
@@ -2265,7 +2265,7 @@ func (p *Package) build() {
 	}
 
 	// Ensure we have runtime type info for all exported members.
-	// TODO: ideally belongs in memberFromObject, but
+	// TODO(adonovan): ideally belongs in memberFromObject, but
 	// that would require package creation in topological order.
 	for name, mem := range p.Members {
 		if ast.IsExported(name) {

@@ -58,7 +58,7 @@ const exportVersion = 4
 // less efficient encoding in rare cases. It also prevents the export of
 // some corner-case type declarations (but those are not handled correctly
 // with with the textual export format either).
-// TODO enable and remove once issues caused by it are fixed
+// TODO(gri) enable and remove once issues caused by it are fixed
 const trackAllTypes = false
 
 type exporter struct {
@@ -108,7 +108,7 @@ func BExportData(fset *token.FileSet, pkg *types.Package) (b []byte, err error) 
 		strIndex:      map[string]int{"": 0}, // empty string is mapped to 0
 		pkgIndex:      make(map[*types.Package]int),
 		typIndex:      make(map[types.Type]int),
-		posInfoFormat: true, // TODO might become a flag, eventually
+		posInfoFormat: true, // TODO(gri) might become a flag, eventually
 	}
 
 	// write version info
@@ -455,7 +455,7 @@ func (p *exporter) field(f *types.Var) {
 }
 
 func (p *exporter) iface(t *types.Interface) {
-	// TODO: enable importer to load embedded interfaces,
+	// TODO(gri): enable importer to load embedded interfaces,
 	// then emit Embeddeds and ExplicitMethods separately here.
 	p.int(0)
 
@@ -621,12 +621,12 @@ func (p *exporter) float(x constant.Value) {
 		// float64
 		f.SetFloat64(v)
 	} else if num, denom := constant.Num(x), constant.Denom(x); num.Kind() == constant.Int {
-		// TODO: add big.Rat accessor to constant.Value.
+		// TODO(gri): add big.Rat accessor to constant.Value.
 		r := valueToRat(num)
 		f.SetRat(r.Quo(r, valueToRat(denom)))
 	} else {
 		// Value too large to represent as a fraction => inaccessible.
-		// TODO: add big.Float accessor to constant.Value.
+		// TODO(gri): add big.Float accessor to constant.Value.
 		f.SetFloat64(math.MaxFloat64) // FIXME
 	}
 

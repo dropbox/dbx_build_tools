@@ -73,11 +73,11 @@ func TestStdlib(t *testing.T) {
 
 	// Run the analysis.
 	config := &Config{
-		Reflection:     false, // TODO: fix remaining bug in rVCallConstraint, then enable.
+		Reflection:     false, // TODO(adonovan): fix remaining bug in rVCallConstraint, then enable.
 		BuildCallGraph: true,
 		Mains:          mains,
 	}
-	// TODO: add some query values (affects track bits).
+	// TODO(adonovan): add some query values (affects track bits).
 
 	t0 := time.Now()
 
@@ -85,7 +85,7 @@ func TestStdlib(t *testing.T) {
 	if err != nil {
 		t.Fatal(err) // internal error in pointer analysis
 	}
-	_ = result // TODO: measure something
+	_ = result // TODO(adonovan): measure something
 
 	t1 := time.Now()
 

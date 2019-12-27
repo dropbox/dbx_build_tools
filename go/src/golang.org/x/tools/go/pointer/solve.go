@@ -206,7 +206,7 @@ func (a *analysis) onlineCopy(dst, src nodeid) bool {
 			if a.log != nil {
 				fmt.Fprintf(a.log, "\t\t\tdynamic copy n%d <- n%d\n", dst, src)
 			}
-			// TODO: most calls to onlineCopy
+			// TODO(adonovan): most calls to onlineCopy
 			// are followed by addWork, possibly batched
 			// via a 'changed' flag; see if there's a
 			// noticeable penalty to calling addWork here.
@@ -219,7 +219,7 @@ func (a *analysis) onlineCopy(dst, src nodeid) bool {
 // Returns sizeof.
 // Implicitly adds nodes to worklist.
 //
-// TODO: now that we support a.copy() during solving, we
+// TODO(adonovan): now that we support a.copy() during solving, we
 // could eliminate onlineCopyN, but it's much slower.  Investigate.
 //
 func (a *analysis) onlineCopyN(dst, src nodeid, sizeof uint32) uint32 {
@@ -272,7 +272,7 @@ func (c *typeFilterConstraint) solve(a *analysis, delta *nodeset) {
 		ifaceObj := nodeid(x)
 		tDyn, _, indirect := a.taggedValue(ifaceObj)
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -294,7 +294,7 @@ func (c *untagConstraint) solve(a *analysis, delta *nodeset) {
 		ifaceObj := nodeid(x)
 		tDyn, v, indirect := a.taggedValue(ifaceObj)
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}
@@ -302,7 +302,7 @@ func (c *untagConstraint) solve(a *analysis, delta *nodeset) {
 		if predicate(tDyn, c.typ) {
 			// Copy payload sans tag to dst.
 			//
-			// TODO: opt: if tDyn is
+			// TODO(adonovan): opt: if tDyn is
 			// nonpointerlike we can skip this entire
 			// constraint, perhaps.  We only care about
 			// pointers among the fields.
@@ -316,7 +316,7 @@ func (c *invokeConstraint) solve(a *analysis, delta *nodeset) {
 		ifaceObj := nodeid(x)
 		tDyn, v, indirect := a.taggedValue(ifaceObj)
 		if indirect {
-			// TODO: we may need to implement this if
+			// TODO(adonovan): we may need to implement this if
 			// we ever apply invokeConstraints to reflect.Value PTSs,
 			// e.g. for (reflect.Value).Call.
 			panic("indirect tagged object")

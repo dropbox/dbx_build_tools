@@ -79,7 +79,7 @@ func ReadFile(fset *token.FileSet, filename string) ([]byte, *token.File, error)
 func LineStart(f *token.File, line int) token.Pos {
 	// Use binary search to find the start offset of this line.
 	//
-	// TODO: eventually replace this function with the
+	// TODO(adonovan): eventually replace this function with the
 	// simpler and more efficient (*go/token.File).LineStart, added
 	// in go1.12.
 

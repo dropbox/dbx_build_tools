@@ -80,7 +80,7 @@ func doMain() error {
 	}
 
 	// Choose types.Sizes from conf.Build.
-	// TODO: remove this when go/packages provides a better way.
+	// TODO(adonovan): remove this when go/packages provides a better way.
 	var wordSize int64 = 8
 	switch build.Default.GOARCH {
 	case "386", "arm":

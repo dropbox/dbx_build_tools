@@ -42,7 +42,7 @@
 //
 package rta // import "golang.org/x/tools/go/callgraph/rta"
 
-// TODO: test it by connecting it to the interpreter and
+// TODO(adonovan): test it by connecting it to the interpreter and
 // replacing all "unreachable" functions by a special intrinsic, and
 // ensure that that intrinsic is never called.
 
@@ -274,7 +274,7 @@ func Analyze(roots []*ssa.Function, buildCallGraph bool) *Result {
 	}
 
 	if buildCallGraph {
-		// TODO: change callgraph API to eliminate the
+		// TODO(adonovan): change callgraph API to eliminate the
 		// notion of a distinguished root node.  Some callgraphs
 		// have many roots, or none.
 		r.result.CallGraph = callgraph.New(roots[0])

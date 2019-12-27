@@ -36,7 +36,7 @@ import (
 // Class Hierarchy Analysis algorithm.
 //
 func CallGraph(prog *ssa.Program) *callgraph.Graph {
-	cg := callgraph.New(nil) // TODO eliminate concept of rooted callgraph
+	cg := callgraph.New(nil) // TODO(adonovan) eliminate concept of rooted callgraph
 
 	allFuncs := ssautil.AllFunctions(prog)
 
@@ -107,7 +107,7 @@ func CallGraph(prog *ssa.Program) *callgraph.Graph {
 		// Write method in the program, the call graph can
 		// contain a lot of duplication.
 		//
-		// TODO: opt: consider factoring the callgraph
+		// TODO(adonovan): opt: consider factoring the callgraph
 		// API so that the Callers component of each edge is a
 		// slice of nodes, not a singleton.
 		for _, g := range callees {

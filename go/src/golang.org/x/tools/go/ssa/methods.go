@@ -136,7 +136,7 @@ func (prog *Program) declaredFunc(obj *types.Func) *Function {
 //
 // Thread-safe.  (Called via emitConv from multiple builder goroutines.)
 //
-// TODO: make this faster.  It accounts for 20% of SSA build time.
+// TODO(adonovan): make this faster.  It accounts for 20% of SSA build time.
 //
 // EXCLUSIVE_LOCKS_ACQUIRED(prog.methodsMu)
 //

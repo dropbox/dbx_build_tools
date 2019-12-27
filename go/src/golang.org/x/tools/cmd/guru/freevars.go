@@ -23,7 +23,7 @@ import (
 // of an aggregate type that are actually needed.
 // This aids refactoring.
 //
-// TODO: optionally display the free references to
+// TODO(adonovan): optionally display the free references to
 // file/package scope objects, and to objects from other packages.
 // Depending on where the resulting function abstraction will go,
 // these might be interesting.  Perhaps group the results into three

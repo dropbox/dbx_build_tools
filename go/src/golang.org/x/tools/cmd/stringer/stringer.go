@@ -124,7 +124,7 @@ func main() {
 		trimPrefix:  *trimprefix,
 		lineComment: *linecomment,
 	}
-	// TODO: accept other patterns for packages (directories, list of files, import paths, etc).
+	// TODO(suzmue): accept other patterns for packages (directories, list of files, import paths, etc).
 	if len(args) == 1 && isDirectory(args[0]) {
 		dir = args[0]
 	} else {

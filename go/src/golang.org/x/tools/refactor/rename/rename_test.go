@@ -19,7 +19,7 @@ import (
 	"golang.org/x/tools/go/buildutil"
 )
 
-// TODO: test reported source positions, somehow.
+// TODO(adonovan): test reported source positions, somehow.
 
 func TestConflicts(t *testing.T) {
 	defer func(savedWriteFile func(string, []byte) error, savedReportError func(token.Position, string)) {

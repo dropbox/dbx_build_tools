@@ -831,7 +831,7 @@ func (te *test) configDial(opts ...grpc.DialOption) ([]grpc.DialOption, string) 
 	default:
 		opts = append(opts, grpc.WithInsecure())
 	}
-	// TODO switch balancer case "pick_first".
+	// TODO(bar) switch balancer case "pick_first".
 	var scheme string
 	if te.resolverScheme == "" {
 		scheme = "passthrough:///"
@@ -2541,7 +2541,7 @@ func testHealthCheckFailure(t *testing.T, e env) {
 // an error code 'codes.NotFound'.
 func (s) TestHealthCheckOff(t *testing.T) {
 	for _, e := range listTestEnv() {
-		// TODO: Temporarily skip this env due to #619.
+		// TODO(bradfitz): Temporarily skip this env due to #619.
 		if e.name == "handler-tls" {
 			continue
 		}
@@ -2709,7 +2709,7 @@ func (s) TestUnknownHandler(t *testing.T) {
 		return status.Error(codes.Unauthenticated, "user unauthenticated")
 	}
 	for _, e := range listTestEnv() {
-		// TODO: Temporarily skip this env due to #619.
+		// TODO(bradfitz): Temporarily skip this env due to #619.
 		if e.name == "handler-tls" {
 			continue
 		}
@@ -3639,7 +3639,7 @@ func testCancelNoIO(t *testing.T, e env) {
 	// concurrent streams. We know when it's received it because
 	// an RPC will fail with codes.DeadlineExceeded instead of
 	// succeeding.
-	// TODO: add internal test hook for this (Issue 534)
+	// TODO(bradfitz): add internal test hook for this (Issue 534)
 	for {
 		ctx, cancelSecond := context.WithTimeout(context.Background(), 50*time.Millisecond)
 		_, err := tc.StreamingInputCall(ctx)
@@ -3654,7 +3654,7 @@ func testCancelNoIO(t *testing.T, e env) {
 	}
 	// If there are any RPCs in flight before the client receives
 	// the max streams setting, let them be expired.
-	// TODO: add internal test hook for this (Issue 534)
+	// TODO(bradfitz): add internal test hook for this (Issue 534)
 	time.Sleep(50 * time.Millisecond)
 
 	go func() {
@@ -3671,7 +3671,7 @@ func testCancelNoIO(t *testing.T, e env) {
 }
 
 // The following tests the gRPC streaming RPC implementations.
-// TODO: Have better coverage on error cases.
+// TODO(zhaoq): Have better coverage on error cases.
 var (
 	reqSizes  = []int{27182, 8, 1828, 45904}
 	respSizes = []int{31415, 9, 2653, 58979}
@@ -4472,7 +4472,7 @@ func testUnaryServerInterceptor(t *testing.T, e env) {
 
 func (s) TestStreamServerInterceptor(t *testing.T) {
 	for _, e := range listTestEnv() {
-		// TODO: Temporarily skip this env due to #619.
+		// TODO(bradfitz): Temporarily skip this env due to #619.
 		if e.name == "handler-tls" {
 			continue
 		}

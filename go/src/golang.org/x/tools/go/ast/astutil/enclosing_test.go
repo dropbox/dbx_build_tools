@@ -6,7 +6,7 @@ package astutil_test
 
 // This file defines tests of PathEnclosingInterval.
 
-// TODO: exhaustive tests that run over the whole input
+// TODO(adonovan): exhaustive tests that run over the whole input
 // tree, not just handcrafted examples.
 
 import (

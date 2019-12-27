@@ -26,7 +26,7 @@ import (
 	"golang.org/x/tools/refactor/eg"
 )
 
-// TODO: more tests:
+// TODO(adonovan): more tests:
 // - of command-line tool
 // - of all parts of syntax
 // - of applying a template to a package it imports:

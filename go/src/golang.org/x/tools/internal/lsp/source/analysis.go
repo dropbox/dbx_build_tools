@@ -138,7 +138,7 @@ func (act *Action) execOnce(fset *token.FileSet) {
 		Files:     act.Pkg.GetSyntax(),
 		Pkg:       act.Pkg.GetTypes(),
 		TypesInfo: act.Pkg.GetTypesInfo(),
-		// TODO: Get real TypeSizes from go/packages (golang.org/issues/30139).
+		// TODO(rstambler): Get real TypeSizes from go/packages (golang.org/issues/30139).
 		TypesSizes:        &types.StdSizes{},
 		ResultOf:          inputs,
 		Report:            func(d analysis.Diagnostic) { act.diagnostics = append(act.diagnostics, d) },
@@ -198,7 +198,7 @@ func inheritFacts(act, dep *Action) {
 // This is an overapproximation of the more accurate approach used by
 // gc export data, which walks the type graph, but it's much simpler.
 //
-// TODO: do more accurate filtering by walking the type graph.
+// TODO(adonovan): do more accurate filtering by walking the type graph.
 func exportedFrom(obj types.Object, pkg *types.Package) bool {
 	switch obj := obj.(type) {
 	case *types.Func:

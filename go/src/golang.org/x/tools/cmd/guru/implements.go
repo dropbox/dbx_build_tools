@@ -49,7 +49,7 @@ func implements(q *Query) error {
 			lconf.ImportWithTests(path)
 		}
 
-		// TODO: for completeness, we should also
+		// TODO(adonovan): for completeness, we should also
 		// type-check and inspect function bodies in all
 		// imported packages.  This would be expensive, but we
 		// could optimize by skipping functions that do not
@@ -221,7 +221,7 @@ func (r *implementsResult) PrintPlain(printf printfFunc) {
 	}
 
 	if isInterface(r.t) {
-		if types.NewMethodSet(r.t).Len() == 0 { // TODO: cache mset
+		if types.NewMethodSet(r.t).Len() == 0 { // TODO(adonovan): cache mset
 			printf(r.pos, "empty interface type %s", r.qpos.typeString(r.t))
 			return
 		}
@@ -287,7 +287,7 @@ func (r *implementsResult) PrintPlain(printf printfFunc) {
 			if r.method == nil {
 				printf(r.pos, "pointer type *%s", r.qpos.typeString(r.t))
 			} else {
-				// TODO: de-dup (C).f and (*C).f implementing (I).f.
+				// TODO(adonovan): de-dup (C).f and (*C).f implementing (I).f.
 				printf(r.method, "concrete method %s",
 					r.qpos.objectString(r.method))
 			}

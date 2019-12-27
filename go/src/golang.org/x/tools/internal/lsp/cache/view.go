@@ -140,7 +140,7 @@ func (v *View) applyContentChange(uri span.URI, content []byte) {
 	f := v.getFile(uri)
 	f.content = content
 
-	// TODO: Should we recompute these here?
+	// TODO(rstambler): Should we recompute these here?
 	f.ast = nil
 	f.token = nil
 

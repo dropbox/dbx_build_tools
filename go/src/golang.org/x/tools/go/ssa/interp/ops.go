@@ -37,7 +37,7 @@ func constValue(c *ssa.Const) value {
 	}
 
 	if t, ok := c.Type().Underlying().(*types.Basic); ok {
-		// TODO: eliminate untyped constants from SSA form.
+		// TODO(adonovan): eliminate untyped constants from SSA form.
 		switch t.Kind() {
 		case types.Bool, types.UntypedBool:
 			return constant.BoolVal(c.Value)
@@ -143,7 +143,7 @@ func zero(t types.Type) value {
 			panic("untyped nil has no zero value")
 		}
 		if t.Info()&types.IsUntyped != 0 {
-			// TODO: make it an invariant that
+			// TODO(adonovan): make it an invariant that
 			// this is unreachable.  Currently some
 			// constants have 'untyped' types when they
 			// should be defaulted by the typechecker.
@@ -922,7 +922,7 @@ var capturedOutputMu sync.Mutex
 // The print/println built-ins and the write() system call funnel
 // through here so they can be captured by the test driver.
 func write(fd int, b []byte) (int, error) {
-	// TODO: fix: on Windows, std{out,err} are not 1, 2.
+	// TODO(adonovan): fix: on Windows, std{out,err} are not 1, 2.
 	if CapturedOutput != nil && (fd == 1 || fd == 2) {
 		capturedOutputMu.Lock()
 		CapturedOutput.Write(b) // ignore errors
@@ -1079,7 +1079,7 @@ func callBuiltin(caller *frame, callpos token.Pos, fn *ssa.Builtin, args []value
 func rangeIter(x value, t types.Type) iter {
 	switch x := x.(type) {
 	case map[value]value:
-		// TODO: fix: leaks goroutines and channels
+		// TODO(adonovan): fix: leaks goroutines and channels
 		// on each incomplete map iteration.  We need to open
 		// up an iteration interface using the
 		// reflect.(Value).MapKeys machinery.
@@ -1092,7 +1092,7 @@ func rangeIter(x value, t types.Type) iter {
 		}()
 		return it
 	case *hashmap:
-		// TODO: fix: leaks goroutines and channels
+		// TODO(adonovan): fix: leaks goroutines and channels
 		// on each incomplete map iteration.  We need to open
 		// up an iteration interface using the
 		// reflect.(Value).MapKeys machinery.
@@ -1195,7 +1195,7 @@ func conv(t_dst, t_src types.Type, x value) value {
 
 	case *types.Slice:
 		// []byte or []rune -> string
-		// TODO: fix: type B byte; conv([]B -> string).
+		// TODO(adonovan): fix: type B byte; conv([]B -> string).
 		switch ut_src.Elem().(*types.Basic).Kind() {
 		case types.Byte:
 			x := x.([]value)
@@ -1218,7 +1218,7 @@ func conv(t_dst, t_src types.Type, x value) value {
 		x = widen(x)
 
 		// integer -> string?
-		// TODO: fix: test integer -> named alias of string.
+		// TODO(adonovan): fix: test integer -> named alias of string.
 		if ut_src.Info()&types.IsInteger != 0 {
 			if ut_dst, ok := ut_dst.(*types.Basic); ok && ut_dst.Kind() == types.String {
 				return string(asInt(x))
@@ -1230,7 +1230,7 @@ func conv(t_dst, t_src types.Type, x value) value {
 			switch ut_dst := ut_dst.(type) {
 			case *types.Slice:
 				var res []value
-				// TODO: fix: test named alias of rune, byte.
+				// TODO(adonovan): fix: test named alias of rune, byte.
 				switch ut_dst.Elem().(*types.Basic).Kind() {
 				case types.Rune:
 					for _, r := range []rune(s) {
@@ -1253,7 +1253,7 @@ func conv(t_dst, t_src types.Type, x value) value {
 
 		// unsafe.Pointer -> *value
 		if ut_src.Kind() == types.UnsafePointer {
-			// TODO: this is wrong and cannot
+			// TODO(adonovan): this is wrong and cannot
 			// really be fixed with the current design.
 			//
 			// return (*value)(x.(unsafe.Pointer))

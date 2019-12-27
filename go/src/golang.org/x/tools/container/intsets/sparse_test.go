@@ -237,7 +237,7 @@ func randomPset(prng *rand.Rand, maxSize int) *pset {
 	set := makePset()
 	size := int(prng.Int()) % maxSize
 	for i := 0; i < size; i++ {
-		// TODO: benchmark how performance varies
+		// TODO(adonovan): benchmark how performance varies
 		// with this sparsity parameter.
 		n := int(prng.Int()) % 10000
 		set.add(n)
@@ -306,7 +306,7 @@ func TestSetOperations(t *testing.T) {
 		X := randomPset(prng, 1<<i)
 		Y := randomPset(prng, 1<<i)
 
-		// TODO: minimise dependencies between stanzas below.
+		// TODO(adonovan): minimise dependencies between stanzas below.
 
 		// Copy(X)
 		C := makePset()
@@ -593,7 +593,7 @@ func TestFailFastOnShallowCopy(t *testing.T) {
 
 // -- Benchmarks -------------------------------------------------------
 
-// TODO:
+// TODO(adonovan):
 // - Add benchmarks of each method.
 // - Gather set distributions from pointer analysis.
 // - Measure memory usage.

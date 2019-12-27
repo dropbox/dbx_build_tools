@@ -147,7 +147,7 @@ func findPackageMember(ctxt *build.Context, fset *token.FileSet, srcdir, pkg, me
 		return 0, token.NoPos, err // no files for package
 	}
 
-	// TODO: opt: parallelize.
+	// TODO(adonovan): opt: parallelize.
 	for _, fname := range bp.GoFiles {
 		filename := filepath.Join(bp.Dir, fname)
 

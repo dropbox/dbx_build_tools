@@ -78,7 +78,7 @@ func firstPathOK(r rune) bool {
 // pathOK reports whether r can appear in an import path element.
 // Paths can be ASCII letters, ASCII digits, and limited ASCII punctuation: + - . _ and ~.
 // This matches what "go get" has historically recognized in import paths.
-// TODO: We would like to allow Unicode letters, but that requires additional
+// TODO(rsc): We would like to allow Unicode letters, but that requires additional
 // care in the safe encoding (see note below).
 func pathOK(r rune) bool {
 	if r < utf8.RuneSelf {

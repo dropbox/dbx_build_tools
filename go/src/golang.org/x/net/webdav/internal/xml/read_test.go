@@ -58,7 +58,7 @@ and it kept running!)
 
 Ignoring that particular problem, I would appreciate
 feedback on the right way to get the two values at
-the top of feeds.py marked NOTE.
+the top of feeds.py marked NOTE(rsc).
 
 
 </summary></entry><entry><title>rietveld: correct tab handling
@@ -173,7 +173,7 @@ and it kept running!)
 
 Ignoring that particular problem, I would appreciate
 feedback on the right way to get the two values at
-the top of feeds.py marked NOTE.
+the top of feeds.py marked NOTE(rsc).
 
 
 `,

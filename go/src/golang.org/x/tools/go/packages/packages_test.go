@@ -26,11 +26,11 @@ import (
 	"golang.org/x/tools/go/packages/packagestest"
 )
 
-// TODO: remove this once Go 1.12 is released as we will end support
+// TODO(matloob): remove this once Go 1.12 is released as we will end support
 // for versions of go list before Go 1.10.4.
 var usesOldGolist = false
 
-// TODO: more test cases to write:
+// TODO(adonovan): more test cases to write:
 //
 // - When the tests fail, make them print a 'cd & load' command
 //   that will allow the maintainer to interact with the failing scenario.
@@ -78,7 +78,7 @@ func testLoadImportsGraph(t *testing.T, exporter packagestest.Exporter) {
 			"c/c2.go":            "// +build ignore\n\n" + `package c; import _ "fmt"`,
 			"subdir/d/d.go":      `package d`,
 			"subdir/d/d_test.go": `package d; import _ "math/bits"`,
-			"subdir/d/x_test.go": `package d_test; import _ "golang.org/fake/subdir/d"`, // TODO: test bad import here
+			"subdir/d/x_test.go": `package d_test; import _ "golang.org/fake/subdir/d"`, // TODO(adonovan): test bad import here
 			"subdir/e/d.go":      `package e`,
 			"e/e.go":             `package main; import _ "golang.org/fake/b"`,
 			"e/e2.go":            `package main; import _ "golang.org/fake/c"`,
@@ -216,7 +216,7 @@ func testLoadImportsGraph(t *testing.T, exporter packagestest.Exporter) {
 
 	// Wildcards
 	// See StdlibTest for effective test of "std" wildcard.
-	// TODO: test "all" returns everything in the current module.
+	// TODO(adonovan): test "all" returns everything in the current module.
 	{
 		// "..." (subdirectory)
 		initial, err = packages.Load(exported.Config, "golang.org/fake/subdir/...")
@@ -642,7 +642,7 @@ func testLoadSyntaxOK(t *testing.T, exporter packagestest.Exporter) {
 		{"golang.org/fake/e", false, false}, // export data package
 		{"golang.org/fake/f", false, false}, // export data package
 	} {
-		// TODO: The legacy go list based support loads
+		// TODO(matloob): The legacy go list based support loads
 		// everything from source because it doesn't do a build
 		// and the .a files don't exist.
 		// Can we simulate its existence?
@@ -907,7 +907,7 @@ func TestLoadAllSyntaxImportErrors(t *testing.T) {
 	packagestest.TestAll(t, testLoadAllSyntaxImportErrors)
 }
 func testLoadAllSyntaxImportErrors(t *testing.T, exporter packagestest.Exporter) {
-	// TODO: Remove this once go list -e -compiled is fixed.
+	// TODO(matloob): Remove this once go list -e -compiled is fixed.
 	// See https://golang.org/issue/26755
 	t.Skip("go list -compiled -e fails with non-zero exit status for empty packages")
 
@@ -1558,7 +1558,7 @@ func testConfigDefaultEnv(t *testing.T, exporter packagestest.Exporter) {
 	case "android":
 		t.Skip("doesn't run on android")
 	case "windows":
-		// TODO: write an equivalent batch script for windows.
+		// TODO(jayconrod): write an equivalent batch script for windows.
 		// Hint: "type" can be used to read a file to stdout.
 		t.Skip("test requires sh")
 	case "plan9":
@@ -1760,7 +1760,7 @@ func importGraph(initial []*packages.Package) (string, map[string]*packages.Pack
 				// math/bits took on a dependency on unsafe in 1.12, which breaks some
 				// tests. As a short term hack, prune that edge.
 				// ditto for ("errors", "internal/reflectlite") in 1.13.
-				// TODO: think of a cleaner solution, or remove math/bits from the test.
+				// TODO(matloob): think of a cleaner solution, or remove math/bits from the test.
 				if p.ID == "math/bits" && imp.ID == "unsafe" {
 					continue
 				}

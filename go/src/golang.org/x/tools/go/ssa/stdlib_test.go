@@ -30,7 +30,7 @@ import (
 // Skip the set of packages that transitively depend on
 // cmd/internal/objfile, which uses vendoring,
 // which go/loader does not yet support.
-// TODO: add support for vendoring and delete this.
+// TODO(adonovan): add support for vendoring and delete this.
 var skip = map[string]bool{
 	"cmd/addr2line":        true,
 	"cmd/internal/objfile": true,

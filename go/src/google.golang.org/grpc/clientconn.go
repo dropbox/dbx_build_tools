@@ -694,7 +694,7 @@ func (cc *ClientConn) handleSubConnStateChange(sc balancer.SubConn, s connectivi
 		cc.mu.Unlock()
 		return
 	}
-	// TODO send updates to all balancer wrappers when balancer
+	// TODO(bar switching) send updates to all balancer wrappers when balancer
 	// gracefully switching is supported.
 	cc.balancerWrapper.handleSubConnStateChange(sc, s)
 	cc.mu.Unlock()
@@ -780,7 +780,7 @@ func (cc *ClientConn) incrCallsFailed() {
 
 // connect starts creating a transport.
 // It does nothing if the ac is not IDLE.
-// TODO Move this to the addrConn section.
+// TODO(bar) Move this to the addrConn section.
 func (ac *addrConn) connect() error {
 	ac.mu.Lock()
 	if ac.state == connectivity.Shutdown {
@@ -1295,7 +1295,7 @@ func (ac *addrConn) createTransport(addr resolver.Address, copts transport.Conne
 	case <-onCloseCalled:
 		// The transport has already closed - noop.
 		return nil, nil, errors.New("connection closed")
-		// TODO this should bail on ac.ctx.Done(). Add a test and fix.
+		// TODO(deklerk) this should bail on ac.ctx.Done(). Add a test and fix.
 	}
 	return newTr, reconnect, nil
 }
@@ -1410,7 +1410,7 @@ func (ac *addrConn) getReadyTransport() (transport.ClientTransport, bool) {
 }
 
 // tearDown starts to tear down the addrConn.
-// TODO: Make this synchronous to avoid unbounded memory consumption in
+// TODO(zhaoq): Make this synchronous to avoid unbounded memory consumption in
 // some edge cases (e.g., the caller opens and closes many addrConn's in a
 // tight loop.
 // tearDown doesn't remove ac from ac.cc.conns.
@@ -1492,7 +1492,7 @@ type retryThrottler struct {
 	ratio  float64
 
 	mu     sync.Mutex
-	tokens float64 // TODO: replace with atomic and remove lock.
+	tokens float64 // TODO(dfawley): replace with atomic and remove lock.
 }
 
 // throttle subtracts a retry token from the pool and returns whether a retry

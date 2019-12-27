@@ -94,12 +94,12 @@ func (v *VM) Run(in []byte) (int, error) {
 		ok = true
 	)
 
-	// TODO: implement:
+	// TODO(mdlayher): implement:
 	// - NegateA:
 	//   - would require a change from uint32 registers to int32
 	//     registers
 
-	// TODO: add interop tests that check signedness of ALU
+	// TODO(mdlayher): add interop tests that check signedness of ALU
 	// operations against kernel implementation, and make sure Go
 	// implementation matches behavior
 

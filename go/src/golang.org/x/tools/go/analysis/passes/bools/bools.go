@@ -43,7 +43,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
-		// TODO: this reports n(n-1)/2 errors for an
+		// TODO(adonovan): this reports n(n-1)/2 errors for an
 		// expression e||...||e of depth n. Fix.
 		// See https://golang.org/issue/28086.
 		comm := op.commutativeSets(pass.TypesInfo, e)

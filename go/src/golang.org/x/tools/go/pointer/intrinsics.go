@@ -11,7 +11,7 @@ package pointer
 // functions require may special treatment if the analysis completely
 // replaces the implementation of an API such as reflection.
 
-// TODO: support a means of writing analytic summaries in
+// TODO(adonovan): support a means of writing analytic summaries in
 // the target code, so that users can summarise the effects of their
 // own C functions using a snippet of Go.
 
@@ -197,7 +197,7 @@ func (a *analysis) isReflect(fn *ssa.Function) bool {
 	}
 	// Synthetic wrappers have a nil Pkg, so they slip through the
 	// previous check.  Check the receiver package.
-	// TODO: should synthetic wrappers have a non-nil Pkg?
+	// TODO(adonovan): should synthetic wrappers have a non-nil Pkg?
 	if recv := fn.Signature.Recv(); recv != nil {
 		if named, ok := deref(recv.Type()).(*types.Named); ok {
 			if named.Obj().Pkg() == reflectPackage {
@@ -255,7 +255,7 @@ func (c *runtimeSetFinalizerConstraint) solve(a *analysis, delta *nodeset) {
 	for _, fObj := range delta.AppendTo(a.deltaSpace) {
 		tDyn, f, indirect := a.taggedValue(nodeid(fObj))
 		if indirect {
-			// TODO: we'll need to implement this
+			// TODO(adonovan): we'll need to implement this
 			// when we start creating indirect tagged objects.
 			panic("indirect tagged object")
 		}

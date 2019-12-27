@@ -26,7 +26,7 @@ import (
 // buildGodoc builds the godoc executable.
 // It returns its path, and a cleanup function.
 //
-// TODO: opt: do this at most once, and do the cleanup
+// TODO(adonovan): opt: do this at most once, and do the cleanup
 // exactly once.  How though?  There's no atexit.
 func buildGodoc(t *testing.T) (bin string, cleanup func()) {
 	if runtime.GOARCH == "arm" {

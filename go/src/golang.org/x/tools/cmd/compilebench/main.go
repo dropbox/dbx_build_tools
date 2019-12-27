@@ -365,7 +365,7 @@ func runBuild(name, dir string, count int) {
 
 	opath := pkg.Dir + "/_compilebench_.o"
 	if *flagObj {
-		// TODO: object files are big; just read enough to find what we seek.
+		// TODO(josharian): object files are big; just read enough to find what we seek.
 		data, err := ioutil.ReadFile(opath)
 		if err != nil {
 			log.Print(err)

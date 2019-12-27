@@ -4,7 +4,7 @@ package main
 // See go.tools/guru/guru_test.go for explanation.
 // See freevars.golden for expected query results.
 
-// TODO: it's hard to test this query in a single line of gofmt'd code.
+// TODO(adonovan): it's hard to test this query in a single line of gofmt'd code.
 
 type T struct {
 	a, b int

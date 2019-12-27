@@ -1981,7 +1981,7 @@ and code is licensed under a <a href="/LICENSE">BSD license</a>.<br>
 </div><!-- .container -->
 </div><!-- #page -->
 
-<!-- TODO: load these from <head> using "defer" attribute? -->
+<!-- TODO(adonovan): load these from <head> using "defer" attribute? -->
 <script type="text/javascript" src="/serverpush/static/jquery.min.js?{{.CacheBust}}"></script>
 <script type="text/javascript" src="/serverpush/static/playground.js?{{.CacheBust}}"></script>
 <script>var goVersion = "go1.8";</script>

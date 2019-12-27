@@ -93,7 +93,7 @@ func (lt *ltState) dfs(v *BasicBlock, i int32, preorder []*BasicBlock) int32 {
 
 // eval implements the EVAL part of the LT algorithm.
 func (lt *ltState) eval(v *BasicBlock) *BasicBlock {
-	// TODO: opt: do path compression per simple LT.
+	// TODO(adonovan): opt: do path compression per simple LT.
 	u := v
 	for ; lt.ancestor[v.Index] != nil; v = lt.ancestor[v.Index] {
 		if lt.sdom[v.Index].dom.pre < lt.sdom[u.Index].dom.pre {
@@ -325,7 +325,7 @@ func printDomTreeDot(buf *bytes.Buffer, f *Function) {
 	for i, b := range f.Blocks {
 		v := b.dom
 		fmt.Fprintf(buf, "\tn%d [label=\"%s (%d, %d)\",shape=\"rectangle\"];\n", v.pre, b, v.pre, v.post)
-		// TODO: improve appearance of edges
+		// TODO(adonovan): improve appearance of edges
 		// belonging to both dominator tree and CFG.
 
 		// Dominator tree edge.

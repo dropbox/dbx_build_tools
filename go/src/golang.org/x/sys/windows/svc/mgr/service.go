@@ -13,7 +13,7 @@ import (
 	"golang.org/x/sys/windows/svc"
 )
 
-// TODO: Use EnumDependentServices to enumerate dependent services.
+// TODO(brainman): Use EnumDependentServices to enumerate dependent services.
 
 // Service is used to access Windows service.
 type Service struct {

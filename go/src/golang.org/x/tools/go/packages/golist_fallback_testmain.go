@@ -22,7 +22,7 @@ import (
 	"unicode/utf8"
 )
 
-// TODO: Delete this file once Go 1.12 is released.
+// TODO(matloob): Delete this file once Go 1.12 is released.
 
 // This file complements golist_fallback.go by providing
 // support for generating testmains.

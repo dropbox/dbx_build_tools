@@ -19,7 +19,7 @@ func init() {
 		stat[4] = st.Uid
 		stat[5] = st.Gid
 		stat[6] = st.Rdev
-		// TODO: fix: copy Timespecs.
+		// TODO(adonovan): fix: copy Timespecs.
 		// stat[8] = st.Atim
 		// stat[9] = st.Mtim
 		// stat[10] = st.Ctim

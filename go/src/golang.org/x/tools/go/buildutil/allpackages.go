@@ -141,7 +141,7 @@ func allPackages(ctxt *build.Context, root string, ch chan<- item) {
 // package names are separated by slash, not the platform's path separator.)
 //
 func ExpandPatterns(ctxt *build.Context, patterns []string) map[string]bool {
-	// TODO: support other features of 'go list':
+	// TODO(adonovan): support other features of 'go list':
 	// - "std"/"cmd"/"all" meta-packages
 	// - "..." not at the end of a pattern
 	// - relative patterns using "./" or "../" prefix
@@ -156,7 +156,7 @@ func ExpandPatterns(ctxt *build.Context, patterns []string) map[string]bool {
 	}
 
 	// Scan entire workspace if wildcards are present.
-	// TODO: opt: scan only the necessary subtrees of the workspace.
+	// TODO(adonovan): opt: scan only the necessary subtrees of the workspace.
 	var all []string
 	for _, arg := range patterns {
 		if strings.HasSuffix(arg, "...") {

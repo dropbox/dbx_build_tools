@@ -74,7 +74,7 @@ func (e *EncryptedKey) Decrypt(priv *PrivateKey, config *Config) error {
 	var err error
 	var b []byte
 
-	// TODO: use session key decryption routines here to avoid
+	// TODO(agl): use session key decryption routines here to avoid
 	// padding oracle attacks.
 	switch priv.PubKeyAlgo {
 	case PubKeyAlgoRSA, PubKeyAlgoRSAEncryptOnly:

@@ -40,7 +40,7 @@ func (s *SvcCtlProcessor) CreateBatch(ctx context.Context, req *svclib_proto.Cre
 	for true {
 		toAddNext := []*svclib_proto.Service{}
 		createErrors := []error{}
-		// TODO: This is possibly a stupid way to create services in dependency order. Don't
+		// TODO(anupc): This is possibly a stupid way to create services in dependency order. Don't
 		// make RPC calls from the processors, please.
 		for _, svc := range toAdd {
 			if err := s.create(svc); err != nil {

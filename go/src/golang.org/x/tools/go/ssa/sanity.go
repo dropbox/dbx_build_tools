@@ -174,7 +174,7 @@ func (s *sanity) checkInstr(idx int, instr Instruction) {
 	case *TypeAssert:
 	case *UnOp:
 	case *DebugRef:
-		// TODO: implement checks.
+		// TODO(adonovan): implement checks.
 	default:
 		panic(fmt.Sprintf("Unknown instruction type: %T", instr))
 	}
@@ -349,7 +349,7 @@ func (s *sanity) checkBlock(b *BasicBlock, index int) {
 			}
 
 			// Check that Operands that are also Instructions belong to same function.
-			// TODO: also check their block dominates block b.
+			// TODO(adonovan): also check their block dominates block b.
 			if val, ok := val.(Instruction); ok {
 				if val.Block() == nil {
 					s.errorf("operand %d of %s is an instruction (%s) that belongs to no block", i, instr, val)
@@ -369,7 +369,7 @@ func (s *sanity) checkBlock(b *BasicBlock, index int) {
 				}
 			}
 
-			// TODO: check val.Parent() != nil <=> val.Referrers() is defined.
+			// TODO(adonovan): check val.Parent() != nil <=> val.Referrers() is defined.
 
 			if refs := val.Referrers(); refs != nil {
 				for _, ref := range *refs {
@@ -399,7 +399,7 @@ func (s *sanity) checkReferrerList(v Value) {
 }
 
 func (s *sanity) checkFunction(fn *Function) bool {
-	// TODO: check Function invariants:
+	// TODO(adonovan): check Function invariants:
 	// - check params match signature
 	// - check transient fields are nil
 	// - warn if any fn.Locals do not appear among block instructions.

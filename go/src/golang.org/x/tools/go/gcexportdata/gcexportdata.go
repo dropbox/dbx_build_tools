@@ -80,7 +80,7 @@ func Read(in io.Reader, fset *token.FileSet, imports map[string]*types.Package, 
 	}
 
 	// The App Engine Go runtime v1.6 uses the old export data format.
-	// TODO: delete once v1.7 has been around for a while.
+	// TODO(adonovan): delete once v1.7 has been around for a while.
 	if bytes.HasPrefix(data, []byte("package ")) {
 		return gcimporter.ImportData(imports, path, path, bytes.NewReader(data))
 	}

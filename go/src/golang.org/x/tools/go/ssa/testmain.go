@@ -8,7 +8,7 @@ package ssa
 // tests of the supplied packages.
 // It is closely coupled to $GOROOT/src/cmd/go/test.go and $GOROOT/src/testing.
 //
-// TODO: throws this all away now that x/tools/go/packages
+// TODO(adonovan): throws this all away now that x/tools/go/packages
 // provides access to the actual synthetic test main files.
 
 import (
@@ -57,7 +57,7 @@ func FindTests(pkg *Package) (tests, benchmarks, examples []*Function, main *Fun
 		}
 	}
 
-	// TODO: use a stable order, e.g. lexical.
+	// TODO(adonovan): use a stable order, e.g. lexical.
 	for _, mem := range pkg.Members {
 		if f, ok := mem.(*Function); ok &&
 			ast.IsExported(f.Name()) &&

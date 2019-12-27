@@ -22,7 +22,7 @@ package ssa
 // http://lists.cs.uiuc.edu/pipermail/llvmdev/2012-January/046638.html
 // (Be sure to expand the whole thread.)
 
-// TODO: opt: there are many optimizations worth evaluating, and
+// TODO(adonovan): opt: there are many optimizations worth evaluating, and
 // the conventional wisdom for SSA construction is that a simple
 // algorithm well engineered often beats those of better asymptotic
 // complexity on all but the most egregious inputs.
@@ -55,7 +55,7 @@ const debugLifting = false
 // Block.Index.  The inner slice is conceptually a set, possibly
 // containing duplicates.
 //
-// TODO: opt: measure impact of dups; consider a packed bit
+// TODO(adonovan): opt: measure impact of dups; consider a packed bit
 // representation, e.g. big.Int, and bitwise parallel operations for
 // the union step in the Children loop.
 //
@@ -72,7 +72,7 @@ func (df domFrontier) add(u, v *BasicBlock) {
 // build builds the dominance frontier df for the dominator (sub)tree
 // rooted at u, using the Cytron et al. algorithm.
 //
-// TODO: opt: consider Berlin approach, computing pruned SSA
+// TODO(adonovan): opt: consider Berlin approach, computing pruned SSA
 // by pruning the entire IDF computation, rather than merely pruning
 // the DF -> IDF step.
 func (df domFrontier) build(u *BasicBlock) {
@@ -87,7 +87,7 @@ func (df domFrontier) build(u *BasicBlock) {
 	}
 	for _, w := range u.dom.children {
 		for _, vb := range df[w.Index] {
-			// TODO: opt: use word-parallel bitwise union.
+			// TODO(adonovan): opt: use word-parallel bitwise union.
 			if v := vb.dom; v.idom != u {
 				df.add(u, vb)
 			}
@@ -129,7 +129,7 @@ func removeInstr(refs []Instruction, instr Instruction) []Instruction {
 // - The dominator tree is up-to-date.
 //
 func lift(fn *Function) {
-	// TODO: opt: lots of little optimizations may be
+	// TODO(adonovan): opt: lots of little optimizations may be
 	// worthwhile here, especially if they cause us to avoid
 	// buildDomFrontier.  For example:
 	//
@@ -207,7 +207,7 @@ func lift(fn *Function) {
 	// value.  Initially the renaming contains nil, signifying the
 	// zero constant of the appropriate type; we construct the
 	// Const lazily at most once on each path through the domtree.
-	// TODO: opt: cache per-function not per subtree.
+	// TODO(adonovan): opt: cache per-function not per subtree.
 	renaming := make([]Value, numAllocs)
 
 	// Renaming.
@@ -231,7 +231,7 @@ func lift(fn *Function) {
 		}
 
 		// Compact nps + non-nil Instrs into a new slice.
-		// TODO: opt: compact in situ (rightwards)
+		// TODO(adonovan): opt: compact in situ (rightwards)
 		// if Instrs has sufficient space or slack.
 		dst := make([]Instruction, len(b.Instrs)+j-b.gaps-rundefersToKill)
 		for i, np := range nps {
@@ -446,7 +446,7 @@ func liftAlloc(df domFrontier, alloc *Alloc, newPhis newPhiMap, fresh *int) bool
 	// counter tricks, we just reset the 'hasAlready' and 'work'
 	// sets each iteration.  These are bitmaps so it's pretty cheap.
 	//
-	// TODO: opt: recycle slice storage for W,
+	// TODO(adonovan): opt: recycle slice storage for W,
 	// hasAlready, defBlocks across liftAlloc calls.
 	var hasAlready blockSet
 

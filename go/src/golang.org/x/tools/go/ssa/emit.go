@@ -74,7 +74,7 @@ func emitArith(f *Function, op token.Token, x, y Value, t types.Type, pos token.
 	case token.SHL, token.SHR:
 		x = emitConv(f, x, t)
 		// y may be signed or an 'untyped' constant.
-		// TODO: whence signed values?
+		// TODO(adonovan): whence signed values?
 		if b, ok := y.Type().Underlying().(*types.Basic); ok && b.Info()&types.IsUnsigned == 0 {
 			y = emitConv(f, y, types.Typ[types.Uint64])
 		}
@@ -110,7 +110,7 @@ func emitCompare(f *Function, op token.Token, x, y Value, pos token.Pos) Value {
 	//   switch true { case e: ... }
 	//   if e==true { ... }
 	// even in the case when e's type is an interface.
-	// TODO: opt: generalise to x==true, false!=y, etc.
+	// TODO(adonovan): opt: generalise to x==true, false!=y, etc.
 	if x == vTrue && op == token.EQL {
 		if yt, ok := yt.(*types.Basic); ok && yt.Info()&types.IsBoolean != 0 {
 			return y
@@ -337,7 +337,7 @@ func emitTailCall(f *Function, call *Call) {
 	default:
 		for i := 0; i < nr; i++ {
 			v := emitExtract(f, tuple, i)
-			// TODO: in principle, this is required:
+			// TODO(adonovan): in principle, this is required:
 			//   v = emitConv(f, o.Type, f.Signature.Results[i].Type)
 			// but in practice emitTailCall is only used when
 			// the types exactly match.

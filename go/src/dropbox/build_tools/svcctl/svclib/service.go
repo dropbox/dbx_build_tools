@@ -134,7 +134,7 @@ func getSvcCtlClient() (svclib_proto.SvcCtlClient, error) {
 		return nil, readErr
 	}
 	addr := fmt.Sprintf("localhost:%s", bytes)
-	// TODO There is no correct handshake so it generates a server-side error message on
+	// TODO(msolo) There is no correct handshake so it generates a server-side error message on
 	// every startup that isn't necessary. Creating a file-based balancer would solve
 	// this. Preflight-checking is a anti-pattern.
 	if _, err := net.Dial("tcp", addr); err != nil {

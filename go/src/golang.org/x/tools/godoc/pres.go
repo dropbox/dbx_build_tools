@@ -149,13 +149,13 @@ func (p *Presentation) CmdFSRoot() string {
 	return p.cmdHandler.fsRoot
 }
 
-// TODO: move this to be a method on Corpus. Just moving code around for now,
+// TODO(bradfitz): move this to be a method on Corpus. Just moving code around for now,
 // but this doesn't feel right.
 func (p *Presentation) GetPkgPageInfo(abspath, relpath string, mode PageInfoMode) *PageInfo {
 	return p.pkgHandler.GetPageInfo(abspath, relpath, mode, "", "")
 }
 
-// TODO: move this to be a method on Corpus. Just moving code around for now,
+// TODO(bradfitz): move this to be a method on Corpus. Just moving code around for now,
 // but this doesn't feel right.
 func (p *Presentation) GetCmdPageInfo(abspath, relpath string, mode PageInfoMode) *PageInfo {
 	return p.cmdHandler.GetPageInfo(abspath, relpath, mode, "", "")

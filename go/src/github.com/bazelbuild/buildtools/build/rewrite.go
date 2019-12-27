@@ -494,7 +494,7 @@ func sortStringList(x Expr, info *RewriteInfo, context string) {
 
 	forceSort := keepSorted(list) || keepSorted(list.List[0])
 
-	// TODO: Decide how to recognize lists that cannot
+	// TODO(bazel-team): Decide how to recognize lists that cannot
 	// be sorted. Avoiding all lists with comments avoids sorting
 	// lists that say explicitly, in some form or another, why they
 	// cannot be sorted. For example, many cc_test rules require

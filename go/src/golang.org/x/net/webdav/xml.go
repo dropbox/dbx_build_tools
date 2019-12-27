@@ -300,7 +300,7 @@ type response struct {
 // MultistatusWriter marshals one or more Responses into a XML
 // multistatus response.
 // See http://www.webdav.org/specs/rfc4918.html#ELEMENT_multistatus
-// TODO: As a workaround, the "D:" namespace prefix, defined as
+// TODO(rsto, mpl): As a workaround, the "D:" namespace prefix, defined as
 // "DAV:" on this element, is prepended on the nested response, as well as on all
 // its nested elements. All property names in the DAV: namespace are prefixed as
 // well. This is because some versions of Mini-Redirector (on windows 7) ignore

@@ -69,7 +69,7 @@ func readAllProcStats() ([]*ProcStat, error) {
 			pidStats, err := ReadProcStats(pid)
 			if err != nil {
 				if os.IsNotExist(err) {
-					// NOTE There are inherent races here. If a process
+					// NOTE(msolo) There are inherent races here. If a process
 					// disappears betweenthe time you read the directory and you
 					// manage to read the proc stats, don't panic. Soldier on.
 					continue
@@ -272,7 +272,7 @@ func ReadAllProcEnv() ([]*ProcEnv, error) {
 		procEnv, err := ReadProcEnv(pid)
 		if err != nil {
 			if os.IsNotExist(err) {
-				// NOTE There are inherent races here. If a process
+				// NOTE(msolo) There are inherent races here. If a process
 				// disappears betweenthe time you read the directory and you
 				// manage to read the proc stats, don't panic. Soldier on.
 				continue

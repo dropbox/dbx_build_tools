@@ -372,7 +372,7 @@ def _rule_has_runfiles(rule):
     # type: (BazelRule) -> bool
     extensions_without_runfiles = (".par", ".tar", ".sqfs", ".deb", ".tgz", ".zip")
 
-    # TODO  Arguably we should be including all rules here (as either with or
+    # TODO (T192829) Arguably we should be including all rules here (as either with or
     # without runfiles, and error if unknown), to ensure for
     # accountability, and then remove extensions_without_runfiles.
     rule_kinds_without_runfiles = ("genrule", "dbx_pkg_sqfs")

@@ -488,7 +488,7 @@ func (app *h2i) onNewHeaderField(f hpack.HeaderField) {
 func (app *h2i) encodeHeaders(req *http.Request) []byte {
 	app.hbuf.Reset()
 
-	// TODO: figure out :authority-vs-Host stuff between http2 and Go
+	// TODO(bradfitz): figure out :authority-vs-Host stuff between http2 and Go
 	host := req.Host
 	if host == "" {
 		host = req.URL.Host

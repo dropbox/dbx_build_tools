@@ -3,7 +3,7 @@
 package A2
 
 // This refactoring causes addition of "errors" import.
-// TODO: fix: it should also remove "fmt".
+// TODO(adonovan): fix: it should also remove "fmt".
 
 import (
 	"errors"

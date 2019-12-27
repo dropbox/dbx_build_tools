@@ -107,7 +107,7 @@ def _get_itest_target_body(bazel_path, target, use_implicit_output):
     if not os.path.exists(service_defs):
         # most likely doesn't have services. but just to be safe and very correct,
         # use bazel query
-        # TODO the only thing this bazel query protects against is some internal runfiles
+        # TODO(naphat) the only thing this bazel query protects against is some internal runfiles
         # structure in svc.bzl changing without this code being updated. do we need it?
         return _get_itest_target_body_by_bazel_query(bazel_path, target)
     # now that we know the given target is of a specific format (no aliases),
@@ -754,7 +754,7 @@ def _cmd_itest_reload(args, bazel_args, mode_args):
     if not os.path.exists(on_host_test_binary):
         # this means that the container was started from before `bzl itest` started creating
         # a run-test script
-        # TODO remove this after 09/30
+        # TODO(naphat) remove this after 09/30
         message = """The run-test wrapper does not exist for this target, most likely because the container was creating using an old version of `bzl itest`. Please run the following to recreate the container:
 
 bzl itest-stop {target} && bzl itest-run {target}""".format(

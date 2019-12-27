@@ -67,7 +67,7 @@ func ReadDirent(fd int, buf []byte) (n int, err error) {
 	// Final argument is (basep *uintptr) and the syscall doesn't take nil.
 	// 64 bits should be enough. (32 bits isn't even on 386). Since the
 	// actual system call is getdirentries64, 64 is a good guess.
-	// TODO: Can we use a single global basep for all calls?
+	// TODO(rsc): Can we use a single global basep for all calls?
 	var base = (*uintptr)(unsafe.Pointer(new(uint64)))
 	return Getdirentries(fd, buf, base)
 }
@@ -300,7 +300,7 @@ func Getsockname(fd int) (sa Sockaddr, err error) {
 	if err = getsockname(fd, &rsa, &len); err != nil {
 		return
 	}
-	// TODO: DragonFly has a "bug" (see issue 3349), which should be
+	// TODO(jsing): DragonFly has a "bug" (see issue 3349), which should be
 	// reported upstream.
 	if runtime.GOOS == "dragonfly" && rsa.Addr.Family == AF_UNSPEC && rsa.Addr.Len == 0 {
 		rsa.Addr.Family = AF_UNIX

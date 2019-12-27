@@ -22,7 +22,7 @@ var debug = false
 
 // GetSizes returns the sizes used by the underlying driver with the given parameters.
 func GetSizes(ctx context.Context, buildFlags, env []string, dir string, usesExportData bool) (types.Sizes, error) {
-	// TODO: Clean this up. This code is mostly a copy of packages.findExternalDriver.
+	// TODO(matloob): Clean this up. This code is mostly a copy of packages.findExternalDriver.
 	const toolPrefix = "GOPACKAGESDRIVER="
 	tool := ""
 	for _, env := range env {

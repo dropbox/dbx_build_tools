@@ -121,7 +121,7 @@ extractQueries:
 		}
 	}
 
-	// TODO: Remove the definition of listfunc and just use golistPackages once go1.12 is released.
+	// TODO(matloob): Remove the definition of listfunc and just use golistPackages once go1.12 is released.
 	var listfunc driver
 	var isFallback bool
 	listfunc = func(cfg *Config, words ...string) (*driverResponse, error) {
@@ -217,7 +217,7 @@ func addNeededOverlayPackages(cfg *Config, driver driver, response *responseDedu
 
 func runContainsQueries(cfg *Config, driver driver, isFallback bool, response *responseDeduper, queries []string) error {
 	for _, query := range queries {
-		// TODO: Do only one query per directory.
+		// TODO(matloob): Do only one query per directory.
 		fdir := filepath.Dir(query)
 		// Pass absolute path of directory to go list so that it knows to treat it as a directory,
 		// not a package path.
@@ -687,7 +687,7 @@ func golistDriverCurrent(cfg *Config, words ...string) (*driverResponse, error) 
 		}
 
 		// Work around for pre-go.1.11 versions of go list.
-		// TODO: they should be handled by the fallback.
+		// TODO(matloob): they should be handled by the fallback.
 		// Can we delete this?
 		if len(pkg.CompiledGoFiles) == 0 {
 			pkg.CompiledGoFiles = pkg.GoFiles
@@ -785,7 +785,7 @@ func invokeGo(cfg *Config, args ...string) (*bytes.Buffer, error) {
 		// (despite the -e flag) and the Export field is blank.
 		// Do not fail in that case.
 		// The same is true if an ad-hoc package given to go list doesn't exist.
-		// TODO: Remove these once we can depend on go list to exit with a zero status with -e even when
+		// TODO(matloob): Remove these once we can depend on go list to exit with a zero status with -e even when
 		// packages don't exist or a build fails.
 		if !usesExportData(cfg) && !containsGoFile(args) {
 			return nil, fmt.Errorf("go %v: %s: %s", args, exitErr, stderr)

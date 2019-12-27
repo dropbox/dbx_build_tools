@@ -24,7 +24,7 @@ var (
 // ----------------------------------------------------------------------------
 // Documentation Metadata
 
-// TODO: why are some exported and some aren't? -brad
+// TODO(adg): why are some exported and some aren't? -brad
 type Metadata struct {
 	Title    string
 	Subtitle string

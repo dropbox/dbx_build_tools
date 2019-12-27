@@ -14,7 +14,7 @@ import (
 	"math/big"
 )
 
-// TODO use tabwriter for alignment?
+// TODO(gri) use tabwriter for alignment?
 
 func print(w io.Writer, pkg *types.Package, filter func(types.Object) bool) {
 	var p printer
@@ -184,7 +184,7 @@ func (p *printer) printPackage(pkg *types.Package, filter func(types.Object) boo
 		}
 	}
 
-	// TODO better handling of builtins (package unsafe only)
+	// TODO(gri) better handling of builtins (package unsafe only)
 	if len(builtins) > 0 {
 		p.print("\n")
 		for _, obj := range builtins {
@@ -250,7 +250,7 @@ func floatString(v constant.Value) string {
 		e--
 	}
 
-	// TODO Values such as 1/2 are easier to read in form 0.5
+	// TODO(gri) Values such as 1/2 are easier to read in form 0.5
 	// rather than 5.0e-1. Similarly, 1.0e1 is easier to read as
 	// 10.0. Fine-tune best exponent range for readability.
 
@@ -276,7 +276,7 @@ func floatString(v constant.Value) string {
 		s = "-" + s
 	}
 
-	// TODO If v is a "small" fraction (i.e., numerator and denominator
+	// TODO(gri) If v is a "small" fraction (i.e., numerator and denominator
 	// are just a small number of decimal digits), add the exact fraction as
 	// a comment. For instance: 3.3333...e-1 /* = 1/3 */
 
@@ -286,7 +286,7 @@ func floatString(v constant.Value) string {
 // valString returns the string representation for the value v.
 // Setting floatFmt forces an integer value to be formatted in
 // normalized floating-point format.
-// TODO Move this code into package constant.
+// TODO(gri) Move this code into package constant.
 func valString(v constant.Value, floatFmt bool) string {
 	switch v.Kind() {
 	case constant.Int:
@@ -350,7 +350,7 @@ func (p *printer) printFunc(recvType types.Type, obj *types.Func) {
 //
 // combinedMethodSet is analogous to types/typeutil.IntuitiveMethodSet
 // but doesn't require a MethodSetCache.
-// TODO If this functionality doesn't change over time, consider
+// TODO(gri) If this functionality doesn't change over time, consider
 // just calling IntuitiveMethodSet eventually.
 func combinedMethodSet(T *types.Named) []*types.Selection {
 	// method set for T

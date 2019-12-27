@@ -18,7 +18,7 @@ import (
 	"golang.org/x/tools/go/internal/cgo"
 )
 
-// TODO: Delete this file once Go 1.12 is released.
+// TODO(matloob): Delete this file once Go 1.12 is released.
 
 // This file provides backwards compatibility support for
 // loading for versions of Go earlier than 1.11. This support is meant to
@@ -98,7 +98,7 @@ func golistDriverFallback(cfg *Config, words ...string) (*driverResponse, error)
 		}
 		processCgo := func() bool {
 			// Suppress any cgo errors. Any relevant errors will show up in typechecking.
-			// TODO: Skip running cgo if Mode < LoadTypes.
+			// TODO(matloob): Skip running cgo if Mode < LoadTypes.
 			outdir, err := getOutdir()
 			if err != nil {
 				cgoErrors = append(cgoErrors, err)
@@ -126,7 +126,7 @@ func golistDriverFallback(cfg *Config, words ...string) (*driverResponse, error)
 			OtherFiles:      absJoin(p.Dir, otherFiles(p)...),
 			PkgPath:         pkgpath,
 			Imports:         importMap(p.Imports),
-			// TODO: set errors on the Package to cgoErrors
+			// TODO(matloob): set errors on the Package to cgoErrors
 		}
 		if p.Error != nil {
 			pkg.Errors = append(pkg.Errors, Error{
@@ -147,7 +147,7 @@ func golistDriverFallback(cfg *Config, words ...string) (*driverResponse, error)
 					OtherFiles:      absJoin(p.Dir, otherFiles(p)...),
 					PkgPath:         pkgpath,
 					Imports:         importMap(append(p.Imports, p.TestImports...)),
-					// TODO: set errors on the Package to cgoErrors
+					// TODO(matloob): set errors on the Package to cgoErrors
 				}
 				response.Packages = append(response.Packages, testPkg)
 				var xtestPkg *Package
@@ -306,7 +306,7 @@ func cleanAbsPaths(cfg *Config, words []string) []string {
 		cleaned[i] = words[i]
 		// Ignore relative directory paths (they must already be goroot-relative) and Go source files
 		// (absolute source files are already allowed for ad-hoc packages).
-		// TODO: Can there be non-.go files in ad-hoc packages.
+		// TODO(matloob): Can there be non-.go files in ad-hoc packages.
 		if !filepath.IsAbs(cleaned[i]) || strings.HasSuffix(cleaned[i], ".go") {
 			continue
 		}
@@ -429,7 +429,7 @@ func runCgo(pkgdir, tmpdir string, env []string) (files, displayfiles []string, 
 	// Use go/build to open cgo files and determine the cgo flags, etc, from them.
 	// This is tricky so it's best to avoid reimplementing as much as we can, and
 	// we plan to delete this support once Go 1.12 is released anyways.
-	// TODO: This isn't completely correct because we're using the Default
+	// TODO(matloob): This isn't completely correct because we're using the Default
 	// context. Perhaps we should more accurately fill in the context.
 	bp, err := build.ImportDir(pkgdir, build.ImportMode(0))
 	if err != nil {

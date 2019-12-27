@@ -64,7 +64,7 @@ var (
 	verbose = flag.Bool("v", false, "verbose mode")
 
 	// file system roots
-	// TODO consider the invariant that goroot always end in '/'
+	// TODO(gri) consider the invariant that goroot always end in '/'
 	goroot = flag.String("goroot", findGOROOT(), "Go root directory")
 
 	// layout control

@@ -304,7 +304,7 @@ func (ch *channel) handleData(packet []byte) error {
 		return nil
 	}
 	if length > ch.maxIncomingPayload {
-		// TODO: should send Disconnect?
+		// TODO(hanwen): should send Disconnect?
 		return errors.New("ssh: incoming packet exceeds maximum payload size")
 	}
 
@@ -316,7 +316,7 @@ func (ch *channel) handleData(packet []byte) error {
 	ch.windowMu.Lock()
 	if ch.myWindow < length {
 		ch.windowMu.Unlock()
-		// TODO: should send Disconnect with reason?
+		// TODO(hanwen): should send Disconnect with reason?
 		return errors.New("ssh: remote side wrote too much")
 	}
 	ch.myWindow -= length

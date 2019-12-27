@@ -53,7 +53,7 @@ import (
 // whitespace of the BlockStmt containing the assignment.
 //
 // Precondition: [start, end) both lie within the same file as root.
-// TODO: return (nil, false) in this case and remove precond.
+// TODO(adonovan): return (nil, false) in this case and remove precond.
 // Requires FileSet; see loader.tokenFileContainsPos.
 //
 // Postcondition: path is never nil; it always contains at least 'root'.
@@ -290,7 +290,7 @@ func childrenOf(n ast.Node) []ast.Node {
 		// nop
 
 	case *ast.Field:
-		// TODO: Field.{Doc,Comment,Tag}?
+		// TODO(adonovan): Field.{Doc,Comment,Tag}?
 
 	case *ast.FieldList:
 		children = append(children,
@@ -307,7 +307,7 @@ func childrenOf(n ast.Node) []ast.Node {
 			tok(n.For, len("for")))
 
 	case *ast.FuncDecl:
-		// TODO: FuncDecl.Comment?
+		// TODO(adonovan): FuncDecl.Comment?
 
 		// Uniquely, FuncDecl breaks the invariant that
 		// preorder traversal yields tokens in lexical order:
@@ -363,7 +363,7 @@ func childrenOf(n ast.Node) []ast.Node {
 			tok(n.If, len("if")))
 
 	case *ast.ImportSpec:
-		// TODO: ImportSpec.{Doc,EndPos}?
+		// TODO(adonovan): ImportSpec.{Doc,EndPos}?
 
 	case *ast.IncDecStmt:
 		children = append(children,
@@ -436,7 +436,7 @@ func childrenOf(n ast.Node) []ast.Node {
 			tok(n.Rparen, len(")")))
 
 	case *ast.TypeSpec:
-		// TODO: TypeSpec.{Doc,Comment}?
+		// TODO(adonovan): TypeSpec.{Doc,Comment}?
 
 	case *ast.TypeSwitchStmt:
 		children = append(children, tok(n.Switch, len("switch")))
@@ -445,13 +445,13 @@ func childrenOf(n ast.Node) []ast.Node {
 		children = append(children, tok(n.OpPos, len(n.Op.String())))
 
 	case *ast.ValueSpec:
-		// TODO: ValueSpec.{Doc,Comment}?
+		// TODO(adonovan): ValueSpec.{Doc,Comment}?
 
 	case *ast.BadDecl, *ast.BadExpr, *ast.BadStmt:
 		// nop
 	}
 
-	// TODO: opt: merge the logic of ast.Inspect() into
+	// TODO(adonovan): opt: merge the logic of ast.Inspect() into
 	// the switch above so we can make interleaved callbacks for
 	// both Nodes and Tokens in the right order and avoid the need
 	// to sort.
@@ -475,7 +475,7 @@ func (sl byPos) Swap(i, j int) {
 // NodeDescription returns a description of the concrete type of n suitable
 // for a user interface.
 //
-// TODO: in some cases (e.g. Field, FieldList, Ident,
+// TODO(adonovan): in some cases (e.g. Field, FieldList, Ident,
 // StarExpr) we could be much more specific given the path to the AST
 // root.  Perhaps we should do that.
 //

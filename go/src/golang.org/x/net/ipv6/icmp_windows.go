@@ -5,18 +5,18 @@
 package ipv6
 
 func (f *icmpv6Filter) accept(typ ICMPType) {
-	// TODO: implement this
+	// TODO(mikio): implement this
 }
 
 func (f *icmpv6Filter) block(typ ICMPType) {
-	// TODO: implement this
+	// TODO(mikio): implement this
 }
 
 func (f *icmpv6Filter) setAll(block bool) {
-	// TODO: implement this
+	// TODO(mikio): implement this
 }
 
 func (f *icmpv6Filter) willBlock(typ ICMPType) bool {
-	// TODO: implement this
+	// TODO(mikio): implement this
 	return false
 }

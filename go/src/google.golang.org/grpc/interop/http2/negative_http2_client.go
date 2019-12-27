@@ -67,7 +67,7 @@ func largeSimpleRequest() *testpb.SimpleRequest {
 func goaway(tc testpb.TestServiceClient) {
 	interop.DoLargeUnaryCall(tc)
 	// sleep to ensure that the client has time to recv the GOAWAY.
-	// TODO: make this less hacky.
+	// TODO(ncteisen): make this less hacky.
 	time.Sleep(1 * time.Second)
 	interop.DoLargeUnaryCall(tc)
 }

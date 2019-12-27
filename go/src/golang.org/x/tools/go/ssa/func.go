@@ -373,7 +373,7 @@ func (f *Function) removeNilBlocks() {
 // the ASTs, potentially keeping them live in memory for longer.
 //
 func (pkg *Package) SetDebugMode(debug bool) {
-	// TODO: do we want ast.File granularity?
+	// TODO(adonovan): do we want ast.File granularity?
 	pkg.debug = debug
 }
 
@@ -666,7 +666,7 @@ func (f *Function) newBasicBlock(comment string) *BasicBlock {
 // construct fake Functions for the root of the callgraph, a fake
 // "reflect" package, etc.
 //
-// TODO: think harder about the API here.
+// TODO(adonovan): think harder about the API here.
 //
 func (prog *Program) NewFunction(name string, sig *types.Signature, provenance string) *Function {
 	return &Function{Prog: prog, name: name, Signature: sig, Synthetic: provenance}

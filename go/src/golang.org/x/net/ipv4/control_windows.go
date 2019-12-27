@@ -11,6 +11,6 @@ import (
 )
 
 func setControlMessage(c *socket.Conn, opt *rawOpt, cf ControlFlags, on bool) error {
-	// TODO: implement this
+	// TODO(mikio): implement this
 	return syscall.EWINDOWS
 }

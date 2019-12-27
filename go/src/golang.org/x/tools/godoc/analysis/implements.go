@@ -7,7 +7,7 @@ package analysis
 // This file computes the "implements" relation over all pairs of
 // named types in the program.  (The mark-up is done by typeinfo.go.)
 
-// TODO: do we want to report implements(C, I) where C and I
+// TODO(adonovan): do we want to report implements(C, I) where C and I
 // belong to different packages and at least one is not exported?
 
 import (
@@ -95,7 +95,7 @@ func computeImplements(cache *typeutil.MethodSetCache, allNamed []*types.Named) 
 	facts := make(map[*types.Named]implementsFacts)
 
 	// Test all pairs of distinct named types (T, U).
-	// TODO: opt: compute (U, T) at the same time.
+	// TODO(adonovan): opt: compute (U, T) at the same time.
 	for t := range infos {
 		T := &infos[t]
 		var to, from, fromPtr []types.Type
@@ -165,7 +165,7 @@ func methodBit(x byte) uint64 {
 // superset of those in U.  If U belongs to an interface type, the
 // result is equal to types.Assignable(T, U), but is cheaper to compute.
 //
-// TODO: make this a method of *types.MethodSet.
+// TODO(gri): make this a method of *types.MethodSet.
 //
 func containsAllIdsOf(T, U *types.MethodSet) bool {
 	t, tlen := 0, T.Len()

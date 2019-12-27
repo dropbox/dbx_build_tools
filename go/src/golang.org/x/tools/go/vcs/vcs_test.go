@@ -17,7 +17,7 @@ import (
 )
 
 // Test that RepoRootForImportPath creates the correct RepoRoot for a given importPath.
-// TODO: Add tests for SVN and BZR.
+// TODO(cmang): Add tests for SVN and BZR.
 func TestRepoRootForImportPath(t *testing.T) {
 	if runtime.GOOS == "android" {
 		t.Skipf("incomplete source tree on %s", runtime.GOOS)

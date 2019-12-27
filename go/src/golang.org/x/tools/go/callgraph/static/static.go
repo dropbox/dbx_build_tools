@@ -12,10 +12,10 @@ import (
 // considering only static calls.
 //
 func CallGraph(prog *ssa.Program) *callgraph.Graph {
-	cg := callgraph.New(nil) // TODO eliminate concept of rooted callgraph
+	cg := callgraph.New(nil) // TODO(adonovan) eliminate concept of rooted callgraph
 
-	// TODO: opt: use only a single pass over the ssa.Program.
-	// TODO: opt: this is slower than RTA (perhaps because
+	// TODO(adonovan): opt: use only a single pass over the ssa.Program.
+	// TODO(adonovan): opt: this is slower than RTA (perhaps because
 	// the lower precision means so many edges are allocated)!
 	for f := range ssautil.AllFunctions(prog) {
 		fnode := cg.CreateNode(f)

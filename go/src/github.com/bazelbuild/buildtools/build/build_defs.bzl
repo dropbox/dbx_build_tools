@@ -123,7 +123,7 @@ def go_proto_checkedin_test(src, proto = "go_default_library"):
         library = proto,
     )
 
-    # TODO: why is the extra copy needed?
+    # TODO(pmbethe09): why is the extra copy needed?
     native.genrule(
         name = genfile,
         srcs = [genfile + "go"],

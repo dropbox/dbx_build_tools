@@ -89,7 +89,7 @@ func destructuringOps(typ types.Type, expr ast.Expr) ([]interface{}, types.Type,
 				return out, field.Type().Underlying(), nil
 			}
 		}
-		// TODO: supporting embedding would need something like
+		// TODO(dh): supporting embedding would need something like
 		// types.LookupFieldOrMethod, but without taking package
 		// boundaries into account, because we may want to access
 		// unexported fields. If we were only interested in one level
@@ -166,7 +166,7 @@ func destructuringOps(typ types.Type, expr ast.Expr) ([]interface{}, types.Type,
 
 func (a *analysis) evalExtendedQuery(t types.Type, id nodeid, ops []interface{}) (types.Type, nodeid) {
 	pid := id
-	// TODO: we're allocating intermediary nodes each time
+	// TODO(dh): we're allocating intermediary nodes each time
 	// evalExtendedQuery is called. We should probably only generate
 	// them once per (v, ops) pair.
 	for i := 1; i < len(ops); i++ {

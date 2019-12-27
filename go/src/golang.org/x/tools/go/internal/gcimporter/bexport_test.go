@@ -150,7 +150,7 @@ func equalType(x, y types.Type) error {
 	switch x := x.(type) {
 	case *types.Interface:
 		y := y.(*types.Interface)
-		// TODO: enable separate emission of Embedded interfaces
+		// TODO(gri): enable separate emission of Embedded interfaces
 		// and ExplicitMethods then use this logic.
 		// if x.NumEmbeddeds() != y.NumEmbeddeds() {
 		// 	return fmt.Errorf("unequal number of embedded interfaces: %d vs %d",
@@ -247,7 +247,7 @@ func equalType(x, y types.Type) error {
 			return fmt.Errorf("unequal receivers: %s vs %s", x.Recv(), y.Recv())
 		}
 		if x.Recv() != nil {
-			// TODO: fix: this assertion fires for interface methods.
+			// TODO(adonovan): fix: this assertion fires for interface methods.
 			// The type of the receiver of an interface method is a named type
 			// if the Package was loaded from export data, or an unnamed (interface)
 			// type if the Package was produced by type-checking ASTs.

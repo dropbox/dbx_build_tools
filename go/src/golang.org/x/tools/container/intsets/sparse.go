@@ -13,15 +13,15 @@
 //
 package intsets // import "golang.org/x/tools/container/intsets"
 
-// TODO:
+// TODO(adonovan):
 // - Add InsertAll(...int), RemoveAll(...int)
 // - Add 'bool changed' results for {Intersection,Difference}With too.
 //
-// TODO: implement Dense, a dense bit vector with a similar API.
+// TODO(adonovan): implement Dense, a dense bit vector with a similar API.
 // The space usage would be proportional to Max(), not Len(), and the
 // implementation would be based upon big.Int.
 //
-// TODO: opt: make UnionWith and Difference faster.
+// TODO(adonovan): opt: make UnionWith and Difference faster.
 // These are the hot-spots for go/pointer.
 
 import (

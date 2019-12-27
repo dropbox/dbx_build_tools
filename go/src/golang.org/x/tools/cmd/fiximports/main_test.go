@@ -18,7 +18,7 @@ import (
 	"testing"
 )
 
-// TODO:
+// TODO(adonovan):
 // - test introduction of renaming imports.
 // - test induced failures of rewriteFile.
 

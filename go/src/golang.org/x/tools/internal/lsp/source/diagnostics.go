@@ -175,7 +175,7 @@ func runAnalyses(ctx context.Context, v View, pkg Package, report func(a *analys
 	for _, r := range roots {
 		for _, diag := range r.diagnostics {
 			if r.err != nil {
-				// TODO: This isn't quite right: we might return a failed prerequisites error,
+				// TODO(matloob): This isn't quite right: we might return a failed prerequisites error,
 				// which isn't super useful...
 				return r.err
 			}

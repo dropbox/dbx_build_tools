@@ -26,7 +26,7 @@ package satisfy // import "golang.org/x/tools/refactor/satisfy"
 //     ...
 //   }})
 //
-// TODO: make this robust against ill-typed input.
+// TODO(adonovan): make this robust against ill-typed input.
 // Or move it into the type-checker.
 //
 // Assignability conversions are possible in the following places:

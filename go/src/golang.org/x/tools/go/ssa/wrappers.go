@@ -235,7 +235,7 @@ func makeBound(prog *Program, obj *types.Func) *Function {
 //
 //   f := func(t T) { return t.meth() }
 //
-// TODO: opt: currently the stub is created even when used
+// TODO(adonovan): opt: currently the stub is created even when used
 // directly in a function call: C.f(i, 0).  This is less efficient
 // than inlining the stub.
 //

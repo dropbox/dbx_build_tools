@@ -48,7 +48,7 @@ func callees(q *Query) error {
 	if e == nil {
 		return fmt.Errorf("there is no function call here")
 	}
-	// TODO: issue an error if the call is "too far
+	// TODO(adonovan): issue an error if the call is "too far
 	// away" from the current selection, as this most likely is
 	// not what the user intended.
 
@@ -160,7 +160,7 @@ func findCallees(conf *pointer.Config, site ssa.CallInstruction) ([]*ssa.Functio
 		switch callee.String() {
 		case "runtime.SetFinalizer", "(reflect.Value).Call":
 			// The PTA treats calls to these intrinsics as dynamic.
-			// TODO: avoid reliance on PTA internals.
+			// TODO(adonovan): avoid reliance on PTA internals.
 
 		default:
 			return []*ssa.Function{callee}, nil // singleton

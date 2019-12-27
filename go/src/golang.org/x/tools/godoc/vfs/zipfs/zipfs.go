@@ -231,7 +231,7 @@ func (fs *zipFS) ReadDir(abspath string) ([]os.FileInfo, error) {
 			file = nil
 		}
 		// If we have x/y and x/z, don't return two directory entries for x.
-		// TODO: It should be possible to do this more efficiently
+		// TODO(gri): It should be possible to do this more efficiently
 		// by determining the (fs.list) range of local directory entries
 		// (via two binary searches).
 		if name != prevname {

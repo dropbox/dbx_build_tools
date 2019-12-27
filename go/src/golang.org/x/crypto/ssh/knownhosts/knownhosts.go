@@ -354,7 +354,7 @@ func (db *hostKeyDB) check(address string, remote net.Addr, remoteKey ssh.Public
 // given address.  If we only find an entry for the IP address,
 // or only the hostname, then this still succeeds.
 func (db *hostKeyDB) checkAddr(a addr, remoteKey ssh.PublicKey) error {
-	// TODO: are these the right semantics? What if there
+	// TODO(hanwen): are these the right semantics? What if there
 	// is just a key for the IP address, but not for the
 	// hostname?
 
@@ -464,7 +464,7 @@ func Line(addresses []string, key ssh.PublicKey) string {
 // HashHostname hashes the given hostname. The hostname is not
 // normalized before hashing.
 func HashHostname(hostname string) string {
-	// TODO: check if we can safely normalize this always.
+	// TODO(hanwen): check if we can safely normalize this always.
 	salt := make([]byte, sha1.Size)
 
 	_, err := rand.Read(salt)

@@ -6,7 +6,7 @@
 // directly from go/types, but now contains various modifications for
 // nicer output.
 //
-// TODO back-port once we have a fixed interface and once the
+// TODO(gri) back-port once we have a fixed interface and once the
 // go/types API is not frozen anymore for the 1.3 release; and remove
 // this implementation if possible.
 
@@ -181,7 +181,7 @@ func (p *printer) writeTypeInternal(this *types.Package, typ types.Type, visited
 					p.print(pkg.Path())
 					p.print(".")
 				}
-				// TODO: function-local named types should be displayed
+				// TODO(gri): function-local named types should be displayed
 				// differently from named types at package level to avoid
 				// ambiguity.
 			}

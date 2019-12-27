@@ -17,7 +17,7 @@ import (
 )
 
 func TestOverwriteJunitForServices(t *testing.T) {
-	// TODO: No tests to handle actual XML overwrite. All test cases below only handle new XML
+	// TODO(anupc): No tests to handle actual XML overwrite. All test cases below only handle new XML
 	// being generated.
 
 	cases := []struct {

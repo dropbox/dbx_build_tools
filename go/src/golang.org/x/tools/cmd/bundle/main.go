@@ -268,7 +268,7 @@ func bundle(src, dst, dstpkg, prefix string) ([]byte, error) {
 	// when the original package has renamed imports (they're typically
 	// renamed in order to resolve a shadow inside that particular .go file).
 
-	// TODO:
+	// TODO(adonovan,shurcooL):
 	// - detect shadowing issues, and either return error or resolve them
 	// - preserve comments from the original import declarations.
 
@@ -374,7 +374,7 @@ func bundle(src, dst, dstpkg, prefix string) ([]byte, error) {
 			buf.Reset()
 			format.Node(&buf, lprog.Fset, &printer.CommentedNode{Node: decl, Comments: f.Comments})
 			// Remove each "@@@." in the output.
-			// TODO: not hygienic.
+			// TODO(adonovan): not hygienic.
 			out.Write(bytes.Replace(buf.Bytes(), []byte("@@@."), nil, -1))
 
 			last = printSameLineComment(&out, f.Comments, lprog.Fset, end)

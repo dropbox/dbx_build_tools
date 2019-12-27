@@ -185,7 +185,7 @@ func Decode(pkg *types.Package, read func(packagePath string) ([]byte, error)) (
 				obj, err := objectpath.Object(factPkg, f.Object)
 				if err != nil {
 					// (most likely due to unexported object)
-					// TODO: audit for other possibilities.
+					// TODO(adonovan): audit for other possibilities.
 					logf("no object for path: %v; discarding %s", err, f.Fact)
 					continue
 				}
@@ -208,7 +208,7 @@ func Decode(pkg *types.Package, read func(packagePath string) ([]byte, error)) (
 // a sign of a bug in an Analyzer.
 func (s *Set) Encode() []byte {
 
-	// TODO: opt: use a more efficient encoding
+	// TODO(adonovan): opt: use a more efficient encoding
 	// that avoids repeating PkgPath for each fact.
 
 	// Gather all facts, including those from imported packages.

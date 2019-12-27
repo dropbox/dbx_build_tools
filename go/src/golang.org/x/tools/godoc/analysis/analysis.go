@@ -90,7 +90,7 @@ func (a aLink) Write(w io.Writer, _ int, start bool) {
 			fmt.Fprintf(w, ` onclick='%s'`, html.EscapeString(a.onclick))
 		}
 		if a.href != "" {
-			// TODO: I think that in principle, a.href must first be
+			// TODO(adonovan): I think that in principle, a.href must first be
 			// url.QueryEscape'd, but if I do that, a leading slash becomes "%2F",
 			// which causes the browser to treat the path as relative, not absolute.
 			// WTF?
@@ -136,7 +136,7 @@ type fileInfo struct {
 	data      []interface{} // JSON objects
 	links     []Link
 	sorted    bool
-	hasErrors bool // TODO: surface this in the UI
+	hasErrors bool // TODO(adonovan): surface this in the UI
 }
 
 // addLink adds a link to the Go source file fi.
@@ -366,7 +366,7 @@ func Run(pta bool, result *Result) {
 	//args = []string{"fmt"}
 
 	if _, err := conf.FromArgs(args, true); err != nil {
-		// TODO: degrade gracefully, not fail totally.
+		// TODO(adonovan): degrade gracefully, not fail totally.
 		// (The crippling case is a parse error in an external test file.)
 		result.setStatusf("Analysis failed: %s.", err) // import error
 		return
@@ -436,7 +436,7 @@ func Run(pta bool, result *Result) {
 	}
 
 	// Add links for scanner, parser, type-checker errors.
-	// TODO: fix: these links can overlap with
+	// TODO(adonovan): fix: these links can overlap with
 	// identifier markup, causing the renderer to emit some
 	// characters twice.
 	errors := make(map[token.Position][]string)
@@ -522,7 +522,7 @@ func (a *analysis) visitInstrs(pta bool) {
 				// for packages that (transitively) contain errors.
 				if site, ok := instr.(ssa.CallInstruction); ok {
 					if callee := site.Common().StaticCallee(); callee != nil {
-						// TODO: callgraph: elide wrappers.
+						// TODO(adonovan): callgraph: elide wrappers.
 						// (Do static calls ever go to wrappers?)
 						if site.Common().Pos() != token.NoPos {
 							a.addCallees(site, []*ssa.Function{callee})
@@ -584,7 +584,7 @@ func (a linksByStart) Len() int           { return len(a) }
 // Derived from from go/ssa/stdlib_test.go
 // root must end with os.PathSeparator.
 //
-// TODO: use buildutil.AllPackages when the tree thaws.
+// TODO(adonovan): use buildutil.AllPackages when the tree thaws.
 func allPackages(root string) []string {
 	var pkgs []string
 	filepath.Walk(root, func(path string, info os.FileInfo, err error) error {

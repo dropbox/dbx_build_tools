@@ -80,7 +80,7 @@ func TestEncodeDecode(t *testing.T) {
 		{"c", lookups{
 			{"b.B", "myFact(b.B)"},
 			{"b.F", "myFact(b.F)"},
-			//{"b.F(nil)()", "myFact(a.T)"}, // no fact; TODO: investigate
+			//{"b.F(nil)()", "myFact(a.T)"}, // no fact; TODO(adonovan): investigate
 			{"C", "myFact(c.C)"},
 			{"C{}[0]", "myFact(b.B)"},
 			{"<-(C{}[0])", "no fact"}, // object but no fact (we never "analyze" a2)
@@ -135,7 +135,7 @@ func TestEncodeDecode(t *testing.T) {
 
 func find(p *types.Package, expr string) types.Object {
 	// types.Eval only allows us to compute a TypeName object for an expression.
-	// TODO: support other expressions that denote an object:
+	// TODO(adonovan): support other expressions that denote an object:
 	// - an identifier (or qualified ident) for a func, const, or var
 	// - new(T).f for a field or method
 	// I've added CheckExpr in https://go-review.googlesource.com/c/go/+/144677.

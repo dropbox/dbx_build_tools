@@ -960,7 +960,7 @@ func (cc *ClientConn) roundTrip(req *http.Request) (res *http.Response, gotErrAf
 	contentLen := actualContentLength(req)
 	hasBody := contentLen != 0
 
-	// TODO: this is a copy of the logic in net/http. Unify somewhere?
+	// TODO(bradfitz): this is a copy of the logic in net/http. Unify somewhere?
 	var requestedGzip bool
 	if !cc.t.disableCompression() &&
 		req.Header.Get("Accept-Encoding") == "" &&
@@ -1177,7 +1177,7 @@ func (cc *ClientConn) writeHeaders(streamID uint32, endStream bool, maxFrameSize
 			cc.fr.WriteContinuation(streamID, endHeaders, chunk)
 		}
 	}
-	// TODO: this Flush could potentially block (as
+	// TODO(bradfitz): this Flush could potentially block (as
 	// could the WriteHeaders call(s) above), which means they
 	// wouldn't respond to Request.Cancel being readable. That's
 	// rare, but this should probably be in a goroutine.
@@ -1245,7 +1245,7 @@ func (cs *clientStream) writeRequestBody(body io.Reader, bodyCloser io.Closer) (
 			sentEnd = sawEOF && len(remain) == 0 && !hasTrailers
 			err = cc.fr.WriteData(cs.ID, sentEnd, data)
 			if err == nil {
-				// TODO: this flush is for latency, not bandwidth.
+				// TODO(bradfitz): this flush is for latency, not bandwidth.
 				// Most requests won't need this. Make this opt-in or
 				// opt-out?  Use some heuristic on the body type? Nagel-like
 				// timers?  Based on 'n'? Only last chunk of this for loop,
@@ -1750,7 +1750,7 @@ func (rl *clientConnReadLoop) processHeaders(f *MetaHeadersFrame) error {
 	}
 	if !cs.firstByte {
 		if cs.trace != nil {
-			// TODO: move first response byte earlier,
+			// TODO(bradfitz): move first response byte earlier,
 			// when we first read the 9 byte header, not waiting
 			// until all the HEADERS+CONTINUATION frames have been
 			// merged. This works for now.
@@ -2197,7 +2197,7 @@ func (rl *clientConnReadLoop) processSettings(f *SettingsFrame) error {
 
 			cc.initialWindowSize = s.Val
 		default:
-			// TODO: handle more settings? SETTINGS_HEADER_TABLE_SIZE probably.
+			// TODO(bradfitz): handle more settings? SETTINGS_HEADER_TABLE_SIZE probably.
 			cc.vlogf("Unhandled Setting: %v", s)
 		}
 		return nil

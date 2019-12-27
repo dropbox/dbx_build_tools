@@ -99,7 +99,7 @@ func (s *server) Initialize(ctx context.Context, params *protocol.InitializePara
 		return nil, err
 	}
 
-	// TODO: Change this default to protocol.Incremental (or add a
+	// TODO(rstambler): Change this default to protocol.Incremental (or add a
 	// flag). Disabled for now to simplify debugging.
 	s.textDocumentSyncKind = protocol.Full
 

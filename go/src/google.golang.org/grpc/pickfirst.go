@@ -59,7 +59,7 @@ func (b *pickfirstBalancer) HandleResolvedAddrs(addrs []resolver.Address, err er
 	if b.sc == nil {
 		b.sc, err = b.cc.NewSubConn(addrs, balancer.NewSubConnOptions{})
 		if err != nil {
-			//TODO: why not change the cc state to Idle?
+			//TODO(yuxuanli): why not change the cc state to Idle?
 			if grpclog.V(2) {
 				grpclog.Errorf("pickfirstBalancer: failed to NewSubConn: %v", err)
 			}

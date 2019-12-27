@@ -22,7 +22,7 @@ import (
 
 type externalFn func(fr *frame, args []value) value
 
-// TODO: fix: reflect.Value abstracts an lvalue or an
+// TODO(adonovan): fix: reflect.Value abstracts an lvalue or an
 // rvalue; Set() causes mutations that can be observed via aliases.
 // We have not captured that correctly here.
 
@@ -268,7 +268,7 @@ func ext۰runtime۰Caller(fr *frame, args []value) value {
 	var ok bool
 	if fr != nil {
 		fn := fr.fn
-		// TODO: use pc/posn of current instruction, not start of fn.
+		// TODO(adonovan): use pc/posn of current instruction, not start of fn.
 		// (Required to interpret the log package's tests.)
 		pc = uintptr(unsafe.Pointer(fn))
 		posn := fn.Prog.Fset.Position(fn.Pos())
@@ -340,7 +340,7 @@ func ext۰runtime۰GOMAXPROCS(fr *frame, args []value) value {
 }
 
 func ext۰runtime۰Goexit(fr *frame, args []value) value {
-	// TODO: don't kill the interpreter's main goroutine.
+	// TODO(adonovan): don't kill the interpreter's main goroutine.
 	runtime.Goexit()
 	return nil
 }
@@ -364,34 +364,34 @@ func ext۰runtime۰NumGoroutine(fr *frame, args []value) value {
 }
 
 func ext۰runtime۰ReadMemStats(fr *frame, args []value) value {
-	// TODO: populate args[0].(Struct)
+	// TODO(adonovan): populate args[0].(Struct)
 	return nil
 }
 
 func ext۰atomic۰LoadUint32(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	return (*args[0].(*value)).(uint32)
 }
 
 func ext۰atomic۰StoreUint32(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	*args[0].(*value) = args[1].(uint32)
 	return nil
 }
 
 func ext۰atomic۰LoadInt32(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	return (*args[0].(*value)).(int32)
 }
 
 func ext۰atomic۰StoreInt32(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	*args[0].(*value) = args[1].(int32)
 	return nil
 }
 
 func ext۰atomic۰CompareAndSwapInt32(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	p := args[0].(*value)
 	if (*p).(int32) == args[1].(int32) {
 		*p = args[2].(int32)
@@ -401,7 +401,7 @@ func ext۰atomic۰CompareAndSwapInt32(fr *frame, args []value) value {
 }
 
 func ext۰atomic۰CompareAndSwapUint32(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	p := args[0].(*value)
 	if (*p).(uint32) == args[1].(uint32) {
 		*p = args[2].(uint32)
@@ -411,7 +411,7 @@ func ext۰atomic۰CompareAndSwapUint32(fr *frame, args []value) value {
 }
 
 func ext۰atomic۰AddInt32(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	p := args[0].(*value)
 	newv := (*p).(int32) + args[1].(int32)
 	*p = newv
@@ -419,7 +419,7 @@ func ext۰atomic۰AddInt32(fr *frame, args []value) value {
 }
 
 func ext۰atomic۰AddUint32(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	p := args[0].(*value)
 	newv := (*p).(uint32) + args[1].(uint32)
 	*p = newv
@@ -427,29 +427,29 @@ func ext۰atomic۰AddUint32(fr *frame, args []value) value {
 }
 
 func ext۰atomic۰LoadUint64(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	return (*args[0].(*value)).(uint64)
 }
 
 func ext۰atomic۰StoreUint64(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	*args[0].(*value) = args[1].(uint64)
 	return nil
 }
 
 func ext۰atomic۰LoadInt64(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	return (*args[0].(*value)).(int64)
 }
 
 func ext۰atomic۰StoreInt64(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	*args[0].(*value) = args[1].(int64)
 	return nil
 }
 
 func ext۰atomic۰CompareAndSwapInt64(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	p := args[0].(*value)
 	if (*p).(int64) == args[1].(int64) {
 		*p = args[2].(int64)
@@ -459,7 +459,7 @@ func ext۰atomic۰CompareAndSwapInt64(fr *frame, args []value) value {
 }
 
 func ext۰atomic۰CompareAndSwapUint64(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	p := args[0].(*value)
 	if (*p).(uint64) == args[1].(uint64) {
 		*p = args[2].(uint64)
@@ -469,7 +469,7 @@ func ext۰atomic۰CompareAndSwapUint64(fr *frame, args []value) value {
 }
 
 func ext۰atomic۰AddInt64(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	p := args[0].(*value)
 	newv := (*p).(int64) + args[1].(int64)
 	*p = newv
@@ -477,7 +477,7 @@ func ext۰atomic۰AddInt64(fr *frame, args []value) value {
 }
 
 func ext۰atomic۰AddUint64(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	p := args[0].(*value)
 	newv := (*p).(uint64) + args[1].(uint64)
 	*p = newv
@@ -485,13 +485,13 @@ func ext۰atomic۰AddUint64(fr *frame, args []value) value {
 }
 
 func ext۰atomic۰ValueLoad(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	// Receiver is *struct{v interface{}}.
 	return (*args[0].(*value)).(structure)[0]
 }
 
 func ext۰atomic۰ValueStore(fr *frame, args []value) value {
-	// TODO: fix: not atomic!
+	// TODO(adonovan): fix: not atomic!
 	// Receiver is *struct{v interface{}}.
 	(*args[0].(*value)).(structure)[0] = args[1]
 	return nil
@@ -513,7 +513,7 @@ func ext۰runtime۰Func۰FileLine(fr *frame, args []value) value {
 	pc := args[1].(uintptr)
 	_ = pc
 	if f != nil {
-		// TODO: use position of current instruction, not fn.
+		// TODO(adonovan): use position of current instruction, not fn.
 		posn := f.Prog.Fset.Position(f.Pos())
 		return tuple{posn.Filename, posn.Line}
 	}

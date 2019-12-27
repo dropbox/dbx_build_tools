@@ -180,7 +180,7 @@ def validate_bazel_deps(
     for i in imports:
         # This is used for thirdparty modules which generally provide something like `grpc` which includes `grpc.<anything>`
         found_prefix = False
-        # NOTE We are iterating in reverse order of prefix length so that for example
+        # NOTE(jhance) We are iterating in reverse order of prefix length so that for example
         # we see flask.ext.restful before flask, which results in us marking the correct target
         # as used.
         for prefix, target in reversed(

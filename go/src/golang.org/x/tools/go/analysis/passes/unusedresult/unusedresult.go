@@ -19,7 +19,7 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// TODO: make this analysis modular: export a mustUseResult
+// TODO(adonovan): make this analysis modular: export a mustUseResult
 // fact for each function that tail-calls one of the functions that we
 // check, and check those functions too.
 
@@ -42,7 +42,7 @@ var Analyzer = &analysis.Analyzer{
 var funcs, stringMethods stringSetFlag
 
 func init() {
-	// TODO: provide a comment syntax to allow users to
+	// TODO(adonovan): provide a comment syntax to allow users to
 	// add their functions to this set using facts.
 	funcs.Set("errors.New,fmt.Errorf,fmt.Sprintf,fmt.Sprint,sort.Reverse")
 	Analyzer.Flags.Var(&funcs, "funcs",

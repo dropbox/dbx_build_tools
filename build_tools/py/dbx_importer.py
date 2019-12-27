@@ -187,7 +187,7 @@ def dbx_compile(src_path, dest_path, compiled_path, allow_failure):
                     ):
                         # These libraries assume the existence of docstrings on their own methods
                         # and provide decorators that deprecate methods by munging their docstring.
-                        # TODO: remove these exceptions after sending patches upstream
+                        # TODO(zbarsky): remove these exceptions after sending patches upstream
                         if (
                             "pylons" in src_path
                             or "paste" in src_path
@@ -196,7 +196,7 @@ def dbx_compile(src_path, dest_path, compiled_path, allow_failure):
                         ):
                             node.body[0].value.s = " "
                         elif "scipy" in src_path:
-                            # TODO remove if https://github.com/scipy/scipy/pull/10848 is merged
+                            # TODO(zbarsky) remove if https://github.com/scipy/scipy/pull/10848 is merged
                             node.body[0].value.s = "Parameters\n%s"
                         else:
                             node.body[0].value.s = ""

@@ -28,7 +28,7 @@ const (
 	ErrorSevere   = windows.SERVICE_ERROR_SEVERE
 )
 
-// TODO: Password is not returned by windows.QueryServiceConfig, not sure how to get it.
+// TODO(brainman): Password is not returned by windows.QueryServiceConfig, not sure how to get it.
 
 type Config struct {
 	ServiceType      uint32

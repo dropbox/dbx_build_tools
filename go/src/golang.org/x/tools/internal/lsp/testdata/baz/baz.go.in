@@ -10,7 +10,7 @@ import (
 
 func Baz() {
 	defer bar.Bar() //@complete("B", Bar)
-	// TODO: Test completion here.
+	// TODO(rstambler): Test completion here.
 	defer bar.B
 	var x f.IntFoo  //@complete("n", IntFoo),typdef("x", IntFoo)
 	bar.Bar()       //@complete("B", Bar)

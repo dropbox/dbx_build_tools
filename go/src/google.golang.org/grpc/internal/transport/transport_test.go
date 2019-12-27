@@ -1155,7 +1155,7 @@ func TestServerWithMisbehavedClient(t *testing.T) {
 	// Create a stream.
 	var buf bytes.Buffer
 	henc := hpack.NewEncoder(&buf)
-	// TODO: Remove unnecessary fields.
+	// TODO(mmukhi): Remove unnecessary fields.
 	if err := henc.WriteField(hpack.HeaderField{Name: ":method", Value: "POST"}); err != nil {
 		t.Fatalf("Error while encoding header: %v", err)
 	}

@@ -5,7 +5,7 @@
 package ssa_test
 
 // Tests of FindTests.  CreateTestMainPackage is tested via the interpreter.
-// TODO: test the 'pkgs' result from FindTests.
+// TODO(adonovan): test the 'pkgs' result from FindTests.
 
 import (
 	"fmt"

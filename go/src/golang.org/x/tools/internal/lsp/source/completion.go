@@ -163,13 +163,13 @@ func Completion(ctx context.Context, f File, pos token.Pos) (items []CompletionI
 
 // selector finds completions for
 // the specified selector expression.
-// TODO: Set the prefix filter correctly for selectors.
+// TODO(rstambler): Set the prefix filter correctly for selectors.
 func selector(sel *ast.SelectorExpr, pos token.Pos, info *types.Info, found finder) (items []CompletionItem, err error) {
 	// Is sel a qualified identifier?
 	if id, ok := sel.X.(*ast.Ident); ok {
 		if pkgname, ok := info.Uses[id].(*types.PkgName); ok {
 			// Enumerate package members.
-			// TODO: can Imported() be nil?
+			// TODO(adonovan): can Imported() be nil?
 			scope := pkgname.Imported().Scope()
 			// TODO testcase: bad import
 			for _, name := range scope.Names() {
@@ -646,7 +646,7 @@ func exprAtPos(pos token.Pos, args []ast.Expr) int {
 // fieldSelections returns the set of fields that can
 // be selected from a value of type T.
 func fieldSelections(T types.Type) (fields []*types.Var) {
-	// TODO: this algorithm doesn't exclude ambiguous
+	// TODO(adonovan): this algorithm doesn't exclude ambiguous
 	// selections that match more than one field/method.
 	// types.NewSelectionSet should do that for us.
 
@@ -719,7 +719,7 @@ func resolveInvalid(obj types.Object, node ast.Node, info *types.Info) types.Obj
 				}
 			}
 			return false
-		// TODO: Handle range statements.
+		// TODO(rstambler): Handle range statements.
 		default:
 			return true
 		}

@@ -264,7 +264,7 @@ func fiximports(packages ...string) bool {
 					// Report an error each time this package is imported.
 					canonical[p.ImportPath] = canonicalName{}
 
-					// TODO: should we make an HTTP request to
+					// TODO(adonovan): should we make an HTTP request to
 					// see if there's an HTTP redirect, a "go-import" meta tag,
 					// or an import comment in the the latest revision?
 					// It would duplicate a lot of logic from "go get".
@@ -420,7 +420,7 @@ func rewriteFile(filename string, canonical map[string]canonicalName, used map[s
 		if canon.path == "" {
 			// The canonical path is unknown (a -baddomain).
 			// Show the offending import.
-			// TODO: should we show the actual source text?
+			// TODO(adonovan): should we show the actual source text?
 			fmt.Fprintf(stderr, "\t%s:%d: import %q\n",
 				shortPath(filename),
 				fset.Position(imp.Pos()).Line, impPath)

@@ -30,7 +30,7 @@ func (s *server) processRequestBytes(reqData []byte) []byte {
 	rep, err := s.processRequest(reqData)
 	if err != nil {
 		if err != errLocked {
-			// TODO: provide better logging interface?
+			// TODO(hanwen): provide better logging interface?
 			log.Printf("agent %d: %v", reqData[0], err)
 		}
 		return []byte{agentFailure}

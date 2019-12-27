@@ -161,7 +161,7 @@ var liveProps = map[xml.Name]struct {
 	},
 }
 
-// TODO merge props and allprop?
+// TODO(nigeltao) merge props and allprop?
 
 // Props returns the status of the properties named pnames for resource name.
 //

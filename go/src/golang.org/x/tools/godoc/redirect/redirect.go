@@ -110,7 +110,7 @@ var redirects = map[string]string{
 	// In Go 1.2 the references page is part of /doc/.
 	"/ref": "/doc/#references",
 	// This next rule clobbers /ref/spec and /ref/mem.
-	// TODO: figure out what to do here, if anything.
+	// TODO(adg): figure out what to do here, if anything.
 	// "/ref/": "/doc/#references",
 
 	// Be nice to people who are looking in the wrong place.

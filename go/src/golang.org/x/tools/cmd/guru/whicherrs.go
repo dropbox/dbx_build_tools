@@ -27,7 +27,7 @@ var builtinErrorType = types.Universe.Lookup("error").Type()
 // In short, it returns a list of things that can be checked against in order to handle
 // an error properly.
 //
-// TODO: figure out if fields in errors like *os.PathError.Err
+// TODO(dmorsing): figure out if fields in errors like *os.PathError.Err
 // can be queried recursively somehow.
 func whicherrs(q *Query) error {
 	lconf := loader.Config{Build: q.Build}
@@ -101,7 +101,7 @@ func whicherrs(q *Query) error {
 		errpos: expr.Pos(),
 	}
 
-	// TODO: the following code is heavily duplicated
+	// TODO(adonovan): the following code is heavily duplicated
 	// w.r.t.  "pointsto".  Refactor?
 
 	// Find the instruction which initialized the

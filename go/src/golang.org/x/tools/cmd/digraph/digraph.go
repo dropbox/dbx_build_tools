@@ -6,7 +6,7 @@
 // etc) often arise during software tool development and debugging, this
 // command is included in the go.tools repository.
 //
-// TODO:
+// TODO(adonovan):
 // - support input files other than stdin
 // - support alternative formats (AT&T GraphViz, CSV, etc),
 //   a comment syntax, etc.
@@ -488,7 +488,7 @@ func split(line string) ([]string, error) {
 // that if there is a prefix of input containing a valid string literal,
 // its length is returned.
 //
-// TODO: move this into a strconv-like utility package.
+// TODO(adonovan): move this into a strconv-like utility package.
 //
 func quotedLength(input string) (n int, ok bool) {
 	var offset int

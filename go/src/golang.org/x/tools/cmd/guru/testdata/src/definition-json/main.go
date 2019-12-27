@@ -4,7 +4,7 @@ package definition
 // See golang.org/x/tools/cmd/guru/guru_test.go for explanation.
 // See main.golden for expected query results.
 
-// TODO: test: selection of member of same package defined in another file.
+// TODO(adonovan): test: selection of member of same package defined in another file.
 
 import (
 	"lib"

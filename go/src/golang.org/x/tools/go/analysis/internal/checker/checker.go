@@ -437,7 +437,7 @@ func (act *action) execOnce() {
 	// Analyze dependencies.
 	execAll(act.deps)
 
-	// TODO: uncomment this during profiling.
+	// TODO(adonovan): uncomment this during profiling.
 	// It won't build pre-go1.11 but conditional compilation
 	// using build tags isn't warranted.
 	//
@@ -616,7 +616,7 @@ func codeFact(fact analysis.Fact) (analysis.Fact, error) {
 // This is an overapproximation of the more accurate approach used by
 // gc export data, which walks the type graph, but it's much simpler.
 //
-// TODO: do more accurate filtering by walking the type graph.
+// TODO(adonovan): do more accurate filtering by walking the type graph.
 func exportedFrom(obj types.Object, pkg *types.Package) bool {
 	switch obj := obj.(type) {
 	case *types.Func:

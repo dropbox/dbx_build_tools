@@ -826,7 +826,7 @@ _go_library_attrs.update({
     "cgo_linkerflags": attr.string_list(),
     "cgo_cxxflags": attr.string_list(),
     "cover_name": attr.string(),
-    # NOTE: Ideally, `go_versions` should have `non_empty=True`. However, because of the
+    # NOTE(anupc): Ideally, `go_versions` should have `non_empty=True`. However, because of the
     # hack used below, this is difficult to enforce right now.
     "go_versions": attr.string_list(default = DEFAULT_GO_LIBRARY_VERSIONS),
     # HACK(anupc): This is a nasty way to satisfy Bazel's selector resolution system.
@@ -1018,7 +1018,7 @@ def _dbx_gen_maybe_services_test(
     # flag, `--test_tags_filter=go<version>`
     tags = tags + ["go" + go_version]
 
-    # TODO : consider requiring timeouts on enormous tests
+    # TODO (drg): consider requiring timeouts on enormous tests
     if timeout != None and size != "enormous":
         # we use size=enormous to disable our 8GB memory limit on tests,
         # but this implies an eternal timeout (1 hour - yikes!) so we want

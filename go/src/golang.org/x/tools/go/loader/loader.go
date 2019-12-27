@@ -152,7 +152,7 @@ type Program struct {
 	// NOTE: these files must not import "C".  Cgo preprocessing is
 	// only performed on imported packages, not ad hoc packages.
 	//
-	// TODO: we need to copy and adapt the logic of
+	// TODO(adonovan): we need to copy and adapt the logic of
 	// goFilesPackage (from $GOROOT/src/cmd/go/build.go) and make
 	// Config.Import and Config.Create methods return the same kind
 	// of entity, essentially a build.Package.
@@ -218,7 +218,7 @@ func (conf *Config) fset() *token.FileSet {
 // filename are read from the file system.
 //
 func (conf *Config) ParseFile(filename string, src interface{}) (*ast.File, error) {
-	// TODO: use conf.build() etc like parseFiles does.
+	// TODO(adonovan): use conf.build() etc like parseFiles does.
 	return parser.ParseFile(conf.fset(), filename, src, conf.ParserMode)
 }
 
@@ -861,7 +861,7 @@ func (imp *importer) findPackage(importPath, fromDir string, mode build.ImportMo
 // caused these imports.
 //
 func (imp *importer) importAll(fromPath, fromDir string, imports map[string]bool, mode build.ImportMode) (infos []*PackageInfo, errors []importError) {
-	// TODO: opt: do the loop in parallel once
+	// TODO(adonovan): opt: do the loop in parallel once
 	// findPackage is non-blocking.
 	var pending []*importInfo
 	for importPath := range imports {
@@ -1001,7 +1001,7 @@ func (imp *importer) addFiles(info *PackageInfo, files []*ast.File, cycleCheck b
 	if cycleCheck {
 		fromPath = info.Pkg.Path()
 	}
-	// TODO: opt: make the caller do scanImports.
+	// TODO(adonovan): opt: make the caller do scanImports.
 	// Callers with a build.Package can skip it.
 	imp.importAll(fromPath, info.dir, scanImports(files), 0)
 

@@ -35,7 +35,7 @@ var (
 	defaultScheme = "passthrough"
 )
 
-// TODO install dns resolver in init(){}.
+// TODO(bar) install dns resolver in init(){}.
 
 // Register registers the resolver builder to the resolver map. b.Scheme will be
 // used as the scheme registered with this builder.

@@ -81,7 +81,7 @@ func println(...interface{}) { println() } // want println:"found" "call of prin
 	}
 	// Go 1.13's scanner error messages uses the word invalid where Go 1.12 used illegal. Convert them
 	// to keep tests compatible with both.
-	// TODO: Remove this once Go 1.13 is released.
+	// TODO(matloob): Remove this once Go 1.13 is released.
 	for i := range got {
 		got[i] = strings.Replace(got[i], "illegal", "invalid", -1)
 	} //

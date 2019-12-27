@@ -196,7 +196,7 @@ func (b *Builder) AddASN1NULL() {
 // MarshalASN1 calls encoding_asn1.Marshal on its input and appends the result if
 // successful or records an error if one occurred.
 func (b *Builder) MarshalASN1(v interface{}) {
-	// NOTE: This is somewhat of a hack to allow propagation of
+	// NOTE(martinkr): This is somewhat of a hack to allow propagation of
 	// encoding_asn1.Marshal errors into Builder.err. N.B. if you call MarshalASN1 with a
 	// value embedded into a struct, its tag information is lost.
 	if b.err != nil {

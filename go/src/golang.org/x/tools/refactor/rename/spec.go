@@ -273,7 +273,7 @@ func findFromObjects(iprog *loader.Program, spec *spec) ([]types.Object, error) 
 
 	// Search for objects defined in specified package.
 
-	// TODO: the iprog.ImportMap has an entry {"main": ...}
+	// TODO(adonovan): the iprog.ImportMap has an entry {"main": ...}
 	// for main packages, even though that's not an import path.
 	// Seems like a bug.
 	//
@@ -341,7 +341,7 @@ func findFromObjectsInFile(iprog *loader.Program, spec *spec) ([]types.Object, e
 						pos := thisFile.Pos(spec.offset)
 						_, path, _ := iprog.PathEnclosingInterval(pos, pos)
 						if len(path) == 2 { // [Ident File]
-							// TODO: support this case.
+							// TODO(adonovan): support this case.
 							return nil, fmt.Errorf("cannot rename %q: renaming package clauses is not yet supported",
 								path[1].(*ast.File).Name.Name)
 						}
@@ -530,7 +530,7 @@ func searchDefs(info *types.Info, name string) []types.Object {
 	for id, obj := range info.Defs {
 		if obj == nil {
 			// e.g. blank ident.
-			// TODO: but also implicit y in
+			// TODO(adonovan): but also implicit y in
 			//    switch y := x.(type)
 			// Needs some thought.
 			continue

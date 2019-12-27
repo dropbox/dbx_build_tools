@@ -358,7 +358,7 @@ func (p *printer) expr(v Expr, outerPrec int) {
 	// the parse tree. If comments were okay before this expression in
 	// the original input they're still okay now, in the absense of rewrites.
 	//
-	// TODO: Check whether it is valid to emit comments right now,
+	// TODO(bazel-team): Check whether it is valid to emit comments right now,
 	// and if not, insert them earlier in the output instead, at the most
 	// recent \n not following a \ line.
 	p.newlineIfNeeded()

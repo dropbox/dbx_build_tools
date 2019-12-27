@@ -6,7 +6,7 @@
 // See Usage for details, or run with -help.
 package main // import "golang.org/x/tools/cmd/callgraph"
 
-// TODO:
+// TODO(adonovan):
 //
 // Features:
 // - restrict graph to a single package

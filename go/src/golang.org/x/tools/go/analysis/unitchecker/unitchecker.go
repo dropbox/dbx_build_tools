@@ -20,7 +20,7 @@
 // from source using go/packages.
 package unitchecker
 
-// TODO:
+// TODO(adonovan):
 // - with gccgo, go build does not build standard library,
 //   so we will not get to analyze it. Yet we must in order
 //   to create base facts for, say, the fmt package for the

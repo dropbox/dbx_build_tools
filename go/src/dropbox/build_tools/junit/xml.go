@@ -293,7 +293,7 @@ func ParseTime(time string) (int32, error) {
 		return 0, durParseErr
 	} else {
 		if durSecs < 0 || durSecs > 2147483647 {
-			// NOTE: some buggy junit output processors might give negative time
+			// NOTE(utsav): some buggy junit output processors might give negative time
 			// or too large values. Just ignore those.
 			// This is in sync with Changes
 			durSecs = 0

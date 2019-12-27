@@ -19,7 +19,7 @@ env:
 script:
   - make all
   - make regenerate
-  # TODO: When https://github.com/travis-ci/gimme/pull/130 is
+  # TODO(tamird): When https://github.com/travis-ci/gimme/pull/130 is
   # released, make this look for "1.x".
   - if [[ "$TRAVIS_GO_VERSION" == 1.10* ]]; then
       if [[ "$(git status --porcelain 2>&1)" != "" ]]; then

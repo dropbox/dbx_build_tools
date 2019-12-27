@@ -168,7 +168,7 @@ func what(q *Query) error {
 // its source directory (an element of $GOPATH) and its import path
 // relative to it.
 //
-// TODO: what about _test.go files that are not part of the
+// TODO(adonovan): what about _test.go files that are not part of the
 // package?
 //
 func guessImportPath(filename string, buildContext *build.Context) (srcdir, importPath string, err error) {

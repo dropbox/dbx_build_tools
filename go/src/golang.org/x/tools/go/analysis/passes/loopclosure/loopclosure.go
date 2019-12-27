@@ -14,7 +14,7 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// TODO: also report an error for the following structure,
+// TODO(adonovan): also report an error for the following structure,
 // which is often used to ensure that deferred calls do not accumulate
 // in a loop:
 //

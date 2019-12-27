@@ -21,9 +21,9 @@ import (
 //
 // The information may be misleading in a context-insensitive
 // analysis. e.g. the call path X->Y->Z might be infeasible if Y never
-// calls Z when it is called from X.  TODO: think about UI.
+// calls Z when it is called from X.  TODO(adonovan): think about UI.
 //
-// TODO: permit user to specify a starting point other than
+// TODO(adonovan): permit user to specify a starting point other than
 // the analysis root.
 //
 func callstack(q *Query) error {

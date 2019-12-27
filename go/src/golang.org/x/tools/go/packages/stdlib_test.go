@@ -18,7 +18,7 @@ import (
 
 // This test loads the metadata for the standard library,
 func TestStdlibMetadata(t *testing.T) {
-	// TODO: see if we can get away without this hack.
+	// TODO(adonovan): see if we can get away without this hack.
 	// if runtime.GOOS == "android" {
 	// 	t.Skipf("incomplete std lib on %s", runtime.GOOS)
 	// }
@@ -62,7 +62,7 @@ func TestCgoOption(t *testing.T) {
 		t.Skip("skipping in short mode; uses tons of memory (https://golang.org/issue/14113)")
 	}
 
-	// TODO: see if we can get away without these old
+	// TODO(adonovan): see if we can get away without these old
 	// go/loader hacks now that we use the go list command.
 	//
 	// switch runtime.GOOS {

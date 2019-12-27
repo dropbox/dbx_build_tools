@@ -484,7 +484,7 @@ func loc(fset *token.FileSet, pos token.Pos) string {
 func callSSA(i *interpreter, caller *frame, callpos token.Pos, fn *ssa.Function, args []value, env []value) value {
 	if i.mode&EnableTracing != 0 {
 		fset := fn.Prog.Fset
-		// TODO: fix: loc() lies for external functions.
+		// TODO(adonovan): fix: loc() lies for external functions.
 		fmt.Fprintf(os.Stderr, "Entering %s%s.\n", fn, loc(fset, fn.Pos()))
 		suffix := ""
 		if caller != nil {
@@ -603,7 +603,7 @@ func doRecover(caller *frame) value {
 		p := caller.caller.panic
 		caller.caller.panic = nil
 
-		// TODO: support runtime.Goexit.
+		// TODO(adonovan): support runtime.Goexit.
 		switch p := p.(type) {
 		case targetPanic:
 			// The target program explicitly called panic().
@@ -735,7 +735,7 @@ func Interpret(mainpkg *ssa.Package, mode Mode, sizes types.Sizes, filename stri
 			fmt.Fprintf(os.Stderr, "panic: unexpected type: %T: %v\n", p, p)
 		}
 
-		// TODO: dump panicking interpreter goroutine?
+		// TODO(adonovan): dump panicking interpreter goroutine?
 		// buf := make([]byte, 0x10000)
 		// runtime.Stack(buf, false)
 		// fmt.Fprintln(os.Stderr, string(buf))
@@ -755,7 +755,7 @@ func Interpret(mainpkg *ssa.Package, mode Mode, sizes types.Sizes, filename stri
 }
 
 // deref returns a pointer's element type; otherwise it returns typ.
-// TODO: Import from ssa?
+// TODO(adonovan): Import from ssa?
 func deref(typ types.Type) types.Type {
 	if p, ok := typ.Underlying().(*types.Pointer); ok {
 		return p.Elem()

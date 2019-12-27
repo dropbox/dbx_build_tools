@@ -10,7 +10,7 @@
 // package will be deprecated and eventually deleted.
 package gccgoexportdata
 
-// TODO: add Find, Write, Importer to the API,
+// TODO(adonovan): add Find, Write, Importer to the API,
 // for symmetry with gcexportdata.
 
 import (
