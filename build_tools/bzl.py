@@ -4,11 +4,11 @@ Setting the environment variable BZL_DEBUG=1 yields additional debug info.
 """
 
 import os
-if True:
-    import build_tools.bzl_lib.commands as commands
-    import build_tools.bzl_lib.core as core
-    import build_tools.bzl_lib.itest.itest as itest
-    import build_tools.bzl_lib.metrics as metrics
+
+from build_tools.bzl_lib import commands, core, metrics
+from build_tools.bzl_lib.itest import itest
+
+
 def main():
     # type: () -> None
     ap, sp = core.create_parser()
