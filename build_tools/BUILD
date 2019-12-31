@@ -268,6 +268,7 @@ py_binary(
     name = "chronic",
     srcs = ["chronic.py"],
     main = "chronic.py",
+    python_version = "PY3",
 )
 
 exports_files(["exit0.sh"])
