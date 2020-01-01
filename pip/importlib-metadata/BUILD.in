@@ -2,7 +2,7 @@ package(default_visibility = ["//visibility:public"])
 
 dbx_py_pypi_piplib(
     name = "importlib-metadata",
-    pip_version = "0.19",
+    pip_version = "1.3.0",
     provides = ["importlib_metadata"],
     python3_compatible = True,
     setup_requires = ["//pip/setuptools_scm"],
