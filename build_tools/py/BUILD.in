@@ -76,9 +76,6 @@ dbx_internal_bootstrap_py_binary(
     main = "dbx_compile.py",
     deps = [
         ":dbx_importer",
-        # copybara:strip-begin
-        "//dropbox/pyxl/codec",
-        # copybara:strip-end
     ],
 )
 
