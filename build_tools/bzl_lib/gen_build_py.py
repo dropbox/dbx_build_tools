@@ -5,7 +5,6 @@ from __future__ import print_function
 import glob
 import os
 import os.path
-import sys
 
 from typing import Dict, List, Optional, Text
 
@@ -13,7 +12,8 @@ import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
 
 from build_tools.bzl_lib.parse_py_imports import parse_imports
-from build_tools.bzl_lib.parse_py_imports_wrapper import parse_imports_py3
+from build_tools.bzl_lib.parse_py_imports_wrapper import parse_imports_py2
+
 EXTENSION_RULE_TYPES = (
 )
 
@@ -1055,7 +1055,7 @@ class PyBuildGenerator(object):
                     main,
                     pip_main,
                     validate,
-                    is_py2_compat,
+                    is_py3_compat,
                 )
 
             to_traverse.extend(deps)
@@ -1126,7 +1126,7 @@ class PyBuildGenerator(object):
         main,
         pip_main,
         validate,
-        is_py2_compatible,
+        is_py3_compatible,
     ):
         srcs = (srcs or []) + (stub_srcs or [])
         if main:
@@ -1165,10 +1165,10 @@ class PyBuildGenerator(object):
                 )
                 continue
 
-            if is_py2_compatible and not src.endswith(".pyi"):
+            if is_py3_compatible or src.endswith(".pyi"):
                 import_set, from_set = parse_imports(self.workspace_dir, src)
             else:
-                import_set, from_set = parse_imports_py3(self.workspace_dir, src)
+                import_set, from_set = parse_imports_py2(self.workspace_dir, src)
 
             import_deps, unknown_imports = mapping.find_import_targets(
                 src_pkg, self_modules, import_set

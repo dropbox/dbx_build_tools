@@ -82,7 +82,7 @@ dbx_py_binary(
         "bzl-gen.py",
     ],
     main = "bzl-gen.py",
-    python3_compatible = False,
+    python2_compatible = False,
     deps = [
         ":bazel_utils",
         "//build_tools/bzl_lib:gazel_lib",

@@ -1,4 +1,4 @@
-# This is Python 2 code.
+# This is Python 3 code.
 
 from __future__ import print_function
 
@@ -10,9 +10,9 @@ from typing import Set, Tuple
 from dropbox import runfiles
 
 
-def parse_imports_py3(workspace_dir, src):
+def parse_imports_py2(workspace_dir, src):
     # type: (str, str) -> Tuple[Set[str], Set[str]]
-    tool_path = runfiles.data_path("@dbx_build_tools//build_tools/bzl_lib/parse_py_imports_py3")
+    tool_path = runfiles.data_path("@dbx_build_tools//build_tools/bzl_lib/parse_py_imports_py2")
     args = [tool_path, workspace_dir, src]
     output = subprocess.check_output(args)
     results = json.loads(output)

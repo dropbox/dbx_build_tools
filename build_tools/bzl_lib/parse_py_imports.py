@@ -6,8 +6,6 @@ from __future__ import print_function
 
 import ast
 import os
-
-
 def normalize_module(src, module_path):
     # type: (str, str) -> str
     if not module_path.startswith("."):
@@ -41,7 +39,7 @@ def normalize_module(src, module_path):
 
 
 def parse_imports(workspace_dir, src):
-    with open(os.path.join(workspace_dir, src)) as f:
+    with open(os.path.join(workspace_dir, src), "rb") as f:
         content = f.read()
 
     try:

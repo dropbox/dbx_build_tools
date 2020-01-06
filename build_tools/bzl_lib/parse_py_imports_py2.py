@@ -1,6 +1,6 @@
 # mypy: allow-untyped-defs
 
-# This is Python 3 code.
+# This is Python 2 code.
 
 import json
 import sys

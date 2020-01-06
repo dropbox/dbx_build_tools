@@ -1,9 +1,11 @@
 # mypy: allow-untyped-defs
 
-__doc__ = """bzl-gen is a small wrapper for adding Dropbox-specific functionality on top of Bazel.
+"""bzl-gen is a small wrapper for adding Dropbox-specific functionality on top of Bazel.
 
 Setting the environment variable BZL_DEBUG=1 yields additional debug info.
 """
+
+from __future__ import absolute_import, print_function
 
 import argparse
 import functools
@@ -55,13 +57,13 @@ def main():
             raise
         sys.exit("ERROR: " + str(e))
     except subprocess.CalledProcessError as e:
-        print >>sys.stderr, e
+        print(e, file=sys.stderr)
         if e.output:
-            print >>sys.stderr, e.output
+            print(e.output, file=sys.stderr)
         if os.environ.get("BZL_DEBUG"):
             raise
         sys.exit(e.returncode)
-    except KeyboardInterrupt as e:
+    except KeyboardInterrupt:
         sys.exit("ERROR: interrupted")
 
 

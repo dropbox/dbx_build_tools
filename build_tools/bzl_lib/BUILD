@@ -27,10 +27,9 @@ dbx_py_library(
     ],
     data = [
         "//build_tools:buildfmt",
-        "//build_tools/bzl_lib:parse_py_imports_py3",
+        "//build_tools/bzl_lib:parse_py_imports_py2",
         "//go/src/dropbox/build_tools/gen-build-go",
     ],
-    python3_compatible = False,
     validate = "allow-unused",
     deps = [
         ":build_merge_lib",
@@ -50,8 +49,6 @@ dbx_py_library(
     srcs = [
         "parse_py_imports.py",
     ],
-    python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
 )
 
@@ -112,14 +109,13 @@ dbx_py_library(
 )
 
 dbx_py_binary(
-    name = "parse_py_imports_py3",
+    name = "parse_py_imports_py2",
     srcs = [
-        "parse_py_imports_py3.py",
+        "parse_py_imports_py2.py",
     ],
-    main = "parse_py_imports_py3.py",
-    python = "//thirdparty/cpython:drte-interpreter-37",
-    python2_compatible = False,
-    python3_compatible = True,
+    main = "parse_py_imports_py2.py",
+    python2_compatible = True,
+    python3_compatible = False,
     deps = [
         ":parse_py_imports_lib",
     ],
