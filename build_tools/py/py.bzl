@@ -149,8 +149,6 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
             cc_infos.append(dep[CcInfo])
         elif hasattr(dep, "crate_type"):
             # dep is a rust_library.
-            if dep.crate_type != "cdylib":
-                fail("Only cdylib rust libraries are supported: {}".format(dep.name))
             rust_deps.append(dep)
         elif not hasattr(dep, "piplib_contents"):
             # Note vpip can't depend on other Python libraries.
@@ -179,9 +177,16 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         elif l2l.dynamic_library and _allow_dynamic_links(ctx):
             dynamic_libs.append(l2l.dynamic_library)
 
-    if _allow_dynamic_links(ctx):
-        for rust_dep in rust_deps:
-            dynamic_libs.append(rust_dep.rust_lib)
+    for rust_dep in rust_deps:
+        if rust_dep.crate_type == "staticlib":
+            pic_libs.append(rust_dep.rust_lib)
+        elif rust_dep.crate_type == "cdylib":
+            if _allow_dynamic_links(ctx):
+                dynamic_libs.append(rust_dep.rust_lib)
+            else:
+                fail("Dynamic linking is not allowed: {}".format(rust_dep.name))
+        else:
+            fail("Only cdylib and staticlib rust libraries are supported: {}".format(rust_dep.name))
 
     command_args.add_all(pic_libs, before_each = "--extra-lib")
     inputs_direct.extend(pic_libs)
