@@ -27,10 +27,6 @@ import os
 import pkgutil
 import sys
 
-MYPY = False
-if MYPY:
-    from typing import Text
-
 DBX_MAGIC = b"dbx" + imp.get_magic()
 
 # Unfortunately, it is critical that DBXImporter subclasses pkgutil.ImpImporter. pkg_resources
@@ -168,7 +164,7 @@ DOCSTRING_STRIP_EXCEPTIONS = [
 
 
 def dbx_compile(src_path, dest_path, compiled_path, allow_failure):
-    # type: (Text, Text, Text, bool) -> bool
+    # type: (str, str, str, bool) -> bool
     try:
         with open(src_path, "U") as f:
             src = f.read()
