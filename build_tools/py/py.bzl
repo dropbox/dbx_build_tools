@@ -928,6 +928,7 @@ def dbx_py_pytest_test(
         deps = [],
         args = [],
         size = "small",
+        timeout = None,
         services = [],
         # if 'services' is a select, we can't calculate len, this works around
         # by telling the test that there are services. Note that you still can't
@@ -998,6 +999,7 @@ def dbx_py_pytest_test(
                 start_services = start_services,
                 local = local,
                 size = size,
+                timeout = timeout,
                 tags = variant_tags,
                 flaky = flaky,
                 quarantine = quarantine,
@@ -1010,6 +1012,7 @@ def dbx_py_pytest_test(
                 extra_args = extra_args,
                 deps = all_deps,
                 size = size,
+                timeout = timeout,
                 tags = variant_tags,
                 local = local,
                 flaky = flaky,
