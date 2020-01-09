@@ -184,22 +184,26 @@ def main(ap, self_target):
     args, remaining_args = ap.parse_known_args()
     metrics.set_mode(args.mode)
     subparser_map = ap._subparsers._group_actions[0].choices
-    mode_parser = subparser_map[args.mode]
-    allow_unknown_args = getattr(mode_parser, "bzl_allow_unknown_args", False)
-    if not allow_unknown_args and remaining_args:
-        sys.exit("ERROR: unknown args for mode %s: %s" % (args.mode, remaining_args))
+    if remaining_args and (
+        args.mode is None
+        or not getattr(subparser_map[args.mode], "bzl_allow_unknown_args", False)
+    ):
+        print(
+            f"ERROR: unknown args for mode {args.mode}: {remaining_args}",
+            file=sys.stderr,
+        )
+        sys.exit(2)
 
     bazel_args, mode_args = parse_bazel_args(remaining_args)
     if args.mode in (None, "help"):
         if not mode_args:
             ap.print_help()
             print()
-            sys.stdout.flush()
         elif len(mode_args) == 1 and mode_args[0] not in bazel_modes:
             help_mode_parser = subparser_map[mode_args[0]]
             help_mode_parser.print_help()
-            sys.stdout.flush()
-            sys.exit(0)
+        sys.stdout.flush()
+        sys.exit(1 if args.mode is None else 0)
 
     if args.build_image and not args.build_image.startswith(args.docker_registry):
         args.build_image = os.path.join(args.docker_registry, args.build_image)
