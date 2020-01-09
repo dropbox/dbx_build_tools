@@ -11,7 +11,7 @@ DEFAULT_EXTERNAL_URLS = {
     "com_github_plougher_squashfs-tools": "https://github.com/plougher/squashfs-tools/archive/4.4.tar.gz",
     "cpython_27": "https://www.python.org/ftp/python/2.7.17/Python-2.7.17.tar.xz",
     "cpython_37": "https://www.python.org/ftp/python/3.7.5/Python-3.7.5.tar.xz",
-    "go1_12_14_linux_amd64_tar_gz": "https://dl.google.com/go/go1.12.14.linux-amd64.tar.gz",
+    "go_1_12_15_linux_amd64_tar_gz": "https://dl.google.com/go/go1.12.15.linux-amd64.tar.gz",
     "io_pypa_pip_whl": "https://pypi.python.org/packages/b6/ac/7015eb97dc749283ffdec1c3a88ddb8ae03b8fad0f0e611408f196358da3/pip-9.0.1-py2.py3-none-any.whl",
     "io_pypa_setuptools_whl": "https://files.pythonhosted.org/packages/ec/51/f45cea425fd5cb0b0380f5b0f048ebc1da5b417e48d304838c02d6288a1e/setuptools-41.0.1-py2.py3-none-any.whl",
     "io_pypa_wheel_whl": "https://files.pythonhosted.org/packages/bb/10/44230dd6bf3563b8f227dbf344c908d412ad2ff48066476672f3a72e174e/wheel-0.33.4-py2.py3-none-any.whl",
@@ -29,9 +29,9 @@ DEFAULT_EXTERNAL_URLS = {
 
 def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
-        name = "go1_12_14_linux_amd64_tar_gz",
-        urls = [urls["go1_12_14_linux_amd64_tar_gz"]],
-        sha256 = "925a1a9d8b31c2425d7313fe73d3342288968a66e26cd8bf1b6b5656f4603fcb",
+        name = "go_1_12_15_linux_amd64_tar_gz",
+        urls = [urls["go_1_12_15_linux_amd64_tar_gz"]],
+        sha256 = "61068419f3d3fcd3cc415c352c4a93d6ae0e723ac18a22ac572b4904d78b5a4c",
         build_file = filename_from_label("//build_tools/go:BUILD.go-dist"),
     )
 

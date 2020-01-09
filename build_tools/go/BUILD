@@ -20,16 +20,16 @@ dbx_py_library(
 
 go_toolchain(
     name = "go1.12",
-    asm = "@go1_12_14_linux_amd64_tar_gz//:asm",
-    asm_inputs = "@go1_12_14_linux_amd64_tar_gz//:asm-inputs",
-    cgo = "@go1_12_14_linux_amd64_tar_gz//:cgo",
-    compile = "@go1_12_14_linux_amd64_tar_gz//:compile",
-    cover = "@go1_12_14_linux_amd64_tar_gz//:cover",
-    include_dir = "external/go1_12_14_linux_amd64_tar_gz/go/pkg/include",
-    link = "@go1_12_14_linux_amd64_tar_gz//:link",
-    pack = "@go1_12_14_linux_amd64_tar_gz//:pack",
-    stdlib = "@go1_12_14_linux_amd64_tar_gz//:stdlib",
-    stdlib_race = "@go1_12_14_linux_amd64_tar_gz//:stdlib-race",
+    asm = "@go_1_12_15_linux_amd64_tar_gz//:asm",
+    asm_inputs = "@go_1_12_15_linux_amd64_tar_gz//:asm-inputs",
+    cgo = "@go_1_12_15_linux_amd64_tar_gz//:cgo",
+    compile = "@go_1_12_15_linux_amd64_tar_gz//:compile",
+    cover = "@go_1_12_15_linux_amd64_tar_gz//:cover",
+    include_dir = "external/go_1_12_15_linux_amd64_tar_gz/go/pkg/include",
+    link = "@go_1_12_15_linux_amd64_tar_gz//:link",
+    pack = "@go_1_12_15_linux_amd64_tar_gz//:pack",
+    stdlib = "@go_1_12_15_linux_amd64_tar_gz//:stdlib",
+    stdlib_race = "@go_1_12_15_linux_amd64_tar_gz//:stdlib-race",
     taglist = [
         "go1.1",
         "go1.2",
@@ -53,7 +53,7 @@ dbx_sh_binary(
     srcs = ["go_test_wrapper.sh"],
     data = [
         "//go/src/dropbox/build_tools/gojunit/gojunit",
-        "@go1_12_14_linux_amd64_tar_gz//:test2json",
+        "@go_1_12_15_linux_amd64_tar_gz//:test2json",
     ] + select({
         "//build_tools:coverage-enabled": ["//go/src/dropbox/build_tools/gocov2cobertura"],
         "//conditions:default": [],

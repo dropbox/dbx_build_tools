@@ -10,7 +10,9 @@ def make_go_env():
     # TODO(msolo) Respect args to bzl to use the proper default runtime.
     ws = bazel_utils.find_workspace()
     bazel_ws_root = "bazel-" + os.path.basename(ws)
-    GOROOT = os.path.join(ws, bazel_ws_root, "external/go1_12_14_linux_amd64_tar_gz/go")
+    GOROOT = os.path.join(
+        ws, bazel_ws_root, "external/go_1_12_15_linux_amd64_tar_gz/go"
+    )
 
     return {
         "GOROOT": GOROOT,
