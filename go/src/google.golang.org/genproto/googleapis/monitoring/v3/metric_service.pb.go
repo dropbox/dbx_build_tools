@@ -3,24 +3,33 @@
 
 package monitoring
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
-import _ "google.golang.org/genproto/googleapis/api/annotations"
-import google_api5 "google.golang.org/genproto/googleapis/api/metric"
-import google_api4 "google.golang.org/genproto/googleapis/api/monitoredres"
-import google_protobuf4 "github.com/golang/protobuf/ptypes/empty"
-import google_rpc "google.golang.org/genproto/googleapis/rpc/status"
-
 import (
-	context "golang.org/x/net/context"
+	context "context"
+	fmt "fmt"
+	math "math"
+
+	proto "github.com/golang/protobuf/proto"
+	_ "github.com/golang/protobuf/ptypes/duration"
+	empty "github.com/golang/protobuf/ptypes/empty"
+	_ "google.golang.org/genproto/googleapis/api/annotations"
+	metric "google.golang.org/genproto/googleapis/api/metric"
+	monitoredres "google.golang.org/genproto/googleapis/api/monitoredres"
+	status "google.golang.org/genproto/googleapis/rpc/status"
 	grpc "google.golang.org/grpc"
+	codes "google.golang.org/grpc/codes"
+	status1 "google.golang.org/grpc/status"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
 var _ = math.Inf
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the proto package it is being compiled against.
+// A compilation error at this line likely means your copy of the
+// proto package needs to be updated.
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 // Controls which fields are returned by `ListTimeSeries`.
 type ListTimeSeriesRequest_TimeSeriesView int32
@@ -38,6 +47,7 @@ var ListTimeSeriesRequest_TimeSeriesView_name = map[int32]string{
 	0: "FULL",
 	1: "HEADERS",
 }
+
 var ListTimeSeriesRequest_TimeSeriesView_value = map[string]int32{
 	"FULL":    0,
 	"HEADERS": 1,
@@ -46,15 +56,16 @@ var ListTimeSeriesRequest_TimeSeriesView_value = map[string]int32{
 func (x ListTimeSeriesRequest_TimeSeriesView) String() string {
 	return proto.EnumName(ListTimeSeriesRequest_TimeSeriesView_name, int32(x))
 }
+
 func (ListTimeSeriesRequest_TimeSeriesView) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor4, []int{8, 0}
+	return fileDescriptor_7b3d47b45a293957, []int{8, 0}
 }
 
 // The `ListMonitoredResourceDescriptors` request.
 type ListMonitoredResourceDescriptorsRequest struct {
 	// The project on which to execute the request. The format is
 	// `"projects/{project_id_or_number}"`.
-	Name string `protobuf:"bytes,5,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
 	// An optional [filter](/monitoring/api/v3/filters) describing
 	// the descriptors to be returned.  The filter can reference
 	// the descriptor's type and labels. For example, the
@@ -62,13 +73,16 @@ type ListMonitoredResourceDescriptorsRequest struct {
 	// that have an `id` label:
 	//
 	//     resource.type = starts_with("gce_") AND resource.label:id
-	Filter string `protobuf:"bytes,2,opt,name=filter" json:"filter,omitempty"`
+	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	// A positive number that is the maximum number of results to return.
-	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize" json:"page_size,omitempty"`
+	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// If this field is not empty then it must contain the `nextPageToken` value
 	// returned by a previous call to this method.  Using this field causes the
 	// method to return additional results from the previous method call.
-	PageToken string `protobuf:"bytes,4,opt,name=page_token,json=pageToken" json:"page_token,omitempty"`
+	PageToken            string   `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *ListMonitoredResourceDescriptorsRequest) Reset() {
@@ -77,8 +91,26 @@ func (m *ListMonitoredResourceDescriptorsRequest) Reset() {
 func (m *ListMonitoredResourceDescriptorsRequest) String() string { return proto.CompactTextString(m) }
 func (*ListMonitoredResourceDescriptorsRequest) ProtoMessage()    {}
 func (*ListMonitoredResourceDescriptorsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor4, []int{0}
+	return fileDescriptor_7b3d47b45a293957, []int{0}
 }
+
+func (m *ListMonitoredResourceDescriptorsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListMonitoredResourceDescriptorsRequest.Unmarshal(m, b)
+}
+func (m *ListMonitoredResourceDescriptorsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListMonitoredResourceDescriptorsRequest.Marshal(b, m, deterministic)
+}
+func (m *ListMonitoredResourceDescriptorsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListMonitoredResourceDescriptorsRequest.Merge(m, src)
+}
+func (m *ListMonitoredResourceDescriptorsRequest) XXX_Size() int {
+	return xxx_messageInfo_ListMonitoredResourceDescriptorsRequest.Size(m)
+}
+func (m *ListMonitoredResourceDescriptorsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListMonitoredResourceDescriptorsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListMonitoredResourceDescriptorsRequest proto.InternalMessageInfo
 
 func (m *ListMonitoredResourceDescriptorsRequest) GetName() string {
 	if m != nil {
@@ -108,15 +140,18 @@ func (m *ListMonitoredResourceDescriptorsRequest) GetPageToken() string {
 	return ""
 }
 
-// The `ListMonitoredResourcDescriptors` response.
+// The `ListMonitoredResourceDescriptors` response.
 type ListMonitoredResourceDescriptorsResponse struct {
 	// The monitored resource descriptors that are available to this project
 	// and that match `filter`, if present.
-	ResourceDescriptors []*google_api4.MonitoredResourceDescriptor `protobuf:"bytes,1,rep,name=resource_descriptors,json=resourceDescriptors" json:"resource_descriptors,omitempty"`
+	ResourceDescriptors []*monitoredres.MonitoredResourceDescriptor `protobuf:"bytes,1,rep,name=resource_descriptors,json=resourceDescriptors,proto3" json:"resource_descriptors,omitempty"`
 	// If there are more results than have been returned, then this field is set
 	// to a non-empty value.  To see the additional results,
 	// use that value as `pageToken` in the next call to this method.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken" json:"next_page_token,omitempty"`
+	NextPageToken        string   `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *ListMonitoredResourceDescriptorsResponse) Reset() {
@@ -125,10 +160,28 @@ func (m *ListMonitoredResourceDescriptorsResponse) Reset() {
 func (m *ListMonitoredResourceDescriptorsResponse) String() string { return proto.CompactTextString(m) }
 func (*ListMonitoredResourceDescriptorsResponse) ProtoMessage()    {}
 func (*ListMonitoredResourceDescriptorsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor4, []int{1}
+	return fileDescriptor_7b3d47b45a293957, []int{1}
 }
 
-func (m *ListMonitoredResourceDescriptorsResponse) GetResourceDescriptors() []*google_api4.MonitoredResourceDescriptor {
+func (m *ListMonitoredResourceDescriptorsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListMonitoredResourceDescriptorsResponse.Unmarshal(m, b)
+}
+func (m *ListMonitoredResourceDescriptorsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListMonitoredResourceDescriptorsResponse.Marshal(b, m, deterministic)
+}
+func (m *ListMonitoredResourceDescriptorsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListMonitoredResourceDescriptorsResponse.Merge(m, src)
+}
+func (m *ListMonitoredResourceDescriptorsResponse) XXX_Size() int {
+	return xxx_messageInfo_ListMonitoredResourceDescriptorsResponse.Size(m)
+}
+func (m *ListMonitoredResourceDescriptorsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListMonitoredResourceDescriptorsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListMonitoredResourceDescriptorsResponse proto.InternalMessageInfo
+
+func (m *ListMonitoredResourceDescriptorsResponse) GetResourceDescriptors() []*monitoredres.MonitoredResourceDescriptor {
 	if m != nil {
 		return m.ResourceDescriptors
 	}
@@ -148,15 +201,36 @@ type GetMonitoredResourceDescriptorRequest struct {
 	// `"projects/{project_id_or_number}/monitoredResourceDescriptors/{resource_type}"`.
 	// The `{resource_type}` is a predefined type, such as
 	// `cloudsql_database`.
-	Name string `protobuf:"bytes,3,opt,name=name" json:"name,omitempty"`
+	Name                 string   `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *GetMonitoredResourceDescriptorRequest) Reset()         { *m = GetMonitoredResourceDescriptorRequest{} }
 func (m *GetMonitoredResourceDescriptorRequest) String() string { return proto.CompactTextString(m) }
 func (*GetMonitoredResourceDescriptorRequest) ProtoMessage()    {}
 func (*GetMonitoredResourceDescriptorRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor4, []int{2}
+	return fileDescriptor_7b3d47b45a293957, []int{2}
 }
+
+func (m *GetMonitoredResourceDescriptorRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetMonitoredResourceDescriptorRequest.Unmarshal(m, b)
+}
+func (m *GetMonitoredResourceDescriptorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetMonitoredResourceDescriptorRequest.Marshal(b, m, deterministic)
+}
+func (m *GetMonitoredResourceDescriptorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetMonitoredResourceDescriptorRequest.Merge(m, src)
+}
+func (m *GetMonitoredResourceDescriptorRequest) XXX_Size() int {
+	return xxx_messageInfo_GetMonitoredResourceDescriptorRequest.Size(m)
+}
+func (m *GetMonitoredResourceDescriptorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetMonitoredResourceDescriptorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetMonitoredResourceDescriptorRequest proto.InternalMessageInfo
 
 func (m *GetMonitoredResourceDescriptorRequest) GetName() string {
 	if m != nil {
@@ -169,7 +243,7 @@ func (m *GetMonitoredResourceDescriptorRequest) GetName() string {
 type ListMetricDescriptorsRequest struct {
 	// The project on which to execute the request. The format is
 	// `"projects/{project_id_or_number}"`.
-	Name string `protobuf:"bytes,5,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,5,opt,name=name,proto3" json:"name,omitempty"`
 	// If this field is empty, all custom and
 	// system-defined metric descriptors are returned.
 	// Otherwise, the [filter](/monitoring/api/v3/filters)
@@ -178,19 +252,42 @@ type ListMetricDescriptorsRequest struct {
 	// [custom metrics](/monitoring/custom-metrics):
 	//
 	//     metric.type = starts_with("custom.googleapis.com/")
-	Filter string `protobuf:"bytes,2,opt,name=filter" json:"filter,omitempty"`
+	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	// A positive number that is the maximum number of results to return.
-	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize" json:"page_size,omitempty"`
+	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// If this field is not empty then it must contain the `nextPageToken` value
 	// returned by a previous call to this method.  Using this field causes the
 	// method to return additional results from the previous method call.
-	PageToken string `protobuf:"bytes,4,opt,name=page_token,json=pageToken" json:"page_token,omitempty"`
+	PageToken            string   `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ListMetricDescriptorsRequest) Reset()                    { *m = ListMetricDescriptorsRequest{} }
-func (m *ListMetricDescriptorsRequest) String() string            { return proto.CompactTextString(m) }
-func (*ListMetricDescriptorsRequest) ProtoMessage()               {}
-func (*ListMetricDescriptorsRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{3} }
+func (m *ListMetricDescriptorsRequest) Reset()         { *m = ListMetricDescriptorsRequest{} }
+func (m *ListMetricDescriptorsRequest) String() string { return proto.CompactTextString(m) }
+func (*ListMetricDescriptorsRequest) ProtoMessage()    {}
+func (*ListMetricDescriptorsRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{3}
+}
+
+func (m *ListMetricDescriptorsRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListMetricDescriptorsRequest.Unmarshal(m, b)
+}
+func (m *ListMetricDescriptorsRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListMetricDescriptorsRequest.Marshal(b, m, deterministic)
+}
+func (m *ListMetricDescriptorsRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListMetricDescriptorsRequest.Merge(m, src)
+}
+func (m *ListMetricDescriptorsRequest) XXX_Size() int {
+	return xxx_messageInfo_ListMetricDescriptorsRequest.Size(m)
+}
+func (m *ListMetricDescriptorsRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListMetricDescriptorsRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListMetricDescriptorsRequest proto.InternalMessageInfo
 
 func (m *ListMetricDescriptorsRequest) GetName() string {
 	if m != nil {
@@ -224,19 +321,42 @@ func (m *ListMetricDescriptorsRequest) GetPageToken() string {
 type ListMetricDescriptorsResponse struct {
 	// The metric descriptors that are available to the project
 	// and that match the value of `filter`, if present.
-	MetricDescriptors []*google_api5.MetricDescriptor `protobuf:"bytes,1,rep,name=metric_descriptors,json=metricDescriptors" json:"metric_descriptors,omitempty"`
+	MetricDescriptors []*metric.MetricDescriptor `protobuf:"bytes,1,rep,name=metric_descriptors,json=metricDescriptors,proto3" json:"metric_descriptors,omitempty"`
 	// If there are more results than have been returned, then this field is set
 	// to a non-empty value.  To see the additional results,
 	// use that value as `pageToken` in the next call to this method.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken" json:"next_page_token,omitempty"`
+	NextPageToken        string   `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ListMetricDescriptorsResponse) Reset()                    { *m = ListMetricDescriptorsResponse{} }
-func (m *ListMetricDescriptorsResponse) String() string            { return proto.CompactTextString(m) }
-func (*ListMetricDescriptorsResponse) ProtoMessage()               {}
-func (*ListMetricDescriptorsResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{4} }
+func (m *ListMetricDescriptorsResponse) Reset()         { *m = ListMetricDescriptorsResponse{} }
+func (m *ListMetricDescriptorsResponse) String() string { return proto.CompactTextString(m) }
+func (*ListMetricDescriptorsResponse) ProtoMessage()    {}
+func (*ListMetricDescriptorsResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{4}
+}
 
-func (m *ListMetricDescriptorsResponse) GetMetricDescriptors() []*google_api5.MetricDescriptor {
+func (m *ListMetricDescriptorsResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListMetricDescriptorsResponse.Unmarshal(m, b)
+}
+func (m *ListMetricDescriptorsResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListMetricDescriptorsResponse.Marshal(b, m, deterministic)
+}
+func (m *ListMetricDescriptorsResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListMetricDescriptorsResponse.Merge(m, src)
+}
+func (m *ListMetricDescriptorsResponse) XXX_Size() int {
+	return xxx_messageInfo_ListMetricDescriptorsResponse.Size(m)
+}
+func (m *ListMetricDescriptorsResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListMetricDescriptorsResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListMetricDescriptorsResponse proto.InternalMessageInfo
+
+func (m *ListMetricDescriptorsResponse) GetMetricDescriptors() []*metric.MetricDescriptor {
 	if m != nil {
 		return m.MetricDescriptors
 	}
@@ -256,13 +376,36 @@ type GetMetricDescriptorRequest struct {
 	// `"projects/{project_id_or_number}/metricDescriptors/{metric_id}"`.
 	// An example value of `{metric_id}` is
 	// `"compute.googleapis.com/instance/disk/read_bytes_count"`.
-	Name string `protobuf:"bytes,3,opt,name=name" json:"name,omitempty"`
+	Name                 string   `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *GetMetricDescriptorRequest) Reset()                    { *m = GetMetricDescriptorRequest{} }
-func (m *GetMetricDescriptorRequest) String() string            { return proto.CompactTextString(m) }
-func (*GetMetricDescriptorRequest) ProtoMessage()               {}
-func (*GetMetricDescriptorRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{5} }
+func (m *GetMetricDescriptorRequest) Reset()         { *m = GetMetricDescriptorRequest{} }
+func (m *GetMetricDescriptorRequest) String() string { return proto.CompactTextString(m) }
+func (*GetMetricDescriptorRequest) ProtoMessage()    {}
+func (*GetMetricDescriptorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{5}
+}
+
+func (m *GetMetricDescriptorRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_GetMetricDescriptorRequest.Unmarshal(m, b)
+}
+func (m *GetMetricDescriptorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_GetMetricDescriptorRequest.Marshal(b, m, deterministic)
+}
+func (m *GetMetricDescriptorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_GetMetricDescriptorRequest.Merge(m, src)
+}
+func (m *GetMetricDescriptorRequest) XXX_Size() int {
+	return xxx_messageInfo_GetMetricDescriptorRequest.Size(m)
+}
+func (m *GetMetricDescriptorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_GetMetricDescriptorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_GetMetricDescriptorRequest proto.InternalMessageInfo
 
 func (m *GetMetricDescriptorRequest) GetName() string {
 	if m != nil {
@@ -275,16 +418,39 @@ func (m *GetMetricDescriptorRequest) GetName() string {
 type CreateMetricDescriptorRequest struct {
 	// The project on which to execute the request. The format is
 	// `"projects/{project_id_or_number}"`.
-	Name string `protobuf:"bytes,3,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	// The new [custom metric](/monitoring/custom-metrics)
 	// descriptor.
-	MetricDescriptor *google_api5.MetricDescriptor `protobuf:"bytes,2,opt,name=metric_descriptor,json=metricDescriptor" json:"metric_descriptor,omitempty"`
+	MetricDescriptor     *metric.MetricDescriptor `protobuf:"bytes,2,opt,name=metric_descriptor,json=metricDescriptor,proto3" json:"metric_descriptor,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
+	XXX_unrecognized     []byte                   `json:"-"`
+	XXX_sizecache        int32                    `json:"-"`
 }
 
-func (m *CreateMetricDescriptorRequest) Reset()                    { *m = CreateMetricDescriptorRequest{} }
-func (m *CreateMetricDescriptorRequest) String() string            { return proto.CompactTextString(m) }
-func (*CreateMetricDescriptorRequest) ProtoMessage()               {}
-func (*CreateMetricDescriptorRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{6} }
+func (m *CreateMetricDescriptorRequest) Reset()         { *m = CreateMetricDescriptorRequest{} }
+func (m *CreateMetricDescriptorRequest) String() string { return proto.CompactTextString(m) }
+func (*CreateMetricDescriptorRequest) ProtoMessage()    {}
+func (*CreateMetricDescriptorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{6}
+}
+
+func (m *CreateMetricDescriptorRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateMetricDescriptorRequest.Unmarshal(m, b)
+}
+func (m *CreateMetricDescriptorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateMetricDescriptorRequest.Marshal(b, m, deterministic)
+}
+func (m *CreateMetricDescriptorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateMetricDescriptorRequest.Merge(m, src)
+}
+func (m *CreateMetricDescriptorRequest) XXX_Size() int {
+	return xxx_messageInfo_CreateMetricDescriptorRequest.Size(m)
+}
+func (m *CreateMetricDescriptorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateMetricDescriptorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateMetricDescriptorRequest proto.InternalMessageInfo
 
 func (m *CreateMetricDescriptorRequest) GetName() string {
 	if m != nil {
@@ -293,7 +459,7 @@ func (m *CreateMetricDescriptorRequest) GetName() string {
 	return ""
 }
 
-func (m *CreateMetricDescriptorRequest) GetMetricDescriptor() *google_api5.MetricDescriptor {
+func (m *CreateMetricDescriptorRequest) GetMetricDescriptor() *metric.MetricDescriptor {
 	if m != nil {
 		return m.MetricDescriptor
 	}
@@ -306,13 +472,36 @@ type DeleteMetricDescriptorRequest struct {
 	// `"projects/{project_id_or_number}/metricDescriptors/{metric_id}"`.
 	// An example of `{metric_id}` is:
 	// `"custom.googleapis.com/my_test_metric"`.
-	Name string `protobuf:"bytes,3,opt,name=name" json:"name,omitempty"`
+	Name                 string   `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *DeleteMetricDescriptorRequest) Reset()                    { *m = DeleteMetricDescriptorRequest{} }
-func (m *DeleteMetricDescriptorRequest) String() string            { return proto.CompactTextString(m) }
-func (*DeleteMetricDescriptorRequest) ProtoMessage()               {}
-func (*DeleteMetricDescriptorRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{7} }
+func (m *DeleteMetricDescriptorRequest) Reset()         { *m = DeleteMetricDescriptorRequest{} }
+func (m *DeleteMetricDescriptorRequest) String() string { return proto.CompactTextString(m) }
+func (*DeleteMetricDescriptorRequest) ProtoMessage()    {}
+func (*DeleteMetricDescriptorRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{7}
+}
+
+func (m *DeleteMetricDescriptorRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_DeleteMetricDescriptorRequest.Unmarshal(m, b)
+}
+func (m *DeleteMetricDescriptorRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_DeleteMetricDescriptorRequest.Marshal(b, m, deterministic)
+}
+func (m *DeleteMetricDescriptorRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_DeleteMetricDescriptorRequest.Merge(m, src)
+}
+func (m *DeleteMetricDescriptorRequest) XXX_Size() int {
+	return xxx_messageInfo_DeleteMetricDescriptorRequest.Size(m)
+}
+func (m *DeleteMetricDescriptorRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_DeleteMetricDescriptorRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_DeleteMetricDescriptorRequest proto.InternalMessageInfo
 
 func (m *DeleteMetricDescriptorRequest) GetName() string {
 	if m != nil {
@@ -325,44 +514,69 @@ func (m *DeleteMetricDescriptorRequest) GetName() string {
 type ListTimeSeriesRequest struct {
 	// The project on which to execute the request. The format is
 	// "projects/{project_id_or_number}".
-	Name string `protobuf:"bytes,10,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,10,opt,name=name,proto3" json:"name,omitempty"`
 	// A [monitoring filter](/monitoring/api/v3/filters) that specifies which time
 	// series should be returned.  The filter must specify a single metric type,
 	// and can additionally specify metric labels and other information. For
 	// example:
 	//
 	//     metric.type = "compute.googleapis.com/instance/cpu/usage_time" AND
-	//         metric.label.instance_name = "my-instance-name"
-	Filter string `protobuf:"bytes,2,opt,name=filter" json:"filter,omitempty"`
+	//         metric.labels.instance_name = "my-instance-name"
+	Filter string `protobuf:"bytes,2,opt,name=filter,proto3" json:"filter,omitempty"`
 	// The time interval for which results should be returned. Only time series
 	// that contain data points in the specified interval are included
 	// in the response.
-	Interval *TimeInterval `protobuf:"bytes,4,opt,name=interval" json:"interval,omitempty"`
-	// By default, the raw time series data is returned.
-	// Use this field to combine multiple time series for different
-	// views of the data.
-	Aggregation *Aggregation `protobuf:"bytes,5,opt,name=aggregation" json:"aggregation,omitempty"`
-	// Specifies the order in which the points of the time series should
-	// be returned.  By default, results are not ordered.  Currently,
-	// this field must be left blank.
-	OrderBy string `protobuf:"bytes,6,opt,name=order_by,json=orderBy" json:"order_by,omitempty"`
+	Interval *TimeInterval `protobuf:"bytes,4,opt,name=interval,proto3" json:"interval,omitempty"`
+	// Specifies the alignment of data points in individual time series as
+	// well as how to combine the retrieved time series across specified labels.
+	//
+	// By default (if no `aggregation` is explicitly specified), the raw time
+	// series data is returned.
+	Aggregation *Aggregation `protobuf:"bytes,5,opt,name=aggregation,proto3" json:"aggregation,omitempty"`
+	// Unsupported: must be left blank. The points in each time series are
+	// currently returned in reverse time order (most recent to oldest).
+	OrderBy string `protobuf:"bytes,6,opt,name=order_by,json=orderBy,proto3" json:"order_by,omitempty"`
 	// Specifies which information is returned about the time series.
-	View ListTimeSeriesRequest_TimeSeriesView `protobuf:"varint,7,opt,name=view,enum=google.monitoring.v3.ListTimeSeriesRequest_TimeSeriesView" json:"view,omitempty"`
-	// A positive number that is the maximum number of results to return.
-	// When `view` field sets to `FULL`, it limits the number of `Points` server
-	// will return; if `view` field is `HEADERS`, it limits the number of
-	// `TimeSeries` server will return.
-	PageSize int32 `protobuf:"varint,8,opt,name=page_size,json=pageSize" json:"page_size,omitempty"`
+	View ListTimeSeriesRequest_TimeSeriesView `protobuf:"varint,7,opt,name=view,proto3,enum=google.monitoring.v3.ListTimeSeriesRequest_TimeSeriesView" json:"view,omitempty"`
+	// A positive number that is the maximum number of results to return. If
+	// `page_size` is empty or more than 100,000 results, the effective
+	// `page_size` is 100,000 results. If `view` is set to `FULL`, this is the
+	// maximum number of `Points` returned. If `view` is set to `HEADERS`, this is
+	// the maximum number of `TimeSeries` returned.
+	PageSize int32 `protobuf:"varint,8,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
 	// If this field is not empty then it must contain the `nextPageToken` value
 	// returned by a previous call to this method.  Using this field causes the
 	// method to return additional results from the previous method call.
-	PageToken string `protobuf:"bytes,9,opt,name=page_token,json=pageToken" json:"page_token,omitempty"`
+	PageToken            string   `protobuf:"bytes,9,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
-func (m *ListTimeSeriesRequest) Reset()                    { *m = ListTimeSeriesRequest{} }
-func (m *ListTimeSeriesRequest) String() string            { return proto.CompactTextString(m) }
-func (*ListTimeSeriesRequest) ProtoMessage()               {}
-func (*ListTimeSeriesRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{8} }
+func (m *ListTimeSeriesRequest) Reset()         { *m = ListTimeSeriesRequest{} }
+func (m *ListTimeSeriesRequest) String() string { return proto.CompactTextString(m) }
+func (*ListTimeSeriesRequest) ProtoMessage()    {}
+func (*ListTimeSeriesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{8}
+}
+
+func (m *ListTimeSeriesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListTimeSeriesRequest.Unmarshal(m, b)
+}
+func (m *ListTimeSeriesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListTimeSeriesRequest.Marshal(b, m, deterministic)
+}
+func (m *ListTimeSeriesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListTimeSeriesRequest.Merge(m, src)
+}
+func (m *ListTimeSeriesRequest) XXX_Size() int {
+	return xxx_messageInfo_ListTimeSeriesRequest.Size(m)
+}
+func (m *ListTimeSeriesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListTimeSeriesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListTimeSeriesRequest proto.InternalMessageInfo
 
 func (m *ListTimeSeriesRequest) GetName() string {
 	if m != nil {
@@ -423,17 +637,43 @@ func (m *ListTimeSeriesRequest) GetPageToken() string {
 // The `ListTimeSeries` response.
 type ListTimeSeriesResponse struct {
 	// One or more time series that match the filter included in the request.
-	TimeSeries []*TimeSeries `protobuf:"bytes,1,rep,name=time_series,json=timeSeries" json:"time_series,omitempty"`
+	TimeSeries []*TimeSeries `protobuf:"bytes,1,rep,name=time_series,json=timeSeries,proto3" json:"time_series,omitempty"`
 	// If there are more results than have been returned, then this field is set
 	// to a non-empty value.  To see the additional results,
 	// use that value as `pageToken` in the next call to this method.
-	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken" json:"next_page_token,omitempty"`
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
+	// Query execution errors that may have caused the time series data returned
+	// to be incomplete.
+	ExecutionErrors      []*status.Status `protobuf:"bytes,3,rep,name=execution_errors,json=executionErrors,proto3" json:"execution_errors,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
+	XXX_unrecognized     []byte           `json:"-"`
+	XXX_sizecache        int32            `json:"-"`
 }
 
-func (m *ListTimeSeriesResponse) Reset()                    { *m = ListTimeSeriesResponse{} }
-func (m *ListTimeSeriesResponse) String() string            { return proto.CompactTextString(m) }
-func (*ListTimeSeriesResponse) ProtoMessage()               {}
-func (*ListTimeSeriesResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{9} }
+func (m *ListTimeSeriesResponse) Reset()         { *m = ListTimeSeriesResponse{} }
+func (m *ListTimeSeriesResponse) String() string { return proto.CompactTextString(m) }
+func (*ListTimeSeriesResponse) ProtoMessage()    {}
+func (*ListTimeSeriesResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{9}
+}
+
+func (m *ListTimeSeriesResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_ListTimeSeriesResponse.Unmarshal(m, b)
+}
+func (m *ListTimeSeriesResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_ListTimeSeriesResponse.Marshal(b, m, deterministic)
+}
+func (m *ListTimeSeriesResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ListTimeSeriesResponse.Merge(m, src)
+}
+func (m *ListTimeSeriesResponse) XXX_Size() int {
+	return xxx_messageInfo_ListTimeSeriesResponse.Size(m)
+}
+func (m *ListTimeSeriesResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_ListTimeSeriesResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_ListTimeSeriesResponse proto.InternalMessageInfo
 
 func (m *ListTimeSeriesResponse) GetTimeSeries() []*TimeSeries {
 	if m != nil {
@@ -449,23 +689,55 @@ func (m *ListTimeSeriesResponse) GetNextPageToken() string {
 	return ""
 }
 
+func (m *ListTimeSeriesResponse) GetExecutionErrors() []*status.Status {
+	if m != nil {
+		return m.ExecutionErrors
+	}
+	return nil
+}
+
 // The `CreateTimeSeries` request.
 type CreateTimeSeriesRequest struct {
 	// The project on which to execute the request. The format is
 	// `"projects/{project_id_or_number}"`.
-	Name string `protobuf:"bytes,3,opt,name=name" json:"name,omitempty"`
+	Name string `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
 	// The new data to be added to a list of time series.
 	// Adds at most one data point to each of several time series.  The new data
 	// point must be more recent than any other point in its time series.  Each
 	// `TimeSeries` value must fully specify a unique time series by supplying
 	// all label values for the metric and the monitored resource.
-	TimeSeries []*TimeSeries `protobuf:"bytes,2,rep,name=time_series,json=timeSeries" json:"time_series,omitempty"`
+	//
+	// The maximum number of `TimeSeries` objects per `Create` request is 200.
+	TimeSeries           []*TimeSeries `protobuf:"bytes,2,rep,name=time_series,json=timeSeries,proto3" json:"time_series,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
-func (m *CreateTimeSeriesRequest) Reset()                    { *m = CreateTimeSeriesRequest{} }
-func (m *CreateTimeSeriesRequest) String() string            { return proto.CompactTextString(m) }
-func (*CreateTimeSeriesRequest) ProtoMessage()               {}
-func (*CreateTimeSeriesRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{10} }
+func (m *CreateTimeSeriesRequest) Reset()         { *m = CreateTimeSeriesRequest{} }
+func (m *CreateTimeSeriesRequest) String() string { return proto.CompactTextString(m) }
+func (*CreateTimeSeriesRequest) ProtoMessage()    {}
+func (*CreateTimeSeriesRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{10}
+}
+
+func (m *CreateTimeSeriesRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateTimeSeriesRequest.Unmarshal(m, b)
+}
+func (m *CreateTimeSeriesRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateTimeSeriesRequest.Marshal(b, m, deterministic)
+}
+func (m *CreateTimeSeriesRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateTimeSeriesRequest.Merge(m, src)
+}
+func (m *CreateTimeSeriesRequest) XXX_Size() int {
+	return xxx_messageInfo_CreateTimeSeriesRequest.Size(m)
+}
+func (m *CreateTimeSeriesRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateTimeSeriesRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateTimeSeriesRequest proto.InternalMessageInfo
 
 func (m *CreateTimeSeriesRequest) GetName() string {
 	if m != nil {
@@ -481,22 +753,43 @@ func (m *CreateTimeSeriesRequest) GetTimeSeries() []*TimeSeries {
 	return nil
 }
 
-// Describes the result of a failed request to write data to a time series.
+// DEPRECATED. Used to hold per-time-series error status.
 type CreateTimeSeriesError struct {
-	// The time series, including the `Metric`, `MonitoredResource`,
-	// and `Point`s (including timestamp and value) that resulted
-	// in the error. This field provides all of the context that
-	// would be needed to retry the operation.
-	TimeSeries *TimeSeries `protobuf:"bytes,1,opt,name=time_series,json=timeSeries" json:"time_series,omitempty"`
-	// The status of the requested write operation.
-	Status *google_rpc.Status `protobuf:"bytes,2,opt,name=status" json:"status,omitempty"`
+	// DEPRECATED. Time series ID that resulted in the `status` error.
+	TimeSeries *TimeSeries `protobuf:"bytes,1,opt,name=time_series,json=timeSeries,proto3" json:"time_series,omitempty"` // Deprecated: Do not use.
+	// DEPRECATED. The status of the requested write operation for `time_series`.
+	Status               *status.Status `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"` // Deprecated: Do not use.
+	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
+	XXX_unrecognized     []byte         `json:"-"`
+	XXX_sizecache        int32          `json:"-"`
 }
 
-func (m *CreateTimeSeriesError) Reset()                    { *m = CreateTimeSeriesError{} }
-func (m *CreateTimeSeriesError) String() string            { return proto.CompactTextString(m) }
-func (*CreateTimeSeriesError) ProtoMessage()               {}
-func (*CreateTimeSeriesError) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{11} }
+func (m *CreateTimeSeriesError) Reset()         { *m = CreateTimeSeriesError{} }
+func (m *CreateTimeSeriesError) String() string { return proto.CompactTextString(m) }
+func (*CreateTimeSeriesError) ProtoMessage()    {}
+func (*CreateTimeSeriesError) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{11}
+}
 
+func (m *CreateTimeSeriesError) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateTimeSeriesError.Unmarshal(m, b)
+}
+func (m *CreateTimeSeriesError) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateTimeSeriesError.Marshal(b, m, deterministic)
+}
+func (m *CreateTimeSeriesError) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateTimeSeriesError.Merge(m, src)
+}
+func (m *CreateTimeSeriesError) XXX_Size() int {
+	return xxx_messageInfo_CreateTimeSeriesError.Size(m)
+}
+func (m *CreateTimeSeriesError) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateTimeSeriesError.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateTimeSeriesError proto.InternalMessageInfo
+
+// Deprecated: Do not use.
 func (m *CreateTimeSeriesError) GetTimeSeries() *TimeSeries {
 	if m != nil {
 		return m.TimeSeries
@@ -504,14 +797,125 @@ func (m *CreateTimeSeriesError) GetTimeSeries() *TimeSeries {
 	return nil
 }
 
-func (m *CreateTimeSeriesError) GetStatus() *google_rpc.Status {
+// Deprecated: Do not use.
+func (m *CreateTimeSeriesError) GetStatus() *status.Status {
 	if m != nil {
 		return m.Status
 	}
 	return nil
 }
 
+// Summary of the result of a failed request to write data to a time series.
+type CreateTimeSeriesSummary struct {
+	// The number of points in the request.
+	TotalPointCount int32 `protobuf:"varint,1,opt,name=total_point_count,json=totalPointCount,proto3" json:"total_point_count,omitempty"`
+	// The number of points that were successfully written.
+	SuccessPointCount int32 `protobuf:"varint,2,opt,name=success_point_count,json=successPointCount,proto3" json:"success_point_count,omitempty"`
+	// The number of points that failed to be written. Order is not guaranteed.
+	Errors               []*CreateTimeSeriesSummary_Error `protobuf:"bytes,3,rep,name=errors,proto3" json:"errors,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                         `json:"-"`
+	XXX_unrecognized     []byte                           `json:"-"`
+	XXX_sizecache        int32                            `json:"-"`
+}
+
+func (m *CreateTimeSeriesSummary) Reset()         { *m = CreateTimeSeriesSummary{} }
+func (m *CreateTimeSeriesSummary) String() string { return proto.CompactTextString(m) }
+func (*CreateTimeSeriesSummary) ProtoMessage()    {}
+func (*CreateTimeSeriesSummary) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{12}
+}
+
+func (m *CreateTimeSeriesSummary) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateTimeSeriesSummary.Unmarshal(m, b)
+}
+func (m *CreateTimeSeriesSummary) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateTimeSeriesSummary.Marshal(b, m, deterministic)
+}
+func (m *CreateTimeSeriesSummary) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateTimeSeriesSummary.Merge(m, src)
+}
+func (m *CreateTimeSeriesSummary) XXX_Size() int {
+	return xxx_messageInfo_CreateTimeSeriesSummary.Size(m)
+}
+func (m *CreateTimeSeriesSummary) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateTimeSeriesSummary.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateTimeSeriesSummary proto.InternalMessageInfo
+
+func (m *CreateTimeSeriesSummary) GetTotalPointCount() int32 {
+	if m != nil {
+		return m.TotalPointCount
+	}
+	return 0
+}
+
+func (m *CreateTimeSeriesSummary) GetSuccessPointCount() int32 {
+	if m != nil {
+		return m.SuccessPointCount
+	}
+	return 0
+}
+
+func (m *CreateTimeSeriesSummary) GetErrors() []*CreateTimeSeriesSummary_Error {
+	if m != nil {
+		return m.Errors
+	}
+	return nil
+}
+
+// Detailed information about an error category.
+type CreateTimeSeriesSummary_Error struct {
+	// The status of the requested write operation.
+	Status *status.Status `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	// The number of points that couldn't be written because of `status`.
+	PointCount           int32    `protobuf:"varint,2,opt,name=point_count,json=pointCount,proto3" json:"point_count,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CreateTimeSeriesSummary_Error) Reset()         { *m = CreateTimeSeriesSummary_Error{} }
+func (m *CreateTimeSeriesSummary_Error) String() string { return proto.CompactTextString(m) }
+func (*CreateTimeSeriesSummary_Error) ProtoMessage()    {}
+func (*CreateTimeSeriesSummary_Error) Descriptor() ([]byte, []int) {
+	return fileDescriptor_7b3d47b45a293957, []int{12, 0}
+}
+
+func (m *CreateTimeSeriesSummary_Error) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateTimeSeriesSummary_Error.Unmarshal(m, b)
+}
+func (m *CreateTimeSeriesSummary_Error) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateTimeSeriesSummary_Error.Marshal(b, m, deterministic)
+}
+func (m *CreateTimeSeriesSummary_Error) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateTimeSeriesSummary_Error.Merge(m, src)
+}
+func (m *CreateTimeSeriesSummary_Error) XXX_Size() int {
+	return xxx_messageInfo_CreateTimeSeriesSummary_Error.Size(m)
+}
+func (m *CreateTimeSeriesSummary_Error) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateTimeSeriesSummary_Error.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateTimeSeriesSummary_Error proto.InternalMessageInfo
+
+func (m *CreateTimeSeriesSummary_Error) GetStatus() *status.Status {
+	if m != nil {
+		return m.Status
+	}
+	return nil
+}
+
+func (m *CreateTimeSeriesSummary_Error) GetPointCount() int32 {
+	if m != nil {
+		return m.PointCount
+	}
+	return 0
+}
+
 func init() {
+	proto.RegisterEnum("google.monitoring.v3.ListTimeSeriesRequest_TimeSeriesView", ListTimeSeriesRequest_TimeSeriesView_name, ListTimeSeriesRequest_TimeSeriesView_value)
 	proto.RegisterType((*ListMonitoredResourceDescriptorsRequest)(nil), "google.monitoring.v3.ListMonitoredResourceDescriptorsRequest")
 	proto.RegisterType((*ListMonitoredResourceDescriptorsResponse)(nil), "google.monitoring.v3.ListMonitoredResourceDescriptorsResponse")
 	proto.RegisterType((*GetMonitoredResourceDescriptorRequest)(nil), "google.monitoring.v3.GetMonitoredResourceDescriptorRequest")
@@ -524,7 +928,93 @@ func init() {
 	proto.RegisterType((*ListTimeSeriesResponse)(nil), "google.monitoring.v3.ListTimeSeriesResponse")
 	proto.RegisterType((*CreateTimeSeriesRequest)(nil), "google.monitoring.v3.CreateTimeSeriesRequest")
 	proto.RegisterType((*CreateTimeSeriesError)(nil), "google.monitoring.v3.CreateTimeSeriesError")
-	proto.RegisterEnum("google.monitoring.v3.ListTimeSeriesRequest_TimeSeriesView", ListTimeSeriesRequest_TimeSeriesView_name, ListTimeSeriesRequest_TimeSeriesView_value)
+	proto.RegisterType((*CreateTimeSeriesSummary)(nil), "google.monitoring.v3.CreateTimeSeriesSummary")
+	proto.RegisterType((*CreateTimeSeriesSummary_Error)(nil), "google.monitoring.v3.CreateTimeSeriesSummary.Error")
+}
+
+func init() {
+	proto.RegisterFile("google/monitoring/v3/metric_service.proto", fileDescriptor_7b3d47b45a293957)
+}
+
+var fileDescriptor_7b3d47b45a293957 = []byte{
+	// 1229 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x57, 0xcb, 0x6f, 0xdb, 0xc6,
+	0x13, 0xfe, 0xad, 0xfc, 0x88, 0x3d, 0xfa, 0xc5, 0x8f, 0x75, 0xe2, 0x28, 0x8c, 0x9d, 0x2a, 0x2c,
+	0x52, 0x2b, 0x8a, 0x43, 0x06, 0x52, 0xd0, 0x83, 0x1d, 0x1b, 0xf0, 0xab, 0x69, 0x10, 0xb7, 0x30,
+	0x28, 0xd7, 0x87, 0xc0, 0x80, 0x40, 0x53, 0x6b, 0x65, 0x5b, 0x91, 0xcb, 0x2e, 0x57, 0x56, 0x9c,
+	0xc2, 0x3d, 0xf4, 0x90, 0x63, 0x81, 0xa2, 0x2d, 0x90, 0xfe, 0x0b, 0x39, 0xb4, 0xe8, 0xb5, 0xc7,
+	0xa2, 0xa7, 0x1c, 0xd3, 0x5b, 0x81, 0xde, 0xfa, 0x87, 0x14, 0x5c, 0x52, 0x2f, 0x8a, 0xa2, 0xa4,
+	0x5c, 0x7a, 0x13, 0x77, 0x66, 0x67, 0xbe, 0xef, 0xdb, 0x9d, 0x9d, 0x11, 0xdc, 0xa9, 0x32, 0x56,
+	0xad, 0x11, 0xdd, 0x66, 0x0e, 0x15, 0x8c, 0x53, 0xa7, 0xaa, 0x9f, 0x15, 0x75, 0x9b, 0x08, 0x4e,
+	0xad, 0xb2, 0x47, 0xf8, 0x19, 0xb5, 0x88, 0xe6, 0x72, 0x26, 0x18, 0xbe, 0x12, 0xb8, 0x6a, 0x6d,
+	0x57, 0xed, 0xac, 0xa8, 0x2c, 0x85, 0x01, 0x4c, 0x97, 0xea, 0xa6, 0xe3, 0x30, 0x61, 0x0a, 0xca,
+	0x1c, 0x2f, 0xd8, 0xa3, 0x5c, 0xeb, 0xb0, 0x06, 0x41, 0x43, 0xc3, 0xfb, 0x9d, 0x86, 0x20, 0x20,
+	0xa9, 0x94, 0x39, 0xf1, 0x58, 0x9d, 0x37, 0x33, 0x2a, 0xd9, 0x58, 0x70, 0x66, 0x8d, 0x70, 0x11,
+	0x7a, 0xdc, 0x8a, 0xf5, 0xb0, 0x98, 0x6d, 0x33, 0x27, 0xd1, 0xa5, 0x0b, 0xcc, 0xcd, 0xd0, 0x45,
+	0x7e, 0x9d, 0xd4, 0x4f, 0xf5, 0x4a, 0x9d, 0x4b, 0x1a, 0xa1, 0xfd, 0x46, 0xd4, 0x4e, 0x6c, 0x57,
+	0x9c, 0x47, 0x28, 0x72, 0xd7, 0xd2, 0x3d, 0x61, 0x8a, 0x7a, 0x1c, 0x77, 0xab, 0x46, 0x89, 0x13,
+	0x82, 0x56, 0xbf, 0x43, 0xb0, 0xb2, 0x4f, 0x3d, 0xf1, 0x49, 0x93, 0xb7, 0x11, 0xd2, 0xde, 0x25,
+	0x9e, 0xc5, 0xa9, 0x2b, 0x18, 0xf7, 0x0c, 0xf2, 0x65, 0x9d, 0x78, 0x02, 0x63, 0x18, 0x77, 0x4c,
+	0x9b, 0x64, 0x26, 0xb2, 0x28, 0x37, 0x6d, 0xc8, 0xdf, 0x78, 0x11, 0x26, 0x4f, 0x69, 0x4d, 0x10,
+	0x9e, 0x49, 0xc9, 0xd5, 0xf0, 0x0b, 0xdf, 0x80, 0x69, 0xd7, 0xac, 0x92, 0xb2, 0x47, 0x5f, 0x90,
+	0xcc, 0x58, 0x16, 0xe5, 0x26, 0x8c, 0x29, 0x7f, 0xa1, 0x44, 0x5f, 0x10, 0xbc, 0x0c, 0x20, 0x8d,
+	0x82, 0x7d, 0x41, 0x9c, 0xcc, 0xb8, 0xdc, 0x28, 0xdd, 0x0f, 0xfd, 0x05, 0xf5, 0x67, 0x04, 0xb9,
+	0xc1, 0x98, 0x3c, 0x97, 0x39, 0x1e, 0xc1, 0x4f, 0xe1, 0x4a, 0xf3, 0xa4, 0xca, 0x95, 0xb6, 0x3d,
+	0x83, 0xb2, 0x63, 0xb9, 0x74, 0x61, 0x45, 0x0b, 0x2f, 0x8a, 0xe9, 0x52, 0x2d, 0x21, 0x9e, 0xb1,
+	0xc0, 0x7b, 0x73, 0xe0, 0x0f, 0x60, 0xd6, 0x21, 0xcf, 0x45, 0xb9, 0x03, 0x6c, 0xc0, 0xf2, 0xb2,
+	0xbf, 0x7c, 0xd0, 0x02, 0xbc, 0x0e, 0xb7, 0x1f, 0x91, 0x24, 0xb8, 0x51, 0x05, 0xc7, 0xda, 0x0a,
+	0xaa, 0x2f, 0x11, 0x2c, 0x49, 0xb6, 0xf2, 0x16, 0xfc, 0x87, 0xb2, 0xff, 0x80, 0x60, 0xb9, 0x0f,
+	0x90, 0x50, 0xeb, 0x27, 0x80, 0xc3, 0x6a, 0xec, 0x55, 0x7a, 0xa9, 0x4b, 0xe9, 0x48, 0x08, 0x63,
+	0xde, 0x8e, 0x06, 0x1d, 0x5a, 0xdc, 0xfb, 0xa0, 0xf8, 0xe2, 0x46, 0x23, 0x26, 0x28, 0xfa, 0x35,
+	0x2c, 0xef, 0x70, 0x62, 0x0a, 0x32, 0xc2, 0x26, 0xfc, 0x18, 0xe6, 0x7b, 0xb8, 0x49, 0x40, 0x83,
+	0xa8, 0xcd, 0x45, 0xa9, 0xa9, 0x45, 0x58, 0xde, 0x25, 0x35, 0x32, 0x52, 0x7e, 0xf5, 0xd5, 0x18,
+	0x5c, 0xf5, 0xd5, 0x3f, 0xa4, 0x36, 0x29, 0x11, 0x4e, 0x49, 0xcf, 0xf9, 0xc3, 0x10, 0xe7, 0xbf,
+	0x09, 0x53, 0xd4, 0x11, 0x84, 0x9f, 0x99, 0x35, 0x79, 0xc0, 0xe9, 0x82, 0xaa, 0xc5, 0x3d, 0x95,
+	0x9a, 0x9f, 0xe6, 0x71, 0xe8, 0x69, 0xb4, 0xf6, 0xe0, 0x1d, 0x48, 0x9b, 0xd5, 0x2a, 0x27, 0x55,
+	0xf9, 0xe4, 0xc8, 0x2b, 0x97, 0x2e, 0xdc, 0x8a, 0x0f, 0xb1, 0xd5, 0x76, 0x34, 0x3a, 0x77, 0xe1,
+	0xeb, 0x30, 0xc5, 0x78, 0x85, 0xf0, 0xf2, 0xc9, 0x79, 0x66, 0x52, 0xc2, 0xbb, 0x24, 0xbf, 0xb7,
+	0xcf, 0xf1, 0xa7, 0x30, 0x7e, 0x46, 0x49, 0x23, 0x73, 0x29, 0x8b, 0x72, 0x33, 0x85, 0xb5, 0xf8,
+	0xc0, 0xb1, 0x32, 0x68, 0xed, 0x95, 0x23, 0x4a, 0x1a, 0x86, 0x8c, 0xd3, 0x7d, 0xdf, 0xa7, 0x12,
+	0xef, 0xfb, 0x74, 0xf4, 0xbe, 0xaf, 0xc0, 0x4c, 0x77, 0x4c, 0x3c, 0x05, 0xe3, 0x1f, 0x7d, 0xb6,
+	0xbf, 0x3f, 0xf7, 0x3f, 0x9c, 0x86, 0x4b, 0x1f, 0xef, 0x6d, 0xed, 0xee, 0x19, 0xa5, 0x39, 0xa4,
+	0xfe, 0x8e, 0x60, 0x31, 0x8a, 0x29, 0xac, 0x88, 0x2d, 0x48, 0x0b, 0x6a, 0x13, 0xbf, 0x3b, 0x51,
+	0xd2, 0x2c, 0x85, 0x6c, 0x7f, 0xc9, 0xc3, 0xed, 0x20, 0x5a, 0xbf, 0x87, 0xad, 0x03, 0xbc, 0x01,
+	0x73, 0xe4, 0x39, 0xb1, 0xea, 0xbe, 0xc4, 0x65, 0xc2, 0xb9, 0x5f, 0x7a, 0x63, 0x32, 0x1f, 0x6e,
+	0xe6, 0xe3, 0xae, 0xa5, 0x95, 0xe4, 0xb3, 0x6f, 0xcc, 0xb6, 0x7c, 0xf7, 0xa4, 0xab, 0xea, 0xc2,
+	0xb5, 0xa0, 0x28, 0xfa, 0x5f, 0xb0, 0xce, 0x72, 0x88, 0x10, 0x4b, 0x8d, 0x4e, 0x4c, 0xfd, 0x16,
+	0xc1, 0xd5, 0x68, 0x4a, 0x09, 0x06, 0xef, 0x45, 0x55, 0x43, 0xc3, 0x04, 0xdf, 0x4e, 0x65, 0x50,
+	0x97, 0x72, 0x1a, 0x4c, 0x06, 0x4d, 0x2e, 0xac, 0xd3, 0x18, 0x1d, 0xe4, 0x9e, 0xd0, 0x4b, 0x7d,
+	0x95, 0xea, 0xd5, 0xa0, 0x54, 0xb7, 0x6d, 0x93, 0x9f, 0xe3, 0x3c, 0xcc, 0x0b, 0x26, 0xcc, 0x5a,
+	0xd9, 0x65, 0xd4, 0x11, 0x65, 0x8b, 0xd5, 0x1d, 0x21, 0x81, 0x4d, 0x18, 0xb3, 0xd2, 0x70, 0xe0,
+	0xaf, 0xef, 0xf8, 0xcb, 0x58, 0x83, 0x05, 0xaf, 0x6e, 0x59, 0xc4, 0xf3, 0xba, 0xbc, 0x53, 0xd2,
+	0x7b, 0x3e, 0x34, 0x75, 0xf8, 0x3f, 0x81, 0xc9, 0xae, 0xf3, 0x2a, 0xc6, 0x33, 0xed, 0x03, 0x4d,
+	0x93, 0x9a, 0x19, 0x61, 0x08, 0xe5, 0x10, 0x26, 0x02, 0x11, 0xf3, 0x2d, 0xf6, 0xa8, 0x1f, 0xfb,
+	0x26, 0x73, 0xfc, 0x1e, 0xa4, 0x7b, 0x91, 0x82, 0xdb, 0x82, 0x58, 0x78, 0xfb, 0x7f, 0xb8, 0x1c,
+	0xbc, 0x56, 0xa5, 0x60, 0xce, 0xc2, 0x7f, 0x23, 0xc8, 0x0e, 0x6a, 0xc2, 0x78, 0xa3, 0x7f, 0x01,
+	0x0f, 0x31, 0x50, 0x28, 0x9b, 0xef, 0xba, 0x3d, 0xa8, 0x3e, 0x75, 0xed, 0x9b, 0x3f, 0xff, 0xf9,
+	0x3e, 0xf5, 0x00, 0x17, 0xfc, 0x29, 0xea, 0x2b, 0xff, 0xde, 0x6e, 0xb8, 0x9c, 0x7d, 0x4e, 0x2c,
+	0xe1, 0xe9, 0xf9, 0x8b, 0xf6, 0x2c, 0x17, 0x07, 0xfd, 0x0f, 0x04, 0x37, 0x93, 0x9b, 0x36, 0x5e,
+	0x8f, 0x87, 0x37, 0x54, 0xab, 0x57, 0x86, 0x9d, 0x3c, 0xd4, 0x87, 0x92, 0xc4, 0x87, 0xf8, 0x41,
+	0x1c, 0x89, 0x44, 0x0e, 0x7a, 0xfe, 0x02, 0xff, 0x8a, 0x82, 0xb6, 0xd1, 0xd3, 0xb4, 0x71, 0x21,
+	0x41, 0xdc, 0x3e, 0xa3, 0x86, 0x52, 0x1c, 0x69, 0x4f, 0x78, 0x0a, 0xba, 0x24, 0x70, 0x07, 0xaf,
+	0xf4, 0x39, 0x85, 0x1e, 0x64, 0x3f, 0x21, 0x58, 0x88, 0x69, 0xe9, 0xf8, 0x7e, 0x7f, 0xbd, 0xe3,
+	0x1b, 0xa9, 0x92, 0xd8, 0x99, 0xd5, 0x82, 0x04, 0xb6, 0x8a, 0xf3, 0xf1, 0xca, 0x46, 0x71, 0xe9,
+	0xf9, 0xfc, 0x05, 0xfe, 0x05, 0xc1, 0x62, 0xfc, 0xf0, 0x80, 0x13, 0xcb, 0xf6, 0xdd, 0x10, 0x6e,
+	0x4b, 0x84, 0x0f, 0xd5, 0x61, 0xa5, 0x5b, 0xeb, 0x9d, 0x51, 0x7c, 0x35, 0x17, 0xe3, 0xc7, 0x8d,
+	0x7e, 0x88, 0x13, 0x87, 0x13, 0x65, 0xb1, 0xb9, 0xa9, 0xf9, 0x0f, 0x43, 0xdb, 0xf3, 0xff, 0x61,
+	0x34, 0xd5, 0xcc, 0x8f, 0xa2, 0xe6, 0x8f, 0x08, 0x66, 0xba, 0x3b, 0x27, 0xbe, 0x3b, 0x42, 0xcf,
+	0x57, 0x56, 0x87, 0x73, 0x0e, 0x2f, 0x62, 0x4e, 0x22, 0x54, 0x71, 0x36, 0x5e, 0xcd, 0x8e, 0xce,
+	0xf1, 0x12, 0xc1, 0x5c, 0xf4, 0xb9, 0xc5, 0xf7, 0x86, 0x7b, 0x96, 0x07, 0xe9, 0x74, 0x57, 0xa2,
+	0xb8, 0xad, 0x0e, 0x44, 0xb1, 0x86, 0xf2, 0xca, 0x5f, 0xe8, 0xcd, 0xd6, 0xf5, 0x8e, 0x7c, 0x41,
+	0x48, 0xd3, 0xa5, 0x9e, 0x66, 0x31, 0xfb, 0xed, 0xd6, 0x6f, 0xe8, 0x99, 0x10, 0xae, 0xb7, 0xa6,
+	0xeb, 0x8d, 0x46, 0x23, 0x62, 0xd5, 0xcd, 0xba, 0x78, 0xa6, 0x5b, 0x35, 0x56, 0xaf, 0xdc, 0x73,
+	0x6b, 0xa6, 0x38, 0x65, 0xdc, 0x5e, 0x1d, 0xe4, 0xde, 0xce, 0x35, 0x82, 0xab, 0xc6, 0x89, 0x59,
+	0x19, 0xc5, 0xbf, 0xc1, 0xa9, 0x20, 0xdb, 0xaf, 0x11, 0x64, 0x2c, 0x66, 0xc7, 0xca, 0xba, 0x8d,
+	0xbb, 0xda, 0xcd, 0x81, 0xaf, 0xe1, 0x01, 0x7a, 0xba, 0x19, 0xfa, 0x56, 0x59, 0xcd, 0x74, 0xaa,
+	0x1a, 0xe3, 0x55, 0xbd, 0x4a, 0x1c, 0xa9, 0xb0, 0xde, 0xce, 0xd9, 0xfd, 0xff, 0x79, 0xbd, 0xfd,
+	0xf5, 0x3a, 0xa5, 0x3c, 0x0a, 0x02, 0xec, 0xf8, 0xb2, 0x34, 0xdf, 0x5d, 0x3f, 0xe5, 0x51, 0xf1,
+	0x4d, 0xd3, 0x78, 0x2c, 0x8d, 0xc7, 0x6d, 0xe3, 0xf1, 0x51, 0xf1, 0x64, 0x52, 0x26, 0x29, 0xfe,
+	0x1b, 0x00, 0x00, 0xff, 0xff, 0xd3, 0xde, 0x19, 0x90, 0x85, 0x10, 0x00, 0x00,
 }
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -535,31 +1025,32 @@ var _ grpc.ClientConn
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion4
 
-// Client API for MetricService service
-
+// MetricServiceClient is the client API for MetricService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
 type MetricServiceClient interface {
 	// Lists monitored resource descriptors that match a filter. This method does not require a Stackdriver account.
 	ListMonitoredResourceDescriptors(ctx context.Context, in *ListMonitoredResourceDescriptorsRequest, opts ...grpc.CallOption) (*ListMonitoredResourceDescriptorsResponse, error)
 	// Gets a single monitored resource descriptor. This method does not require a Stackdriver account.
-	GetMonitoredResourceDescriptor(ctx context.Context, in *GetMonitoredResourceDescriptorRequest, opts ...grpc.CallOption) (*google_api4.MonitoredResourceDescriptor, error)
+	GetMonitoredResourceDescriptor(ctx context.Context, in *GetMonitoredResourceDescriptorRequest, opts ...grpc.CallOption) (*monitoredres.MonitoredResourceDescriptor, error)
 	// Lists metric descriptors that match a filter. This method does not require a Stackdriver account.
 	ListMetricDescriptors(ctx context.Context, in *ListMetricDescriptorsRequest, opts ...grpc.CallOption) (*ListMetricDescriptorsResponse, error)
 	// Gets a single metric descriptor. This method does not require a Stackdriver account.
-	GetMetricDescriptor(ctx context.Context, in *GetMetricDescriptorRequest, opts ...grpc.CallOption) (*google_api5.MetricDescriptor, error)
+	GetMetricDescriptor(ctx context.Context, in *GetMetricDescriptorRequest, opts ...grpc.CallOption) (*metric.MetricDescriptor, error)
 	// Creates a new metric descriptor.
 	// User-created metric descriptors define
 	// [custom metrics](/monitoring/custom-metrics).
-	CreateMetricDescriptor(ctx context.Context, in *CreateMetricDescriptorRequest, opts ...grpc.CallOption) (*google_api5.MetricDescriptor, error)
+	CreateMetricDescriptor(ctx context.Context, in *CreateMetricDescriptorRequest, opts ...grpc.CallOption) (*metric.MetricDescriptor, error)
 	// Deletes a metric descriptor. Only user-created
 	// [custom metrics](/monitoring/custom-metrics) can be deleted.
-	DeleteMetricDescriptor(ctx context.Context, in *DeleteMetricDescriptorRequest, opts ...grpc.CallOption) (*google_protobuf4.Empty, error)
+	DeleteMetricDescriptor(ctx context.Context, in *DeleteMetricDescriptorRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 	// Lists time series that match a filter. This method does not require a Stackdriver account.
 	ListTimeSeries(ctx context.Context, in *ListTimeSeriesRequest, opts ...grpc.CallOption) (*ListTimeSeriesResponse, error)
 	// Creates or adds data to one or more time series.
 	// The response is empty if all time series in the request were written.
 	// If any time series could not be written, a corresponding failure message is
 	// included in the error response.
-	CreateTimeSeries(ctx context.Context, in *CreateTimeSeriesRequest, opts ...grpc.CallOption) (*google_protobuf4.Empty, error)
+	CreateTimeSeries(ctx context.Context, in *CreateTimeSeriesRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
 type metricServiceClient struct {
@@ -572,16 +1063,16 @@ func NewMetricServiceClient(cc *grpc.ClientConn) MetricServiceClient {
 
 func (c *metricServiceClient) ListMonitoredResourceDescriptors(ctx context.Context, in *ListMonitoredResourceDescriptorsRequest, opts ...grpc.CallOption) (*ListMonitoredResourceDescriptorsResponse, error) {
 	out := new(ListMonitoredResourceDescriptorsResponse)
-	err := grpc.Invoke(ctx, "/google.monitoring.v3.MetricService/ListMonitoredResourceDescriptors", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/google.monitoring.v3.MetricService/ListMonitoredResourceDescriptors", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metricServiceClient) GetMonitoredResourceDescriptor(ctx context.Context, in *GetMonitoredResourceDescriptorRequest, opts ...grpc.CallOption) (*google_api4.MonitoredResourceDescriptor, error) {
-	out := new(google_api4.MonitoredResourceDescriptor)
-	err := grpc.Invoke(ctx, "/google.monitoring.v3.MetricService/GetMonitoredResourceDescriptor", in, out, c.cc, opts...)
+func (c *metricServiceClient) GetMonitoredResourceDescriptor(ctx context.Context, in *GetMonitoredResourceDescriptorRequest, opts ...grpc.CallOption) (*monitoredres.MonitoredResourceDescriptor, error) {
+	out := new(monitoredres.MonitoredResourceDescriptor)
+	err := c.cc.Invoke(ctx, "/google.monitoring.v3.MetricService/GetMonitoredResourceDescriptor", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -590,34 +1081,34 @@ func (c *metricServiceClient) GetMonitoredResourceDescriptor(ctx context.Context
 
 func (c *metricServiceClient) ListMetricDescriptors(ctx context.Context, in *ListMetricDescriptorsRequest, opts ...grpc.CallOption) (*ListMetricDescriptorsResponse, error) {
 	out := new(ListMetricDescriptorsResponse)
-	err := grpc.Invoke(ctx, "/google.monitoring.v3.MetricService/ListMetricDescriptors", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/google.monitoring.v3.MetricService/ListMetricDescriptors", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metricServiceClient) GetMetricDescriptor(ctx context.Context, in *GetMetricDescriptorRequest, opts ...grpc.CallOption) (*google_api5.MetricDescriptor, error) {
-	out := new(google_api5.MetricDescriptor)
-	err := grpc.Invoke(ctx, "/google.monitoring.v3.MetricService/GetMetricDescriptor", in, out, c.cc, opts...)
+func (c *metricServiceClient) GetMetricDescriptor(ctx context.Context, in *GetMetricDescriptorRequest, opts ...grpc.CallOption) (*metric.MetricDescriptor, error) {
+	out := new(metric.MetricDescriptor)
+	err := c.cc.Invoke(ctx, "/google.monitoring.v3.MetricService/GetMetricDescriptor", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metricServiceClient) CreateMetricDescriptor(ctx context.Context, in *CreateMetricDescriptorRequest, opts ...grpc.CallOption) (*google_api5.MetricDescriptor, error) {
-	out := new(google_api5.MetricDescriptor)
-	err := grpc.Invoke(ctx, "/google.monitoring.v3.MetricService/CreateMetricDescriptor", in, out, c.cc, opts...)
+func (c *metricServiceClient) CreateMetricDescriptor(ctx context.Context, in *CreateMetricDescriptorRequest, opts ...grpc.CallOption) (*metric.MetricDescriptor, error) {
+	out := new(metric.MetricDescriptor)
+	err := c.cc.Invoke(ctx, "/google.monitoring.v3.MetricService/CreateMetricDescriptor", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metricServiceClient) DeleteMetricDescriptor(ctx context.Context, in *DeleteMetricDescriptorRequest, opts ...grpc.CallOption) (*google_protobuf4.Empty, error) {
-	out := new(google_protobuf4.Empty)
-	err := grpc.Invoke(ctx, "/google.monitoring.v3.MetricService/DeleteMetricDescriptor", in, out, c.cc, opts...)
+func (c *metricServiceClient) DeleteMetricDescriptor(ctx context.Context, in *DeleteMetricDescriptorRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/google.monitoring.v3.MetricService/DeleteMetricDescriptor", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -626,47 +1117,75 @@ func (c *metricServiceClient) DeleteMetricDescriptor(ctx context.Context, in *De
 
 func (c *metricServiceClient) ListTimeSeries(ctx context.Context, in *ListTimeSeriesRequest, opts ...grpc.CallOption) (*ListTimeSeriesResponse, error) {
 	out := new(ListTimeSeriesResponse)
-	err := grpc.Invoke(ctx, "/google.monitoring.v3.MetricService/ListTimeSeries", in, out, c.cc, opts...)
+	err := c.cc.Invoke(ctx, "/google.monitoring.v3.MetricService/ListTimeSeries", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *metricServiceClient) CreateTimeSeries(ctx context.Context, in *CreateTimeSeriesRequest, opts ...grpc.CallOption) (*google_protobuf4.Empty, error) {
-	out := new(google_protobuf4.Empty)
-	err := grpc.Invoke(ctx, "/google.monitoring.v3.MetricService/CreateTimeSeries", in, out, c.cc, opts...)
+func (c *metricServiceClient) CreateTimeSeries(ctx context.Context, in *CreateTimeSeriesRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/google.monitoring.v3.MetricService/CreateTimeSeries", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// Server API for MetricService service
-
+// MetricServiceServer is the server API for MetricService service.
 type MetricServiceServer interface {
 	// Lists monitored resource descriptors that match a filter. This method does not require a Stackdriver account.
 	ListMonitoredResourceDescriptors(context.Context, *ListMonitoredResourceDescriptorsRequest) (*ListMonitoredResourceDescriptorsResponse, error)
 	// Gets a single monitored resource descriptor. This method does not require a Stackdriver account.
-	GetMonitoredResourceDescriptor(context.Context, *GetMonitoredResourceDescriptorRequest) (*google_api4.MonitoredResourceDescriptor, error)
+	GetMonitoredResourceDescriptor(context.Context, *GetMonitoredResourceDescriptorRequest) (*monitoredres.MonitoredResourceDescriptor, error)
 	// Lists metric descriptors that match a filter. This method does not require a Stackdriver account.
 	ListMetricDescriptors(context.Context, *ListMetricDescriptorsRequest) (*ListMetricDescriptorsResponse, error)
 	// Gets a single metric descriptor. This method does not require a Stackdriver account.
-	GetMetricDescriptor(context.Context, *GetMetricDescriptorRequest) (*google_api5.MetricDescriptor, error)
+	GetMetricDescriptor(context.Context, *GetMetricDescriptorRequest) (*metric.MetricDescriptor, error)
 	// Creates a new metric descriptor.
 	// User-created metric descriptors define
 	// [custom metrics](/monitoring/custom-metrics).
-	CreateMetricDescriptor(context.Context, *CreateMetricDescriptorRequest) (*google_api5.MetricDescriptor, error)
+	CreateMetricDescriptor(context.Context, *CreateMetricDescriptorRequest) (*metric.MetricDescriptor, error)
 	// Deletes a metric descriptor. Only user-created
 	// [custom metrics](/monitoring/custom-metrics) can be deleted.
-	DeleteMetricDescriptor(context.Context, *DeleteMetricDescriptorRequest) (*google_protobuf4.Empty, error)
+	DeleteMetricDescriptor(context.Context, *DeleteMetricDescriptorRequest) (*empty.Empty, error)
 	// Lists time series that match a filter. This method does not require a Stackdriver account.
 	ListTimeSeries(context.Context, *ListTimeSeriesRequest) (*ListTimeSeriesResponse, error)
 	// Creates or adds data to one or more time series.
 	// The response is empty if all time series in the request were written.
 	// If any time series could not be written, a corresponding failure message is
 	// included in the error response.
-	CreateTimeSeries(context.Context, *CreateTimeSeriesRequest) (*google_protobuf4.Empty, error)
+	CreateTimeSeries(context.Context, *CreateTimeSeriesRequest) (*empty.Empty, error)
+}
+
+// UnimplementedMetricServiceServer can be embedded to have forward compatible implementations.
+type UnimplementedMetricServiceServer struct {
+}
+
+func (*UnimplementedMetricServiceServer) ListMonitoredResourceDescriptors(ctx context.Context, req *ListMonitoredResourceDescriptorsRequest) (*ListMonitoredResourceDescriptorsResponse, error) {
+	return nil, status1.Errorf(codes.Unimplemented, "method ListMonitoredResourceDescriptors not implemented")
+}
+func (*UnimplementedMetricServiceServer) GetMonitoredResourceDescriptor(ctx context.Context, req *GetMonitoredResourceDescriptorRequest) (*monitoredres.MonitoredResourceDescriptor, error) {
+	return nil, status1.Errorf(codes.Unimplemented, "method GetMonitoredResourceDescriptor not implemented")
+}
+func (*UnimplementedMetricServiceServer) ListMetricDescriptors(ctx context.Context, req *ListMetricDescriptorsRequest) (*ListMetricDescriptorsResponse, error) {
+	return nil, status1.Errorf(codes.Unimplemented, "method ListMetricDescriptors not implemented")
+}
+func (*UnimplementedMetricServiceServer) GetMetricDescriptor(ctx context.Context, req *GetMetricDescriptorRequest) (*metric.MetricDescriptor, error) {
+	return nil, status1.Errorf(codes.Unimplemented, "method GetMetricDescriptor not implemented")
+}
+func (*UnimplementedMetricServiceServer) CreateMetricDescriptor(ctx context.Context, req *CreateMetricDescriptorRequest) (*metric.MetricDescriptor, error) {
+	return nil, status1.Errorf(codes.Unimplemented, "method CreateMetricDescriptor not implemented")
+}
+func (*UnimplementedMetricServiceServer) DeleteMetricDescriptor(ctx context.Context, req *DeleteMetricDescriptorRequest) (*empty.Empty, error) {
+	return nil, status1.Errorf(codes.Unimplemented, "method DeleteMetricDescriptor not implemented")
+}
+func (*UnimplementedMetricServiceServer) ListTimeSeries(ctx context.Context, req *ListTimeSeriesRequest) (*ListTimeSeriesResponse, error) {
+	return nil, status1.Errorf(codes.Unimplemented, "method ListTimeSeries not implemented")
+}
+func (*UnimplementedMetricServiceServer) CreateTimeSeries(ctx context.Context, req *CreateTimeSeriesRequest) (*empty.Empty, error) {
+	return nil, status1.Errorf(codes.Unimplemented, "method CreateTimeSeries not implemented")
 }
 
 func RegisterMetricServiceServer(s *grpc.Server, srv MetricServiceServer) {
@@ -856,73 +1375,4 @@ var _MetricService_serviceDesc = grpc.ServiceDesc{
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "google/monitoring/v3/metric_service.proto",
-}
-
-func init() { proto.RegisterFile("google/monitoring/v3/metric_service.proto", fileDescriptor4) }
-
-var fileDescriptor4 = []byte{
-	// 1001 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x57, 0x4f, 0x73, 0xdb, 0x44,
-	0x14, 0x67, 0x93, 0x34, 0x71, 0x9e, 0xa7, 0x21, 0xdd, 0xb6, 0xae, 0x51, 0x13, 0xc6, 0x15, 0x53,
-	0xe2, 0xba, 0x45, 0xea, 0xd8, 0x1d, 0x0e, 0x49, 0x9b, 0x99, 0xfc, 0xa3, 0x74, 0x08, 0x4c, 0x46,
-	0x2e, 0x3d, 0xf4, 0xe2, 0x51, 0x9c, 0x57, 0xcd, 0x82, 0xa5, 0x15, 0xab, 0xb5, 0x4b, 0xca, 0x84,
-	0x03, 0xcc, 0xe4, 0xc6, 0x81, 0x01, 0x66, 0xe0, 0x2b, 0x70, 0x80, 0xe1, 0x3b, 0xf0, 0x0d, 0x38,
-	0x73, 0xe3, 0x2b, 0x70, 0x67, 0xb4, 0x92, 0x63, 0x5b, 0x96, 0x64, 0x9b, 0x4b, 0x6f, 0x96, 0xf6,
-	0xfd, 0xf9, 0xbd, 0xdf, 0x7b, 0xfb, 0x7e, 0x32, 0xdc, 0x71, 0x38, 0x77, 0x3a, 0x68, 0xba, 0xdc,
-	0x63, 0x92, 0x0b, 0xe6, 0x39, 0x66, 0xaf, 0x61, 0xba, 0x28, 0x05, 0x6b, 0xb7, 0x02, 0x14, 0x3d,
-	0xd6, 0x46, 0xc3, 0x17, 0x5c, 0x72, 0x7a, 0x2d, 0x32, 0x35, 0x06, 0xa6, 0x46, 0xaf, 0xa1, 0xad,
-	0xc5, 0x01, 0x6c, 0x9f, 0x99, 0xb6, 0xe7, 0x71, 0x69, 0x4b, 0xc6, 0xbd, 0x20, 0xf2, 0xd1, 0x6e,
-	0x0c, 0x9d, 0x46, 0x41, 0xe3, 0x83, 0x77, 0x86, 0x0f, 0xa2, 0x80, 0x78, 0xd2, 0x12, 0x18, 0xf0,
-	0xae, 0xe8, 0x67, 0xd4, 0x6e, 0xa5, 0x82, 0x6b, 0x73, 0xd7, 0xe5, 0x5e, 0xae, 0xc9, 0x48, 0xaa,
-	0x9b, 0xb1, 0x89, 0x7a, 0x3a, 0xee, 0xbe, 0x30, 0xd1, 0xf5, 0xe5, 0x69, 0x02, 0xa0, 0xf0, 0xdb,
-	0x66, 0x20, 0x6d, 0xd9, 0x8d, 0x91, 0xeb, 0xdf, 0x13, 0xd8, 0x38, 0x64, 0x81, 0xfc, 0xb8, 0x0f,
-	0xce, 0x8a, 0xb1, 0xed, 0x63, 0xd0, 0x16, 0xcc, 0x97, 0x5c, 0x04, 0x16, 0x7e, 0xd1, 0xc5, 0x40,
-	0x52, 0x0a, 0x0b, 0x9e, 0xed, 0x62, 0xf9, 0x52, 0x85, 0x54, 0x97, 0x2d, 0xf5, 0x9b, 0x96, 0x60,
-	0xf1, 0x05, 0xeb, 0x48, 0x14, 0xe5, 0x39, 0xf5, 0x36, 0x7e, 0xa2, 0x37, 0x61, 0xd9, 0xb7, 0x1d,
-	0x6c, 0x05, 0xec, 0x15, 0x96, 0xe7, 0x2b, 0xa4, 0x7a, 0xc9, 0x2a, 0x84, 0x2f, 0x9a, 0xec, 0x15,
-	0xd2, 0x75, 0x00, 0x75, 0x28, 0xf9, 0xe7, 0xe8, 0x95, 0x17, 0x94, 0xa3, 0x32, 0x7f, 0x1a, 0xbe,
-	0xd0, 0x7f, 0x23, 0x50, 0x9d, 0x8c, 0x29, 0xf0, 0xb9, 0x17, 0x20, 0x7d, 0x0e, 0xd7, 0xfa, 0x74,
-	0xb6, 0x4e, 0x06, 0xe7, 0x65, 0x52, 0x99, 0xaf, 0x16, 0xeb, 0x1b, 0x46, 0xdc, 0x4d, 0xdb, 0x67,
-	0x46, 0x4e, 0x3c, 0xeb, 0xaa, 0x18, 0xcf, 0x41, 0xdf, 0x85, 0x37, 0x3d, 0xfc, 0x52, 0xb6, 0x86,
-	0xc0, 0x46, 0x55, 0x5e, 0x0e, 0x5f, 0x1f, 0x5d, 0x00, 0xde, 0x82, 0xdb, 0x8f, 0x31, 0x0f, 0x6e,
-	0x92, 0xc1, 0xf9, 0x01, 0x83, 0xfa, 0x39, 0x81, 0x35, 0x55, 0xad, 0x6a, 0xe6, 0x6b, 0xa4, 0xfd,
-	0x47, 0x02, 0xeb, 0x19, 0x40, 0x62, 0xae, 0x3f, 0x02, 0x1a, 0x5f, 0x99, 0x71, 0xa6, 0xd7, 0x46,
-	0x98, 0x4e, 0x84, 0xb0, 0xae, 0xb8, 0xc9, 0xa0, 0x53, 0x93, 0x7b, 0x1f, 0xb4, 0x90, 0xdc, 0x64,
-	0xc4, 0x1c, 0x46, 0xbf, 0x86, 0xf5, 0x3d, 0x81, 0xb6, 0xc4, 0x19, 0x9c, 0xe8, 0x13, 0xb8, 0x32,
-	0x56, 0x9b, 0x02, 0x34, 0xa9, 0xb4, 0xd5, 0x64, 0x69, 0x7a, 0x03, 0xd6, 0xf7, 0xb1, 0x83, 0x33,
-	0xe5, 0xd7, 0x7f, 0x9e, 0x87, 0xeb, 0x21, 0xfb, 0x4f, 0x99, 0x8b, 0x4d, 0x14, 0x0c, 0xc7, 0xfa,
-	0x0f, 0x53, 0xf4, 0x7f, 0x1b, 0x0a, 0xcc, 0x93, 0x28, 0x7a, 0x76, 0x47, 0x35, 0xb8, 0x58, 0xd7,
-	0x8d, 0xb4, 0x7d, 0x66, 0x84, 0x69, 0x9e, 0xc4, 0x96, 0xd6, 0x85, 0x0f, 0xdd, 0x83, 0xa2, 0xed,
-	0x38, 0x02, 0x1d, 0xb5, 0xde, 0xd4, 0xc8, 0x15, 0xeb, 0xb7, 0xd2, 0x43, 0xec, 0x0c, 0x0c, 0xad,
-	0x61, 0x2f, 0xfa, 0x16, 0x14, 0xb8, 0x38, 0x41, 0xd1, 0x3a, 0x3e, 0x2d, 0x2f, 0x2a, 0x78, 0x4b,
-	0xea, 0x79, 0xf7, 0x94, 0x7e, 0x02, 0x0b, 0x3d, 0x86, 0x2f, 0xcb, 0x4b, 0x15, 0x52, 0x5d, 0xa9,
-	0x6f, 0xa6, 0x07, 0x4e, 0xa5, 0xc1, 0x18, 0xbc, 0x79, 0xc6, 0xf0, 0xa5, 0xa5, 0xe2, 0x8c, 0xce,
-	0x7b, 0x21, 0x77, 0xde, 0x97, 0x93, 0xf3, 0xbe, 0x01, 0x2b, 0xa3, 0x31, 0x69, 0x01, 0x16, 0x3e,
-	0xf8, 0xf4, 0xf0, 0x70, 0xf5, 0x0d, 0x5a, 0x84, 0xa5, 0x0f, 0x0f, 0x76, 0xf6, 0x0f, 0xac, 0xe6,
-	0x2a, 0xd1, 0xbf, 0x25, 0x50, 0x4a, 0x62, 0x8a, 0x6f, 0xc4, 0x0e, 0x14, 0x25, 0x73, 0x31, 0x94,
-	0x10, 0x86, 0xfd, 0xab, 0x50, 0xc9, 0xa6, 0x3c, 0x76, 0x07, 0x79, 0xf1, 0x7b, 0xea, 0x7b, 0xe0,
-	0xc3, 0x8d, 0x68, 0xaa, 0xb3, 0x27, 0x64, 0x78, 0x9e, 0x13, 0xc8, 0xe6, 0x66, 0x47, 0x16, 0x6e,
-	0xa6, 0xeb, 0xc9, 0x94, 0x07, 0x42, 0x70, 0x31, 0x5e, 0x36, 0x99, 0xb9, 0xec, 0x1a, 0x2c, 0x46,
-	0x42, 0x14, 0x5f, 0x32, 0xda, 0xf7, 0x16, 0x7e, 0xdb, 0x68, 0xaa, 0x13, 0x2b, 0xb6, 0xa8, 0xff,
-	0x0b, 0x70, 0x39, 0xba, 0x4b, 0xcd, 0x48, 0xaa, 0xe9, 0xdf, 0x04, 0x2a, 0x93, 0x24, 0x82, 0x3e,
-	0xca, 0x1e, 0xaf, 0x29, 0xe4, 0x4e, 0xdb, 0xfe, 0xbf, 0xee, 0xd1, 0x6c, 0xe8, 0x9b, 0xdf, 0xfc,
-	0xf5, 0xcf, 0x0f, 0x73, 0x0f, 0x68, 0x3d, 0x94, 0xea, 0xaf, 0xc2, 0xa6, 0x3c, 0xf2, 0x05, 0xff,
-	0x0c, 0xdb, 0x32, 0x30, 0x6b, 0x67, 0x83, 0xcf, 0x81, 0x34, 0xe8, 0x7f, 0x12, 0x78, 0x3b, 0x5f,
-	0x52, 0xe8, 0x56, 0x3a, 0xbc, 0xa9, 0x84, 0x48, 0x9b, 0x56, 0x17, 0xf5, 0x87, 0xaa, 0x88, 0xf7,
-	0xe9, 0x83, 0xb4, 0x22, 0x72, 0x6b, 0x30, 0x6b, 0x67, 0xf4, 0x0f, 0x12, 0x2d, 0xb5, 0x31, 0x49,
-	0xa1, 0xf5, 0x1c, 0x72, 0x33, 0x84, 0x50, 0x6b, 0xcc, 0xe4, 0x13, 0x77, 0xc1, 0x54, 0x05, 0xdc,
-	0xa1, 0x1b, 0x19, 0x5d, 0x18, 0x43, 0xf6, 0x0b, 0x81, 0xab, 0x29, 0x82, 0x43, 0xef, 0x67, 0xf3,
-	0x9d, 0xbe, 0xe6, 0xb5, 0x5c, 0xdd, 0xd0, 0xeb, 0x0a, 0xd8, 0x3d, 0x5a, 0x4b, 0x67, 0x36, 0x89,
-	0xcb, 0xac, 0xd5, 0xce, 0xe8, 0xef, 0x04, 0x4a, 0xe9, 0xd2, 0x46, 0x33, 0xc8, 0xc9, 0x15, 0xc2,
-	0x09, 0x08, 0x77, 0x15, 0xc2, 0x87, 0xfa, 0xb4, 0xd4, 0x6d, 0x8e, 0x2b, 0x68, 0xc8, 0x66, 0x29,
-	0x5d, 0x0c, 0xb3, 0x10, 0xe7, 0x4a, 0xa7, 0x56, 0xea, 0x3b, 0xf5, 0x3f, 0x73, 0x8d, 0x83, 0xf0,
-	0x33, 0xb7, 0xcf, 0x66, 0x6d, 0x16, 0x36, 0x7f, 0x22, 0xb0, 0x32, 0xba, 0xd7, 0xe9, 0xdd, 0x19,
-	0x14, 0x49, 0xbb, 0x37, 0x9d, 0x71, 0x3c, 0x88, 0x55, 0x85, 0x50, 0xa7, 0x95, 0x74, 0x36, 0x87,
-	0x56, 0xe3, 0x39, 0x81, 0xd5, 0xe4, 0xde, 0xa5, 0xef, 0xe5, 0xf5, 0x77, 0x1c, 0x5b, 0x16, 0x4f,
-	0x77, 0x15, 0x8a, 0xdb, 0xfa, 0x44, 0x14, 0x9b, 0xa4, 0xb6, 0xfb, 0x1d, 0x81, 0x72, 0x9b, 0xbb,
-	0xa9, 0x99, 0x77, 0xe9, 0xc8, 0x46, 0x3e, 0x0a, 0xd3, 0x1c, 0x91, 0xe7, 0xdb, 0xb1, 0xad, 0xc3,
-	0x3b, 0xb6, 0xe7, 0x18, 0x5c, 0x38, 0xa6, 0x83, 0x9e, 0x02, 0x61, 0x46, 0x47, 0xb6, 0xcf, 0x82,
-	0xd1, 0xff, 0x31, 0x5b, 0x83, 0xa7, 0x5f, 0xe7, 0xb4, 0xc7, 0x51, 0x80, 0xbd, 0x0e, 0xef, 0x9e,
-	0xf4, 0x57, 0x53, 0x98, 0xf2, 0x59, 0xe3, 0x78, 0x51, 0xc5, 0x69, 0xfc, 0x17, 0x00, 0x00, 0xff,
-	0xff, 0x3c, 0x75, 0xce, 0xa1, 0xce, 0x0d, 0x00, 0x00,
 }
