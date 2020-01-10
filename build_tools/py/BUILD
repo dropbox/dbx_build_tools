@@ -46,16 +46,19 @@ py_binary(
         "@io_pypa_setuptools_whl//file",
         "@io_pypa_wheel_whl//file",
     ],
+    python_version = "PY3",
 )
 
 py_binary(
     name = "vinst",
     srcs = ["vinst.py"],
+    python_version = "PY3",
 )
 
 py_binary(
     name = "check_conflicts",
     srcs = ["check_conflicts.py"],
+    python_version = "PY3",
 )
 
 filegroup(
