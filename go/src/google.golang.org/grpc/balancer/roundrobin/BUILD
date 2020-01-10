@@ -16,6 +16,5 @@ dbx_go_library(
         "//go/src/google.golang.org/grpc/balancer/base",
         "//go/src/google.golang.org/grpc/grpclog",
         "//go/src/google.golang.org/grpc/internal/grpcrand",
-        "//go/src/google.golang.org/grpc/resolver",
     ],
 )

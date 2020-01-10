@@ -19,38 +19,39 @@
 package balancer
 
 import (
-	"context"
-	"io"
-	"net"
+	"fmt"
 	"testing"
 	"time"
 
 	xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	endpointpb "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
-	xdsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
-	lrsgrpc "github.com/envoyproxy/go-control-plane/envoy/service/load_stats/v2"
 	"github.com/golang/protobuf/proto"
 	anypb "github.com/golang/protobuf/ptypes/any"
-	durationpb "github.com/golang/protobuf/ptypes/duration"
 	structpb "github.com/golang/protobuf/ptypes/struct"
 	wrpb "github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/google/go-cmp/cmp"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/attributes"
 	"google.golang.org/grpc/balancer"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/resolver"
-	"google.golang.org/grpc/status"
+	xdsinternal "google.golang.org/grpc/xds/internal"
+	"google.golang.org/grpc/xds/internal/balancer/lrs"
+	xdsclient "google.golang.org/grpc/xds/internal/client"
+	"google.golang.org/grpc/xds/internal/client/bootstrap"
+	"google.golang.org/grpc/xds/internal/client/fakexds"
+	"google.golang.org/grpc/xds/internal/testutils"
+)
+
+const (
+	edsType = "type.googleapis.com/envoy.api.v2.ClusterLoadAssignment"
 )
 
 var (
-	testServiceName    = "test/foo"
-	testEDSServiceName = "test/service/eds"
-	testEDSReq         = &xdspb.DiscoveryRequest{
-		TypeUrl:       edsType,
-		ResourceNames: []string{testServiceName},
-	}
+	testServiceName           = "test/foo"
+	testEDSClusterName        = "test/service/eds"
 	testClusterLoadAssignment = &xdspb.ClusterLoadAssignment{
-		ClusterName: testServiceName,
+		ClusterName: testEDSClusterName,
 		Endpoints: []*endpointpb.LocalityLbEndpoints{{
 			Locality: &corepb.Locality{
 				Region:  "asia-east1",
@@ -106,286 +107,300 @@ var (
 	}
 )
 
-type testTrafficDirector struct {
-	reqChan  chan *request
-	respChan chan *response
-}
-
-type request struct {
-	req *xdspb.DiscoveryRequest
-	err error
-}
-
-type response struct {
-	resp *xdspb.DiscoveryResponse
-	err  error
-}
-
-func (ttd *testTrafficDirector) StreamAggregatedResources(s xdsgrpc.AggregatedDiscoveryService_StreamAggregatedResourcesServer) error {
-	for {
-		req, err := s.Recv()
-		if err != nil {
-			ttd.reqChan <- &request{
-				req: nil,
-				err: err,
-			}
-			if err == io.EOF {
-				return nil
-			}
-			return err
-		}
-		ttd.reqChan <- &request{
-			req: req,
-			err: nil,
-		}
-		if req.TypeUrl == edsType {
-			break
-		}
+func (s) TestEDSClientResponseHandling(t *testing.T) {
+	td, cleanup := fakexds.StartServer(t)
+	defer cleanup()
+	edsRespChan := make(chan *xdsclient.EDSUpdate, 10)
+	newEDS := func(i *xdsclient.EDSUpdate) error {
+		edsRespChan <- i
+		return nil
 	}
+	client := newXDSClientWrapper(newEDS, func() {}, balancer.BuildOptions{Target: resolver.Target{Endpoint: testServiceName}}, nil)
+	defer client.close()
 
-	for {
-		select {
-		case resp := <-ttd.respChan:
-			if resp.err != nil {
-				return resp.err
-			}
-			if err := s.Send(resp.resp); err != nil {
-				return err
-			}
-		case <-s.Context().Done():
-			return s.Context().Err()
-		}
-	}
-}
-
-func (ttd *testTrafficDirector) DeltaAggregatedResources(xdsgrpc.AggregatedDiscoveryService_DeltaAggregatedResourcesServer) error {
-	return status.Error(codes.Unimplemented, "")
-}
-
-func (ttd *testTrafficDirector) sendResp(resp *response) {
-	ttd.respChan <- resp
-}
-
-func (ttd *testTrafficDirector) getReq() *request {
-	return <-ttd.reqChan
-}
-
-func newTestTrafficDirector() *testTrafficDirector {
-	return &testTrafficDirector{
-		reqChan:  make(chan *request, 10),
-		respChan: make(chan *response, 10),
-	}
-}
-
-type testConfig struct {
-	edsServiceName       string
-	expectedRequests     []*xdspb.DiscoveryRequest
-	responsesToSend      []*xdspb.DiscoveryResponse
-	expectedADSResponses []proto.Message
-	adsErr               error
-	svrErr               error
-}
-
-func setupServer(t *testing.T) (addr string, td *testTrafficDirector, lrss *lrsServer, cleanup func()) {
-	lis, err := net.Listen("tcp", "localhost:0")
-	if err != nil {
-		t.Fatalf("listen failed due to: %v", err)
-	}
-	svr := grpc.NewServer()
-	td = newTestTrafficDirector()
-	lrss = &lrsServer{
-		drops: make(map[string]uint64),
-		reportingInterval: &durationpb.Duration{
-			Seconds: 60 * 60, // 1 hour, each test can override this to a shorter duration.
-			Nanos:   0,
-		},
-	}
-	xdsgrpc.RegisterAggregatedDiscoveryServiceServer(svr, td)
-	lrsgrpc.RegisterLoadReportingServiceServer(svr, lrss)
-	go svr.Serve(lis)
-	return lis.Addr().String(), td, lrss, func() {
-		svr.Stop()
-		lis.Close()
-	}
-}
-
-func (s) TestXdsClientResponseHandling(t *testing.T) {
-	for _, test := range []*testConfig{
+	// Test that EDS requests sent match XDSConfig.
+	for _, test := range []struct {
+		name             string
+		edsServiceName   string
+		wantResourceName string
+	}{
 		{
-			expectedRequests:     []*xdspb.DiscoveryRequest{testEDSReq},
-			responsesToSend:      []*xdspb.DiscoveryResponse{testEDSResp},
-			expectedADSResponses: []proto.Message{testClusterLoadAssignment},
+			name:           "empty-edsServiceName",
+			edsServiceName: "",
+			// EDSServiceName is an empty string, user's dialing target will be
+			// set in resource names.
+			wantResourceName: testServiceName,
 		},
 		{
-			edsServiceName: testEDSServiceName,
-			expectedRequests: []*xdspb.DiscoveryRequest{{
-				TypeUrl:       edsType,
-				ResourceNames: []string{testEDSServiceName},
-			}},
-			responsesToSend:      []*xdspb.DiscoveryResponse{testEDSResp},
-			expectedADSResponses: []proto.Message{testClusterLoadAssignment},
+			name:             "non-empty-edsServiceName",
+			edsServiceName:   testEDSClusterName,
+			wantResourceName: testEDSClusterName,
 		},
 	} {
-		testXdsClientResponseHandling(t, test)
+		client.handleUpdate(&XDSConfig{
+			BalancerName:               td.Address,
+			EDSServiceName:             test.edsServiceName,
+			LrsLoadReportingServerName: nil,
+		}, nil)
+		req := <-td.RequestChan
+		if req.Err != nil {
+			t.Fatalf("EDS RPC failed with err: %v", req.Err)
+		}
+		wantReq1 := &xdspb.DiscoveryRequest{
+			TypeUrl:       edsType,
+			ResourceNames: []string{test.wantResourceName},
+			Node:          &corepb.Node{},
+		}
+		if !proto.Equal(req.Req, wantReq1) {
+			t.Fatalf("%v: got EDS request %v, expected: %v, diff: %s", test.name, req.Req, wantReq1, cmp.Diff(req.Req, wantReq1, cmp.Comparer(proto.Equal)))
+		}
+	}
+
+	// Make sure that the responses from the stream are also handled.
+	td.ResponseChan <- &fakexds.Response{Resp: testEDSResp}
+	gotResp := <-edsRespChan
+	want, err := xdsclient.ParseEDSRespProto(testClusterLoadAssignment)
+	if err != nil {
+		t.Fatalf("parsing wanted EDS response failed: %v", err)
+	}
+	if !cmp.Equal(gotResp, want) {
+		t.Fatalf("received unexpected EDS response, got %v, want %v", gotResp, want)
 	}
 }
 
-func testXdsClientResponseHandling(t *testing.T, test *testConfig) {
-	addr, td, _, cleanup := setupServer(t)
+type testXDSClient struct {
+	clusterNameChan *testutils.Channel
+	edsCb           func(*xdsclient.EDSUpdate, error)
+}
+
+func newTestXDSClient() *testXDSClient {
+	return &testXDSClient{
+		clusterNameChan: testutils.NewChannel(),
+	}
+}
+
+func (c *testXDSClient) WatchEDS(clusterName string, edsCb func(*xdsclient.EDSUpdate, error)) (cancel func()) {
+	c.clusterNameChan.Send(clusterName)
+	c.edsCb = edsCb
+	return func() {}
+}
+
+func (c *testXDSClient) ReportLoad(server string, clusterName string, loadStore lrs.Store) (cancel func()) {
+	panic("implement me 2")
+}
+
+func (c *testXDSClient) Close() {
+	panic("implement me 3")
+}
+
+// Test that error from the xds client is handled correctly.
+func (s) TestEDSClientResponseErrorHandling(t *testing.T) {
+	td, cleanup := fakexds.StartServer(t)
 	defer cleanup()
-	adsChan := make(chan proto.Message, 10)
-	newADS := func(ctx context.Context, i proto.Message) error {
-		adsChan <- i
+	edsRespChan := make(chan *xdsclient.EDSUpdate, 10)
+	newEDS := func(i *xdsclient.EDSUpdate) error {
+		edsRespChan <- i
 		return nil
 	}
-	client := newXDSClient(addr, test.edsServiceName, balancer.BuildOptions{Target: resolver.Target{Endpoint: testServiceName}}, nil, newADS, func(context.Context) {}, func() {})
+
+	client := newXDSClientWrapper(newEDS, func() {}, balancer.BuildOptions{Target: resolver.Target{Endpoint: testServiceName}}, nil)
 	defer client.close()
-	go client.run()
 
-	for _, expectedReq := range test.expectedRequests {
-		req := td.getReq()
-		if req.err != nil {
-			t.Fatalf("ads RPC failed with err: %v", req.err)
-		}
-		if !proto.Equal(req.req, expectedReq) {
-			t.Fatalf("got ADS request %T %v, expected: %T %v", req.req, req.req, expectedReq, expectedReq)
-		}
+	// Create a client to be passed in attributes.
+	c := newTestXDSClient()
+	client.handleUpdate(&XDSConfig{
+		BalancerName:               td.Address,
+		EDSServiceName:             testEDSClusterName,
+		LrsLoadReportingServerName: nil,
+	}, attributes.New(xdsinternal.XDSClientID, c),
+	)
+
+	if gotClusterName, err := c.clusterNameChan.Receive(); err != nil || gotClusterName != testEDSClusterName {
+		t.Fatalf("got EDS watch clusterName %v, expected: %v", gotClusterName, testEDSClusterName)
 	}
+	c.edsCb(nil, fmt.Errorf("testing err"))
 
-	for i, resp := range test.responsesToSend {
-		td.sendResp(&response{resp: resp})
-		ads := <-adsChan
-		if !proto.Equal(ads, test.expectedADSResponses[i]) {
-			t.Fatalf("received unexpected ads response, got %v, want %v", ads, test.expectedADSResponses[i])
-		}
-	}
-}
+	// The ballback is called with an error, expect no update from edsRespChan.
+	//
+	// TODO: check for loseContact() when errors indicating "lose contact" are
+	// handled correctly.
 
-func (s) TestXdsClientLoseContact(t *testing.T) {
-	for _, test := range []*testConfig{{
-		responsesToSend: []*xdspb.DiscoveryResponse{testEDSResp},
-	}} {
-		testXdsClientLoseContactRemoteClose(t, test)
-	}
-
-	for _, test := range []*testConfig{{
-		responsesToSend: []*xdspb.DiscoveryResponse{{
-			Resources: []*anypb.Any{
-				{
-					TypeUrl: "not-eds",
-					Value:   marshaledClusterLoadAssignment,
-				},
-			},
-			TypeUrl: "not-eds",
-		}},
-	}} {
-		testXdsClientLoseContactADSRelatedErrorOccur(t, test)
-	}
-}
-
-func testXdsClientLoseContactRemoteClose(t *testing.T, test *testConfig) {
-	addr, td, _, cleanup := setupServer(t)
-	defer cleanup()
-	adsChan := make(chan proto.Message, 10)
-	newADS := func(ctx context.Context, i proto.Message) error {
-		adsChan <- i
-		return nil
-	}
-	contactChan := make(chan *loseContact, 10)
-	loseContactFunc := func(context.Context) {
-		contactChan <- &loseContact{}
-	}
-	client := newXDSClient(addr, test.edsServiceName, balancer.BuildOptions{Target: resolver.Target{Endpoint: testServiceName}}, nil, newADS, loseContactFunc, func() {})
-	defer client.close()
-	go client.run()
-
-	// make sure server side get the request (i.e stream created successfully on client side)
-	td.getReq()
-
-	for _, resp := range test.responsesToSend {
-		td.sendResp(&response{resp: resp})
-		// make sure client side receives it
-		<-adsChan
-	}
-	cleanup()
-
+	timer := time.NewTimer(time.Second)
+	defer timer.Stop()
 	select {
-	case <-contactChan:
-	case <-time.After(2 * time.Second):
-		t.Fatal("time out when expecting lost contact signal")
+	case <-timer.C:
+	case resp := <-edsRespChan:
+		t.Fatalf("unexpected resp: %v", resp)
 	}
 }
 
-func testXdsClientLoseContactADSRelatedErrorOccur(t *testing.T, test *testConfig) {
-	addr, td, _, cleanup := setupServer(t)
-	defer cleanup()
-
-	adsChan := make(chan proto.Message, 10)
-	newADS := func(ctx context.Context, i proto.Message) error {
-		adsChan <- i
-		return test.adsErr
-	}
-	contactChan := make(chan *loseContact, 10)
-	loseContactFunc := func(context.Context) {
-		contactChan <- &loseContact{}
-	}
-	client := newXDSClient(addr, test.edsServiceName, balancer.BuildOptions{Target: resolver.Target{Endpoint: testServiceName}}, nil, newADS, loseContactFunc, func() {})
-	defer client.close()
-	go client.run()
-
-	// make sure server side get the request (i.e stream created successfully on client side)
-	td.getReq()
-
-	for _, resp := range test.responsesToSend {
-		td.sendResp(&response{resp: resp})
-	}
-
-	select {
-	case <-contactChan:
-	case <-time.After(2 * time.Second):
-		t.Fatal("time out when expecting lost contact signal")
-	}
-}
-
-func (s) TestXdsClientExponentialRetry(t *testing.T) {
-	cfg := &testConfig{
-		svrErr: status.Errorf(codes.Aborted, "abort the stream to trigger retry"),
-	}
-	addr, td, _, cleanup := setupServer(t)
-	defer cleanup()
-
-	adsChan := make(chan proto.Message, 10)
-	newADS := func(ctx context.Context, i proto.Message) error {
-		adsChan <- i
+// Test that if xds_client is in attributes, the xdsclientnew function will not
+// be called, and the xds_client from attributes will be used.
+//
+// And also that when xds_client in attributes is updated, the new one will be
+// used, and watch will be restarted.
+func (s) TestEDSClientInAttributes(t *testing.T) {
+	edsRespChan := make(chan *xdsclient.EDSUpdate, 10)
+	newEDS := func(i *xdsclient.EDSUpdate) error {
+		edsRespChan <- i
 		return nil
 	}
-	contactChan := make(chan *loseContact, 10)
-	loseContactFunc := func(context.Context) {
-		contactChan <- &loseContact{}
+
+	oldxdsclientNew := xdsclientNew
+	xdsclientNew = func(opts xdsclient.Options) (clientInterface xdsClientInterface, e error) {
+		t.Fatalf("unexpected call to xdsclientNew when xds_client is set in attributes")
+		return nil, nil
 	}
-	client := newXDSClient(addr, "", balancer.BuildOptions{Target: resolver.Target{Endpoint: testServiceName}}, nil, newADS, loseContactFunc, func() {})
+	defer func() { xdsclientNew = oldxdsclientNew }()
+
+	td, cleanup := fakexds.StartServer(t)
+	defer cleanup()
+	// Create a client to be passed in attributes.
+	c, _ := oldxdsclientNew(xdsclient.Options{
+		Config: bootstrap.Config{
+			BalancerName: td.Address,
+			Creds:        grpc.WithInsecure(),
+			NodeProto:    &corepb.Node{},
+		},
+	})
+	// Need to manually close c because xdsclientWrapper won't close it (it's
+	// from attributes).
+	defer c.Close()
+
+	client := newXDSClientWrapper(newEDS, func() {}, balancer.BuildOptions{Target: resolver.Target{Endpoint: testServiceName}}, nil)
 	defer client.close()
-	go client.run()
 
-	var secondRetry, thirdRetry time.Time
-	for i := 0; i < 3; i++ {
-		// make sure server side get the request (i.e stream created successfully on client side)
-		td.getReq()
-		td.sendResp(&response{err: cfg.svrErr})
+	client.handleUpdate(
+		&XDSConfig{EDSServiceName: testEDSClusterName, LrsLoadReportingServerName: nil},
+		attributes.New(xdsinternal.XDSClientID, c),
+	)
 
-		select {
-		case <-contactChan:
-			if i == 1 {
-				secondRetry = time.Now()
-			}
-			if i == 2 {
-				thirdRetry = time.Now()
-			}
-		case <-time.After(2 * time.Second):
-			t.Fatal("time out when expecting lost contact signal")
-		}
+	expectedReq := &xdspb.DiscoveryRequest{
+		TypeUrl:       edsType,
+		ResourceNames: []string{testEDSClusterName},
+		Node:          &corepb.Node{},
 	}
-	if thirdRetry.Sub(secondRetry) < 1*time.Second {
-		t.Fatalf("interval between second and third retry is %v, expected > 1s", thirdRetry.Sub(secondRetry))
+
+	// Make sure the requests are sent to the correct td.
+	req := <-td.RequestChan
+	if req.Err != nil {
+		t.Fatalf("EDS RPC failed with err: %v", req.Err)
+	}
+	if !proto.Equal(req.Req, expectedReq) {
+		t.Fatalf("got EDS request %T, expected: %T, diff: %s", req.Req, expectedReq, cmp.Diff(req.Req, expectedReq, cmp.Comparer(proto.Equal)))
+	}
+
+	td2, cleanup2 := fakexds.StartServer(t)
+	defer cleanup2()
+	// Create a client to be passed in attributes.
+	c2, _ := oldxdsclientNew(xdsclient.Options{
+		Config: bootstrap.Config{
+			BalancerName: td2.Address,
+			Creds:        grpc.WithInsecure(),
+			NodeProto:    &corepb.Node{},
+		},
+	})
+	// Need to manually close c because xdsclientWrapper won't close it (it's
+	// from attributes).
+	defer c2.Close()
+
+	// Update with a new xds_client in attributes.
+	client.handleUpdate(
+		&XDSConfig{EDSServiceName: "", LrsLoadReportingServerName: nil},
+		attributes.New(xdsinternal.XDSClientID, c2),
+	)
+
+	expectedReq2 := &xdspb.DiscoveryRequest{
+		TypeUrl: edsType,
+		// The edsServiceName in new update is an empty string, user's dial
+		// target should be used as eds name to watch.
+		ResourceNames: []string{testServiceName},
+		Node:          &corepb.Node{},
+	}
+
+	// Make sure the requests are sent to the correct td.
+	req2 := <-td2.RequestChan
+	if req.Err != nil {
+		t.Fatalf("EDS RPC failed with err: %v", req.Err)
+	}
+	if !proto.Equal(req2.Req, expectedReq2) {
+		t.Fatalf("got EDS request %T, expected: %T, diff: %s", req2.Req, expectedReq, cmp.Diff(req2.Req, expectedReq2, cmp.Comparer(proto.Equal)))
+	}
+}
+
+// Test that when edsServiceName from service config is updated, the new one
+// will be watched.
+func (s) TestEDSServiceNameUpdate(t *testing.T) {
+	edsRespChan := make(chan *xdsclient.EDSUpdate, 10)
+	newEDS := func(i *xdsclient.EDSUpdate) error {
+		edsRespChan <- i
+		return nil
+	}
+
+	oldxdsclientNew := xdsclientNew
+	xdsclientNew = func(opts xdsclient.Options) (clientInterface xdsClientInterface, e error) {
+		t.Fatalf("unexpected call to xdsclientNew when xds_client is set in attributes")
+		return nil, nil
+	}
+	defer func() { xdsclientNew = oldxdsclientNew }()
+
+	td, cleanup := fakexds.StartServer(t)
+	defer cleanup()
+	// Create a client to be passed in attributes.
+	c, _ := oldxdsclientNew(xdsclient.Options{
+		Config: bootstrap.Config{
+			BalancerName: td.Address,
+			Creds:        grpc.WithInsecure(),
+			NodeProto:    &corepb.Node{},
+		},
+	})
+	// Need to manually close c because xdsclientWrapper won't close it (it's
+	// from attributes).
+	defer c.Close()
+
+	client := newXDSClientWrapper(newEDS, func() {}, balancer.BuildOptions{Target: resolver.Target{Endpoint: testServiceName}}, nil)
+	defer client.close()
+
+	client.handleUpdate(
+		&XDSConfig{EDSServiceName: testEDSClusterName, LrsLoadReportingServerName: nil},
+		attributes.New(xdsinternal.XDSClientID, c),
+	)
+
+	expectedReq := &xdspb.DiscoveryRequest{
+		TypeUrl:       edsType,
+		ResourceNames: []string{testEDSClusterName},
+		Node:          &corepb.Node{},
+	}
+
+	// Make sure the requests are sent to the correct td.
+	req := <-td.RequestChan
+	if req.Err != nil {
+		t.Fatalf("EDS RPC failed with err: %v", req.Err)
+	}
+	if !proto.Equal(req.Req, expectedReq) {
+		t.Fatalf("got EDS request %T, expected: %T, diff: %s", req.Req, expectedReq, cmp.Diff(req.Req, expectedReq, cmp.Comparer(proto.Equal)))
+	}
+
+	// Update with a new edsServiceName.
+	client.handleUpdate(
+		&XDSConfig{EDSServiceName: "", LrsLoadReportingServerName: nil},
+		attributes.New(xdsinternal.XDSClientID, c),
+	)
+
+	expectedReq2 := &xdspb.DiscoveryRequest{
+		TypeUrl: edsType,
+		// The edsServiceName in new update is an empty string, user's dial
+		// target should be used as eds name to watch.
+		ResourceNames: []string{testServiceName},
+		Node:          &corepb.Node{},
+	}
+
+	// Make sure the requests are sent to the correct td.
+	req2 := <-td.RequestChan
+	if req.Err != nil {
+		t.Fatalf("EDS RPC failed with err: %v", req.Err)
+	}
+	if !proto.Equal(req2.Req, expectedReq2) {
+		t.Fatalf("got EDS request %T, expected: %T, diff: %s", req2.Req, expectedReq, cmp.Diff(req2.Req, expectedReq2, cmp.Comparer(proto.Equal)))
 	}
 }

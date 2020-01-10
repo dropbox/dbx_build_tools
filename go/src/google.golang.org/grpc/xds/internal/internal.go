@@ -23,6 +23,13 @@ import (
 	corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
+type clientID string
+
+// XDSClientID is the attributes key used to pass the address of the xdsClient
+// object shared between the resolver and the balancer. The xdsClient object is
+// created by the resolver and passed to the balancer.
+const XDSClientID = clientID("xdsClientID")
+
 // Locality is xds.Locality without XXX fields, so it can be used as map
 // keys.
 //
@@ -30,6 +37,8 @@ import (
 //
 // This struct should only be used as map keys. Use the proto message directly
 // in all other places.
+//
+// TODO: rename to LocalityID.
 type Locality struct {
 	Region  string
 	Zone    string

@@ -16,17 +16,18 @@
  *
  */
 
-package client
+package bootstrap
 
 import (
 	"os"
 	"testing"
 
-	corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/golang/protobuf/proto"
-	structpb "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/google"
+
+	corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	structpb "github.com/golang/protobuf/ptypes/struct"
 )
 
 var (
@@ -39,6 +40,7 @@ var (
 				},
 			},
 		},
+		BuildVersion: gRPCVersion,
 	}
 	nilCredsConfig = &Config{
 		BalancerName: "trafficdirector.googleapis.com:443",
@@ -186,7 +188,7 @@ func TestNewConfig(t *testing.T) {
 	}
 	defer func() {
 		fileReadFunc = oldFileReadFunc
-		os.Unsetenv(bootstrapFileEnv)
+		os.Unsetenv(fileEnv)
 	}()
 
 	tests := []struct {
@@ -196,7 +198,13 @@ func TestNewConfig(t *testing.T) {
 		{"nonExistentBootstrapFile", &Config{}},
 		{"empty", &Config{}},
 		{"badJSON", &Config{}},
-		{"emptyNodeProto", &Config{BalancerName: "trafficdirector.googleapis.com:443"}},
+		{
+			"emptyNodeProto",
+			&Config{
+				BalancerName: "trafficdirector.googleapis.com:443",
+				NodeProto:    &corepb.Node{BuildVersion: gRPCVersion},
+			},
+		},
 		{"emptyXdsServer", &Config{NodeProto: nodeProto}},
 		{"unknownTopLevelFieldInFile", nilCredsConfig},
 		{"unknownFieldInNodeProto", &Config{NodeProto: nodeProto}},
@@ -208,24 +216,26 @@ func TestNewConfig(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		if err := os.Setenv(bootstrapFileEnv, test.name); err != nil {
-			t.Fatalf("os.Setenv(%s, %s) failed with error: %v", bootstrapFileEnv, test.name, err)
-		}
-		config := NewConfig()
-		if config.BalancerName != test.wantConfig.BalancerName {
-			t.Errorf("%s: config.BalancerName is %s, want %s", test.name, config.BalancerName, test.wantConfig.BalancerName)
-		}
-		if !proto.Equal(config.NodeProto, test.wantConfig.NodeProto) {
-			t.Errorf("%s: config.NodeProto is %#v, want %#v", test.name, config.NodeProto, test.wantConfig.NodeProto)
-		}
-		if (config.Creds != nil) != (test.wantConfig.Creds != nil) {
-			t.Errorf("%s: config.Creds is %#v, want %#v", test.name, config.Creds, test.wantConfig.Creds)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			if err := os.Setenv(fileEnv, test.name); err != nil {
+				t.Fatalf("os.Setenv(%s, %s) failed with error: %v", fileEnv, test.name, err)
+			}
+			config := NewConfig()
+			if config.BalancerName != test.wantConfig.BalancerName {
+				t.Errorf("config.BalancerName is %s, want %s", config.BalancerName, test.wantConfig.BalancerName)
+			}
+			if !proto.Equal(config.NodeProto, test.wantConfig.NodeProto) {
+				t.Errorf("config.NodeProto is %#v, want %#v", config.NodeProto, test.wantConfig.NodeProto)
+			}
+			if (config.Creds != nil) != (test.wantConfig.Creds != nil) {
+				t.Errorf("config.Creds is %#v, want %#v", config.Creds, test.wantConfig.Creds)
+			}
+		})
 	}
 }
 
 func TestNewConfigEnvNotSet(t *testing.T) {
-	os.Unsetenv(bootstrapFileEnv)
+	os.Unsetenv(fileEnv)
 	wantConfig := Config{}
 	if config := NewConfig(); *config != wantConfig {
 		t.Errorf("NewConfig() returned : %#v, wanted an empty Config object", config)

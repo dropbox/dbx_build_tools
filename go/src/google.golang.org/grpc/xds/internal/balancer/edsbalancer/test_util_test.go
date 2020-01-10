@@ -26,9 +26,11 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/xds/internal"
+
+	corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
-const testSubConnsCount = 8
+const testSubConnsCount = 16
 
 var testSubConns []*testSubConn
 
@@ -63,7 +65,7 @@ type testClientConn struct {
 	newSubConnCh      chan balancer.SubConn   // The last 10 subconn created.
 	removeSubConnCh   chan balancer.SubConn   // The last 10 subconn removed.
 
-	newPickerCh chan balancer.Picker    // The last picker updated.
+	newPickerCh chan balancer.V2Picker  // The last picker updated.
 	newStateCh  chan connectivity.State // The last state.
 
 	subConnIdx int
@@ -77,7 +79,7 @@ func newTestClientConn(t *testing.T) *testClientConn {
 		newSubConnCh:      make(chan balancer.SubConn, 10),
 		removeSubConnCh:   make(chan balancer.SubConn, 10),
 
-		newPickerCh: make(chan balancer.Picker, 1),
+		newPickerCh: make(chan balancer.V2Picker, 1),
 		newStateCh:  make(chan connectivity.State, 1),
 	}
 }
@@ -109,21 +111,25 @@ func (tcc *testClientConn) RemoveSubConn(sc balancer.SubConn) {
 }
 
 func (tcc *testClientConn) UpdateBalancerState(s connectivity.State, p balancer.Picker) {
-	tcc.t.Logf("testClientConn: UpdateBalancerState(%v, %p)", s, p)
+	tcc.t.Fatal("not implemented")
+}
+
+func (tcc *testClientConn) UpdateState(bs balancer.State) {
+	tcc.t.Logf("testClientConn: UpdateState(%v)", bs)
 	select {
 	case <-tcc.newStateCh:
 	default:
 	}
-	tcc.newStateCh <- s
+	tcc.newStateCh <- bs.ConnectivityState
 
 	select {
 	case <-tcc.newPickerCh:
 	default:
 	}
-	tcc.newPickerCh <- p
+	tcc.newPickerCh <- bs.Picker
 }
 
-func (tcc *testClientConn) ResolveNow(resolver.ResolveNowOption) {
+func (tcc *testClientConn) ResolveNow(resolver.ResolveNowOptions) {
 	panic("not implemented")
 }
 
@@ -162,7 +168,7 @@ func (tls *testLoadStore) CallServerLoad(l internal.Locality, name string, d flo
 	tls.callsCost = append(tls.callsCost, testServerLoad{name: name, d: d})
 }
 
-func (*testLoadStore) ReportTo(ctx context.Context, cc *grpc.ClientConn) {
+func (*testLoadStore) ReportTo(ctx context.Context, cc *grpc.ClientConn, clusterName string, node *corepb.Node) {
 	panic("not implemented")
 }
 

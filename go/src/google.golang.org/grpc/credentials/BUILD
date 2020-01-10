@@ -7,7 +7,8 @@ dbx_go_library(
     name = "credentials",
     srcs = [
         "credentials.go",
-        "tls13.go",
+        "go12.go",
+        "tls.go",
     ],
     visibility = [
         "//go/src:__subpackages__",
