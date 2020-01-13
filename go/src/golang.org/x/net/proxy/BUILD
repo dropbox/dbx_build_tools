@@ -6,6 +6,7 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "proxy",
     srcs = [
+        "dial.go",
         "direct.go",
         "per_host.go",
         "proxy.go",

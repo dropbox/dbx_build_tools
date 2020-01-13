@@ -21,7 +21,6 @@ dbx_go_library(
         "icmp_linux.go",
         "payload.go",
         "payload_cmsg.go",
-        "payload_cmsg_go1_9.go",
         "sockopt.go",
         "sockopt_posix.go",
         "sys_asmreq.go",
@@ -37,5 +36,6 @@ dbx_go_library(
         "//go/src/golang.org/x/net/bpf",
         "//go/src/golang.org/x/net/internal/iana",
         "//go/src/golang.org/x/net/internal/socket",
+        "//go/src/golang.org/x/sys/unix",
     ],
 )

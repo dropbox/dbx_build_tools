@@ -6,9 +6,9 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "idna",
     srcs = [
-        "idna.go",
+        "idna10.0.0.go",
         "punycode.go",
-        "tables.go",
+        "tables10.0.0.go",
         "trie.go",
         "trieval.go",
     ],

@@ -13,11 +13,13 @@ dbx_go_library(
         "mmsghdr_unix.go",
         "msghdr_linux.go",
         "msghdr_linux_64bit.go",
+        "norace.go",
         "rawconn.go",
         "rawconn_mmsg.go",
         "rawconn_msg.go",
         "socket.go",
         "sys.go",
+        "sys_const_unix.go",
         "sys_linux.go",
         "sys_linux_amd64.go",
         "sys_posix.go",
@@ -28,5 +30,6 @@ dbx_go_library(
         "//go/src/golang.org/x/net:__subpackages__",
     ],
     deps = [
+        "//go/src/golang.org/x/sys/unix",
     ],
 )

@@ -9,7 +9,6 @@ dbx_go_library(
         "events.go",
         "histogram.go",
         "trace.go",
-        "trace_go17.go",
     ],
     visibility = [
         "//go/src:__subpackages__",

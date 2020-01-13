@@ -7,7 +7,6 @@ dbx_go_library(
     name = "webdav",
     srcs = [
         "file.go",
-        "file_go1.7.go",
         "if.go",
         "lock.go",
         "prop.go",
@@ -18,7 +17,6 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
-        "//go/src/golang.org/x/net/context",
         "//go/src/golang.org/x/net/webdav/internal/xml",
     ],
 )

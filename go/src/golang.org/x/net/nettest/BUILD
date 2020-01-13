@@ -7,7 +7,8 @@ dbx_go_library(
     name = "nettest",
     srcs = [
         "conntest.go",
-        "conntest_go17.go",
+        "nettest.go",
+        "nettest_unix.go",
     ],
     visibility = [
         "//go/src:__subpackages__",

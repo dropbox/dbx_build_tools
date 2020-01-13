@@ -12,7 +12,7 @@ dbx_go_library(
         "//go/src/golang.org/x/net:__subpackages__",
     ],
     deps = [
-        "//go/src/golang.org/x/net/internal/nettest",
         "//go/src/golang.org/x/net/internal/socks",
+        "//go/src/golang.org/x/net/nettest",
     ],
 )
