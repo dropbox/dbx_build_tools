@@ -189,17 +189,18 @@ class BuildParser(object):
     def get_constant_value(self, name, default=None):
         return self.constants.get(name, default)
 
+    def default_visibility(self):
+        # type: () -> List[Text]
+        for rule in self.get_all_rules():
+            if rule.attr_map.get("default_visibility"):
+                return rule.attr_map["default_visibility"]
+        return []
+
     def get_normalized_visibility_by_name(self):
         # type: () -> Dict[Text, List[Text]]
-        rules = self.get_all_rules()
-        default_visibility = []  # type: List[Text]
-        for rule in rules:
-            if rule.attr_map.get("default_visibility"):
-                default_visibility = rule.attr_map["default_visibility"]
-                break
-
+        default_visibility = self.default_visibility()
         visibility_by_name = {}  # type: Dict[Text, List[Text]]
-        for rule in rules:
+        for rule in self.get_all_rules():
             if not rule.attr_map.get("name"):
                 # without names, we can't reference in. This should only be load and default visibility statements, not actual rules
                 continue
