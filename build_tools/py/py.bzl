@@ -1,8 +1,8 @@
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
-    "CPP_COMPILE_ACTION_NAME",
     "CPP_LINK_DYNAMIC_LIBRARY_ACTION_NAME",
+    "C_COMPILE_ACTION_NAME",
 )
 load("//build_tools/bazel:runfiles.bzl", "runfiles_attrs")
 load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
@@ -34,6 +34,7 @@ load(
     "workspace_root_to_pythonpath",
 )
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
+load("//build_tools/apple:apple.bzl", "DbxAppleFramework")
 
 # This logic is duplicated in build_tools/bzl_lib/gen_build_pip.py::_get_build_interpreters and must
 # be kept in sync.
@@ -88,16 +89,22 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, args):
     )
     compiler_options = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
-        action_name = CPP_COMPILE_ACTION_NAME,
+        action_name = C_COMPILE_ACTION_NAME,
         variables = compile_variables,
     )
     args.add_all(compiler_options, format_each = "--compile-flags=%s")
+
     link_variables = cc_common.create_link_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
         is_static_linking_mode = True,
     )
     link_flags = cc_common.get_memory_inefficient_command_line(
+        feature_configuration = feature_configuration,
+        action_name = CPP_LINK_DYNAMIC_LIBRARY_ACTION_NAME,
+        variables = link_variables,
+    )
+    link_env = cc_common.get_environment_variables(
         feature_configuration = feature_configuration,
         action_name = CPP_LINK_DYNAMIC_LIBRARY_ACTION_NAME,
         variables = link_variables,
@@ -118,6 +125,8 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, args):
         format_each = "--extra-ldflag=%s",
     )
 
+    return link_env
+
 def _allow_dynamic_links(ctx):
     return ctx.attr._py_link_dynamic_libs[DbxStringValue].value == "allowed"
 
@@ -128,10 +137,17 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     command_args.add("--wheel", wheel)
     command_args.add("--python", python_interp.path)
     command_args.add("--build-tag", build_tag)
+
+    # Add linux specific exclusions when that is the target platform.
+    # TODO: Once we are on Bazel >2.1, which introduces
+    # `ctx.target_platform_has_constraint(...)`, we can use that instead of
+    # hardcoding to target cpu.
+    if ctx.var["TARGET_CPU"] in ("k8", "piii"):
+        command_args.add("--linux-exclude-libs")
     outputs = [wheel]
 
     cc_toolchain = find_cpp_toolchain(ctx)
-    _add_vpip_compiler_args(ctx, cc_toolchain, ctx.attr.copts, command_args)
+    link_env = _add_vpip_compiler_args(ctx, cc_toolchain, ctx.attr.copts, command_args)
 
     inputs_direct = []
     inputs_trans = [
@@ -142,6 +158,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     tools_trans = [t.files for t in ctx.attr.tools]
 
     cc_infos = []
+    frameworks = []
     rust_deps = []
     for dep in ctx.attr.deps:
         # Automatically include header files from any cc_library dependencies
@@ -150,6 +167,11 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         elif hasattr(dep, "crate_type"):
             # dep is a rust_library.
             rust_deps.append(dep)
+        elif DbxAppleFramework in dep:
+            if _allow_dynamic_links(ctx):
+                frameworks.append(dep[DbxAppleFramework].framework)
+            else:
+                fail("Encountered Apple framework while dynamic links were disallowed.")
         elif not hasattr(dep, "piplib_contents"):
             # Note vpip can't depend on other Python libraries.
             inputs_trans.append(dep.files)
@@ -192,6 +214,10 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     inputs_direct.extend(pic_libs)
     command_args.add_all(dynamic_libs, before_each = "--extra-dynamic-lib")
     inputs_direct.extend(dynamic_libs)
+
+    # Frameworks are directories, but we want to pass the path of the directory.
+    command_args.add_all(frameworks, before_each = "--extra-framework", expand_directories = False)
+    inputs_direct.extend(frameworks)
     for link_flag in cc_linking.user_link_flags:
         if link_flag == "-pthread":
             # Python is going to add this anyway.
@@ -238,7 +264,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         command_args.add(version_spec)
         description = version_spec
 
-    env = {}
+    env = dict(link_env)
     genfiles_root = ctx.configuration.genfiles_dir.path + "/" + ctx.label.workspace_root
     for e in ctx.attr.env:
         env[e] = ctx.expand_make_variables("cmd", ctx.expand_location(ctx.attr.env[e], targets = ctx.attr.tools), {

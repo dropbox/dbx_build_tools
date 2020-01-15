@@ -43,7 +43,9 @@ for flag in "$@"; do
         opts+=("$flag")
     fi
 done
-# Add libstdc++ if needed.
-opts+=(-Wl,--as-needed,-lstdc++,--no-as-needed)
+# Add libstdc++ if needed. Not supported on macOS!
+if [[ "$OSTYPE" != "darwin"* ]]; then
+    opts+=(-Wl,--as-needed,-lstdc++,--no-as-needed)
+fi
 
 $CC -shared "${opts[@]}"

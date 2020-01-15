@@ -166,7 +166,8 @@ def build_pip_archive(workdir):
     # modules. This keeps libraries linked to the python executable and other extension modules from
     # interfering with this extension module. We could achieve similar ends with -Bsymbolic; hiding
     # symbols is cleaner, though.
-    env["LDFLAGS"] += " -Wl,--exclude-libs=ALL"
+    if ARGS.linux_exclude_libs:
+        env["LDFLAGS"] += " -Wl,--exclude-libs=ALL"
 
     if ARGS.extra_path:
         env["PATH"] += ":" + ":".join(
@@ -269,6 +270,15 @@ def build_pip_archive(workdir):
         if link_objs:
             cmd.append("--global-option=--link-objects=%s" % " ".join(link_objs))
 
+    for framework in ARGS.extra_frameworks:
+        name, _ = os.path.splitext(os.path.basename(framework))
+        # For each framework, link using `-framework` and pass the search path using -F.
+        # distutils does not provide a way to pass link arguments via command line. There seems to be either
+        # `extra_link_args` in the extension setup, or adding them to LDFLAGS.
+        env["LDFLAGS"] += " -F{} -framework {}".format(
+            os.path.abspath(os.path.dirname(framework)), name
+        )
+
     if ARGS.local_module_base:
         sdist = os.path.join(os.getcwd(), ARGS.local_module_base)
         # Inform pip of the distribution name contained in the sdist by adding
@@ -344,6 +354,19 @@ def main():
         default=[],
         action="append",
         help="Extra dynamic library to link into the extension module",
+    )
+    p.add_argument(
+        "--extra-framework",
+        dest="extra_frameworks",
+        default=[],
+        action="append",
+        help="(macOS ONLY) Extra frameworks to link into the extension module",
+    )
+    p.add_argument(
+        "--linux-exclude-libs",
+        action="store_true",
+        help="""Add Linux specific flags to the linker to prevent extensions
+        from exporting symbols from dependent archives.""",
     )
     p.add_argument(
         "--no-deps",
