@@ -455,29 +455,31 @@ def _build_sdist_tar(ctx):
     ]
 
     manifest_file = ctx.actions.declare_file("{}-manifest".format(ctx.label.name))
-    ctx.actions.write(
-        output = manifest_file,
-        content = "\n".join([
-            f.path[start_idx:]
-            for f in required_files
-        ]),
-    )
 
     sdist_args = ctx.actions.args()
-    sdist_args.add(sdist_tar)
-    sdist_args.add(package_root)
-    sdist_args.add(manifest_file)
 
-    ctx.actions.run_shell(
+    manifest_struct = struct(
+        files = [struct(src = inf.path, dst = inf.path[start_idx:]) for inf in required_files],
+    )
+    ctx.actions.write(
+        output = manifest_file,
+        content = manifest_struct.to_json(),
+    )
+
+    sdist_args.add("--output", sdist_tar)
+
+    # Remove the "./" default prefix.
+    sdist_args.add("--root_directory=")
+    sdist_args.add("--manifest", manifest_file)
+    sdist_args.add("--owner", "65534.65534")
+    ctx.actions.run(
         inputs = required_files + [manifest_file],
-        tools = [],
         outputs = [sdist_tar],
-        command = "tar -cf $1 --mtime=2018-11-11 -h --mode=go=rX,u+rw --numeric-owner --owner=65534 --group=65534 --directory $2 --files-from $3",
+        executable = ctx.executable._tar_tool,
         arguments = [sdist_args],
         mnemonic = "SdistTar",
         progress_message = "Building source dist tar " + sdist_tar.path,
     )
-
     return sdist_tar
 
 _piplib_attrs = {
@@ -532,6 +534,7 @@ _local_piplib_attrs.update({
     "pip_version": attr.string(),
     "setup_requires": attr.label_list(providers = ["piplib_contents", DbxPyVersionCompatibility]),
     "tools": attr.label_list(cfg = "host"),
+    "_tar_tool": attr.label(default = Label("@rules_pkg//:build_tar"), cfg = "host", executable = True),
 })
 
 dbx_py_local_piplib_internal = rule(
