@@ -112,9 +112,9 @@ def _apply_service_extensions(ctx, services, extensions):
                 if info.main != py_binary_info[info.service].main:
                     fail("Multiple main py binaries provided for %s", info.service)
                 if info.lib[DbxPyVersionCompatibility].python2_compatible != py_binary_info[info.service].python2_compatible:
-                    fail("Inconsistent python2_compatible attributes for lib passed to dbx_service_extension_py_binary for %s", info.service)
+                    fail("Inconsistent python2_compatible attributes for lib passed to dbx_service_extension_py_binary for %s" % info.service)
                 if info.lib[DbxPyVersionCompatibility].python3_compatible != py_binary_info[info.service].python3_compatible:
-                    fail("Inconsistent python2_compatible attributes for lib passed to dbx_service_extension_py_binary for %s", info.service)
+                    fail("Inconsistent python3_compatible attributes for lib passed to dbx_service_extension_py_binary for %s" % info.service)
                 if info.python != py_binary_info[info.service].python:
                     fail("Multiple python attrs provided for %s", info.service)
                 py_binary_info[info.service].libs.append(info.lib)
