@@ -262,7 +262,7 @@ def build_pip_archive(workdir):
         for dyn_lib in ARGS.extra_dynamic_libs:
             library_dirs.add(os.path.abspath(os.path.dirname(dyn_lib)))
             dyn_lib_name = os.path.basename(dyn_lib)
-            libraries.append(dyn_lib_name[len("lib") : -len(".so")])
+            libraries.append(dyn_lib_name[len("lib") : -len(ARGS.dynamic_lib_suffix)])
         if library_dirs:
             cmd.append("--global-option=--library-dirs=%s" % " ".join(library_dirs))
         if libraries:
@@ -354,6 +354,12 @@ def main():
         default=[],
         action="append",
         help="Extra dynamic library to link into the extension module",
+    )
+    p.add_argument(
+        "--target-dynamic-lib-suffix",
+        dest="dynamic_lib_suffix",
+        required=True,
+        help="The suffix (with a period) used by the target platform for dynamic libraries (.so on Linux, .dylib on macOS),",
     )
     p.add_argument(
         "--extra-framework",

@@ -144,6 +144,9 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     # hardcoding to target cpu.
     if ctx.var["TARGET_CPU"] in ("k8", "piii"):
         command_args.add("--linux-exclude-libs")
+        command_args.add("--target-dynamic-lib-suffix", ".so")
+    elif ctx.var["TARGET_CPU"] == "darwin":
+        command_args.add("--target-dynamic-lib-suffix", ".dylib")
     outputs = [wheel]
 
     cc_toolchain = find_cpp_toolchain(ctx)
