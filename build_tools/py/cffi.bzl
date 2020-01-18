@@ -42,11 +42,12 @@ setup(
             name='{module_name}',
             sources=[{sources}],
             extra_compile_args=[{extra_compile_args}],
+            extra_link_args={extra_link_args},
         )
     ]
 ) """
 
-def gen_setup_py(ctx, c_files, extra_compile_args = []):
+def gen_setup_py(ctx, c_files, extra_compile_args = [], extra_link_args = []):
     setup_py = local_new_file(ctx, "setup.py")
     prefix_len = len(setup_py.dirname) + 1
     sources = ", ".join([
@@ -57,6 +58,7 @@ def gen_setup_py(ctx, c_files, extra_compile_args = []):
         "'{}'".format(arg)
         for arg in extra_compile_args
     ])
+    extra_link_args = repr(extra_link_args)
     ctx.actions.write(
         output = setup_py,
         content = SETUP_PY.format(
@@ -64,6 +66,7 @@ def gen_setup_py(ctx, c_files, extra_compile_args = []):
             module_name = ctx.attr.module_name,
             sources = sources,
             extra_compile_args = extra_compile_args,
+            extra_link_args = extra_link_args,
         ),
     )
     return setup_py
@@ -74,6 +77,7 @@ def _cffi_module_impl(ctx):
         ctx = ctx,
         c_files = [c_ext_module],
         extra_compile_args = ctx.attr.copts,
+        extra_link_args = ctx.attr.linkopts,
     )
 
     return struct(
@@ -99,6 +103,7 @@ _cffi_module = rule(
         ),
         "use_cpp": attr.bool(default = False),
         "copts": attr.string_list(),
+        "linkopts": attr.string_list(),
         "_gen_ext_module_c": attr.label(
             default = Label("//build_tools/py:build_cffi_binding"),
             cfg = "host",
