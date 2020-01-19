@@ -67,7 +67,7 @@ sys.path.extend([
     for p in ({relative_piplib_python_path})
 ])
 {dbx_importer}
-import os, runpy
+import os
 try:
     fd = os.open('/proc/self/comm', os.O_WRONLY)
     try:
@@ -80,7 +80,17 @@ except Exception:
 
 # Run the script as __main__.
 script_dir = os.path.join(runfiles, {main_package})
-runpy.run_path(os.path.join(script_dir, {main}), run_name='__main__')
+filepath = os.path.join(script_dir, {main})
+sys.argv[0] = filepath
+
+import types
+module = types.ModuleType('__main__')
+module.__dict__['__file__'] = filepath
+sys.modules['__main__'] = module
+
+with open(filepath, 'rb') as f:
+    code = f.read()
+exec(code, module.__dict__)
 """
 
 _setup_dbx_importer = """
