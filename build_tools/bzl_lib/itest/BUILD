@@ -21,7 +21,6 @@ dbx_py_library(
         "//build_tools/bzl_lib:exec_wrapper",
         "//build_tools/bzl_lib:metrics",
         "//dropbox:runfiles",
-        "//pip/six",
     ],
 )
 

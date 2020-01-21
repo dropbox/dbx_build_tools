@@ -12,7 +12,6 @@ import sys
 from build_tools import bazel_utils
 from build_tools.bzl_lib import exec_wrapper, metrics
 from build_tools.bzl_lib.itest import bash_history
-from six.moves import input
 
 from dropbox import runfiles
 
@@ -631,9 +630,7 @@ exec {test} "$@"
 
 def _confirm_directory_delete(dirname):
     reply = input(
-        "Deleting data directory at {}\n  This will cause PERMANENT data loss. Continue? [y/N] ".format(
-            dirname
-        )
+        f"Deleting data directory at {dirname}\n  This will cause PERMANENT data loss. Continue? [y/N] "
     )
     return reply.strip().lower() in ("y", "yes")
 
