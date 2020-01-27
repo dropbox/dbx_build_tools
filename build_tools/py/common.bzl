@@ -239,6 +239,9 @@ def compile_pycs(ctx, srcs, build_tag, allow_failures = False):
     toolchain = ctx.toolchains[get_py_toolchain_name(build_tag)]
     python = toolchain.interpreter[DbxPyInterpreter]
 
+    if not toolchain.pyc_compilation_enabled:
+        return []
+
     if build_tag == cpython_27.build_tag:
         new_pyc_files = [ctx.actions.declare_file(src.basename + "dbxc", sibling = src) for src in srcs]
     else:

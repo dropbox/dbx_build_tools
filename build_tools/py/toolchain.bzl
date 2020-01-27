@@ -94,6 +94,7 @@ def _dbx_py_toolchain_impl(ctx):
             interpreter = ctx.attr.interpreter,
             pyc_compile_exe = ctx.executable.pyc_compile,
             pyc_compile_files_to_run = ctx.attr.pyc_compile[DefaultInfo].files_to_run,
+            pyc_compilation_enabled = ctx.attr.pyc_compilation_enabled,
             dbx_importer = ctx.attr.dbx_importer,
         ),
     ]
@@ -103,6 +104,7 @@ dbx_py_toolchain = rule(
     attrs = {
         "interpreter": attr.label(mandatory = True),
         "pyc_compile": attr.label(mandatory = True, executable = True, cfg = "host"),
+        "pyc_compilation_enabled": attr.bool(default = True),
         "dbx_importer": attr.label(),
     },
     doc = """
@@ -119,6 +121,9 @@ Attributes:
  - pyc_compile: A dbx_py_internal_bootstrap binary that takes a set of
    files and compiles them to pyc.
 
+ - pyc_compilation_enabled: Optional. A boolean that affects whether or
+   not pyc files will be generated with this toolchain. Default is True.
+
  - dbx_importer: Optional. A py_library that's used to import
    Dropbox's custom pyc files.
 
@@ -127,6 +132,7 @@ The toolchain returns the following fields:
  - interpreter: The dbx_py_interpreter for the build_tag.
  - pyc_compile_exe: The executable file for pyc_compile.
  - pyc_compile_files_to_run: The runfiles for pyc_compile.
+ - pyc_compilation_enabled: Whether or not pyc files should be created
  - dbx_importer: The importer attribute, or None if it's not passed
    in.
 
