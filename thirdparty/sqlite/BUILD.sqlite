@@ -27,7 +27,7 @@ dbx_thirdparty_cc_library(
         "-DSQLITE_OMIT_LOAD_EXTENSION",
     ],
     linkopts = ["-pthread"],
-    tags = ["dbx-shelflife-version:sqlite=3.30.0"],
+    tags = ["dbx-shelflife-version:sqlite=3.31.1"],
     visibility = ["//visibility:public"],
 )
 
