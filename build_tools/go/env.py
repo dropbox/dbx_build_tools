@@ -11,7 +11,7 @@ def make_go_env():
     ws = bazel_utils.find_workspace()
     bazel_ws_root = "bazel-" + os.path.basename(ws)
     GOROOT = os.path.join(
-        ws, bazel_ws_root, "external/go_1_12_15_linux_amd64_tar_gz/go"
+        ws, bazel_ws_root, "external/go_1_12_16_linux_amd64_tar_gz/go"
     )
 
     return {
