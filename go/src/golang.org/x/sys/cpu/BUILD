@@ -6,9 +6,12 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "cpu",
     srcs = [
+        "byteorder.go",
         "cpu.go",
         "cpu_gc_x86.go",
+        "cpu_linux_noinit.go",
         "cpu_x86.go",
+        "hwcap_linux.go",
     ],
     cgo_srcs = [
         "cpu_x86.s",
