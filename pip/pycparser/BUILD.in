@@ -4,6 +4,6 @@ licenses(["notice"])  # BSD
 
 dbx_py_pypi_piplib(
     name = "pycparser",
-    pip_version = "2.18",
+    pip_version = "2.19",
     python3_compatible = True,
 )
