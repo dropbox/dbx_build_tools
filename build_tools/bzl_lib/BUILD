@@ -30,6 +30,7 @@ dbx_py_library(
         "//build_tools/bzl_lib:parse_py_imports_py2",
         "//go/src/dropbox/build_tools/gen-build-go",
     ],
+    python2_compatible = False,
     validate = "allow-unused",
     deps = [
         ":build_merge_lib",
