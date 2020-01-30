@@ -766,63 +766,18 @@ class PythonPathMapping(AbstractPythonPath):
         return all_targets, unknown
 
     @classmethod
-    # This method was added to accommodate bazel srcs
-    # with extensions like `.stoneg.py`, which are
-    # mis-parsed otherwise.
-    def escaped_replace(cls, input_str, char_to_replace, char_replacement):
-        special_chars = set(".")
-
-        def get_next_char(str_curr, i):
-            if i >= len(str_curr) - 1:
-                return None
-            return str_curr[i + 1]
-
-        def replace_char(ch_curr, ch_to_replace, ch_replacement):
-            if ch_curr == ch_to_replace:
-                return ch_replacement
-            return ch_curr
-
-        output_str = ""
-        escape_char = "\\"
-
-        idx = 0
-        while idx < len(input_str):
-            ch = input_str[idx]
-            if ch == escape_char:
-                ch_next = get_next_char(input_str, idx)
-
-                if ch_next and ch_next in special_chars and ch_next == char_to_replace:
-                    # if special char `ch_next` is equal to the char to be replaced,
-                    # un-escape `ch_next`, if it is escaped
-                    output_str += char_to_replace
-                    idx += 1  # skip next index to account for escape sequence
-                else:
-                    output_str += replace_char(ch, char_to_replace, char_replacement)
-            elif ch in special_chars and ch == char_replacement:
-                # if special char `ch` is equal to the replacement char,
-                # then escape `ch`
-                output_str += escape_char + char_replacement
-            else:
-                # otherwise, just do a normal replacement
-                output_str += replace_char(ch, char_to_replace, char_replacement)
-
-            idx += 1
-
-        return output_str
-
-    @classmethod
     # convert from /a/b/c.stoneg.py -> a.b.c\.stoneg
     def convert_from_file_path_to_module(cls, file_path):
         assert file_path.endswith((".py", ".pyi")), "Invalid src: " + file_path
         path_without_extension = file_path.rsplit(".", 1)[0]
         if path_without_extension.endswith("__init__"):
             path_without_extension = os.path.dirname(path_without_extension)
-        return PythonPathMapping.escaped_replace(path_without_extension, "/", ".")
+        return path_without_extension.replace("/", ".")
 
     @classmethod
-    # convert from a.b.c\.stoneg -> a/b/c.stoneg.py
+    # convert from a.b.c -> a/b/c (note lack of .py)
     def convert_from_module_to_file_path(cls, module_path):
-        return PythonPathMapping.escaped_replace(module_path, ".", "/")
+        return module_path.replace(".", "/")
 
 
 class CompositePythonPathMapping(AbstractPythonPath):
