@@ -228,7 +228,9 @@ def _exclude_query(exclude_tags):
 def check_output_silently(cmd):
     # type: (List[str]) -> Text
     "similar to subprocess.check_output, but swallows stderr on success."
-    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    proc = subprocess.Popen(
+        cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
+    )
     stdout, stderr = proc.communicate()
     if proc.returncode != 0:
         print(stderr, file=sys.stderr)
@@ -238,7 +240,7 @@ def check_output_silently(cmd):
                 proc.returncode, printable_cmd
             )
         )
-    return stdout.decode("utf-8")
+    return stdout
 
 
 # filter a list of labels by kinds. Return xml output.
@@ -432,7 +434,9 @@ def build_tool(bazel_path, target, targets=(), squelch_output=True):
         print("exec:", " ".join(cmd), file=sys.stderr)
     if squelch_output:
         try:
-            subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+            subprocess.check_output(
+                cmd, stderr=subprocess.STDOUT, universal_newlines=True
+            )
         except subprocess.CalledProcessError as e:
             # Overwrite the return code to indicate this is a nested bazel failure.
             e.returncode = 255
