@@ -15,7 +15,12 @@ while true; do
         abs_binary=$(/usr/bin/dirname "$abs_binary")/"$link_target"
     fi
 done
-runfiles="$(/bin/readlink -f "$abs_binary".runfiles)"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    # readlink -f is not supported on mac, but Python should be available.
+    runfiles="$(python -c "import os;print(os.path.realpath('$abs_binary.runfiles'))")"
+else
+    runfiles="$(/bin/readlink -f "$abs_binary".runfiles)"
+fi
 
 export RUNFILES="$runfiles"/{workspace_name}
 
