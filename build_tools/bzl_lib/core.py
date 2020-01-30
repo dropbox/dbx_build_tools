@@ -229,7 +229,7 @@ def main(ap, self_target):
     except subprocess.CalledProcessError as e:
         print(e, file=sys.stderr)
         if e.output:
-            print(e.output, file=sys.stderr)
+            sys.stderr.buffer.write(e.output)
         if os.environ.get("BZL_DEBUG"):
             raise
         sys.exit(e.returncode)
