@@ -1,13 +1,13 @@
 # mypy: allow-untyped-defs
 
 import os.path
-import re
 
 from pathlib import Path
 from typing import List, Mapping, MutableMapping, NamedTuple, Set, Tuple
 
 from build_tools.bzl_lib.parse_py_imports import normalize_module
 from build_tools.py.bazel_validation.builtins import get_builtins_with_compatibility
+from build_tools.py.python_encoding import decode_python_encoding
 from typed_ast import ast3, ast27
 
 SourceLocation = NamedTuple("SourceLocation", [("source_file", Path), ("lineno", int)])
@@ -27,38 +27,9 @@ DependencyValidationResult = NamedTuple(
     [("unresolved_imports", List[Import]), ("unused_targets", Set[str])],
 )
 
-ENCODING_RE = re.compile(
-    br"([ \t\v]*#.*(\r\n?|\n))??[ \t\v]*#.*coding[:=][ \t]*([-\w.]+)"
-)
-
-
-def _find_python_encoding(source: bytes, py3_only: bool) -> str:
-    result = ENCODING_RE.match(source)
-    if result:
-        encoding = result.group(3).decode("ascii")
-        if (
-            encoding.startswith(("iso-latin-1-", "latin-1-"))
-            or encoding == "iso-latin-1"
-        ):
-            encoding = "latin-1"
-        return encoding
-    else:
-        default_encoding = "utf8" if py3_only else "ascii"
-        return default_encoding
-
 
 class AmbiguousModuleException(Exception):
     pass
-
-
-# The decoding logic here is lifted from mypy/util.py
-def _decode_python_encoding(source: bytes, py3_only: bool) -> str:
-    if source.startswith(b"\xef\xbb\xbf"):
-        encoding = "utf8"
-        source = source[3:]
-    else:
-        encoding = _find_python_encoding(source, py3_only)
-    return source.decode(encoding)
 
 
 def parse_imports(
@@ -76,7 +47,7 @@ def parse_imports(
     with source_file.open("rb") as f:
         content = f.read()
 
-    decoded_content = _decode_python_encoding(content, py3_only=not py2_compatible)
+    decoded_content = decode_python_encoding(content)
     parsed = ast.parse(decoded_content, str(source_file))
 
     # We need the path relative to the pythonpath here so that normalize_module

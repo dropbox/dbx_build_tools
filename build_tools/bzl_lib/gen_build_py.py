@@ -12,7 +12,6 @@ import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
 
 from build_tools.bzl_lib.parse_py_imports import parse_imports
-from build_tools.bzl_lib.parse_py_imports_wrapper import parse_imports_py2
 
 EXTENSION_RULE_TYPES = (
 )
@@ -1120,10 +1119,11 @@ class PyBuildGenerator(object):
                 )
                 continue
 
-            if is_py3_compatible or src.endswith(".pyi"):
-                import_set, from_set = parse_imports(self.workspace_dir, src)
-            else:
-                import_set, from_set = parse_imports_py2(self.workspace_dir, src)
+            import_set, from_set = parse_imports(
+                self.workspace_dir,
+                src,
+                py3_compatible=is_py3_compatible or src.endswith(".pyi"),
+            )
 
             import_deps, unknown_imports = mapping.find_import_targets(
                 src_pkg, self_modules, import_set

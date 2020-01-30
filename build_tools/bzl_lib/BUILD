@@ -3,7 +3,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//build_tools/py:py.bzl", "dbx_py_binary", "dbx_py_library")
+load("//build_tools/py:py.bzl", "dbx_py_library")
 
 dbx_py_library(
     name = "commands",
@@ -23,11 +23,9 @@ dbx_py_library(
         "gen_build_pip.py",
         "gen_build_py.py",
         "gen_commands.py",
-        "parse_py_imports_wrapper.py",
     ],
     data = [
         "//build_tools:buildfmt",
-        "//build_tools/bzl_lib:parse_py_imports_py2",
         "//go/src/dropbox/build_tools/gen-build-go",
     ],
     python2_compatible = False,
@@ -50,7 +48,13 @@ dbx_py_library(
     srcs = [
         "parse_py_imports.py",
     ],
+    python2_compatible = False,
     validate = "strict",
+    deps = [
+        "//build_tools/py:python_encoding",
+        "//pip/typed-ast",
+        "//pip/typing",
+    ],
 )
 
 dbx_py_library(
@@ -106,18 +110,5 @@ dbx_py_library(
         "//build_tools:bazel_utils",
         "//build_tools/bzl_lib/itest",
         "//pip/typing",
-    ],
-)
-
-dbx_py_binary(
-    name = "parse_py_imports_py2",
-    srcs = [
-        "parse_py_imports_py2.py",
-    ],
-    main = "parse_py_imports_py2.py",
-    python2_compatible = True,
-    python3_compatible = False,
-    deps = [
-        ":parse_py_imports_lib",
     ],
 )

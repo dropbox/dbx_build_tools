@@ -26,6 +26,13 @@ dbx_py_binary(
     ],
 )
 
+dbx_py_library(
+    name = "python_encoding",
+    srcs = ["python_encoding.py"],
+    python2_compatible = False,
+    validate = "strict",
+)
+
 py_binary(
     name = "blank_py_binary",
     srcs = ["blank_py_binary.py"],

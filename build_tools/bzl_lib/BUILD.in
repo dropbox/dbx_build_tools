@@ -13,11 +13,9 @@ dbx_py_library(
         "gen_build_pip.py",
         "gen_build_py.py",
         "gen_commands.py",
-        "parse_py_imports_wrapper.py",
     ],
     data = [
         "//build_tools:buildfmt",
-        "//build_tools/bzl_lib:parse_py_imports_py2",
         "//go/src/dropbox/build_tools/gen-build-go",
     ],
     python2_compatible = False,
@@ -29,6 +27,7 @@ dbx_py_library(
     srcs = [
         "parse_py_imports.py",
     ],
+    python2_compatible = False,
 )
 
 dbx_py_library(
@@ -58,14 +57,4 @@ dbx_py_library(
     name = "core",
     srcs = ["core.py"],
     python2_compatible = False,
-)
-
-dbx_py_binary(
-    name = "parse_py_imports_py2",
-    srcs = [
-        "parse_py_imports_py2.py",
-    ],
-    main = "parse_py_imports_py2.py",
-    python2_compatible = True,
-    python3_compatible = False,
 )
