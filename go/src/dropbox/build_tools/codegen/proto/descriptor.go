@@ -35,22 +35,22 @@ type Enum struct {
 	Enum *descriptor.EnumDescriptorProto
 }
 
-type commentNode struct {
+type Comments struct {
 	location *descriptor.SourceCodeInfo_Location
-	children map[int32]*commentNode
+	children map[int32]*Comments
 }
 
-func newCommentNode() *commentNode {
-	return &commentNode{
-		children: make(map[int32]*commentNode),
+func NewCommentNode() *Comments {
+	return &Comments{
+		children: make(map[int32]*Comments),
 	}
 }
 
-func (node *commentNode) Add(location *descriptor.SourceCodeInfo_Location) {
+func (node *Comments) Add(location *descriptor.SourceCodeInfo_Location) {
 	for _, index := range location.Path {
 		child, ok := node.children[index]
 		if !ok {
-			child = newCommentNode()
+			child = NewCommentNode()
 			node.children[index] = child
 		}
 		node = child
@@ -58,7 +58,7 @@ func (node *commentNode) Add(location *descriptor.SourceCodeInfo_Location) {
 	node.location = location
 }
 
-func (node *commentNode) Get(path ...int32) (*descriptor.SourceCodeInfo_Location, bool) {
+func (node *Comments) Get(path ...int32) (*descriptor.SourceCodeInfo_Location, bool) {
 	var ok bool
 	for _, index := range path {
 		if node, ok = node.children[index]; !ok {
@@ -109,7 +109,7 @@ func ParseRequest(req *plugin.CodeGeneratorRequest) (*Descriptors, error) {
 			return nil, err
 		}
 
-		commentNode := newCommentNode()
+		commentNode := NewCommentNode()
 		for _, location := range fd.GetSourceCodeInfo().GetLocation() {
 			commentNode.Add(location)
 		}
