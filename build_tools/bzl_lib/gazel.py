@@ -178,9 +178,6 @@ def merge_generated_build_files(generated_files):
         output_file = os.path.join(dirpath, "BUILD")
         alt_output_file = os.path.join(dirpath, "BUILD.bazel")
 
-        with open(output_file, "w") as fd:
-            fd.write(HEADER)
-
         # Extra crap to deal with OSX's shitty case insensitive file system.
         build_names = []
         for name in os.listdir(dirpath):
@@ -194,10 +191,7 @@ def merge_generated_build_files(generated_files):
                     "insensitivity name conflict" % output_file
                 )
             )
-            os.remove(output_file)
             output_file = alt_output_file
-            with open(output_file, "w") as fd:
-                fd.write(HEADER)
         elif os.path.isfile(alt_output_file):
             print("WARNING: %s removed" % alt_output_file)
             os.remove(alt_output_file)
@@ -211,6 +205,9 @@ def merge_generated_build_files(generated_files):
         assert output_file not in intermediate_build_files
 
         intermediate_build_files = sorted(set(intermediate_build_files))
+
+        with open(output_file, "w") as fd:
+            fd.write(HEADER)
 
         for filename in intermediate_build_files:
             merge_batch.append((output_file, filename, output_file))
