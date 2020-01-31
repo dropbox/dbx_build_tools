@@ -1,5 +1,3 @@
-// Accepts multiple arguments to merge, in batches of 3. Inputs are merged in the same order
-// they appear in the argument list.
 package main
 
 import (
@@ -522,33 +520,30 @@ func main() {
 	flag.Parse()
 
 	args := flag.Args()
-	if len(args)%3 != 0 {
-		fmt.Printf("USAGE: %s [args] [<input1> <input2> <output>]+\n", args)
-		os.Exit(2)
+	if len(args) != 3 {
+		fmt.Printf("USAGE: %s [args] <input1> <input2> <output>\n", args)
+		os.Exit(1)
 	}
 
-	for i := 0; i < len(args)/3; i++ {
-		input1 := parse(args[3*i])
-		input2 := parse(args[3*i+1])
-		outputFile := args[3*i+2]
+	input1 := parse(args[0])
+	input2 := parse(args[1])
 
-		output, err := merge(input1, input2, outputFile)
-		if err != nil {
-			fmt.Println("Failed to merge:", outputFile)
-			fmt.Println(err)
-			os.Exit(1)
-		}
+	output, err := merge(input1, input2, args[2])
+	if err != nil {
+		fmt.Println("Failed to merge:", args[2])
+		fmt.Println(err)
+		os.Exit(1)
+	}
 
-		warn.FixWarnings(output, []string{"load"}, false) // Remove unused loads.
-		var info build.RewriteInfo
-		build.Rewrite(output, &info)
-		data := build.Format(output)
+	warn.FixWarnings(output, []string{"load"}, false) // Remove unused loads.
+	var info build.RewriteInfo
+	build.Rewrite(output, &info)
+	data := build.Format(output)
 
-		err = ioutil.WriteFile(outputFile, data, 0644)
-		if err != nil {
-			fmt.Println("Failed to write:", outputFile)
-			fmt.Println(err)
-			os.Exit(1)
-		}
+	err = ioutil.WriteFile(args[2], data, 0644)
+	if err != nil {
+		fmt.Println("Failed to write:", args[2])
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }
