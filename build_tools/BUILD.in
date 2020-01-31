@@ -90,6 +90,11 @@ dbx_string_value(
     value = "disallowed",
 )
 
+dbx_string_value(
+    name = "py_debug_prefix_map_supported",
+    value = "yes",
+)
+
 dbx_py_library(
     name = "atomic",
     srcs = [

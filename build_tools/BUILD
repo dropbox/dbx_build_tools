@@ -205,6 +205,11 @@ dbx_string_value(
     value = "disallowed",
 )
 
+dbx_string_value(
+    name = "py_debug_prefix_map_supported",
+    value = "yes",
+)
+
 dbx_py_dbx_test(
     name = "bazel_utils_tests",
     srcs = ["bazel_utils_tests.py"],

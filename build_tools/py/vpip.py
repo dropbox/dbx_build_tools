@@ -130,11 +130,13 @@ def build_pip_archive(workdir):
     else:
         env["CFLAGS"] = ""
     env["CFLAGS"] += " -pthread"
-    # Prevent the absolute execroot path from being hardcoded in debug info. (Recall that the
-    # toolchain lives in the execroot rather than the system.)
-    env["CFLAGS"] += " -fdebug-prefix-map=%s/=" % os.getcwd()
-    # Similarly, map the "venv", which is living in a temporary directory into its source.
-    env["CFLAGS"] += " -fdebug-prefix-map=%s/=%s/" % (venv, venv_source)
+
+    if not ARGS.no_debug_prefix_map:
+        # Prevent the absolute execroot path from being hardcoded in debug info. (Recall that the
+        # toolchain lives in the execroot rather than the system.)
+        env["CFLAGS"] += " -fdebug-prefix-map=%s/=" % os.getcwd()
+        # Similarly, map the "venv", which is living in a temporary directory into its source.
+        env["CFLAGS"] += " -fdebug-prefix-map=%s/=%s/" % (venv, venv_source)
     ensure_absolute = False
     for compile_flag in ARGS.compile_flags:
         compile_flag = compile_flag.replace(ARGS.root_placeholder, execroot)
@@ -373,6 +375,11 @@ def main():
         action="store_true",
         help="""Add Linux specific flags to the linker to prevent extensions
         from exporting symbols from dependent archives.""",
+    )
+    p.add_argument(
+        "--no-debug-prefix-map",
+        action="store_true",
+        help="Skip adding -fdebug-prefix-map. Used when the compiler does not support the switch.",
     )
     p.add_argument(
         "--no-deps",

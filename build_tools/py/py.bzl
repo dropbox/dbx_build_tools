@@ -130,6 +130,9 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, args):
 def _allow_dynamic_links(ctx):
     return ctx.attr._py_link_dynamic_libs[DbxStringValue].value == "allowed"
 
+def _debug_prefix_map_supported(ctx):
+    return ctx.attr._debug_prefix_map_supported[DbxStringValue].value == "yes"
+
 def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     build_tag = python_interp.build_tag
     command_args = ctx.actions.args()
@@ -147,6 +150,11 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         command_args.add("--target-dynamic-lib-suffix", ".so")
     elif ctx.var["TARGET_CPU"] == "darwin":
         command_args.add("--target-dynamic-lib-suffix", ".dylib")
+
+    # Some client toolchains are old enough to not support this.
+    if not _debug_prefix_map_supported(ctx):
+        command_args.add("--no-debug-prefix-map")
+
     outputs = [wheel]
 
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -532,6 +540,7 @@ Can only be set to False when linking dynamic libraries is allowed (_py_link_dyn
     ),
     "_vpip_tool": attr.label(executable = True, default = Label("//build_tools/py:vpip"), cfg = "host"),
     "use_magic_mirror": attr.bool(default = True),
+    "_debug_prefix_map_supported": attr.label(default = Label("//build_tools:py_debug_prefix_map_supported")),
     "_py_link_dynamic_libs": attr.label(default = Label("//build_tools:py_link_dynamic_libs")),
     "_vinst": attr.label(default = Label("//build_tools/py:vinst"), cfg = "host", executable = True),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
