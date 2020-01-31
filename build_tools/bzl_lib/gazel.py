@@ -3,7 +3,6 @@
 from __future__ import print_function
 
 import os
-import shutil
 
 from collections import defaultdict
 
@@ -169,38 +168,23 @@ def regenerate_build_files(
 def merge_generated_build_files(generated_files):
     buildfmt_path = runfiles.data_path("@dbx_build_tools//build_tools/buildfmt")
 
+    merge_batch = []
+    files_to_remove = set()
+
     for dirpath, intermediate_build_files in generated_files.items():
         # if `intermediate_build_files` contains only 'BUILD', it means
         # exactly one build generator generates the BUILD file directly
         # in the directory and there's no need to merge it
         output_file = os.path.join(dirpath, "BUILD")
+        alt_output_file = os.path.join(dirpath, "BUILD.bazel")
 
         if intermediate_build_files == [output_file]:
             # always buildfmt even if not merging generated files
             run_cmd([buildfmt_path, output_file])
             continue
 
-        assert intermediate_build_files, dirpath
-        assert output_file not in intermediate_build_files
-
-        intermediate_build_files = sorted(set(intermediate_build_files))
-
         with open(output_file, "w") as fd:
             fd.write(HEADER)
-
-        for filename in intermediate_build_files:
-            build_merge.merge_build_files(output_file, filename, output_file)
-            os.remove(filename)
-
-        annotation_file = os.path.join(dirpath, "BUILD.in")
-
-        if os.path.isfile(annotation_file):
-            build_merge.merge_build_files(output_file, annotation_file, output_file)
-        else:
-            annotation_file = os.path.join(dirpath, "BUILD.in-gen-proto~")
-
-            if os.path.isfile(annotation_file):
-                build_merge.merge_build_files(output_file, annotation_file, output_file)
 
         # Extra crap to deal with OSX's shitty case insensitive file system.
         build_names = []
@@ -208,7 +192,6 @@ def merge_generated_build_files(generated_files):
             if name.lower() == "build":
                 build_names.append(name)
 
-        alt_output_file = os.path.join(dirpath, "BUILD.bazel")
         if len(build_names) > 1:
             print(
                 (
@@ -216,7 +199,35 @@ def merge_generated_build_files(generated_files):
                     "insensitivity name conflict" % output_file
                 )
             )
-            shutil.move(output_file, alt_output_file)
+            os.remove(output_file)
+            output_file = alt_output_file
+            with open(output_file, "w") as fd:
+                fd.write(HEADER)
         elif os.path.isfile(alt_output_file):
             print("WARNING: %s removed" % alt_output_file)
             os.remove(alt_output_file)
+
+        assert intermediate_build_files, dirpath
+        assert output_file not in intermediate_build_files
+
+        intermediate_build_files = sorted(set(intermediate_build_files))
+
+        for filename in intermediate_build_files:
+            merge_batch.append((output_file, filename, output_file))
+            files_to_remove.add(filename)
+
+        annotation_file = os.path.join(dirpath, "BUILD.in")
+
+        if os.path.isfile(annotation_file):
+            merge_batch.append((output_file, annotation_file, output_file))
+        else:
+            annotation_file = os.path.join(dirpath, "BUILD.in-gen-proto~")
+
+            if os.path.isfile(annotation_file):
+                merge_batch.append((output_file, annotation_file, output_file))
+
+    # NOTE(jhance) Build merge merges in order, and this relies on that, since some of these
+    # files in the batch have the same output file.
+    build_merge.batch_merge_build_files(merge_batch)
+    for f in files_to_remove:
+        os.remove(f)
