@@ -1,6 +1,4 @@
 build --experimental_strict_action_env
-build --platforms //build_tools/cc:linux-x64-drte-off
-build --host_platform //build_tools/cc:linux-x64-drte-off
 build --sandbox_fake_username
 # Block networking in tests.
 build --modify_execution_info=TestRunner=+block-network

@@ -7,7 +7,6 @@ load(
 )
 load(
     "//thirdparty/cpython:constants.bzl",
-    "DRTEOFF_LINUX64_CONSTRAINTS",
     "DRTEV3_LINUX64_CONSTRAINTS",
 )
 
@@ -49,8 +48,6 @@ toolchain(
 
 toolchain(
     name = "drte-off-27-toolchain",
-    exec_compatible_with = DRTEOFF_LINUX64_CONSTRAINTS,
-    target_compatible_with = DRTEOFF_LINUX64_CONSTRAINTS,
     toolchain = ":cpython-27-py_toolchain",
     toolchain_type = CPYTHON_27_TOOLCHAIN_NAME,
 )
@@ -80,8 +77,6 @@ toolchain(
 
 toolchain(
     name = "drte-off-37-toolchain",
-    exec_compatible_with = DRTEOFF_LINUX64_CONSTRAINTS,
-    target_compatible_with = DRTEOFF_LINUX64_CONSTRAINTS,
     toolchain = ":cpython-37-py_toolchain",
     toolchain_type = CPYTHON_37_TOOLCHAIN_NAME,
 )
