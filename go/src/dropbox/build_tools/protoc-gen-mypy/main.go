@@ -209,7 +209,8 @@ func (w *pkgWriter) WriteEnums(enums []*descriptor.EnumDescriptorProto, prefix s
 		// enum. In order to type check properly we create a custom class for each enum with
 		// the same interface as EnumWrapperType but extending int.
 		qualifiedName := prefix + enumType.GetName()
-		l("class %s(int):", enumType.GetName())
+		l("class %s(%s):", enumType.GetName(),
+			codegen.NewNestedImport(w.Name("builtins", ""), "int"))
 		push()
 		for _, val := range enumType.Value {
 			l("%s: %s", val.GetName(), qualifiedName)
@@ -217,7 +218,8 @@ func (w *pkgWriter) WriteEnums(enums []*descriptor.EnumDescriptorProto, prefix s
 		l("@classmethod")
 		// intentionally using int for `number` here, as we don't necessarily know if
 		// the number is a valid enum
-		l("def Name(cls, number: int) -> str: ...")
+		l("def Name(cls, number: %s) -> str: ...",
+			codegen.NewNestedImport(w.Name("builtins", ""), "int"))
 		l("@classmethod")
 		l("def Value(cls, name: %s) -> %s: ...", text, qualifiedName)
 		l("@classmethod")
@@ -265,7 +267,8 @@ func (w *pkgWriter) WriteMessages(messages []*descriptor.DescriptorProto, prefix
 		w.WriteMessages(desc.NestedType, qualifiedName+".")
 
 		for _, field := range desc.Field {
-			l(strings.ToUpper(field.GetName()) + "_FIELD_NUMBER: int")
+			l(strings.ToUpper(field.GetName())+"_FIELD_NUMBER: %s",
+				codegen.NewNestedImport(w.Name("builtins", ""), "int"))
 		}
 
 		l("")
