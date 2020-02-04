@@ -6,7 +6,7 @@
 # bunch of intermediate artifacts in a build-temp/ directory.
 
 if [[ $# != 2 ]]; then
-    echo "pass version to build (2.7, 3.6, or 3.7) as the first argument and drte version (e.g., v2) as the second"
+    echo "pass version to build (2.7, 3.7, or 3.8) as the first argument and drte version (e.g., v2) as the second"
     exit 2
 fi
 
@@ -19,6 +19,10 @@ elif [[ "$ver" = "3.7" ]]; then
     repo=org_python_cpython_37
     version=3.7.6-dbx1
     abitag=3.7m
+elif [[ "$ver" = "3.8" ]]; then
+    repo=org_python_cpython_38
+    version=3.8.1-dbx1
+    abitag=3.8
 fi
 
 drte_version="$2"
