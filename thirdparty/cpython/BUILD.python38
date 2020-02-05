@@ -925,6 +925,7 @@ extern PyObject* PyInit__multiprocessing(void);
 extern PyObject* PyInit__opcode(void);
 extern PyObject* PyInit__operator(void);
 extern PyObject* PyInit__pickle(void);
+extern PyObject* PyInit__posixshmem(void);
 extern PyObject* PyInit__posixsubprocess(void);
 extern PyObject* PyInit__queue(void);
 extern PyObject* PyInit__random(void);
@@ -1009,6 +1010,7 @@ struct _inittab _PyImport_Inittab[] = {
     {"_opcode", PyInit__opcode},
     {"_operator", PyInit__operator},
     {"_pickle", PyInit__pickle},
+    {"_posixshmem", PyInit__posixshmem},
     {"_posixsubprocess", PyInit__posixsubprocess},
     {"_queue", PyInit__queue},
     {"_random", PyInit__random},
