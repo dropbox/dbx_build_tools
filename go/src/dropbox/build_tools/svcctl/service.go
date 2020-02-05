@@ -135,7 +135,7 @@ func NewService(svc *svclib_proto.Service, services map[string]*serviceDef, verb
 
 	for _, depName := range svc.GetDependencies() {
 		if dep, ok := services[depName]; !ok {
-			return nil, fmt.Errorf("Undeclared dependency %v", dep)
+			return nil, fmt.Errorf("Undeclared dependency %v for %v", depName, svc.GetServiceName())
 		} else {
 			svcDef.Dependents = append(svcDef.Dependents, dep)
 		}

@@ -20,6 +20,7 @@ DbxServiceExtensionPyBinaryInfo = provider(fields = [
     "main",
     "lib",
     "python",
+    "args",
 ])
 
 DbxServiceExtensionDependencyInfo = provider(fields = [
@@ -85,13 +86,18 @@ def _to_proto(services):
     if services:
         return struct(services = list(services)).to_proto()
 
+def _extension_sort_key(ext):
+    return ext.label
+
 def _apply_service_extensions(ctx, services, extensions):
     service_version_files = dict()
     service_exe = dict()
+    service_exe_args = dict()
     service_deps = dict()
     for service in services:
         service_version_files[service.service_name] = [service.version_file]
         service_exe[service.service_name] = service.launch_cmd.exe
+        service_exe_args[service.service_name] = service.launch_cmd.args
         service_deps[service.service_name] = list(service.dependencies)
 
     py_binary_info = dict()
@@ -114,13 +120,16 @@ def _apply_service_extensions(ctx, services, extensions):
                     python2_compatible = python2_compatible,
                     python3_compatible = python3_compatible,
                     python = info.python,
+                    args = [],
                 )
+                py_binary_info[info.service].args.extend(info.args)
             else:
                 if info.main != py_binary_info[info.service].main:
                     fail("Multiple main py binaries provided for %s", info.service)
                 if info.python != py_binary_info[info.service].python:
                     fail("Multiple python attrs provided for %s", info.service)
                 py_binary_info[info.service].libs.append(info.lib)
+                py_binary_info[info.service].args.extend(info.args)
         if DbxServiceExtensionDependencyInfo in ext:
             info = ext[DbxServiceExtensionDependencyInfo]
             if info.service not in service_deps:
@@ -150,6 +159,7 @@ def _apply_service_extensions(ctx, services, extensions):
             python3_compatible = info.python3_compatible,
         )
         service_exe[service] = binary_out_file.short_path
+        service_exe_args[service] = service_exe_args[service] + info.args
 
         version_file_deps = [binary_out_file]
         version_file = ctx.actions.declare_file(
@@ -172,7 +182,7 @@ def _apply_service_extensions(ctx, services, extensions):
             type = service.type,
             service_name = service.service_name,
             launch_cmd = struct(
-                cmd = service_exe[service.service_name] + " " + " ".join(service.launch_cmd.args),
+                cmd = service_exe[service.service_name] + " " + " ".join(service_exe_args[service.service_name]),
                 env_vars = service.launch_cmd.env_vars,
             ),
             dependencies = depset(direct = service_deps[service.service_name]).to_list(),
@@ -517,7 +527,13 @@ def service_extension_py_binary_impl(ctx):
     services = dict()
 
     for dep in ctx.attr.deps:
-        dependents += dep.root_services
+        for root_svc in dep.root_services:
+            if root_svc == ctx.attr.service.service_name:
+                # this can happen when an extension of one service depends on
+                # another extension of the same service, in which case what is
+                # important is we combine the extensions below
+                continue
+            dependents.append(root_svc)
         transitive_extensions.append(dep.extensions)
         services.update(dep.services)
 
@@ -528,6 +544,7 @@ def service_extension_py_binary_impl(ctx):
                 lib = ctx.attr.lib,
                 service = ctx.attr.service.service_name,
                 python = ctx.attr.python,
+                args = ctx.attr.args,
             ),
             DbxServiceExtensionDependencyInfo(
                 service = ctx.attr.service.service_name,
@@ -549,6 +566,7 @@ service_extension_py_binary_internal = rule(
             mandatory = True,
             providers = [[PyInfo], [DbxPyVersionCompatibility]],
         ),
+        "args": attr.string_list(),
         "deps": attr.label_list(providers = ["services", "root_services", "extensions"]),
         "service": attr.label(providers = ["service_name"], mandatory = True),
         "python": attr.string(default = cpython_27.build_tag, values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys()),
