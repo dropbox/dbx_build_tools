@@ -18,6 +18,7 @@ CORE_DEFINES = [
     '-DPYTHONPATH=\\":plat-linux:lib-tk:lib-old\\"',
     '-DPLATFORM=\\"linux\\"',
     '-DSOABI=\\"cpython-38-x86_64-linux-gnu\\"',
+    '-DABIFLAGS=\\"\\"',
 ]
 
 # Flags for building the core python executable (i.e., not a shared extension).
@@ -1177,7 +1178,7 @@ filegroup(
 # practice, we override most of these things in vpip.
 genrule(
     name = "sysconfigdata",
-    outs = ["Lib/_sysconfigdata_m_linux_.py"],
+    outs = ["Lib/_sysconfigdata__linux_.py"],
     cmd = """
 cat <<'E_O_F' >$@
 build_time_vars = {
