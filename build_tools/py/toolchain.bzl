@@ -1,5 +1,5 @@
 _cpython_37_ATTR = "cpython_37"
-_cpython_38_ATTR = "cpython_37"
+_cpython_38_ATTR = "cpython_38"
 _cpython_27_ATTR = "cpython_27"
 _cpython_37_BUILD_TAG = "cpython-37"
 _cpython_38_BUILD_TAG = "cpython-38"
