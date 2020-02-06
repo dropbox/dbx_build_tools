@@ -97,7 +97,7 @@ dbx_internal_bootstrap_py_binary(
 )
 
 dbx_internal_bootstrap_py_binary(
-    name = "py3_compile_37",
+    name = "py3_compile",
     srcs = ["py3_compile.py"],
     main = "py3_compile.py",
     python2_compatible = False,
@@ -110,6 +110,10 @@ toolchain_type(
 
 toolchain_type(
     name = "toolchain_37",
+)
+
+toolchain_type(
+    name = "toolchain_38",
 )
 
 bzl_library(

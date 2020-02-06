@@ -2,6 +2,7 @@ load(
     "//build_tools/py:toolchain.bzl",
     "CPYTHON_27_TOOLCHAIN_NAME",
     "CPYTHON_37_TOOLCHAIN_NAME",
+    "CPYTHON_38_TOOLCHAIN_NAME",
     "dbx_py_interpreter",
     "dbx_py_toolchain",
 )
@@ -64,7 +65,7 @@ dbx_py_interpreter(
 dbx_py_toolchain(
     name = "cpython-37-py_toolchain",
     interpreter = ":cpython-37",
-    pyc_compile = "//build_tools/py:py3_compile_37",
+    pyc_compile = "//build_tools/py:py3_compile",
 )
 
 toolchain(
@@ -79,6 +80,35 @@ toolchain(
     name = "drte-off-37-toolchain",
     toolchain = ":cpython-37-py_toolchain",
     toolchain_type = CPYTHON_37_TOOLCHAIN_NAME,
+)
+
+dbx_py_interpreter(
+    name = "cpython-38",
+    build_tag = "cpython-38",
+    exe_file = "@org_python_cpython_38//:bin/python",
+    headers = "@org_python_cpython_38//:include_headers",
+    major_python_version = 3,
+    runtime = "@org_python_cpython_38//:runtime",
+)
+
+dbx_py_toolchain(
+    name = "cpython-38-py_toolchain",
+    interpreter = ":cpython-38",
+    pyc_compile = "//build_tools/py:py3_compile",
+)
+
+toolchain(
+    name = "drte-v3-38-toolchain",
+    exec_compatible_with = DRTEV3_LINUX64_CONSTRAINTS,
+    target_compatible_with = DRTEV3_LINUX64_CONSTRAINTS,
+    toolchain = ":cpython-38-py_toolchain",
+    toolchain_type = CPYTHON_38_TOOLCHAIN_NAME,
+)
+
+toolchain(
+    name = "drte-off-38-toolchain",
+    toolchain = ":cpython-38-py_toolchain",
+    toolchain_type = CPYTHON_38_TOOLCHAIN_NAME,
 )
 
 py_binary(

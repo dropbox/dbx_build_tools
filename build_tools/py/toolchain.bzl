@@ -1,6 +1,8 @@
 _cpython_37_ATTR = "cpython_37"
+_cpython_38_ATTR = "cpython_37"
 _cpython_27_ATTR = "cpython_27"
 _cpython_37_BUILD_TAG = "cpython-37"
+_cpython_38_BUILD_TAG = "cpython-38"
 _cpython_27_BUILD_TAG = "cpython-27"
 
 # If you add a new build_tag here also need to update ALL_PYTHON_TAGS in
@@ -9,6 +11,10 @@ cpython_37 = struct(
     build_tag = _cpython_37_BUILD_TAG,
     attr = _cpython_37_ATTR,
 )
+cpython_38 = struct(
+    build_tag = _cpython_38_BUILD_TAG,
+    attr = _cpython_38_ATTR,
+)
 cpython_27 = struct(
     build_tag = _cpython_27_BUILD_TAG,
     attr = _cpython_27_ATTR,
@@ -16,16 +22,25 @@ cpython_27 = struct(
 
 ALL_ABIS = [
     cpython_37,
+    cpython_38,
     cpython_27,
 ]
 
 CPYTHON_27_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_27"
 CPYTHON_37_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_37"
+CPYTHON_38_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_38"
+
+ALL_TOOLCHAIN_NAMES = [
+    CPYTHON_27_TOOLCHAIN_NAME,
+    CPYTHON_37_TOOLCHAIN_NAME,
+    CPYTHON_38_TOOLCHAIN_NAME,
+]
 
 DEFAULT_PY3_TOOLCHAIN_NAME = CPYTHON_37_TOOLCHAIN_NAME
 
 BUILD_TAG_TO_TOOLCHAIN_MAP = {
     cpython_37.build_tag: CPYTHON_37_TOOLCHAIN_NAME,
+    cpython_38.build_tag: CPYTHON_38_TOOLCHAIN_NAME,
     cpython_27.build_tag: CPYTHON_27_TOOLCHAIN_NAME,
     # NOTE: These entries are mainly here for compatibility reasons.
     # Once we migrate over to purely specifying tags for "python" values, these

@@ -9,6 +9,7 @@ load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
 load(
     "@dbx_build_tools//build_tools/py:toolchain.bzl",
     "ALL_ABIS",
+    "ALL_TOOLCHAIN_NAMES",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
     "CPYTHON_27_TOOLCHAIN_NAME",
     "CPYTHON_37_TOOLCHAIN_NAME",
@@ -38,6 +39,7 @@ load("//build_tools/apple:apple.bzl", "DbxAppleFramework")
 
 # This logic is duplicated in build_tools/bzl_lib/gen_build_pip.py::_get_build_interpreters and must
 # be kept in sync.
+# TODO(jhance) Add cpython38 support, requires running bzl gen on all pip dirs...
 def _get_build_interpreters(attr):
     interpreters = []
     if attr.python2_compatible:
@@ -560,7 +562,7 @@ dbx_py_pypi_piplib_internal = rule(
     implementation = _dbx_py_pypi_piplib_impl,
     outputs = _vpip_outputs,
     attrs = _pypi_piplib_attrs,
-    toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_TOOLCHAIN_NAMES,
     fragments = ["cpp"],
 )
 
@@ -580,7 +582,7 @@ dbx_py_local_piplib_internal = rule(
     outputs = _vpip_outputs,
     attrs = _local_piplib_attrs,
     fragments = ["cpp"],
-    toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_TOOLCHAIN_NAMES,
 )
 
 def _dbx_py_binary_impl(ctx):
@@ -698,7 +700,7 @@ dbx_py_binary_attrs.update(py_binary_attrs)
 dbx_py_binary = rule(
     implementation = _dbx_py_binary_impl,
     attrs = dbx_py_binary_attrs,
-    toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_TOOLCHAIN_NAMES,
     executable = True,
 )
 dbx_py_test_attrs = dict(dbx_py_binary_attrs)
@@ -712,7 +714,7 @@ dbx_py_test_attrs.update({
 
 dbx_py_test = rule(
     implementation = _dbx_py_binary_impl,
-    toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_TOOLCHAIN_NAMES,
     test = True,
     attrs = dbx_py_test_attrs,
 )
@@ -905,7 +907,7 @@ def _dbx_py_library_impl(ctx):
 dbx_py_library = rule(
     implementation = _dbx_py_library_impl,
     attrs = dbx_py_library_attrs,
-    toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_TOOLCHAIN_NAMES,
 )
 
 def extract_pytest_args(
