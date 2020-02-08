@@ -5,7 +5,14 @@
 
 # we do not want to exit on first failure here.
 set +e
-source $RUNFILES/../dbx_build_tools/build_tools/bzl_lib/itest/bzl-itest-common.sh
+
+if [ -d $RUNFILES/../dbx_build_tools ]; then
+  dbx_build_tools_root=$RUNFILES/../dbx_build_tools
+else
+  dbx_build_tools_root=$RUNFILES/external/dbx_build_tools
+fi
+
+source $dbx_build_tools_root/build_tools/bzl_lib/itest/bzl-itest-common.sh
 
 if [ -d "$CLEANDIR" ]; then
   find $CLEANDIR -mindepth 1 -delete
