@@ -65,7 +65,7 @@ def main() -> None:
                         elif isinstance(node, ast.Constant) and isinstance(
                             node.body[0].value, str
                         ):
-                            node.body[0].value = new_docstring  # type: ignore
+                            node.body[0].value = new_docstring
 
             co = compile(root, dest_path, "exec", dont_inherit=True)
 
