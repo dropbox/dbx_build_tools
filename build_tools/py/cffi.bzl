@@ -137,6 +137,7 @@ def dbx_cffi_module(
             contents["cpython-27"] = [module_name + ".so"]
         if python3_compatible:
             contents["cpython-37"] = [module_name + ".cpython-37m-x86_64-linux-gnu.so"]
+            contents["cpython-38"] = [module_name + ".cpython-38-x86_64-linux-gnu.so"]
     dbx_py_local_piplib(
         name = name,
         provides = [module_name],

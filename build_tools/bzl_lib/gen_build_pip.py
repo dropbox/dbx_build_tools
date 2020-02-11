@@ -29,12 +29,32 @@ PUBLIC_STATEMENT = "package(default_visibility = ['//visibility:public'])\n"
 
 # This logic is duplicated in build_tools/py/py.bzl:_get_build_interpreters and
 # must be kept in sync.
+#
+# In order to add a new interpreter:
+# 1) Make the change here to add the additional interpreter.
+# 2) Build bzl-gen and bzl push it somewhere (because making the next change will break bzl-gen). You can also
+# just run it out of bazel-bin to avoid a rebuild but I find it too easy to accidentally rebuild it.
+# 3) Update build_tools/py/py.bzl
+# 4) Update a few exceptional items:
+#    - dbx_pyx_library
+#    - fast_proto_module
+#    - @imageprocessing//thirdparty/Pillow:Pillow (to do this just copy the whole folder into rSERVER, run bzl-gen
+#    there, copy back the BUILD file, and update the pin)
+#    - libseccomp
+#    - dbx_cffi_module
+# 5) Now we query for all the targets, reverse their order, and then gen one at a time. Bazel gives the list of targets
+# in a topological order but we want the reverse (tac). We can't use --output=package because that won't have ordering,
+# which is why we need the sed. We use xargs -n 1 because bzl-gen does not respect the order of the pip libraries that
+# give it.
+#     bazel query 'attr(python3_compatible, 1, kind(dbx_pypi_piplib_internal, ...) + kind(dbx_py_local_piplib_internal, ...)) | tac | sed s/:.*// | xargs -n 1 bzl-gen
+# 6) Go grab something to drink, this will take awhile since it will re-generate every pip library serially.
 def _get_build_interpreters(attr):
     interpreters = []
     if attr.get("python2_compatible", True):
         interpreters.append("cpython-27")
     if attr.get("python3_compatible", True):
         interpreters.append("cpython-37")
+        interpreters.append("cpython-38")
     return interpreters
 
 

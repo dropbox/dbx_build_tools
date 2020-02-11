@@ -130,6 +130,9 @@ PUBLIC_PYTHON_HEADERS = [
     "Include/unicodeobject.h",
     "Include/warnings.h",
     "Include/weakrefobject.h",
+]
+
+PUBLIC_CPYTHON_HEADERS = [
     "Include/cpython/abstract.h",
     "Include/cpython/dictobject.h",
     "Include/cpython/fileobject.h",
@@ -171,13 +174,20 @@ PRIVATE_PYTHON_HEADERS = [
     "Include/internal/pycore_warnings.h",
 ]
 
-PYTHON_HEADERS = PUBLIC_PYTHON_HEADERS + PRIVATE_PYTHON_HEADERS
+PYTHON_HEADERS = PUBLIC_PYTHON_HEADERS + PUBLIC_CPYTHON_HEADERS + PRIVATE_PYTHON_HEADERS
 
 genrule(
     name = "include_public_headers",
     srcs = PUBLIC_PYTHON_HEADERS,
     outs = ["include/python3.8/" + h.partition("/")[2] for h in PUBLIC_PYTHON_HEADERS],
     cmd = "cp $(SRCS) $(RULEDIR)/include/python3.8/",
+)
+
+genrule(
+    name = "include_public_cpython_headers",
+    srcs = PUBLIC_CPYTHON_HEADERS,
+    outs = ["include/python3.8/" + h.partition("/")[2] for h in PUBLIC_CPYTHON_HEADERS],
+    cmd = "cp $(SRCS) $(RULEDIR)/include/python3.8/cpython",
 )
 
 genrule(
@@ -191,6 +201,7 @@ filegroup(
     name = "include_headers",
     srcs = [
         ":include_private_headers",
+        ":include_public_cpython_headers",
         ":include_public_headers",
     ],
     visibility = ["//visibility:public"],

@@ -13,9 +13,11 @@ load(
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
     "CPYTHON_27_TOOLCHAIN_NAME",
     "CPYTHON_37_TOOLCHAIN_NAME",
+    "CPYTHON_38_TOOLCHAIN_NAME",
     "DbxPyInterpreter",
     "cpython_27",
     "cpython_37",
+    "cpython_38",
     "get_default_py_toolchain_name",
     "get_py_toolchain_name",
 )
@@ -46,6 +48,7 @@ def _get_build_interpreters(attr):
         interpreters.append(cpython_27)
     if attr.python3_compatible:
         interpreters.append(cpython_37)
+        interpreters.append(cpython_38)
     return interpreters
 
 def _get_build_interpreters_for_target(ctx):
@@ -61,6 +64,11 @@ def _get_build_interpreters_for_target(ctx):
             build_tag = cpython_37.build_tag,
             target = ctx.toolchains[CPYTHON_37_TOOLCHAIN_NAME].interpreter[DbxPyInterpreter],
             attr = cpython_37.attr,
+        ))
+        interpreters.append(struct(
+            build_tag = cpython_38.build_tag,
+            target = ctx.toolchains[CPYTHON_38_TOOLCHAIN_NAME].interpreter[DbxPyInterpreter],
+            attr = cpython_38.attr,
         ))
     return interpreters
 

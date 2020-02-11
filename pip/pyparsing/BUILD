@@ -24,6 +24,14 @@ dbx_py_pypi_piplib(
             "pyparsing-2.4.6.dist-info/top_level.txt",
             "pyparsing.py",
         ],
+        "cpython-38": [
+            "pyparsing-2.4.6.dist-info/LICENSE",
+            "pyparsing-2.4.6.dist-info/METADATA",
+            "pyparsing-2.4.6.dist-info/RECORD",
+            "pyparsing-2.4.6.dist-info/WHEEL",
+            "pyparsing-2.4.6.dist-info/top_level.txt",
+            "pyparsing.py",
+        ],
     },
     pip_version = "2.4.6",
 )
