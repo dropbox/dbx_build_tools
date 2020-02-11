@@ -1240,7 +1240,6 @@ cat <<'E_O_F' >$@
 #define HAVE_COMPUTED_GOTOS 1
 #define HAVE_CONFSTR 1
 #define HAVE_COPYSIGN 1
-#define HAVE_COPY_FILE_RANGE 1
 #define HAVE_CRYPT_H 1
 #define HAVE_CRYPT_R 1
 #define HAVE_CTERMID 1
@@ -1284,7 +1283,6 @@ cat <<'E_O_F' >$@
 #define HAVE_ERFC 1
 #define HAVE_ERRNO_H 1
 #define HAVE_EXECV 1
-#define HAVE_EXPLICIT_BZERO 1
 #define HAVE_EXPM1 1
 #define HAVE_FACCESSAT 1
 #define HAVE_FCHDIR 1
@@ -1338,7 +1336,6 @@ cat <<'E_O_F' >$@
 #define HAVE_GETPWENT 1
 #define HAVE_GETPWNAM_R 1
 #define HAVE_GETPWUID_R 1
-#define HAVE_GETRANDOM 1
 #define HAVE_GETRANDOM_SYSCALL 1
 #define HAVE_GETRESGID 1
 #define HAVE_GETRESUID 1
@@ -1372,7 +1369,6 @@ cat <<'E_O_F' >$@
 #define HAVE_LINUX_CAN_RAW_H 1
 #define HAVE_LINUX_MEMFD_H 1
 #define HAVE_LINUX_NETLINK_H 1
-#define HAVE_LINUX_QRTR_H 1
 #define HAVE_LINUX_RANDOM_H 1
 #define HAVE_LINUX_TIPC_H 1
 #define HAVE_LINUX_VM_SOCKETS_H 1
@@ -1385,7 +1381,6 @@ cat <<'E_O_F' >$@
 #define HAVE_MADVISE 1
 #define HAVE_MAKEDEV 1
 #define HAVE_MBRTOWC 1
-#define HAVE_MEMFD_CREATE 1
 #define HAVE_MEMORY_H 1
 #define HAVE_MEMRCHR 1
 #define HAVE_MKDIRAT 1
@@ -1413,7 +1408,6 @@ cat <<'E_O_F' >$@
 #define HAVE_POSIX_SPAWNP 1
 #define HAVE_PREAD 1
 #define HAVE_PREADV 1
-#define HAVE_PREADV2 1
 #define HAVE_PRLIMIT 1
 #define HAVE_PROTOTYPES 1
 #define HAVE_PTHREAD_CONDATTR_SETCLOCK 1
@@ -1425,7 +1419,6 @@ cat <<'E_O_F' >$@
 #define HAVE_PUTENV 1
 #define HAVE_PWRITE 1
 #define HAVE_PWRITEV 1
-#define HAVE_PWRITEV2 1
 #define HAVE_READLINK 1
 #define HAVE_READLINKAT 1
 #define HAVE_READV 1
@@ -1517,7 +1510,6 @@ cat <<'E_O_F' >$@
 #define HAVE_SYS_MMAN_H 1
 #define HAVE_SYS_PARAM_H 1
 #define HAVE_SYS_POLL_H 1
-#define HAVE_SYS_RANDOM_H 1
 #define HAVE_SYS_RESOURCE_H 1
 #define HAVE_SYS_SELECT_H 1
 #define HAVE_SYS_SENDFILE_H 1
