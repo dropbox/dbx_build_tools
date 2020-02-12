@@ -89,7 +89,7 @@ module.__dict__['__file__'] = filepath
 sys.modules['__main__'] = module
 
 with open(filepath, 'rb') as f:
-    code = f.read()
+    code = compile(f.read(), filepath, "exec")
 exec(code, module.__dict__)
 """
 
