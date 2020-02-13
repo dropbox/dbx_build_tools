@@ -12,7 +12,7 @@ DEFAULT_EXTERNAL_URLS = {
     "cpython_27": "https://www.python.org/ftp/python/2.7.17/Python-2.7.17.tar.xz",
     "cpython_37": "https://www.python.org/ftp/python/3.7.5/Python-3.7.5.tar.xz",
     "cpython_38": "https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz",
-    "go_1_12_16_linux_amd64_tar_gz": "https://dl.google.com/go/go1.12.16.linux-amd64.tar.gz",
+    "go_1_12_17_linux_amd64_tar_gz": "https://dl.google.com/go/go1.12.17.linux-amd64.tar.gz",
     "io_pypa_pip_whl": "https://pypi.python.org/packages/b6/ac/7015eb97dc749283ffdec1c3a88ddb8ae03b8fad0f0e611408f196358da3/pip-9.0.1-py2.py3-none-any.whl",
     "io_pypa_setuptools_whl": "https://files.pythonhosted.org/packages/ec/51/f45cea425fd5cb0b0380f5b0f048ebc1da5b417e48d304838c02d6288a1e/setuptools-41.0.1-py2.py3-none-any.whl",
     "io_pypa_wheel_whl": "https://files.pythonhosted.org/packages/bb/10/44230dd6bf3563b8f227dbf344c908d412ad2ff48066476672f3a72e174e/wheel-0.33.4-py2.py3-none-any.whl",
@@ -30,9 +30,9 @@ DEFAULT_EXTERNAL_URLS = {
 
 def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
-        name = "go_1_12_16_linux_amd64_tar_gz",
-        urls = [urls["go_1_12_16_linux_amd64_tar_gz"]],
-        sha256 = "bf3a85d75658144c06ce986ba05e07ef08af4320089b74b1d41de3b0f340ea7e",
+        name = "go_1_12_17_linux_amd64_tar_gz",
+        urls = [urls["go_1_12_17_linux_amd64_tar_gz"]],
+        sha256 = "a53dd476129d496047487bfd53d021dd17e0c96895865a0e7d0469ce3db8c8d2",
         build_file = filename_from_label("//build_tools/go:BUILD.go-dist"),
     )
 
