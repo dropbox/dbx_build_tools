@@ -121,6 +121,8 @@ def dbx_cffi_module(
         python3_compatible = None,
         contents = None,
         ignore_missing_static_libraries = True,
+        tags = [],
+        import_test_tags = [],
         **kwargs):
     contents = contents or {}
     if module_name == None:
@@ -130,6 +132,7 @@ def dbx_cffi_module(
         name = cffi_name,
         module_name = module_name,
         visibility = ["//visibility:private"],
+        tags = tags,
         **kwargs
     )
     if not contents:
@@ -148,4 +151,6 @@ def dbx_cffi_module(
         python2_compatible = python2_compatible,
         python3_compatible = python3_compatible,
         ignore_missing_static_libraries = ignore_missing_static_libraries,
+        tags = tags,
+        import_test_tags = import_test_tags,
     )
