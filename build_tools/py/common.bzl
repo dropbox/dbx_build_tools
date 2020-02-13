@@ -31,6 +31,7 @@ py_binary_attrs = {
         default = Label("//build_tools/py:blank_py_binary"),
         cfg = "host",
     ),
+    "_py_link_dynamic_libs": attr.label(default = Label("//build_tools:py_link_dynamic_libs")),
 }
 
 py_file_types = [".py"]
@@ -45,8 +46,30 @@ _asan_environment = """
 export ASAN_OPTIONS="detect_leaks=0:suppressions=$RUNFILES/build_tools/py/asan-suppressions.txt:$ASAN_OPTIONS"
 """
 
+_shared_libraries_tmpl = """
+DBX_LIBRARY_PATH="{library_search_path}"
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    for path in ${{DBX_LIBRARY_PATH//:/ }}
+    do
+        export DYLD_LIBRARY_PATH="${{DYLD_LIBRARY_PATH:-}}:$RUNFILES/$path"
+    done
+
+    DBX_FRAMEWORK_PATH="{framework_search_path}"
+    for path in ${{DBX_FRAMEWORK_PATH//:/ }}
+    do
+        export DYLD_FRAMEWORK_PATH="${{DYLD_FRAMEWORK_PATH:-}}:$RUNFILES/$path"
+    done
+else
+    for path in ${{DBX_LIBRARY_PATH//:/ }}
+    do
+        export LD_LIBRARY_PATH="${{LD_LIBRARY_PATH:-}}:$RUNFILES/$path"
+    done
+fi
+
+"""
+
 _runfile_tmpl = """
-exec {python_bin} {python_flags} ${{PYTHONARGS:-}} $RUNFILES/{inner_wrapper} $RUNFILES {default_args}
+{shared_library_path_setup}exec {python_bin} {python_flags} ${{PYTHONARGS:-}} $RUNFILES/{inner_wrapper} $RUNFILES {default_args}
 """
 
 _inner_wrapper = """
@@ -100,6 +123,9 @@ del sys.path[0]
 dbx_importer.install()
 """
 
+def allow_dynamic_links(ctx):
+    return ctx.attr._py_link_dynamic_libs[DbxStringValue].value == "allowed"
+
 def workspace_root_to_pythonpath(workspace_root):
     if workspace_root.startswith("external/"):
         return "../" + workspace_root.partition("/")[2]
@@ -133,6 +159,7 @@ def collect_transitive_srcs_and_libs(
     extra_pythonpath_trans = []
     versioned_deps_direct = []
     versioned_deps_trans = []
+    dynamic_libraries_trans = []
 
     if not python2_compatible and not python3_compatible:
         fail("Neither compatible with Python 2 or Python 3.")
@@ -176,6 +203,8 @@ def collect_transitive_srcs_and_libs(
                 for abi in ALL_ABIS:
                     pyc_files_by_build_tag_trans[abi.build_tag].append(files_by_build_tag[abi.build_tag])
 
+            dynamic_libraries_trans.append(x.dynamic_libraries)
+
     pyc_files_by_build_tag = {
         abi.build_tag: depset(transitive = pyc_files_by_build_tag_trans[abi.build_tag])
         for abi in ALL_ABIS
@@ -192,7 +221,9 @@ def collect_transitive_srcs_and_libs(
         for abi in ALL_ABIS
     }
 
-    return pyc_files_by_build_tag, piplib_contents, extra_pythonpath, versioned_deps
+    dylibs = depset(transitive = dynamic_libraries_trans)
+
+    return pyc_files_by_build_tag, piplib_contents, extra_pythonpath, versioned_deps, dylibs
 
 def _produce_versioned_deps_output(ctx, base_out_file, versioned_deps):
     content = ctx.actions.args()
@@ -318,6 +349,8 @@ def emit_py_binary(
     runfiles_direct = [main] + srcs
     runfiles_trans = []
     piplib_paths = []
+    library_search_entries = {}
+    framework_search_entries = {}
 
     # hidden_output contains files that should be output by the rule,
     # but done so in a way that other rules can't depend on those
@@ -337,6 +370,7 @@ def emit_py_binary(
             piplib_contents,
             extra_pythonpath,
             versioned_deps,
+            dynamic_libraries,
         ) = collect_transitive_srcs_and_libs(
             ctx,
             deps = deps,
@@ -359,6 +393,14 @@ def emit_py_binary(
 
         piplib_contents_map = piplib_contents[build_tag]
         runfiles_trans.append(pyc_files_by_build_tag[build_tag])
+
+        if not internal_bootstrap and allow_dynamic_links(ctx):
+            runfiles_trans.append(dynamic_libraries)
+            for f in dynamic_libraries.to_list():
+                if f.extension == "framework":
+                    framework_search_entries[f.short_path.rpartition("/")[0]] = True
+                else:
+                    library_search_entries[f.short_path.rpartition("/")[0]] = True
 
         # Scan through transitive piplibs. Collect namespace packages and check for conflicts.
         installed = {}
@@ -477,16 +519,13 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
         python_flags = "-ESs"
         python_bin = python.runfiles_path
 
-    write_runfiles_tmpl(
-        ctx,
-        out_file,
-        _binary_wrapper_template(ctx, internal_bootstrap).format(
-            python_flags = python_flags,
-            python_bin = python_bin,
-            inner_wrapper = inner_wrapper.short_path,
-            default_args = default_args,
-        ),
-    )
+    # Handle dynamic libraries.
+    shared_library_path_setup = ""
+    if library_search_entries or framework_search_entries:
+        shared_library_path_setup = _shared_libraries_tmpl.format(
+            library_search_path = ":".join(library_search_entries.keys()),
+            framework_search_path = ":".join(framework_search_entries.keys()),
+        )
 
     # Copy-through the runfiles so we get all transitive dependencies.
     runfiles = ctx.runfiles(
@@ -511,4 +550,17 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
     else:
         # Add blank_py_binary to trigger Bazel's automatic __init__.py insertion behavior.
         runfiles = runfiles.merge(ctx.attr._blank_py_binary[DefaultInfo].default_runfiles)
+
+    write_runfiles_tmpl(
+        ctx,
+        out_file,
+        _binary_wrapper_template(ctx, internal_bootstrap).format(
+            python_flags = python_flags,
+            python_bin = python_bin,
+            inner_wrapper = inner_wrapper.short_path,
+            default_args = default_args,
+            shared_library_path_setup = shared_library_path_setup,
+        ),
+    )
+
     return runfiles, extra_pythonpath, depset(direct = hidden_output)

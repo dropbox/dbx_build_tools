@@ -27,6 +27,7 @@ load("//build_tools/py:cfg.bzl", "NON_THIRDPARTY_PACKAGE_PREFIXES")
 load(
     "//build_tools/py:common.bzl",
     "DbxPyVersionCompatibility",
+    "allow_dynamic_links",
     "collect_required_piplibs",
     "collect_transitive_srcs_and_libs",
     "compile_pycs",
@@ -137,9 +138,6 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, args):
 
     return link_env
 
-def _allow_dynamic_links(ctx):
-    return ctx.attr._py_link_dynamic_libs[DbxStringValue].value == "allowed"
-
 def _debug_prefix_map_supported(ctx):
     return ctx.attr._debug_prefix_map_supported[DbxStringValue].value == "yes"
 
@@ -192,7 +190,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
             # dep is a rust_library.
             rust_deps.append(dep)
         elif DbxAppleFramework in dep:
-            if _allow_dynamic_links(ctx):
+            if allow_dynamic_links(ctx):
                 frameworks.append(dep[DbxAppleFramework].framework)
             else:
                 fail("Encountered Apple framework while dynamic links were disallowed.")
@@ -220,14 +218,21 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     for l2l in l2ls:
         if l2l.pic_static_library or l2l.static_library:
             pic_libs.append(l2l.pic_static_library or l2l.static_library)
-        elif l2l.dynamic_library and _allow_dynamic_links(ctx):
+        elif l2l.dynamic_library and allow_dynamic_links(ctx):
+            # Skip versioned forms, they are only necessary for symlinks to resolve correctly.
+            if l2l.dynamic_library.basename.endswith(".dylib"):
+                stripped = l2l.dynamic_library.basename[:-len(".dylib")]
+                if "." in stripped and stripped[-1].isdigit():
+                    continue
+            elif ".so." in l2l.dynamic_library.basename:
+                continue
             dynamic_libs.append(l2l.dynamic_library)
 
     for rust_dep in rust_deps:
         if rust_dep.crate_type == "staticlib":
             pic_libs.append(rust_dep.rust_lib)
         elif rust_dep.crate_type == "cdylib":
-            if _allow_dynamic_links(ctx):
+            if allow_dynamic_links(ctx):
                 dynamic_libs.append(rust_dep.rust_lib)
             else:
                 fail("Dynamic linking is not allowed: {}".format(rust_dep.name))
@@ -301,7 +306,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
 
     command_args.add(ROOT_PLACEHOLDER, format = "--root-placeholder=%s")
 
-    if not ctx.attr.ignore_missing_static_libraries and not _allow_dynamic_links(ctx):
+    if not ctx.attr.ignore_missing_static_libraries and not allow_dynamic_links(ctx):
         fail("May not disable ignore_missing_static_libraries when dynamic links are not allowed.")
 
     if ctx.attr.ignore_missing_static_libraries:
@@ -379,7 +384,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     return struct(
         piplib_contents = depset([piplib_contents]),
         pip_main = main,
-    )
+    ), dynamic_libs + frameworks
 
 def _vpip_rule_impl(ctx, local):
     if local and NON_THIRDPARTY_PACKAGE_PREFIXES:
@@ -395,6 +400,7 @@ def _vpip_rule_impl(ctx, local):
         piplib_contents,
         extra_pythonpath,
         versioned_deps,
+        dynamic_libraries_trans,
     ) = collect_transitive_srcs_and_libs(
         ctx,
         deps = ctx.attr.deps,
@@ -418,7 +424,7 @@ def _vpip_rule_impl(ctx, local):
     for py_config in py_configs:
         python_impl = py_config.target
         wheel = getattr(ctx.outputs, py_config.attr)
-        wheel_out = _build_wheel(ctx, wheel, python_impl, sdist_tar)
+        wheel_out, dynamic_libraries = _build_wheel(ctx, wheel, python_impl, sdist_tar)
         pip_main[py_config.build_tag] = wheel_out.pip_main
         piplib_contents[py_config.build_tag] = depset(
             transitive = [piplib_contents[py_config.build_tag], wheel_out.piplib_contents],
@@ -439,6 +445,7 @@ def _vpip_rule_impl(ctx, local):
         versioned_deps = versioned_deps,
         provides = ctx.attr.provides,
         piplib_contents = piplib_contents,
+        dynamic_libraries = depset(direct = dynamic_libraries, transitive = [dynamic_libraries_trans]),
         extra_pythonpath = extra_pythonpath,
         runfiles = ctx.runfiles(collect_default = True),
         required_piplibs = required_piplibs,
@@ -868,6 +875,7 @@ def _dbx_py_library_impl(ctx):
         piplib_contents,
         extra_pythonpath,
         versioned_deps,
+        dynamic_libraries,
     ) = collect_transitive_srcs_and_libs(
         ctx,
         deps = ctx.attr.deps,
@@ -909,6 +917,7 @@ def _dbx_py_library_impl(ctx):
         ],
         versioned_deps = versioned_deps,
         piplib_contents = piplib_contents,
+        dynamic_libraries = dynamic_libraries,
         pyc_files_by_build_tag = pyc_files_by_build_tag,
         extra_pythonpath = extra_pythonpath,
         required_piplibs = required_piplibs,
