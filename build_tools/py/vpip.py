@@ -1,4 +1,4 @@
-# mypy: allow-untyped-defs, no-check-untyped-defs
+# mypy: skip-file
 
 """Create a wheel of PIP installed dependencies.
 
@@ -15,7 +15,7 @@ import subprocess
 import sys
 import tempfile
 
-ARGS = None  # type: ignore[var-annotated]
+ARGS = None
 
 
 def run_silently(cmd, env=None, cwd=None):
@@ -34,67 +34,14 @@ def index_url_flags_if_required():
 
 
 def asan_options():
-    # type: () -> str
     return "detect_leaks=0:suppressions=" + os.path.abspath(
         os.path.join(os.path.dirname(__file__), "asan-suppressions.txt")
     )
 
 
-# Perform an installation via PIP, compile any dependencies,
-def build_pip_archive(workdir):
-    wheelhouse_dir = os.path.join(workdir, "wheelhouse")
-
-    # Make a "virtualenv" by copying the Python prefix. We expect ARGS.python to be in the
-    # execroot in a "bin" directory.
-    venv = os.path.join(workdir, "env")
-    assert not ARGS.python.startswith("/"), "expecting execroot-relative python"
-    venv_source = os.path.dirname(os.path.dirname(ARGS.python))
-    run_silently(["cp", "-LR", venv_source, venv])
-    venv_python = os.path.join(venv, "bin", os.path.basename(ARGS.python))
-
-    # Bootstrap the Python toolchain from wheels.
-    external_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..")
-    pip_wheel = os.path.join(
-        external_dir, "io_pypa_pip_whl", "file", "pip-9.0.1-py2.py3-none-any.whl"
-    )
-    # If you change the setuptools version, please update the //pip/setuptools target.
-    st_wheel = os.path.join(
-        external_dir,
-        "io_pypa_setuptools_whl",
-        "file",
-        "setuptools-41.0.1-py2.py3-none-any.whl",
-    )
-    wheel_wheel = os.path.join(
-        external_dir, "io_pypa_wheel_whl", "file", "wheel-0.33.4-py2.py3-none-any.whl"
-    )
-    run_silently(
-        [
-            venv_python,
-            "-m",
-            "pip",
-            "install",
-            "--no-index",
-            pip_wheel,
-            st_wheel,
-            wheel_wheel,
-        ],
-        {"PYTHONPATH": pip_wheel, "ASAN_OPTIONS": asan_options()},
-    )
-
-    # Symlink the execroot to a deterministic place, so that we can refer to it with absolute paths
-    # reproducibly.
-    deterministic_execroot = "/tmp/vpip-execroot-".format(ARGS.wheel.replace("/", "_"))  # type: ignore[str-format]
-    try:
-        os.symlink(os.getcwd(), deterministic_execroot)
-    except OSError as e:
-        # Not in the sandbox? Too bad for you.
-        if e.errno != errno.EEXIST:
-            raise
-        execroot = os.getcwd()
-    else:
-        execroot = deterministic_execroot
-
+def get_unix_pip_env(venv, venv_source, execroot):
     env = {}
+
     # Some scripts like to look for your home if you haven't specified
     # it which can let someone else's ~/.pydistutils.cfg mangle your
     # build. Note this may be overridden by the package.
@@ -118,6 +65,10 @@ def build_pip_archive(workdir):
     env["LDSHARED_WRAPPER_IGNORE_MISSING_STATIC_LIBRARIES"] = (
         "1" if ARGS.ignore_missing_static_libraries else "0"
     )
+
+    # Add 'D' (deterministic) flag for ar.
+    env["ARFLAGS"] = "Drc"
+
     # Use the same wrapper for C++ links as for normal links. We always try to link with
     # libstdc++.
     env["CXX"] = env["LDSHARED"]
@@ -129,6 +80,7 @@ def build_pip_archive(workdir):
         )
     else:
         env["CFLAGS"] = ""
+
     env["CFLAGS"] += " -pthread"
 
     if not ARGS.no_debug_prefix_map:
@@ -137,6 +89,7 @@ def build_pip_archive(workdir):
         env["CFLAGS"] += " -fdebug-prefix-map=%s/=" % os.getcwd()
         # Similarly, map the "venv", which is living in a temporary directory into its source.
         env["CFLAGS"] += " -fdebug-prefix-map=%s/=%s/" % (venv, venv_source)
+
     ensure_absolute = False
     for compile_flag in ARGS.compile_flags:
         compile_flag = compile_flag.replace(ARGS.root_placeholder, execroot)
@@ -164,6 +117,7 @@ def build_pip_archive(workdir):
     if ARGS.extra_ldflags:
         env["LDFLAGS"] += " " + " ".join(ARGS.extra_ldflags)
     env["LDFLAGS"] += " -pthread"
+
     # Prevent symbols from dependent archives from being dynamically exported by extension
     # modules. This keeps libraries linked to the python executable and other extension modules from
     # interfering with this extension module. We could achieve similar ends with -Bsymbolic; hiding
@@ -176,8 +130,146 @@ def build_pip_archive(workdir):
             os.path.join(execroot, path) for path in ARGS.extra_path
         )
 
-    # Add 'D' (deterministic) flag for ar.
-    env["ARFLAGS"] = "Drc"
+    return env
+
+
+def get_windows_pip_env(execroot):
+    env = {}
+
+    # Add environment from the package.
+    for k in os.environ:
+        env[k] = os.environ[k].replace(ARGS.root_placeholder, execroot)
+
+    # See the analogous comment for non-Windows environments. Some
+    # pip packages require HOME to be set.
+    env["HOME"] = "C:\\Users\\null"
+
+    # Indicate to distutils that it does not need to go looking for the compiler.
+    env["MSSdk"] = "1"
+    env["DISTUTILS_USE_SDK"] = "1"
+
+    if ARGS.include_paths:
+        env["INCLUDE"] = ";".join(
+            os.path.join(execroot, path) for path in ARGS.include_paths
+        )
+
+    env["CL"] = ""
+    env["LINK"] = ""
+
+    # Some compile flags are include paths, which will either be in the form
+    # of "-I foo", "-isystem foo", or "-iquote foo". All other flags can just
+    # be passed wholesale.
+    for compile_flag in ARGS.compile_flags:
+        compile_flag = compile_flag.replace(ARGS.root_placeholder, execroot)
+        if compile_flag.startswith("-isystem "):
+            relpath = compile_flag.split("-isystem ")[1]
+            env["INCLUDE"] += os.pathsep + os.path.join(execroot, relpath)
+        elif compile_flag.startswith("-iquote "):
+            relpath = compile_flag.split("-iquote ")[1]
+            env["INCLUDE"] += os.pathsep + os.path.join(execroot, relpath)
+        elif compile_flag.startswith("-I "):
+            relpath = compile_flag.split("-I ")[1]
+            env["INCLUDE"] += os.pathsep + os.path.join(execroot, relpath)
+        # Pass the rest of the flags as is to the compiler.
+        else:
+            env["CL"] += " " + compile_flag
+
+    # Just pass the linker flags wholesale to the linker.
+    for linker_flag in ARGS.extra_ldflags:
+        env["LINK"] += " " + linker_flag
+
+    if ARGS.extra_path:
+        env["PATH"] += ";" + ";".join(
+            os.path.join(execroot, path) for path in ARGS.extra_path
+        )
+
+    return env
+
+
+# Perform an installation via PIP, compile any dependencies,
+def build_pip_archive(workdir):
+    wheelhouse_dir = os.path.join(workdir, "wheelhouse")
+
+    # Make a "virtualenv" by copying the Python prefix. We expect ARGS.python to be in the
+    # execroot in a "bin" directory.
+    venv = os.path.join(workdir, "env")
+    assert not ARGS.python.startswith("/"), "expecting execroot-relative python"
+    venv_source = os.path.dirname(os.path.dirname(ARGS.python))
+    shutil.copytree(venv_source, venv, symlinks=False)
+    venv_python = os.path.join(
+        venv,
+        os.path.basename(os.path.dirname(ARGS.python)),
+        os.path.basename(ARGS.python),
+    )
+
+    # Bootstrap the Python toolchain from wheels.
+    external_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..")
+
+    # On Windows, we may get paths prepended with \\?\ (indicating a long path).
+    # These do not work in commands, so trim the prefix if we see it.
+    if ARGS.msvc_toolchain and external_dir.startswith("\\\\?\\"):
+        external_dir = external_dir[4:]
+
+    pip_wheel = os.path.join(
+        external_dir, "io_pypa_pip_whl", "file", "pip-9.0.1-py2.py3-none-any.whl"
+    )
+    # If you change the setuptools version, please update the //pip/setuptools target.
+    st_wheel = os.path.join(
+        external_dir,
+        "io_pypa_setuptools_whl",
+        "file",
+        "setuptools-41.0.1-py2.py3-none-any.whl",
+    )
+    wheel_wheel = os.path.join(
+        external_dir, "io_pypa_wheel_whl", "file", "wheel-0.33.4-py2.py3-none-any.whl"
+    )
+
+    install_env = {"PYTHONPATH": pip_wheel}
+
+    if ARGS.msvc_toolchain:
+        # If we do not set the SYSTEMROOT, Python fails to get
+        # random numbers to initialize on Windows.
+        install_env["SYSTEMROOT"] = os.environ["SYSTEMROOT"]
+    else:
+        install_env["ASAN_OPTIONS"] = asan_options()
+
+    run_silently(
+        [
+            venv_python,
+            "-m",
+            "pip",
+            "install",
+            "--no-index",
+            pip_wheel,
+            st_wheel,
+            wheel_wheel,
+        ],
+        env=install_env,
+    )
+
+    execroot = os.getcwd()
+    # Symlink the execroot to a deterministic place, so that we can refer to it with absolute paths
+    # reproducibly.
+    # TODO: This currently does not work on Windows. Because there is no sandbox, there's a very
+    #       high probability that this symlink already exists (left over from a previous run).
+    #       This should be fixed.
+    if not ARGS.msvc_toolchain:
+        deterministic_execroot = "/tmp/vpip-execroot-".format(
+            ARGS.wheel.replace("/", "_")
+        )
+        try:
+            os.symlink(os.getcwd(), deterministic_execroot)
+        except OSError as e:
+            # Not in the sandbox? Too bad for you.
+            if e.errno != errno.EEXIST:
+                raise
+        else:
+            execroot = deterministic_execroot
+
+    if ARGS.msvc_toolchain:
+        env = get_windows_pip_env(execroot=execroot)
+    else:
+        env = get_unix_pip_env(venv=venv, venv_source=venv_source, execroot=execroot)
 
     # Force wheel zip file entries have a constant modified timestamp.
     env["SOURCE_DATE_EPOCH"] = "1541963471"
@@ -264,7 +356,12 @@ def build_pip_archive(workdir):
         for dyn_lib in ARGS.extra_dynamic_libs:
             library_dirs.add(os.path.abspath(os.path.dirname(dyn_lib)))
             dyn_lib_name = os.path.basename(dyn_lib)
-            libraries.append(dyn_lib_name[len("lib") : -len(ARGS.dynamic_lib_suffix)])
+            dyn_lib_name = dyn_lib_name[: -len(ARGS.dynamic_lib_suffix)]
+            # If the library is prefixed with "lib", remove it. Libraries
+            # on Windows are not prefixed by "lib".
+            if not ARGS.msvc_toolchain and dyn_lib_name.startswith("lib"):
+                dyn_lib_name = dyn_lib_name[len("lib") :]
+            libraries.append(dyn_lib_name)
         if library_dirs:
             cmd.append("--global-option=--library-dirs=%s" % " ".join(library_dirs))
         if libraries:
@@ -301,7 +398,6 @@ def build_pip_archive(workdir):
 
 
 def main():
-    # type: () -> None
     global ARGS
     p = argparse.ArgumentParser(usage=__doc__)
     p.add_argument("-o", "--wheel", help="The location for the whl output file")
@@ -369,6 +465,11 @@ def main():
         default=[],
         action="append",
         help="(macOS ONLY) Extra frameworks to link into the extension module",
+    )
+    p.add_argument(
+        "--msvc-toolchain",
+        action="store_true",
+        help="Specifies that we're working with the MSVC toolchain.",
     )
     p.add_argument(
         "--linux-exclude-libs",

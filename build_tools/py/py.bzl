@@ -160,6 +160,9 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         command_args.add("--target-dynamic-lib-suffix", ".so")
     elif ctx.var["TARGET_CPU"] == "darwin":
         command_args.add("--target-dynamic-lib-suffix", ".dylib")
+    elif ctx.var["TARGET_CPU"] in ("x86_windows", "x64_windows"):
+        command_args.add("--msvc-toolchain")
+        command_args.add("--target-dynamic-lib-suffix", ".lib")
 
     # Some client toolchains are old enough to not support this.
     if not _debug_prefix_map_supported(ctx):
@@ -332,6 +335,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
             tools = [],
             outputs = extracted_files,
             executable = ctx.executable._vinst,
+            use_default_shell_env = True,
             arguments = [install_args],
             mnemonic = "ExtractWheel",
             progress_message = "ExtractWheel {}".format(wheel.path),
@@ -365,6 +369,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
             tools = [],
             outputs = [main],
             executable = ctx.executable._vinst,
+            use_default_shell_env = True,
             arguments = [main_args],
             progress_message = "extract " + ctx.attr.pip_main,
         )
@@ -523,6 +528,7 @@ def _build_sdist_tar(ctx):
         inputs = required_files + [manifest_file],
         outputs = [sdist_tar],
         executable = ctx.executable._tar_tool,
+        use_default_shell_env = True,
         arguments = [sdist_args],
         mnemonic = "SdistTar",
         progress_message = "Building source dist tar " + sdist_tar.path,
