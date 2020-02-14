@@ -278,7 +278,7 @@ func (svc *serviceDef) markStarted() {
 }
 
 func expBackoff(gen int) {
-	delay := math.Min(math.Pow(2, float64(gen))*float64(pollInterval), float64(500*time.Millisecond))
+	delay := math.Min(math.Pow(1.1, float64(gen))*float64(pollInterval), float64(500*time.Millisecond))
 	time.Sleep(time.Duration(delay))
 }
 
