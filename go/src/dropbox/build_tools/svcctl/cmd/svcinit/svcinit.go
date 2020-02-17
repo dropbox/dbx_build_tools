@@ -517,6 +517,7 @@ func main() {
 			performCleanups(cleanups, insideBazelTest)
 			os.Exit(1)
 		}
+		log.Printf("Test duration: %s\n", testDuration)
 		log.Printf("Test resource utilization: User: %v System: %v", testCmd.ProcessState.UserTime(), testCmd.ProcessState.SystemTime())
 		performCleanups(cleanups, insideBazelTest)
 		if actualXMLOutputFile := os.Getenv("XML_OUTPUT_FILE"); actualXMLOutputFile != "" {
