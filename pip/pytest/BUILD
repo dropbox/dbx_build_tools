@@ -207,6 +207,10 @@ dbx_py_pypi_piplib(
     },
     pip_main = "py.test",
     pip_version = "4.6.6",
+    provides = [
+        "pytest",
+        "_pytest",
+    ],
     python2_compatible = True,
     python3_compatible = True,
     setup_requires = ["//pip/setuptools_scm"],
