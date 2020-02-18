@@ -58,3 +58,9 @@ dbx_py_library(
     srcs = ["core.py"],
     python2_compatible = False,
 )
+
+dbx_py_library(
+    name = "cfg",
+    srcs = ["cfg.py"],
+    python2_compatible = False,
+)

@@ -10,21 +10,18 @@ _cpython_27_BUILD_TAG = "cpython-27"
 cpython_37 = struct(
     build_tag = _cpython_37_BUILD_TAG,
     attr = _cpython_37_ATTR,
+    major_python_version = 3,
 )
 cpython_38 = struct(
     build_tag = _cpython_38_BUILD_TAG,
     attr = _cpython_38_ATTR,
+    major_python_version = 3,
 )
 cpython_27 = struct(
     build_tag = _cpython_27_BUILD_TAG,
     attr = _cpython_27_ATTR,
+    major_python_version = 2,
 )
-
-ALL_ABIS = [
-    cpython_37,
-    cpython_38,
-    cpython_27,
-]
 
 CPYTHON_27_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_27"
 CPYTHON_37_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_37"

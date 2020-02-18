@@ -2,14 +2,12 @@
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load(
     "@dbx_build_tools//build_tools/py:toolchain.bzl",
-    "ALL_ABIS",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
     "DbxPyInterpreter",
-    "cpython_27",
-    "cpython_37",
     "get_py_toolchain_name",
 )
 load("//build_tools/bazel:runfiles.bzl", "write_runfiles_tmpl")
+load("//build_tools/py:cfg.bzl", "ALL_ABIS")
 
 DbxPyVersionCompatibility = provider(fields = [
     "python2_compatible",
@@ -259,7 +257,7 @@ def _pyc_path(src, build_tag):
 def _short_path(src):
     return src.short_path
 
-def compile_pycs(ctx, srcs, build_tag, allow_failures = False):
+def compile_pycs(ctx, srcs, python, allow_failures = False):
     # For CPython 2, we build custom pydbxc files that us the md5 of the source instead of the mtime
     # for the py file for invalidation. This allows the files to be remotely cached. We need to
     # disable hash randomization to the generated files have deterministic ordering of sets and dict
@@ -267,16 +265,16 @@ def compile_pycs(ctx, srcs, build_tag, allow_failures = False):
     if len(srcs) == 0:
         return []
 
-    toolchain = ctx.toolchains[get_py_toolchain_name(build_tag)]
+    toolchain = ctx.toolchains[get_py_toolchain_name(python.build_tag)]
     python = toolchain.interpreter[DbxPyInterpreter]
 
     if not toolchain.pyc_compilation_enabled:
         return []
 
-    if build_tag == cpython_27.build_tag:
+    if python.major_python_version == 2:
         new_pyc_files = [ctx.actions.declare_file(src.basename + "dbxc", sibling = src) for src in srcs]
     else:
-        new_pyc_files = [ctx.actions.declare_file(_pyc_path(src, build_tag), sibling = src) for src in srcs]
+        new_pyc_files = [ctx.actions.declare_file(_pyc_path(src, python.build_tag), sibling = src) for src in srcs]
 
     lib_args = ctx.actions.args()
     if allow_failures:
@@ -469,7 +467,7 @@ import os
 __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
 """ % ", ".join(impl_dirs))
             runfiles_direct.extend(namespace_inits)
-            runfiles_direct.extend(compile_pycs(ctx, namespace_inits, python.build_tag))
+            runfiles_direct.extend(compile_pycs(ctx, namespace_inits, python))
 
         runfiles_trans.append(python.runtime)
         runfiles_trans.append(ctx.attr._sanitizer_extra_runfiles.files)

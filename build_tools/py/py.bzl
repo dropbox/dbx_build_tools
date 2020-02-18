@@ -8,22 +8,14 @@ load("//build_tools/bazel:runfiles.bzl", "runfiles_attrs")
 load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
 load(
     "@dbx_build_tools//build_tools/py:toolchain.bzl",
-    "ALL_ABIS",
-    "ALL_TOOLCHAIN_NAMES",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
-    "CPYTHON_27_TOOLCHAIN_NAME",
-    "CPYTHON_37_TOOLCHAIN_NAME",
-    "CPYTHON_38_TOOLCHAIN_NAME",
     "DbxPyInterpreter",
-    "cpython_27",
-    "cpython_37",
-    "cpython_38",
     "get_default_py_toolchain_name",
     "get_py_toolchain_name",
 )
 load("//build_tools/services:svc.bzl", "dbx_services_test")
 load("//build_tools/py:cfg.bzl", "GLOBAL_PYTEST_ARGS", "GLOBAL_PYTEST_PLUGINS", "PYPI_MIRROR_URL")
-load("//build_tools/py:cfg.bzl", "NON_THIRDPARTY_PACKAGE_PREFIXES")
+load("//build_tools/py:cfg.bzl", "ALL_ABIS", "NON_THIRDPARTY_PACKAGE_PREFIXES", "PY2_TEST_ABI", "PY3_TEST_ABI")
 load(
     "//build_tools/py:common.bzl",
     "DbxPyVersionCompatibility",
@@ -40,38 +32,25 @@ load(
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load("//build_tools/apple:apple.bzl", "DbxAppleFramework")
 
+ALL_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS]
+
 # This logic is duplicated in build_tools/bzl_lib/gen_build_pip.py::_get_build_interpreters and must
 # be kept in sync.
-# TODO(jhance) Add cpython38 support, requires running bzl gen on all pip dirs...
 def _get_build_interpreters(attr):
     interpreters = []
     if attr.python2_compatible:
-        interpreters.append(cpython_27)
+        interpreters.extend([abi for abi in ALL_ABIS if abi.major_python_version == 2])
     if attr.python3_compatible:
-        interpreters.append(cpython_37)
-        interpreters.append(cpython_38)
+        interpreters.extend([abi for abi in ALL_ABIS if abi.major_python_version == 3])
     return interpreters
 
 def _get_build_interpreters_for_target(ctx):
-    interpreters = []
-    if ctx.attr.python2_compatible:
-        interpreters.append(struct(
-            build_tag = cpython_27.build_tag,
-            target = ctx.toolchains[CPYTHON_27_TOOLCHAIN_NAME].interpreter[DbxPyInterpreter],
-            attr = cpython_27.attr,
-        ))
-    if ctx.attr.python3_compatible:
-        interpreters.append(struct(
-            build_tag = cpython_37.build_tag,
-            target = ctx.toolchains[CPYTHON_37_TOOLCHAIN_NAME].interpreter[DbxPyInterpreter],
-            attr = cpython_37.attr,
-        ))
-        interpreters.append(struct(
-            build_tag = cpython_38.build_tag,
-            target = ctx.toolchains[CPYTHON_38_TOOLCHAIN_NAME].interpreter[DbxPyInterpreter],
-            attr = cpython_38.attr,
-        ))
-    return interpreters
+    abis = _get_build_interpreters(ctx.attr)
+    return [struct(
+        build_tag = abi.build_tag,
+        target = ctx.toolchains[BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag]].interpreter[DbxPyInterpreter],
+        attr = abi.attr,
+    ) for abi in abis]
 
 # We use `$(ROOT)` env var in env/global-options attributes to refer to absolute path to base/root
 # directory where action is executed. If absolute path to this directory is computed at analysis
@@ -349,7 +328,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         pycs = compile_pycs(
             ctx,
             [f for f in extracted_files if f.extension == "py"],
-            build_tag,
+            python_interp,
             allow_failures = True,  # Thirdparty .py files can contain all manner of brokenness.
         )
         extracted_files.extend(pycs)
@@ -895,15 +874,17 @@ def _dbx_py_library_impl(ctx):
 
     if ctx.files.srcs:
         if ctx.attr.python2_compatible:
-            pyc_files_by_build_tag[cpython_27.build_tag] = depset(
-                direct = compile_pycs(ctx, ctx.files.srcs, cpython_27.build_tag),
-                transitive = [pyc_files_by_build_tag[cpython_27.build_tag]],
-            )
+            for abi in ALL_ABIS:
+                if abi.major_python_version == 2:
+                    pyc_files_by_build_tag[abi.build_tag] = depset(
+                        direct = compile_pycs(ctx, ctx.files.srcs, abi),
+                        transitive = [pyc_files_by_build_tag[abi.build_tag]],
+                    )
         if ctx.attr.python3_compatible:
             for abi in ALL_ABIS:
-                if abi.build_tag != cpython_27.build_tag:
+                if abi.major_python_version == 3:
                     pyc_files_by_build_tag[abi.build_tag] = depset(
-                        direct = compile_pycs(ctx, ctx.files.srcs, abi.build_tag),
+                        direct = compile_pycs(ctx, ctx.files.srcs, abi),
                         transitive = [pyc_files_by_build_tag[abi.build_tag]],
                     )
 
@@ -1024,9 +1005,9 @@ def dbx_py_pytest_test(
                 variant = "python2"
             else:
                 variant = ""
-            pythons.append((cpython_27.build_tag, variant))
+            pythons.append((PY2_TEST_ABI.build_tag, variant))
         if python3_compatible:
-            pythons.append((cpython_37.build_tag, ""))
+            pythons.append((PY3_TEST_ABI.build_tag, ""))
     else:
         if (not python2_compatible) or python3_compatible:
             fail('Cannot use a custom "python" attribute and set python(2|3)_compatible.')

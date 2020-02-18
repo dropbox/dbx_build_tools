@@ -32,6 +32,7 @@ dbx_py_library(
     validate = "allow-unused",
     deps = [
         ":build_merge_lib",
+        ":cfg",
         ":metrics",
         ":parse_py_imports_lib",
         ":run",
@@ -112,4 +113,11 @@ dbx_py_library(
         "//build_tools/bzl_lib/itest",
         "//pip/typing",
     ],
+)
+
+dbx_py_library(
+    name = "cfg",
+    srcs = ["cfg.py"],
+    python2_compatible = False,
+    validate = "strict",
 )

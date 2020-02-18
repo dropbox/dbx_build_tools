@@ -12,6 +12,7 @@ import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
 
 from build_tools.bzl_lib import build_merge
+from build_tools.bzl_lib.cfg import PY2_ABIS, PY3_ABIS
 from build_tools.py import vinst
 
 DEFAULT_EXCLUDES = ["test", "tests", "testing", "SelfTest", "Test", "Tests"]
@@ -51,10 +52,9 @@ PUBLIC_STATEMENT = "package(default_visibility = ['//visibility:public'])\n"
 def _get_build_interpreters(attr):
     interpreters = []
     if attr.get("python2_compatible", True):
-        interpreters.append("cpython-27")
+        interpreters.extend(PY2_ABIS)
     if attr.get("python3_compatible", True):
-        interpreters.append("cpython-37")
-        interpreters.append("cpython-38")
+        interpreters.extend(PY3_ABIS)
     return interpreters
 
 
