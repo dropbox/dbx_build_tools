@@ -2,6 +2,8 @@ package(default_visibility = ["//visibility:public"])
 
 load("//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
 
+exports_files(["main.py"])
+
 dbx_py_pypi_piplib(
     name = "pytest",
     testonly = True,

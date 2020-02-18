@@ -928,6 +928,7 @@ def extract_pytest_args(
         args = [],
         test_root = None,
         plugins = [],
+        srcs = [],
         **kwargs):
     if test_root:
         root = test_root + ("/" + native.package_name() if native.package_name() else "")
@@ -938,7 +939,7 @@ def extract_pytest_args(
         fail("You cannot provide a 'main' to pytest rules.  Use 'srcs' instead.")
 
     pytest_args = GLOBAL_PYTEST_ARGS + args
-    for src in kwargs["srcs"]:
+    for src in srcs:
         # pytest misbehaves if you pass it __init__.py, so we drop it from the arguments. This means
         # we don't support running tests in __init__.py.
         if src.rpartition("/")[2] == "__init__.py":
@@ -984,6 +985,7 @@ def dbx_py_pytest_test(
         name,
         deps = [],
         args = [],
+        srcs = [],
         size = "small",
         timeout = None,
         services = [],
@@ -1004,7 +1006,7 @@ def dbx_py_pytest_test(
         python3_compatible = True,
         visibility = None,
         **kwargs):
-    pytest_args, pytest_deps = extract_pytest_args(args, test_root, plugins, **kwargs)
+    pytest_args, pytest_deps = extract_pytest_args(args, test_root, plugins, srcs, **kwargs)
 
     tags = tags + process_quarantine_attr(quarantine)
 
@@ -1036,7 +1038,8 @@ def dbx_py_pytest_test(
         if force_services or len(services) > 0:
             dbx_py_dbx_test(
                 name = name + "_bin" + suffix,
-                pip_main = "@dbx_build_tools//pip/pytest",
+                main = "@dbx_build_tools//pip/pytest:main.py",
+                srcs = srcs + ["@dbx_build_tools//pip/pytest:main.py"],
                 extra_args = extra_args,
                 deps = all_deps,
                 size = size,
@@ -1065,7 +1068,8 @@ def dbx_py_pytest_test(
         else:
             dbx_py_dbx_test(
                 name = name + suffix,
-                pip_main = "@dbx_build_tools//pip/pytest",
+                main = "@dbx_build_tools//pip/pytest:main.py",
+                srcs = srcs + ["@dbx_build_tools//pip/pytest:main.py"],
                 extra_args = extra_args,
                 deps = all_deps,
                 size = size,

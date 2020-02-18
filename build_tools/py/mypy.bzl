@@ -210,6 +210,10 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         group = None
 
     for src in srcs:
+        # Every test ends up with this file, so multiple tests in
+        # a directory will create conflicting json files
+        if src.path.endswith("pip/pytest/main.py"):
+            continue
         cache_map.append(src)
         path = src.path
         path_base = path[:path.rindex(".")]  # Strip .py or .pyi suffix

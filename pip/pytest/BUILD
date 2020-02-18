@@ -240,3 +240,5 @@ dbx_py_library(
     validate = "strict",
     deps = [":pytest"],
 )
+
+exports_files(["main.py"])
