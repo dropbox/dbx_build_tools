@@ -1,3 +1,5 @@
+load("//build_tools/windows:windows.bzl", "is_windows")
+
 _cpython_37_ATTR = "cpython_37"
 _cpython_38_ATTR = "cpython_38"
 _cpython_27_ATTR = "cpython_27"
@@ -72,9 +74,14 @@ def _dbx_py_interpreter_impl(ctx):
         path = ctx.attr.exe
         runfiles_path = ctx.attr.exe
     else:
+        if is_windows(ctx):
+            runfiles_env_var = "%RUNFILES%"
+        else:
+            runfiles_env_var = "$RUNFILES"
+
         path = ctx.file.exe_file.path
         runfiles_path = "/".join([
-            "$RUNFILES",
+            runfiles_env_var,
             ctx.file.exe_file.short_path,
         ])
     return [

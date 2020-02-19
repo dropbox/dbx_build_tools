@@ -1,3 +1,5 @@
+load("//build_tools/windows:windows.bzl", "is_windows")
+
 # Finding the .runfiles tree is delicate, and we've broken it many times. Be
 # careful! A couple of points:
 #
@@ -34,11 +36,23 @@ runfiles_attrs = {
         default = Label("//build_tools/bazel:runfiles.tmpl"),
         allow_single_file = True,
     ),
+    "_runfiles_bat_template": attr.label(
+        default = Label("//build_tools/bazel:runfiles.bat.tmpl"),
+        allow_single_file = True,
+    ),
 }
 
+# This will write different types of files depending on the OS.
+# Be sure to make `content` compatible with the expected script
+# type -- either batch on Windows or bash on Unix.
 def write_runfiles_tmpl(ctx, out, content):
+    if is_windows(ctx):
+        template_file = ctx.file._runfiles_bat_template
+    else:
+        template_file = ctx.file._runfiles_template
+
     ctx.actions.expand_template(
-        template = ctx.file._runfiles_template,
+        template = template_file,
         output = out,
         substitutions = {
             "{workspace_name}": ctx.workspace_name,

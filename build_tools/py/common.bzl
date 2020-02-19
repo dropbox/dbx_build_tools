@@ -8,6 +8,7 @@ load(
 )
 load("//build_tools/bazel:runfiles.bzl", "write_runfiles_tmpl")
 load("//build_tools/py:cfg.bzl", "ALL_ABIS")
+load("//build_tools/windows:windows.bzl", "is_windows")
 
 DbxPyVersionCompatibility = provider(fields = [
     "python2_compatible",
@@ -68,6 +69,10 @@ fi
 
 _runfile_tmpl = """
 {shared_library_path_setup}exec {python_bin} {python_flags} ${{PYTHONARGS:-}} $RUNFILES/{inner_wrapper} $RUNFILES {default_args}
+"""
+
+_runfile_windows_tmpl = """
+{python_bin} {python_flags} %PYTHONARGS% "%RUNFILES%\{inner_wrapper}" "%RUNFILES%" {default_args}
 """
 
 _inner_wrapper = """
@@ -131,6 +136,9 @@ def workspace_root_to_pythonpath(workspace_root):
         return workspace_root
 
 def _binary_wrapper_template(ctx, internal_bootstrap):
+    if is_windows(ctx):
+        return _runfile_windows_tmpl
+
     if internal_bootstrap:
         sanitize = None
     else:
@@ -434,6 +442,7 @@ def emit_py_binary(
                 mnemonic = "PiplibCheckConflict",
                 executable = ctx.executable._check_conflicts,
                 arguments = [conflict_args],
+                use_default_shell_env = True,
             )
 
             hidden_output.append(conflict_out)
@@ -486,7 +495,10 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
     if hasattr(ctx.attr, "extra_args"):
         extra_args = ctx.attr.extra_args
 
-    default_args = " ".join(extra_args + ['"$@"'])
+    if is_windows(ctx):
+        default_args = " ".join(extra_args + ["%*"])
+    else:
+        default_args = " ".join(extra_args + ['"$@"'])
 
     inner_wrapper = ctx.actions.declare_file(out_file.basename + "-wrapper.py", sibling = out_file)
     runfiles_direct.append(inner_wrapper)
@@ -512,7 +524,10 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
         # binaries because they can't depend on the python toolchain.
         # Rules that use bootstrap binaries need to set DBX_PYTHON to
         # run bootstrap binaries.
-        python_bin = "$DBX_PYTHON"
+        if is_windows(ctx):
+            python_bin = "%DBX_PYTHON%"
+        else:
+            python_bin = "$DBX_PYTHON"
     else:
         python_flags = "-ESs"
         python_bin = python.runfiles_path
@@ -524,6 +539,13 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
             library_search_path = ":".join(library_search_entries.keys()),
             framework_search_path = ":".join(framework_search_entries.keys()),
         )
+
+    if is_windows(ctx):
+        wrapper_path = inner_wrapper.short_path.replace("/", "\\")
+        python_bin_path = python_bin.replace("/", "\\")
+    else:
+        wrapper_path = inner_wrapper.short_path
+        python_bin_path = python_bin
 
     # Copy-through the runfiles so we get all transitive dependencies.
     runfiles = ctx.runfiles(

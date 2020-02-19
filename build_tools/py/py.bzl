@@ -31,6 +31,7 @@ load(
 )
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load("//build_tools/apple:apple.bzl", "DbxAppleFramework")
+load("//build_tools/windows:windows.bzl", "is_windows")
 
 ALL_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS]
 
@@ -137,7 +138,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         command_args.add("--target-dynamic-lib-suffix", ".so")
     elif ctx.var["TARGET_CPU"] == "darwin":
         command_args.add("--target-dynamic-lib-suffix", ".dylib")
-    elif ctx.var["TARGET_CPU"] in ("x86_windows", "x64_windows"):
+    elif is_windows(ctx):
         command_args.add("--msvc-toolchain")
         command_args.add("--target-dynamic-lib-suffix", ".lib")
 
@@ -627,11 +628,19 @@ def dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = None)
     else:
         pythonpath = workspace_root_to_pythonpath(ctx.label.workspace_root)
 
+    # On Windows, we need to end our files with ".bat", to tell Windows how to
+    # execute it.
+    if is_windows(ctx):
+        output_name = ctx.attr.name + ".bat"
+    else:
+        output_name = ctx.attr.name
+    output_file = ctx.actions.declare_file(output_name)
+
     runfiles, extra_pythonpath, hidden_output = emit_py_binary(
         ctx,
         main = main,
         srcs = ctx.files.srcs,
-        out_file = ctx.outputs.executable,
+        out_file = output_file,
         pythonpath = ctx.attr.pythonpath,
         deps = ctx.attr.deps,
         data = ctx.attr.data,
@@ -643,6 +652,7 @@ def dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = None)
     )
     runfiles = runfiles.merge(ctx.runfiles(collect_default = True))
     return struct(
+        executable = output_file,
         runfiles = runfiles,
         extra_pythonpath = extra_pythonpath,
         providers = [

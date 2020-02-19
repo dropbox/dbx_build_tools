@@ -123,6 +123,7 @@ bzl_library(
     ]),
     deps = [
         "//build_tools/bazel:bazel_bzl",
+        "//build_tools/windows:windows_bzl",
     ],
 )
 

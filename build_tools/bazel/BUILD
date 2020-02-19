@@ -15,6 +15,12 @@ bzl_library(
     srcs = glob([
         "*.bzl",
     ]),
+    deps = [
+        "//build_tools/windows:windows_bzl",
+    ],
 )
 
-exports_files(["runfiles.tmpl"])
+exports_files([
+    "runfiles.tmpl",
+    "runfiles.bat.tmpl",
+])

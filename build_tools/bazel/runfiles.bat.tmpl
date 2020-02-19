@@ -1,0 +1,63 @@
+@echo off
+
+:: Use delayed expansion because otherwise it's very
+:: annoying to do anything in an `if`/`for` block.
+setlocal EnableDelayedExpansion
+
+:: Before we do anything, check our runtime pre-requisites.
+::   - Python 3.8
+:: This for loop steps through the stdout of `py.exe --list` and
+:: checks strings to make sure that 3.8 is listed.
+for /F "tokens=* USEBACKQ" %%g in (`py.exe --list 2^> nul`) DO (
+    set versionline=%%g
+    if "!versionline:~0,4!" == "-3.8" goto :prereqsmet
+)
+
+echo ERROR: Runtime pre-requisites not met.
+echo        Please install Python 3.8 and make sure it appears in `py.exe --list`.
+exit /b 1
+
+:: Pre-requisites are met -- continue.
+:prereqsmet
+
+:: Populated by Bazel, with no quotes.
+set workspacename={workspace_name}
+:: Expands the current file name to a fully qualified path.
+set currentfile=%~f0
+
+:: This loop does a few things: it checks if a ".runfiles" directory
+:: exists. If it doesn't, then it checks if the current file is a
+:: symlink, and then reads the symlink using system Python.
+:findrunfiles
+set currentrunfiles=%currentfile%.runfiles
+:: The trailing \ makes it so that `exist` looks for a directory, not
+:: just a file.
+if not exist %currentrunfiles%\ (
+    :: Get the attributes of the current file to see if it's a symlink.
+    for %%i in ("%currentfile%") do set fileattribs=%%~ai
+    if not "!fileattribs:~8,1!" == "l" (
+        echo ERROR: Unable to find runfiles: %currentfile% is not a symlink.
+        exit /b 1
+    )
+
+    :: Run the Python script that outputs the absolute path to the symlink target.
+    for /F "tokens=* USEBACKQ" %%g IN (`py.exe -3.8 -c "import os;a=r'%%currentfile%%';print(os.path.join(os.path.dirname(a),os.readlink(a)))"`) DO (
+        set currentfile=%%g
+    )
+
+    goto :findrunfiles
+)
+
+:: Now that we have the runfiles directory, use Python to get the fully resolved path.
+for /F "tokens=* USEBACKQ" %%g IN (`py.exe -3.8 -c "import os;print(os.path.realpath(r'%%currentrunfiles%%'))"`) DO (
+    set currentrunfiles=%%g
+)
+
+:: RUNFILES cannot have the long-path prefix \\?\, so this is a hack
+:: to trim it from the path if it exists. \\?\ will never appear
+:: normally, so this string replacement should be safe.
+set RUNFILES=%currentrunfiles:\\?\=%\%workspacename%
+
+{content}
+
+exit /b
