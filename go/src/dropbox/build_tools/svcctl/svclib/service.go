@@ -7,6 +7,7 @@ import (
 	"net"
 	"sync"
 
+	"github.com/gogo/protobuf/proto"
 	"google.golang.org/grpc"
 
 	svclib_proto "dropbox/proto/build_tools/svclib"
@@ -231,7 +232,20 @@ func StopAll() error {
 	if err != nil {
 		return err
 	}
-	_, err = client.StopAll(context.Background(), &svclib_proto.Empty{})
+	_, err = client.StopAll(context.Background(), &svclib_proto.StopAllReq{
+		UnsafeFastKill: proto.Bool(false),
+	})
+	return err
+}
+
+func StopAllUnsafe() error {
+	client, err := getSvcCtlClient()
+	if err != nil {
+		return err
+	}
+	_, err = client.StopAll(context.Background(), &svclib_proto.StopAllReq{
+		UnsafeFastKill: proto.Bool(true),
+	})
 	return err
 }
 

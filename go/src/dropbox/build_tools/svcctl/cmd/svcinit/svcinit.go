@@ -218,6 +218,7 @@ func overwriteJunitForServices(src io.ReadSeeker, XMLOutputFile string, ti testI
 }
 
 func main() {
+	log.SetFlags(log.Lmicroseconds | log.Lshortfile)
 	var verbose bool
 	var serviceDefsFile string
 	var serviceDefsVersionFile string
@@ -225,6 +226,7 @@ func main() {
 	var servicesOnly bool
 	var testOnly bool
 	var testBinary string
+	var gracefulStop bool
 
 	flags := flag.NewFlagSet("svcinit", flag.ExitOnError)
 
@@ -242,6 +244,8 @@ func main() {
 		"Don't launch services. Just run tests.")
 	flags.StringVar(&testBinary, "svc.test-bin", "",
 		"Test binary name to be used in junit output")
+	flags.BoolVar(&gracefulStop, "svc.graceful-stop", false,
+		"When shutting down services, try to do a quick but graceful stop. Not recommended by default as it will slow down test times, but can be useful when e.g. integrating with asan as it needs time to dump goroutines on exit.")
 
 	startTime := time.Now()
 	// the flags library doesn't have a good way to ignore unknown args and return them
@@ -384,7 +388,11 @@ func main() {
 				}
 
 				if !createOnly {
-					cleanups = append(cleanups, svclib.StopAll)
+					if gracefulStop {
+						cleanups = append(cleanups, svclib.StopAll)
+					} else {
+						cleanups = append(cleanups, svclib.StopAllUnsafe)
+					}
 					if startErr := svclib.StartAll(); startErr != nil {
 						log.Printf("Services did not start correctly. %s", startErr)
 						if insideBazelTest {
@@ -520,6 +528,7 @@ func main() {
 		log.Printf("Test duration: %s\n", testDuration)
 		log.Printf("Test resource utilization: User: %v System: %v", testCmd.ProcessState.UserTime(), testCmd.ProcessState.SystemTime())
 		performCleanups(cleanups, insideBazelTest)
+		log.Printf("Cleanup complete\n")
 		if actualXMLOutputFile := os.Getenv("XML_OUTPUT_FILE"); actualXMLOutputFile != "" {
 			failing, jerr := isFailingJUnit(actualXMLOutputFile)
 			if jerr != nil {

@@ -25,6 +25,7 @@ import (
 	"dropbox/build_tools/svcctl/proc"
 	"dropbox/build_tools/svcctl/state_machine"
 	"dropbox/cputime"
+	"dropbox/procfs"
 	svclib_proto "dropbox/proto/build_tools/svclib"
 	"dropbox/runfiles"
 )
@@ -505,12 +506,31 @@ func (svc *serviceDef) appendSanitizerErrors() {
 	svc.sanitizerErrors = append(svc.sanitizerErrors, errs...)
 }
 
+// this kill is much harder to escape from than the regular kill of negative pid.
+func forceSignalProcessTree(pids []int, sig syscall.Signal) error {
+	var lastErr error
+	for _, pid := range pids {
+		allChildren, err := procfs.GetProcessDescendents(pid)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		for _, child := range allChildren {
+			if err := syscall.Kill(child, sig); err != nil {
+				lastErr = err
+				continue
+			}
+		}
+	}
+	return lastErr
+}
+
 // Stop a service using the following sequence of steps:
-// - Send SIGINT to process which launched the service
-// - If process didn't die in 250ms, send SIGKILL every 250ms till the process dies.
+// - Send specified signal to process group which launched the service
+// - If process didn't die in 250ms, send SIGKILL to every child process and their descendents (according to procfs) every 250ms till the process dies.
 //
 // Stop method is synchronous and doesn't exit till the process has terminated.
-func (svc *serviceDef) Stop() error {
+func (svc *serviceDef) stop(sig syscall.Signal) error {
 	svc.lock.Lock()
 	defer svc.lock.Unlock()
 
@@ -520,10 +540,27 @@ func (svc *serviceDef) Stop() error {
 		switch svc.ServiceType {
 		case svclib_proto.Service_DAEMON:
 			if svc.verbose {
-				svc.logger.Println("Stopping daemon")
+				svc.logger.Printf("Stopping daemon with signal %v", sig)
 			}
 
-			if killErr := syscall.Kill(-svc.Process.Cmd.Process.Pid, syscall.SIGINT); killErr != nil {
+			allPidsToForceKill := []int{svc.Process.Cmd.Process.Pid}
+			childPids, err := procfs.ChildPids(svc.Process.Cmd.Process.Pid)
+			if err != nil {
+				svc.logger.Printf("Failed to get child processes")
+			} else {
+				allPidsToForceKill = append(allPidsToForceKill, childPids...)
+			}
+
+			var killErr error
+			if sig == syscall.SIGKILL {
+				// not graceful anyways, so go ahead and use the forceful kill
+				killErr = forceSignalProcessTree(allPidsToForceKill, sig)
+			} else {
+				// make the first kill graceful to give process group a chance to clean up
+				killErr = syscall.Kill(-svc.Process.Cmd.Process.Pid, sig)
+			}
+
+			if killErr != nil {
 				if svc.Process.Exited() {
 					// we failed to send signal because the process already exited
 					svc.appendSanitizerErrors()
@@ -553,9 +590,9 @@ func (svc *serviceDef) Stop() error {
 				select {
 				case <-time.After(interruptWaitDuration):
 					if svc.verbose {
-						svc.logger.Println("Process not dead yet - issuing SIGKILL")
+						svc.logger.Println("Process not dead yet - issuing SIGKILL to entire tree")
 					}
-					if killErr := syscall.Kill(-svc.Process.Cmd.Process.Pid, syscall.SIGKILL); killErr != nil {
+					if killErr := forceSignalProcessTree(allPidsToForceKill, syscall.SIGKILL); killErr != nil {
 						if svc.Process.Exited() {
 							stopped = true
 						}
@@ -580,6 +617,14 @@ func (svc *serviceDef) Stop() error {
 	}
 
 	return nil
+}
+
+func (svc *serviceDef) Stop() error {
+	return svc.stop(syscall.SIGINT)
+}
+
+func (svc *serviceDef) StopUnsafe() error {
+	return svc.stop(syscall.SIGKILL)
 }
 
 func FmtDuration(d time.Duration) string {

@@ -16,6 +16,7 @@ dbx_go_library(
     ],
     deps = [
         "//go/src/dropbox/proto/build_tools/svclib",
+        "//go/src/github.com/gogo/protobuf/proto",
         "//go/src/google.golang.org/grpc",
     ],
 )
@@ -36,6 +37,7 @@ dbx_go_test(
     deps = [
         "//go/src/dropbox/proto/build_tools/svclib",
         "//go/src/dropbox/runfiles",
+        "//go/src/github.com/gogo/protobuf/proto",
         "//go/src/github.com/stretchr/testify/require",
         "//go/src/google.golang.org/grpc",
     ],

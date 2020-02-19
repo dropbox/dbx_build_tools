@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
+	"golang.org/x/sync/errgroup"
 
 	"dropbox/cputime"
 	"dropbox/procfs"
@@ -275,14 +276,26 @@ func (s *SvcCtlProcessor) Stop(ctx context.Context, req *svclib_proto.StopReq) (
 	}
 }
 
-func (s *SvcCtlProcessor) StopAll(ctx context.Context, empty *svclib_proto.Empty) (
+func (s *SvcCtlProcessor) StopAll(ctx context.Context, req *svclib_proto.StopAllReq) (
 	*svclib_proto.Empty, error) {
 	s.lock.RLock()
-	svcs := make([]*serviceDef, 0, len(s.services))
-	for _, svc := range s.services {
-		svcs = append(svcs, svc)
+	if req.GetUnsafeFastKill() {
+		group, _ := errgroup.WithContext(ctx)
+		for _, svc := range s.services {
+			svc := svc
+			group.Go(func() error {
+				return svc.StopUnsafe()
+			})
+		}
+		s.lock.RUnlock()
+		return &svclib_proto.Empty{}, group.Wait()
+	} else {
+		svcs := make([]*serviceDef, 0, len(s.services))
+		for _, svc := range s.services {
+			svcs = append(svcs, svc)
+		}
+		stopper := newTopologicalStopper(svcs)
+		s.lock.RUnlock()
+		return &svclib_proto.Empty{}, stopper.Run()
 	}
-	stopper := newTopologicalStopper(svcs)
-	s.lock.RUnlock()
-	return &svclib_proto.Empty{}, stopper.Run()
 }
