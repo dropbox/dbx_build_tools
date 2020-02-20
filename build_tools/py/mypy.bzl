@@ -607,7 +607,7 @@ def _dbx_py_compiled_only_pytest_test(
         visibility = None,
         **kwargs):
     if not python3_compatible:
-        fail("Compiled tests must support Python 2")
+        fail("Compiled tests must support Python 3")
 
     pytest_args, pytest_deps = extract_pytest_args(args, test_root, plugins, **kwargs)
 
