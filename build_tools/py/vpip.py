@@ -307,7 +307,16 @@ def build_pip_archive(workdir):
         # to pip's random build directory if the deterministic one already
         # exists. Essentially, we trade determinism outside the sandbox for
         # determinism within it.
-        build_dir = "/tmp/vpip-build-{}".format(os.path.basename(ARGS.wheel))
+
+        # For Windows, we default to the system-specified TEMP dir. Note that this
+        # will have the user embedded, like `C:\Users\username\AppData\Local\Temp`,
+        # and currently is not deterministic.
+        if ARGS.msvc_toolchain:
+            build_dir_prefix = os.environ["TEMP"]
+        else:
+            build_dir_prefix = "/tmp"
+
+        build_dir = os.path.join(build_dir_prefix, "vpip-build-{}".format(os.path.basename(ARGS.wheel)))
         made_build_dir = False
         try:
             os.mkdir(build_dir)
