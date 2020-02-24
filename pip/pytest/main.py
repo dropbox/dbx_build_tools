@@ -22,7 +22,7 @@ sys.meta_path.insert(0, MetadataImporter())
 __file__ = "py.test"
 sys.argv[0] = sys.argv[0].replace("main.py", "py.test")
 
-pytest.main()
+code = pytest.main()
 sys.stdout.flush()
 sys.stderr.flush()
-os._exit(0)
+os._exit(code)
