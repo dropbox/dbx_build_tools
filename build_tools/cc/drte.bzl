@@ -62,6 +62,7 @@ def _impl(ctx):
                             "-Wall",
                             "-Wunused-but-set-parameter",
                             "-Wno-free-nonheap-object",
+                            "-fno-omit-frame-pointer",
                         ],
                     ),
                 ],
