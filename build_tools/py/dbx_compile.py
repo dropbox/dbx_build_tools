@@ -4,13 +4,6 @@ import sys
 
 from build_tools.py import dbx_importer
 
-try:
-    import dropbox.pyxl.codec.register  # noqa
-except ImportError:
-    # We do not include this optional library in the open source version so we
-    # keep going if it is missing.
-    pass
-
 if __name__ == "__main__":
     allow_failures = sys.argv[1] == "--allow-failures"
     items = sys.argv[2:]
