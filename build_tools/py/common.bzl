@@ -432,7 +432,9 @@ def emit_py_binary(
             # attributes, so we only need to check for conflicts for them.
             conflict_out = ctx.actions.declare_file(out_file.basename + "_conflicts", sibling = out_file)
             conflict_args = ctx.actions.args()
-            conflict_args.add(conflict_out)
+            conflict_args.set_param_file_format("multiline")
+            conflict_args.use_param_file("@%s", use_always = True)
+            conflict_args.add("--output-file", conflict_out)
             conflict_args.add_all(piplib_contents_map, map_each = _piplib_conflict_check)
 
             ctx.actions.run(
