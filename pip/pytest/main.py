@@ -1,5 +1,13 @@
-import os
 import sys
+
+if sys.argv[1] == "--profile":
+    sys.argv.pop(1)
+    from dropbox.testutils.plugins import dbxperf
+    stop_profiling = dbxperf.start()
+else:
+    stop_profiling = None
+
+import os
 
 import pytest
 
@@ -25,4 +33,8 @@ sys.argv[0] = sys.argv[0].replace("main.py", "py.test")
 code = pytest.main()
 sys.stdout.flush()
 sys.stderr.flush()
+
+if stop_profiling:
+    stop_profiling()
+
 os._exit(code)
