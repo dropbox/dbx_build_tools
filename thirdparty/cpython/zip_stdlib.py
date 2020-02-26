@@ -1,7 +1,6 @@
 from __future__ import print_function
 
 import calendar
-import importlib
 import io
 import marshal
 import os
@@ -44,8 +43,8 @@ def main():
                                 invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH,
                             )
                             with open(tf.name, "rb") as tfh:
-                                output_path = importlib.util.cache_from_source(arcname)
-                                info = zipfile.ZipInfo(output_path, EPOCH)
+                                # zipped stdlib import doesn't use the __pycache__ paths
+                                info = zipfile.ZipInfo(arcname + "c", EPOCH)
                                 z.writestr(info, tfh.read())
                         else:
                             code = compile(source, arcname, 'exec', dont_inherit=True)
