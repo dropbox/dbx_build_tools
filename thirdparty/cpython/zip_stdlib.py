@@ -1,12 +1,19 @@
 from __future__ import print_function
 
 import calendar
-import imp
+import importlib
 import io
 import marshal
+import os
+import py_compile
 import struct
 import sys
+import tempfile
 import zipfile
+
+PY3 = sys.version_info[0] >= 3
+if not PY3:
+    import imp
 
 EPOCH = (2018, 11, 11, 11, 11, 11)
 EPOCH_BIN = struct.pack('<L', calendar.timegm(EPOCH))
@@ -26,14 +33,28 @@ def main():
                 with open(inp, 'rb') as fp:
                     source = fp.read()
                     z.writestr(info, source)
-                if inp.endswith(".py"):
-                    code = compile(source, arcname, 'exec', dont_inherit=True)
-                    data = io.BytesIO()
-                    data.write(imp.get_magic())
-                    data.write(EPOCH_BIN)
-                    data.write(marshal.dumps(code))
-                    info = zipfile.ZipInfo(arcname + "c", EPOCH)
-                    z.writestr(info, data.getvalue())
+                    if inp.endswith(".py"):
+                        if PY3:
+                            tf = tempfile.NamedTemporaryFile()
+                            tf.close()
+                            py_compile.compile(
+                                inp,
+                                cfile=tf.name,
+                                dfile=arcname,
+                                invalidation_mode=py_compile.PycInvalidationMode.UNCHECKED_HASH,
+                            )
+                            with open(tf.name, "rb") as tfh:
+                                output_path = importlib.util.cache_from_source(arcname)
+                                info = zipfile.ZipInfo(output_path, EPOCH)
+                                z.writestr(info, tfh.read())
+                        else:
+                            code = compile(source, arcname, 'exec', dont_inherit=True)
+                            data = io.BytesIO()
+                            data.write(imp.get_magic())
+                            data.write(EPOCH_BIN)
+                            data.write(marshal.dumps(code))
+                            info = zipfile.ZipInfo(arcname + "c", EPOCH)
+                            z.writestr(info, data.getvalue())
             else:
                 z.write(inp, arcname)
 
