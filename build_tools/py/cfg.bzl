@@ -26,4 +26,5 @@ ALL_ABIS = [
 ]
 
 PY2_TEST_ABI = cpython_27
-PY3_TEST_ABI = cpython_37
+PY3_TEST_ABI = cpython_38
+PY3_ALTERNATIVE_TEST_ABIS = []

@@ -15,7 +15,7 @@ load(
 )
 load("//build_tools/services:svc.bzl", "dbx_services_test")
 load("//build_tools/py:cfg.bzl", "GLOBAL_PYTEST_ARGS", "GLOBAL_PYTEST_PLUGINS", "PYPI_MIRROR_URL")
-load("//build_tools/py:cfg.bzl", "ALL_ABIS", "NON_THIRDPARTY_PACKAGE_PREFIXES", "PY2_TEST_ABI", "PY3_TEST_ABI")
+load("//build_tools/py:cfg.bzl", "ALL_ABIS", "NON_THIRDPARTY_PACKAGE_PREFIXES", "PY2_TEST_ABI", "PY3_ALTERNATIVE_TEST_ABIS", "PY3_TEST_ABI")
 load(
     "//build_tools/py:common.bzl",
     "DbxPyVersionCompatibility",
@@ -1020,6 +1020,9 @@ def dbx_py_pytest_test(
             pythons.append((PY2_TEST_ABI.build_tag, variant))
         if python3_compatible:
             pythons.append((PY3_TEST_ABI.build_tag, ""))
+            if not python2_compatible:
+                for abi in PY3_ALTERNATIVE_TEST_ABIS:
+                    pythons.append((abi.build_tag, abi.build_tag))
     else:
         if (not python2_compatible) or python3_compatible:
             fail('Cannot use a custom "python" attribute and set python(2|3)_compatible.')
