@@ -18,6 +18,7 @@ def gen_ext_module(ctx, use_cpp):
         inputs = [ctx.file.cdef, ctx.file.source],
         outputs = [c_ext_module],
         executable = ctx.executable._gen_ext_module_c,
+        use_default_shell_env = True,
         arguments = [
             "--out",
             c_ext_module.path,
@@ -43,11 +44,12 @@ setup(
             sources=[{sources}],
             extra_compile_args=[{extra_compile_args}],
             extra_link_args={extra_link_args},
+            libraries={libraries},
         )
     ]
 ) """
 
-def gen_setup_py(ctx, c_files, extra_compile_args = [], extra_link_args = []):
+def gen_setup_py(ctx, c_files, extra_compile_args = [], extra_link_args = [], libraries = []):
     setup_py = local_new_file(ctx, "setup.py")
     prefix_len = len(setup_py.dirname) + 1
     sources = ", ".join([
@@ -59,6 +61,7 @@ def gen_setup_py(ctx, c_files, extra_compile_args = [], extra_link_args = []):
         for arg in extra_compile_args
     ])
     extra_link_args = repr(extra_link_args)
+    libraries = repr(libraries)
     ctx.actions.write(
         output = setup_py,
         content = SETUP_PY.format(
@@ -67,6 +70,7 @@ def gen_setup_py(ctx, c_files, extra_compile_args = [], extra_link_args = []):
             sources = sources,
             extra_compile_args = extra_compile_args,
             extra_link_args = extra_link_args,
+            libraries = libraries,
         ),
     )
     return setup_py
@@ -78,6 +82,7 @@ def _cffi_module_impl(ctx):
         c_files = [c_ext_module],
         extra_compile_args = ctx.attr.copts,
         extra_link_args = ctx.attr.linkopts,
+        libraries = ctx.attr.libraries,
     )
 
     return struct(
@@ -104,6 +109,7 @@ _cffi_module = rule(
         "use_cpp": attr.bool(default = False),
         "copts": attr.string_list(),
         "linkopts": attr.string_list(),
+        "libraries": attr.string_list(),
         "_gen_ext_module_c": attr.label(
             default = Label("//build_tools/py:build_cffi_binding"),
             cfg = "host",

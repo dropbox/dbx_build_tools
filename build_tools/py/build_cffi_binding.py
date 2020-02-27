@@ -11,6 +11,7 @@ if __name__ == "__main__":
     parser.add_argument("--ext-name", type=str, required=True)
     parser.add_argument("--source", type=str, required=True)
     args = parser.parse_args()
+    ffibuilder.set_unicode(True)
     with open(args.cdef) as fp:
         ffibuilder.cdef(fp.read())
     with open(args.source) as fp:
