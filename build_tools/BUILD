@@ -52,7 +52,6 @@ dbx_py_binary(
         "@com_github_plougher_squashfs-tools//:mksquashfs",
     ],
     main = "build_sqfs.py",
-    python = "//thirdparty/cpython:drte-interpreter-37",
     python2_compatible = False,
     python3_compatible = True,
     deps = [
@@ -94,7 +93,6 @@ dbx_py_binary(
     name = "stdin_to_junit",
     srcs = ["stdin_to_junit.py"],
     main = "stdin_to_junit.py",
-    python = "//thirdparty/cpython:drte-interpreter-37",
     python2_compatible = False,
     python3_compatible = True,
 )

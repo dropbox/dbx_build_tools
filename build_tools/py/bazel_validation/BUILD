@@ -35,7 +35,6 @@ dbx_py_binary(
     name = "check_bazel_deps",
     srcs = ["check_bazel_deps.py"],
     main = "check_bazel_deps.py",
-    python = "//thirdparty/cpython:drte-interpreter-37",
     python2_compatible = False,
     python3_compatible = True,
     validate = "strict",

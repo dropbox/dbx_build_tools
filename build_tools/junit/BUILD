@@ -10,7 +10,6 @@ dbx_py_binary(
     testonly = True,
     srcs = ["junit_wrapper.py"],
     main = "junit_wrapper.py",
-    python = "//thirdparty/cpython:drte-interpreter-37",
     python2_compatible = False,
     python3_compatible = True,
 )

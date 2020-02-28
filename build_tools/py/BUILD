@@ -17,7 +17,6 @@ dbx_py_binary(
     name = "build_cffi_binding",
     srcs = ["build_cffi_binding.py"],
     main = "build_cffi_binding.py",
-    python = "//thirdparty/cpython:drte-interpreter-37",
     python2_compatible = False,
     python3_compatible = True,
     validate = "strict",
