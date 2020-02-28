@@ -39,11 +39,6 @@ BUILD_TAG_TO_TOOLCHAIN_MAP = {
     cpython_37.build_tag: CPYTHON_37_TOOLCHAIN_NAME,
     cpython_38.build_tag: CPYTHON_38_TOOLCHAIN_NAME,
     cpython_27.build_tag: CPYTHON_27_TOOLCHAIN_NAME,
-    # NOTE: These entries are mainly here for compatibility reasons.
-    # Once we migrate over to purely specifying tags for "python" values, these
-    # compat entries can be dropped.
-    "//thirdparty/cpython:drte-interpreter-37": CPYTHON_37_TOOLCHAIN_NAME,
-    "//thirdparty/cpython:drte-interpreter": CPYTHON_27_TOOLCHAIN_NAME,
 }
 
 DbxPyInterpreter = provider(fields = [
