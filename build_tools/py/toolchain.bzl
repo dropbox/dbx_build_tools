@@ -35,8 +35,6 @@ ALL_TOOLCHAIN_NAMES = [
     CPYTHON_38_TOOLCHAIN_NAME,
 ]
 
-DEFAULT_PY3_TOOLCHAIN_NAME = CPYTHON_37_TOOLCHAIN_NAME
-
 BUILD_TAG_TO_TOOLCHAIN_MAP = {
     cpython_37.build_tag: CPYTHON_37_TOOLCHAIN_NAME,
     cpython_38.build_tag: CPYTHON_38_TOOLCHAIN_NAME,
@@ -56,11 +54,6 @@ DbxPyInterpreter = provider(fields = [
     "runtime",
     "major_python_version",
 ])
-
-def get_default_py_toolchain_name(python2_compatible):
-    if not python2_compatible:
-        return DEFAULT_PY3_TOOLCHAIN_NAME
-    return CPYTHON_27_TOOLCHAIN_NAME
 
 def get_py_toolchain_name(python_or_build_tag):
     """Gets the top-level toolchain name."""

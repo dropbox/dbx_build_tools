@@ -9,13 +9,23 @@ load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
 load(
     "@dbx_build_tools//build_tools/py:toolchain.bzl",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
+    "CPYTHON_27_TOOLCHAIN_NAME",
     "DbxPyInterpreter",
-    "get_default_py_toolchain_name",
     "get_py_toolchain_name",
 )
 load("//build_tools/services:svc.bzl", "dbx_services_test")
-load("//build_tools/py:cfg.bzl", "GLOBAL_PYTEST_ARGS", "GLOBAL_PYTEST_PLUGINS", "PYPI_MIRROR_URL")
-load("//build_tools/py:cfg.bzl", "ALL_ABIS", "NON_THIRDPARTY_PACKAGE_PREFIXES", "PY2_TEST_ABI", "PY3_ALTERNATIVE_TEST_ABIS", "PY3_TEST_ABI")
+load(
+    "//build_tools/py:cfg.bzl",
+    "ALL_ABIS",
+    "GLOBAL_PYTEST_ARGS",
+    "GLOBAL_PYTEST_PLUGINS",
+    "NON_THIRDPARTY_PACKAGE_PREFIXES",
+    "PY2_TEST_ABI",
+    "PY3_ALTERNATIVE_TEST_ABIS",
+    "PY3_DEFAULT_BINARY_ABI",
+    "PY3_TEST_ABI",
+    "PYPI_MIRROR_URL",
+)
 load(
     "//build_tools/py:common.bzl",
     "DbxPyVersionCompatibility",
@@ -585,6 +595,11 @@ dbx_py_local_piplib_internal = rule(
     fragments = ["cpp"],
     toolchains = ALL_TOOLCHAIN_NAMES,
 )
+
+def get_default_py_toolchain_name(python2_compatible):
+    if not python2_compatible:
+        return BUILD_TAG_TO_TOOLCHAIN_MAP[PY3_DEFAULT_BINARY_ABI.build_tag]
+    return CPYTHON_27_TOOLCHAIN_NAME
 
 def _dbx_py_binary_impl(ctx):
     return dbx_py_binary_base_impl(ctx, internal_bootstrap = False)
