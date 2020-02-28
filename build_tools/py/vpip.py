@@ -360,8 +360,15 @@ def build_pip_archive(workdir):
             if lib.startswith("-l"):
                 libraries.append(lib[2:])
             else:
-                # pip will change the working directory, so find the absolute path.
-                link_objs.append(os.path.abspath(lib))
+                # NOTE: Normally we want to use the `--link-objects` option for
+                #       but it doesn't appear to do anything for MSVC, so
+                #       add the libraries to libraries/library_dirs instead.
+                # pip will change the working directory, so use absolute paths.
+                if ARGS.msvc_toolchain:
+                    libraries.append(os.path.basename(lib)[:-len(".lib")])
+                    library_dirs.add(os.path.dirname(os.path.abspath(lib)))
+                else:
+                    link_objs.append(os.path.abspath(lib))
         for dyn_lib in ARGS.extra_dynamic_libs:
             library_dirs.add(os.path.abspath(os.path.dirname(dyn_lib)))
             dyn_lib_name = os.path.basename(dyn_lib)
