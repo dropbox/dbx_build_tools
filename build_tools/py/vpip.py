@@ -379,7 +379,7 @@ def build_pip_archive(workdir):
                 dyn_lib_name = dyn_lib_name[len("lib") :]
             libraries.append(dyn_lib_name)
         if library_dirs:
-            cmd.append("--global-option=--library-dirs=%s" % " ".join(library_dirs))
+            cmd.append("--global-option=--library-dirs=%s" % os.pathsep.join(library_dirs))
         if libraries:
             cmd.append("--global-option=--libraries=%s" % " ".join(libraries))
         if link_objs:
