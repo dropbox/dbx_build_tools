@@ -283,7 +283,9 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         command_args.add(version_spec)
         description = version_spec
 
-    env = dict(link_env)
+    env = ctx.configuration.default_shell_env
+    env.update(link_env)
+
     genfiles_root = ctx.configuration.genfiles_dir.path + "/" + ctx.label.workspace_root
     for e in ctx.attr.env:
         env[e] = ctx.expand_make_variables("cmd", ctx.expand_location(ctx.attr.env[e], targets = ctx.attr.tools), {
