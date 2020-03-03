@@ -116,7 +116,10 @@ def _collect_data(ctx, data, symlink_map_attr, binary_link_dir):
 
     for target in data:
         files_to_run = target[DefaultInfo].files_to_run
-        is_executable = files_to_run.executable != None
+        if files_to_run and files_to_run.executable and files_to_run.runfiles_manifest:
+            is_executable = True
+        else:
+            is_executable = False
 
         empty_file = ctx.actions.declare_file(ctx.label.name + ".empty")
         ctx.actions.write(empty_file, "")
