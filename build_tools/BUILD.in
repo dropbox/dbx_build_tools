@@ -140,6 +140,7 @@ dbx_py_binary(
         "@com_github_plougher_squashfs-tools//:mksquashfs",
     ],
     main = "build_sqfs.py",
+    python = "cpython-37",
     python2_compatible = False,
     python3_compatible = True,
 )
