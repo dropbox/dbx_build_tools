@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "assertion_format.go",
         "assertion_forward.go",
+        "assertion_order.go",
         "assertions.go",
         "doc.go",
         "errors.go",
@@ -20,5 +21,6 @@ dbx_go_library(
     deps = [
         "//go/src/github.com/davecgh/go-spew/spew",
         "//go/src/github.com/pmezard/go-difflib/difflib",
+        "//go/src/gopkg.in/yaml.v2",
     ],
 )

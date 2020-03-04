@@ -7,6 +7,7 @@ dbx_go_library(
     name = "objx",
     srcs = [
         "accessors.go",
+        "constants.go",
         "conversions.go",
         "doc.go",
         "map.go",
