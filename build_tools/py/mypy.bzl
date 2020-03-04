@@ -77,10 +77,12 @@ def _get_stub_roots(stub_srcs):
                 break
     return roots
 
-def _get_trans_roots(target, srcs, stub_srcs, deps):
+def _get_trans_roots(target, srcs, stub_srcs, deps, ctx):
     direct = [src.root.path for src in srcs]
     if not target:
         direct += _get_stub_roots(stub_srcs)
+        if str(ctx.label).startswith("//mypy-stubs:mypy-stubs"):
+            direct += ["mypy-stubs"]
     transitive = [
         dep[MypyProvider].trans_roots
         for dep in deps
@@ -148,12 +150,16 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
     pyver_dash = python_version.replace(".", "-")
     pyver_under = python_version.replace(".", "_")
 
-    # Except for the bootstrap rule, add typeshed to the dependencies.
+    # Except for the bootstrap rule, add typeshed and mypy-stubs to the dependencies.
     if target:
         typeshed = getattr(ctx.attr, "_typeshed_" + pyver_under)
-        deps = deps + [typeshed]
+        mypy_stubs = getattr(ctx.attr, "_mypy_stubs_" + pyver_under)
+        deps = deps + [typeshed, mypy_stubs]
+    elif str(ctx.label).startswith("//mypy-stubs:mypy-stubs"):
+        # Two-stage bootstrap, mypy-stubs depend on typeshed, but not vice versa.
+        deps = deps + [getattr(ctx.attr, "_typeshed_" + pyver_under)]
 
-    trans_roots = _get_trans_roots(target, srcs, stub_srcs, deps)
+    trans_roots = _get_trans_roots(target, srcs, stub_srcs, deps, ctx)
 
     trans_caches = _get_trans_outs([], deps)
 
@@ -426,15 +432,20 @@ def _dbx_mypy_aspect_impl(target, ctx):
         use_mypyc = getattr(rule.attr, "compiled", False),
     )
 
-_dbx_mypy_aspect_attrs = {
-    "python_version": attr.string(values = ["2.7", "3.7"]),
+_dbx_mypy_typeshed_attrs = {
     "_typeshed_2_7": attr.label(default = Label("//thirdparty/typeshed:typeshed-2.7")),
     "_typeshed_3_7": attr.label(default = Label("//thirdparty/typeshed:typeshed-3.7")),
+}
+_dbx_mypy_aspect_attrs = {
+    "python_version": attr.string(values = ["2.7", "3.7"]),
+    "_mypy_stubs_2_7": attr.label(default = Label("//mypy-stubs:mypy-stubs-2.7")),
+    "_mypy_stubs_3_7": attr.label(default = Label("//mypy-stubs:mypy-stubs-3.7")),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
     "_mypyc_runtime": attr.label(default = Label("//thirdparty/mypy:mypyc_runtime")),
     "_module_shim_template": attr.label(default = Label("//thirdparty/mypy:module_shim_template")),
 }
 _dbx_mypy_aspect_attrs.update(_dbx_mypy_common_attrs)
+_dbx_mypy_aspect_attrs.update(_dbx_mypy_typeshed_attrs)
 
 dbx_mypy_aspect = aspect(
     implementation = _dbx_mypy_aspect_impl,
@@ -537,6 +548,21 @@ _dbx_mypy_bootstrap_attrs.update(_dbx_mypy_common_attrs)
 dbx_mypy_bootstrap = rule(
     implementation = _dbx_mypy_bootstrap_impl,
     attrs = _dbx_mypy_bootstrap_attrs,
+)
+
+# Second bootstrap rule to build mypy-stubs.
+# This depends on typeshed is parameterized by python_version.
+
+_dbx_mypy_bootstrap_stubs_attrs = {
+    "python_version": attr.string(default = "2.7"),
+    "stub_srcs": attr.label_list(allow_files = [".pyi"]),
+}
+_dbx_mypy_bootstrap_stubs_attrs.update(_dbx_mypy_common_attrs)
+_dbx_mypy_bootstrap_stubs_attrs.update(_dbx_mypy_typeshed_attrs)
+
+dbx_mypy_bootstrap_stubs = rule(
+    implementation = _dbx_mypy_bootstrap_impl,
+    attrs = _dbx_mypy_bootstrap_stubs_attrs,
 )
 
 # mypyc rules
