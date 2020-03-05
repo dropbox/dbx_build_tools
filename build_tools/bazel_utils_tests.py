@@ -1,6 +1,6 @@
 # mypy: allow-untyped-defs
 
-from xml.dom import minidom
+from xml.dom import minidom  # type: ignore[import]
 
 import pytest
 

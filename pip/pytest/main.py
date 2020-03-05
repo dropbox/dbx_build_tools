@@ -11,7 +11,7 @@ import os
 
 import pytest
 
-from importlib_metadata import MetadataPathFinder
+from importlib_metadata import MetadataPathFinder  # type: ignore[import]
 
 
 # The only zip dist we use is the stdlib, which won't have the packages we are looking for.

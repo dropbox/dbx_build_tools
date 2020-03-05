@@ -6,10 +6,10 @@ import os
 
 from os.path import expandvars
 
-import coverage
-import coverage.collector
-import coverage.control
-import coverage.files
+import coverage  # type: ignore[import]
+import coverage.collector  # type: ignore[import]
+import coverage.control  # type: ignore[import]
+import coverage.files  # type: ignore[import]
 
 # Coverage likes to realpath filenmaess but we need paths relative to the exec
 # root. So we patch it a bit get it inline.

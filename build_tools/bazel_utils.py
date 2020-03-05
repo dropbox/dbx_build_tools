@@ -7,7 +7,7 @@ import pipes
 import subprocess
 import sys
 
-from xml.dom import minidom
+from xml.dom import minidom  # type: ignore[import]
 
 MYPY = False
 if MYPY:

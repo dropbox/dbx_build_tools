@@ -1,6 +1,6 @@
 import argparse
 
-from cffi import FFI
+from cffi import FFI  # type: ignore[import]
 
 ffibuilder = FFI()
 
