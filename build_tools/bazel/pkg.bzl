@@ -114,7 +114,9 @@ def _collect_data(ctx, data, symlink_map_attr, binary_link_dir):
     symlink_map = dict()
     symlink_map.update(symlink_map_attr)
 
-    for target in data:
+    targets = _collect_transitive_data(data).to_list()
+
+    for target in targets:
         files_to_run = target[DefaultInfo].files_to_run
         if files_to_run and files_to_run.executable and files_to_run.runfiles_manifest:
             is_executable = True
@@ -197,6 +199,39 @@ def _write_map_to_file(ctx, name, dictionary):
     )
 
     return file_to_write
+
+DbxPkgGroupInfo = provider(fields = [
+    "data",
+])
+
+def _collect_transitive_data(data):
+    transitive_data = []
+    direct_data = []
+    for target in data:
+        if DbxPkgGroupInfo in target:
+            transitive_data.append(target[DbxPkgGroupInfo].data)
+        else:
+            direct_data.append(target)
+    return depset(direct_data, transitive = transitive_data)
+
+def pkg_group_impl(ctx):
+    return struct(
+        providers = [
+            DbxPkgGroupInfo(
+                data = _collect_transitive_data(ctx.attr.data),
+            ),
+        ],
+    )
+
+# dbx_pkg_group allows one to define a group of targets that can then be included
+# correctly in dbx_pkg_sqfs later. filegroup doesn't work, as it loses information
+# like which targets are binaries
+dbx_pkg_group = rule(
+    implementation = pkg_group_impl,
+    attrs = {
+        "data": attr.label_list(allow_files = True),
+    },
+)
 
 def pkg_sqfs_impl(ctx):
     binary_link_dir = ""
