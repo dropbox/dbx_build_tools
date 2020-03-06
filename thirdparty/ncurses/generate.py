@@ -12,8 +12,9 @@
 import os
 import shutil
 import subprocess
+import sys
 
-NCURSES_VERSION="ncurses-6.1"
+NCURSES_VERSION="ncurses-6.2"
 DRTE_BUILD_SYSROOT = 'drte-v3-build-sysroot_1.0.0.tar.xz'
 SRC_DIR = os.path.realpath(NCURSES_VERSION)
 INCLUDE_MAKE = [
@@ -44,6 +45,7 @@ NCURCES_MAKE = NCURCES_OUTS = [
     "lib_keyname.c",
     "comp_captab.c",
     "names.c",
+    "comp_userdefs.c",
 ]
 GENRULE_TEMPLATE = """
 genrule(
@@ -58,11 +60,12 @@ EOF
 """
 
 if not os.path.exists('/dbxce'):
-    os.exit('must run in container')
+    sys.exit('must run in container')
 
 subprocess.check_call(['tar', 'xf', NCURSES_VERSION + ".tar.gz"])
 subprocess.check_call(['tar', 'xf', DRTE_BUILD_SYSROOT])
 CC = os.path.realpath('root/bin/gcc')
+AR = os.path.realpath('root/x86_64-linux-gnu/bin/ar')
 
 if os.path.exists('build'):
     shutil.rmtree('build')
@@ -86,7 +89,7 @@ subprocess.check_call([
     "--enable-widec",
     "--without-cxx",
     '--with-terminfo-dirs=/etc/terminfo:/lib/terminfo:/usr/share/terminfo',
-], env={'CC': CC})
+], env={'CC': CC, 'AR': AR})
 
 subprocess.check_call(["make", "-C", "include"] + INCLUDE_MAKE)
 subprocess.check_call(["make", "-C", "ncurses"] + NCURCES_MAKE)

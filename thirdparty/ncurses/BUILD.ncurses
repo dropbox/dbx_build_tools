@@ -143,6 +143,7 @@ NCURSES_SRCS = [
     "ncurses/comp_captab.c",
     "ncurses/tinfo/comp_error.c",
     "ncurses/tinfo/comp_hash.c",
+    "ncurses/comp_userdefs.c",
     "ncurses/tinfo/db_iterator.c",
     "ncurses/tinfo/doalloc.c",
     "ncurses/tinfo/entries.c",
@@ -305,7 +306,8 @@ genrule(
     cmd = r"""
 cat << 'EOF' > $@
 /****************************************************************************
- * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
+ * Copyright 2018-2019,2020 Thomas E. Dickey                                *
+ * Copyright 1998-2016,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -338,7 +340,7 @@ cat << 'EOF' > $@
  *     and: Thomas E. Dickey                        1996-on                 *
  ****************************************************************************/
 
-/* $$Id: curses.h.in,v 1.257 2017/11/21 00:11:37 tom Exp $$ */
+/* $$Id: curses.h.in,v 1.266 2020/02/08 10:51:53 tom Exp $$ */
 
 #ifndef __NCURSES_H
 #define __NCURSES_H
@@ -348,12 +350,12 @@ cat << 'EOF' > $@
 
 /* These are defined only in curses.h, and are used for conditional compiles */
 #define NCURSES_VERSION_MAJOR 6
-#define NCURSES_VERSION_MINOR 1
-#define NCURSES_VERSION_PATCH 20180127
+#define NCURSES_VERSION_MINOR 2
+#define NCURSES_VERSION_PATCH 20200212
 
 /* This is defined in more than one ncurses header, for identification */
 #undef  NCURSES_VERSION
-#define NCURSES_VERSION "6.1"
+#define NCURSES_VERSION "6.2"
 
 /*
  * Identify the mouse encoding version.
@@ -433,6 +435,14 @@ cat << 'EOF' > $@
  */
 #ifndef NCURSES_REENTRANT
 #define NCURSES_REENTRANT 0
+#endif
+
+/*
+ * In certain environments, we must work around linker problems for data
+ */
+#undef NCURSES_BROKEN_LINKER
+#if 0
+#define NCURSES_BROKEN_LINKER 1
 #endif
 
 /*
@@ -594,7 +604,7 @@ extern "C" {
 
 /* line graphics */
 
-#if 1 || NCURSES_REENTRANT
+#if 0 || NCURSES_REENTRANT
 NCURSES_WRAPPED_VAR(chtype*, acs_map);
 #define acs_map NCURSES_PUBLIC_VAR(acs_map())
 #else
@@ -727,7 +737,7 @@ typedef struct
     wchar_t	chars[CCHARW_MAX];
 #if 1
 #undef NCURSES_EXT_COLORS
-#define NCURSES_EXT_COLORS 20180127
+#define NCURSES_EXT_COLORS 20200212
     int		ext_color;	/* color pair, must be more than 16-bits */
 #endif
 }
@@ -886,6 +896,13 @@ extern NCURSES_EXPORT(int) wgetnstr_events (WINDOW *,char *,int,_nc_eventlist *)
 #define	GCC_UNUSED /* nothing */
 #endif
 
+#undef  GCC_DEPRECATED
+#if (__GNUC__ - 0 > 3 || (__GNUC__ - 0 == 3 && __GNUC_MINOR__ - 0 >= 2))
+#define GCC_DEPRECATED(msg) __attribute__((deprecated))
+#else
+#define GCC_DEPRECATED(msg) /* nothing */
+#endif
+
 /*
  * Curses uses a helper function.  Define our type for this to simplify
  * extending it for the sp-funcs feature.
@@ -1007,7 +1024,7 @@ extern NCURSES_EXPORT(int) mvinsstr (int, int, const char *);		/* generated */
 extern NCURSES_EXPORT(int) mvinstr (int, int, char *);			/* generated */
 extern NCURSES_EXPORT(int) mvprintw (int,int, const char *,...)		/* implemented */
 		GCC_PRINTFLIKE(3,4);
-extern NCURSES_EXPORT(int) mvscanw (int,int, NCURSES_CONST char *,...)	/* implemented */
+extern NCURSES_EXPORT(int) mvscanw (int,int, const char *,...)		/* implemented */
 		GCC_SCANFLIKE(3,4);
 extern NCURSES_EXPORT(int) mvvline (int, int, chtype, int);		/* generated */
 extern NCURSES_EXPORT(int) mvwaddch (WINDOW *, int, int, const chtype);	/* generated */
@@ -1032,12 +1049,12 @@ extern NCURSES_EXPORT(int) mvwinsstr (WINDOW *, int, int, const char *);	/* gene
 extern NCURSES_EXPORT(int) mvwinstr (WINDOW *, int, int, char *);		/* generated */
 extern NCURSES_EXPORT(int) mvwprintw (WINDOW*,int,int, const char *,...)	/* implemented */
 		GCC_PRINTFLIKE(4,5);
-extern NCURSES_EXPORT(int) mvwscanw (WINDOW *,int,int, NCURSES_CONST char *,...)	/* implemented */
+extern NCURSES_EXPORT(int) mvwscanw (WINDOW *,int,int, const char *,...)	/* implemented */
 		GCC_SCANFLIKE(4,5);
 extern NCURSES_EXPORT(int) mvwvline (WINDOW *,int, int, chtype, int);	/* generated */
 extern NCURSES_EXPORT(int) napms (int);					/* implemented */
 extern NCURSES_EXPORT(WINDOW *) newpad (int,int);			/* implemented */
-extern NCURSES_EXPORT(SCREEN *) newterm (NCURSES_CONST char *,FILE *,FILE *);	/* implemented */
+extern NCURSES_EXPORT(SCREEN *) newterm (const char *,FILE *,FILE *);	/* implemented */
 extern NCURSES_EXPORT(WINDOW *) newwin (int,int,int,int);		/* implemented */
 extern NCURSES_EXPORT(int) nl (void);					/* implemented */
 extern NCURSES_EXPORT(int) nocbreak (void);				/* implemented */
@@ -1066,7 +1083,7 @@ extern NCURSES_EXPORT(int) reset_prog_mode (void);			/* implemented */
 extern NCURSES_EXPORT(int) reset_shell_mode (void);			/* implemented */
 extern NCURSES_EXPORT(int) ripoffline (int, int (*)(WINDOW *, int));	/* implemented */
 extern NCURSES_EXPORT(int) savetty (void);				/* implemented */
-extern NCURSES_EXPORT(int) scanw (NCURSES_CONST char *,...)		/* implemented */
+extern NCURSES_EXPORT(int) scanw (const char *,...)			/* implemented */
 		GCC_SCANFLIKE(1,2);
 extern NCURSES_EXPORT(int) scr_dump (const char *);			/* implemented */
 extern NCURSES_EXPORT(int) scr_init (const char *);			/* implemented */
@@ -1112,10 +1129,10 @@ extern NCURSES_EXPORT(void) use_tioctl (bool);				/* implemented */
 extern NCURSES_EXPORT(int) vidattr (chtype);				/* implemented */
 extern NCURSES_EXPORT(int) vidputs (chtype, NCURSES_OUTC);		/* implemented */
 extern NCURSES_EXPORT(int) vline (chtype, int);				/* generated */
-extern NCURSES_EXPORT(int) vwprintw (WINDOW *, const char *,va_list);	/* implemented */
-extern NCURSES_EXPORT(int) vw_printw (WINDOW *, const char *,va_list);	/* generated */
-extern NCURSES_EXPORT(int) vwscanw (WINDOW *, NCURSES_CONST char *,va_list);	/* implemented */
-extern NCURSES_EXPORT(int) vw_scanw (WINDOW *, NCURSES_CONST char *,va_list);	/* generated */
+extern NCURSES_EXPORT(int) vwprintw (WINDOW *, const char *,va_list) GCC_DEPRECATED(use vw_printw);	/* implemented */
+extern NCURSES_EXPORT(int) vw_printw (WINDOW *, const char *,va_list);	/* implemented */
+extern NCURSES_EXPORT(int) vwscanw (WINDOW *, const char *,va_list) GCC_DEPRECATED(use vw_scanw);	/* implemented */
+extern NCURSES_EXPORT(int) vw_scanw (WINDOW *, const char *,va_list);	/* implemented */
 extern NCURSES_EXPORT(int) waddch (WINDOW *, const chtype);		/* implemented */
 extern NCURSES_EXPORT(int) waddchnstr (WINDOW *,const chtype *,int);	/* implemented */
 extern NCURSES_EXPORT(int) waddchstr (WINDOW *,const chtype *);		/* generated */
@@ -1161,7 +1178,7 @@ extern NCURSES_EXPORT(int) wprintw (WINDOW *, const char *,...)		/* implemented 
 		GCC_PRINTFLIKE(2,3);
 extern NCURSES_EXPORT(int) wredrawln (WINDOW *,int,int);		/* implemented */
 extern NCURSES_EXPORT(int) wrefresh (WINDOW *);				/* implemented */
-extern NCURSES_EXPORT(int) wscanw (WINDOW *, NCURSES_CONST char *,...)	/* implemented */
+extern NCURSES_EXPORT(int) wscanw (WINDOW *, const char *,...)		/* implemented */
 		GCC_SCANFLIKE(2,3);
 extern NCURSES_EXPORT(int) wscrl (WINDOW *,int);			/* implemented */
 extern NCURSES_EXPORT(int) wsetscrreg (WINDOW *,int,int);		/* implemented */
@@ -1176,25 +1193,19 @@ extern NCURSES_EXPORT(int) wvline (WINDOW *,chtype,int);		/* implemented */
 /*
  * These are also declared in <term.h>:
  */
-extern NCURSES_EXPORT(int) tigetflag (NCURSES_CONST char *);		/* implemented */
-extern NCURSES_EXPORT(int) tigetnum (NCURSES_CONST char *);		/* implemented */
-extern NCURSES_EXPORT(char *) tigetstr (NCURSES_CONST char *);		/* implemented */
+extern NCURSES_EXPORT(int) tigetflag (const char *);			/* implemented */
+extern NCURSES_EXPORT(int) tigetnum (const char *);			/* implemented */
+extern NCURSES_EXPORT(char *) tigetstr (const char *);			/* implemented */
 extern NCURSES_EXPORT(int) putp (const char *);				/* implemented */
 
 #if NCURSES_TPARM_VARARGS
-extern NCURSES_EXPORT(char *) tparm (NCURSES_CONST char *, ...);	/* special */
+extern NCURSES_EXPORT(char *) tparm (const char *, ...);		/* special */
 #else
-extern NCURSES_EXPORT(char *) tparm (NCURSES_CONST char *, NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG);	/* special */
-extern NCURSES_EXPORT(char *) tparm_varargs (NCURSES_CONST char *, ...);	/* special */
+extern NCURSES_EXPORT(char *) tparm (const char *, NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG,NCURSES_TPARM_ARG);	/* special */
+extern NCURSES_EXPORT(char *) tparm_varargs (const char *, ...);	/* special */
 #endif
 
 extern NCURSES_EXPORT(char *) tiparm (const char *, ...);		/* special */
-
-/*
- * X/Open says this returns a bool; SVr4 also checked for out-of-range line.
- * The macro provides compatibility:
- */
-#define is_linetouched(w,l) ((!(w) || ((l) > getmaxy(w)) || ((l) < 0)) ? ERR : (is_linetouched)((w),(l)))
 
 /*
  * These functions are not in X/Open, but we use them in macro definitions:
@@ -1221,7 +1232,7 @@ extern NCURSES_EXPORT(int) getpary (const WINDOW *);			/* generated */
  */
 #if 1
 #undef  NCURSES_EXT_FUNCS
-#define NCURSES_EXT_FUNCS 20180127
+#define NCURSES_EXT_FUNCS 20200212
 typedef int (*NCURSES_WINDOW_CB)(WINDOW *, void *);
 typedef int (*NCURSES_SCREEN_CB)(SCREEN *, void *);
 extern NCURSES_EXPORT(bool) is_term_resized (int, int);
@@ -1283,7 +1294,7 @@ extern NCURSES_EXPORT(int) wgetscrreg (const WINDOW *, int *, int *); /* generat
  */
 #if 1
 #undef  NCURSES_SP_FUNCS
-#define NCURSES_SP_FUNCS 20180127
+#define NCURSES_SP_FUNCS 20200212
 #define NCURSES_SP_NAME(name) name##_sp
 
 /* Define the sp-funcs helper function */
@@ -1323,7 +1334,7 @@ extern NCURSES_EXPORT(char *) NCURSES_SP_NAME(longname) (SCREEN*); /* implemente
 extern NCURSES_EXPORT(int) NCURSES_SP_NAME(mvcur) (SCREEN*, int, int, int, int); /* implemented:SP_FUNC */
 extern NCURSES_EXPORT(int) NCURSES_SP_NAME(napms) (SCREEN*, int); /* implemented:SP_FUNC */
 extern NCURSES_EXPORT(WINDOW *) NCURSES_SP_NAME(newpad) (SCREEN*, int, int); /* implemented:SP_FUNC */
-extern NCURSES_EXPORT(SCREEN *) NCURSES_SP_NAME(newterm) (SCREEN*, NCURSES_CONST char *, FILE *, FILE *); /* implemented:SP_FUNC */
+extern NCURSES_EXPORT(SCREEN *) NCURSES_SP_NAME(newterm) (SCREEN*, const char *, FILE *, FILE *); /* implemented:SP_FUNC */
 extern NCURSES_EXPORT(WINDOW *) NCURSES_SP_NAME(newwin) (SCREEN*, int, int, int, int); /* implemented:SP_FUNC */
 extern NCURSES_EXPORT(int) NCURSES_SP_NAME(nl) (SCREEN*); /* implemented:SP_FUNC */
 extern NCURSES_EXPORT(int) NCURSES_SP_NAME(nocbreak) (SCREEN*); /* implemented:SP_FUNC */
@@ -1697,8 +1708,8 @@ extern NCURSES_EXPORT(int) NCURSES_SP_NAME(use_legacy_coding) (SCREEN*, int);	/*
  * use POSIX stdarg.h.  The ncurses versions of vwprintw/vwscanw already
  * use stdarg.h, so...
  */
-#define vw_printw		vwprintw
-#define vw_scanw		vwscanw
+/* define vw_printw		vwprintw */
+/* define vw_scanw		vwscanw */
 
 /*
  * Export fallback function for use in C++ binding.
@@ -1730,6 +1741,12 @@ NCURSES_EXPORT(int) vsscanf(const char *, const char *, va_list);
 #define wgetscrreg(win,t,b)	(NCURSES_OK_ADDR(win) ? (*(t) = (win)->_regtop, *(b) = (win)->_regbottom, OK) : ERR)
 #endif
 #endif
+
+/*
+ * X/Open says this returns a bool; SVr4 also checked for out-of-range line.
+ * The macro provides compatibility:
+ */
+#define is_linetouched(w,l) ((!(w) || ((l) > getmaxy(w)) || ((l) < 0)) ? ERR : (is_linetouched)((w),(l)))
 
 #endif /* NCURSES_NOMACROS */
 
@@ -1798,7 +1815,7 @@ extern NCURSES_EXPORT_VAR(int) TABSIZE;
 #define KEY_SRESET	0530		/* Soft (partial) reset (unreliable) */
 #define KEY_RESET	0531		/* Reset or hard reset (unreliable) */
 /*
- * These definitions were generated by ./MKkey_defs.sh ./Caps
+ * These definitions were generated by ./MKkey_defs.sh thirdparty/ncurses/ncurses-6.2/include/Caps thirdparty/ncurses/ncurses-6.2/include/Caps-ncurses
  */
 #define KEY_DOWN	0402		/* down-arrow key */
 #define KEY_UP		0403		/* up-arrow key */
@@ -2204,7 +2221,7 @@ extern NCURSES_EXPORT(const char *) _nc_viswibuf(const wint_t *);
 #endif
 
 #endif /* NCURSES_WIDECHAR */
-/* $$Id: curses.tail,v 1.23 2016/02/13 16:37:45 tom Exp $$ */
+/* $$Id: curses.tail,v 1.25 2019/12/14 22:28:39 tom Exp $$ */
 /*
  * vile:cmode:
  * This file is part of ncurses, designed to be appended after curses.h.in
@@ -2348,7 +2365,8 @@ extern NCURSES_EXPORT(char *) _tracecchar_t2 (int, const cchar_t *);
 #define _tracech_t		_tracechtype
 #define _tracech_t2		_tracechtype2
 #endif
-extern NCURSES_EXPORT(void) trace (const unsigned int);
+extern NCURSES_EXPORT(void) trace (const unsigned) GCC_DEPRECATED("use curses_trace");
+extern NCURSES_EXPORT(unsigned) curses_trace (const unsigned);
 
 /* trace masks */
 #define TRACE_DISABLE	0x0000	/* turn off tracing */
@@ -2378,6 +2396,8 @@ extern NCURSES_EXPORT(const char *) _nc_visbuf (const char *);
 #define OPTIMIZE_SCROLL		0x04	/* scroll optimization */
 #define OPTIMIZE_ALL		0xff	/* enable all optimizations (dflt) */
 #endif
+
+extern NCURSES_EXPORT(void) exit_curses (int) GCC_NORETURN;
 
 #include <unctrl.h>
 
@@ -2410,7 +2430,8 @@ genrule(
 cat << 'EOF' > $@
 /* include/ncurses_cfg.h.  Generated automatically by configure.  */
 /****************************************************************************
- * Copyright (c) 1998-2016,2017 Free Software Foundation, Inc.              *
+ * Copyright 2020 Thomas E. Dickey                                          *
+ * Copyright 1998-2016,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -2441,7 +2462,7 @@ cat << 'EOF' > $@
  *  Author: Thomas E. Dickey      1997-on                                   *
  ****************************************************************************/
 /*
- * $$Id: ncurses_cfg.hin,v 1.11 2017/12/09 20:41:54 tom Exp $$
+ * $$Id: ncurses_cfg.hin,v 1.12 2020/02/02 23:34:34 tom Exp $$
  *
  * Both ncurses_cfg.h and ncurses_def.h are internal header-files used when
  * building ncurses.
@@ -2460,8 +2481,8 @@ cat << 'EOF' > $@
 #define NC_CONFIG_H
 
 #define PACKAGE "ncurses"
-#define NCURSES_VERSION "6.0"
-#define NCURSES_PATCHDATE 20180127
+#define NCURSES_VERSION "6.2"
+#define NCURSES_PATCHDATE 20200212
 #define SYSTEM_NAME "linux-gnu"
 #define HAVE_LONG_FILE_NAMES 1
 #define MIXEDCASE_FILENAMES 1
@@ -2497,6 +2518,17 @@ cat << 'EOF' > $@
 #define NEED_WCHAR_H 1
 #define HAVE_FSEEKO 1
 #define RGB_PATH "/usr/lib64/X11/rgb.txt"
+#define STDC_HEADERS 1
+#define HAVE_SYS_TYPES_H 1
+#define HAVE_SYS_STAT_H 1
+#define HAVE_STDLIB_H 1
+#define HAVE_STRING_H 1
+#define HAVE_MEMORY_H 1
+#define HAVE_STRINGS_H 1
+#define HAVE_INTTYPES_H 1
+#define HAVE_STDINT_H 1
+#define HAVE_UNISTD_H 1
+#define SIZEOF_SIGNED_CHAR 1
 #define NCURSES_EXT_FUNCS 1
 #define HAVE_ASSUME_DEFAULT_COLORS 1
 #define HAVE_CURSES_VERSION 1
@@ -2517,17 +2549,6 @@ cat << 'EOF' > $@
 #define HAVE_RESET_COLOR_PAIRS 1
 #define NCURSES_EXT_PUTWIN 1
 #define NCURSES_NO_PADDING 1
-#define STDC_HEADERS 1
-#define HAVE_SYS_TYPES_H 1
-#define HAVE_SYS_STAT_H 1
-#define HAVE_STDLIB_H 1
-#define HAVE_STRING_H 1
-#define HAVE_MEMORY_H 1
-#define HAVE_STRINGS_H 1
-#define HAVE_INTTYPES_H 1
-#define HAVE_STDINT_H 1
-#define HAVE_UNISTD_H 1
-#define SIZEOF_SIGNED_CHAR 1
 #define USE_SIGWINCH 1
 #define NCURSES_WRAP_PREFIX "_nc_"
 #define USE_ASSUMED_COLOR 1
@@ -2562,14 +2583,19 @@ cat << 'EOF' > $@
 #define HAVE_UNISTD_H 1
 #define HAVE_GETOPT_H 1
 #define HAVE_GETOPT_HEADER 1
+#define DECL_ENVIRON 1
+#define HAVE_ENVIRON 1
+#define HAVE_PUTENV 1
+#define HAVE_SETENV 1
+#define HAVE_STRDUP 1
 #define HAVE_SYS_TIME_SELECT 1
 #define SIG_ATOMIC_T volatile sig_atomic_t
-#define BROKEN_LINKER 1
 #define HAVE_GETCWD 1
 #define HAVE_GETEGID 1
 #define HAVE_GETEUID 1
 #define HAVE_GETOPT 1
 #define HAVE_GETTTYNAM 1
+#define HAVE_LOCALECONV 1
 #define HAVE_POLL 1
 #define HAVE_PUTENV 1
 #define HAVE_REMOVE 1
@@ -2581,8 +2607,8 @@ cat << 'EOF' > $@
 #define HAVE_SIGACTION 1
 #define HAVE_STRDUP 1
 #define HAVE_STRSTR 1
+#define HAVE_SYSCONF 1
 #define HAVE_TCGETPGRP 1
-#define HAVE_TDESTROY 1
 #define HAVE_TIMES 1
 #define HAVE_TSEARCH 1
 #define HAVE_VSNPRINTF 1
@@ -2591,6 +2617,7 @@ cat << 'EOF' > $@
 #define HAVE_TERMIO_H 1
 #define HAVE_TERMIOS_H 1
 #define HAVE_UNISTD_H 1
+#define HAVE_SYS_IOCTL_H 1
 #define HAVE_TCGETATTR 1
 #define HAVE_VSSCANF 1
 #define HAVE_UNISTD_H 1
@@ -2598,12 +2625,12 @@ cat << 'EOF' > $@
 #define HAVE_SIZECHANGE 1
 #define HAVE_WORKING_POLL 1
 #define HAVE_VA_COPY 1
-#define HAVE___VA_COPY 1
 #define HAVE_UNISTD_H 1
 #define HAVE_FORK 1
 #define HAVE_VFORK 1
 #define HAVE_WORKING_VFORK 1
 #define HAVE_WORKING_FORK 1
+#define USE_FOPEN_BIN_R 1
 #define USE_OPENPTY_HEADER <pty.h>
 #define USE_XTERM_PTY 1
 #define SIZEOF_WCHAR_T 4
@@ -2615,7 +2642,7 @@ cat << 'EOF' > $@
 #define HAVE_FORM_H 1
 #define HAVE_LIBFORM 1
 #define NCURSES_PATHSEP ':'
-#define NCURSES_VERSION_STRING "6.1.20180127"
+#define NCURSES_VERSION_STRING "6.2.20200212"
 #define NCURSES_OSPEED_COMPAT 1
 #define HAVE_CURSES_DATA_BOOLNAMES 1
 
@@ -2652,7 +2679,7 @@ genrule(
     cmd = r"""
 cat << 'EOF' > $@
 /*
- * This file is generated by /home/armooo/server/thirdparty/ncurses/ncurses-6.1/include/MKncurses_def.sh
+ * This file is generated by thirdparty/ncurses/ncurses-6.2/include/MKncurses_def.sh
  */
 
 #ifndef NC_DEFINE_H
@@ -2742,12 +2769,20 @@ cat << 'EOF' > $@
 #define HAVE_COLOR_SET 1
 #endif
 
+#ifndef HAVE_CONSISTENT_GETENV
+#define HAVE_CONSISTENT_GETENV 0
+#endif
+
 #ifndef HAVE_COPYWIN
 #define HAVE_COPYWIN 1
 #endif
 
 #ifndef HAVE_CURSCR
 #define HAVE_CURSCR 1
+#endif
+
+#ifndef HAVE_CURSES_DATA_TABSIZE
+#define HAVE_CURSES_DATA_TABSIZE 1
 #endif
 
 #ifndef HAVE_CURSES_DATA_TTYTYPE
@@ -2910,12 +2945,20 @@ cat << 'EOF' > $@
 #define HAVE_LIBPANEL 0
 #endif
 
+#ifndef HAVE_LIB_PCRE2
+#define HAVE_LIB_PCRE2 0
+#endif
+
 #ifndef HAVE_LIMITS_H
 #define HAVE_LIMITS_H 0
 #endif
 
 #ifndef HAVE_LINK
 #define HAVE_LINK 0
+#endif
+
+#ifndef HAVE_LOCALECONV
+#define HAVE_LOCALECONV 0
 #endif
 
 #ifndef HAVE_LOCALE_H
@@ -2992,6 +3035,14 @@ cat << 'EOF' > $@
 
 #ifndef HAVE_PANEL_H
 #define HAVE_PANEL_H 0
+#endif
+
+#ifndef HAVE_PCRE2_POSIX_H
+#define HAVE_PCRE2_POSIX_H 0
+#endif
+
+#ifndef HAVE_PCREPOSIX_H
+#define HAVE_PCREPOSIX_H 0
 #endif
 
 #ifndef HAVE_POLL
@@ -3134,6 +3185,10 @@ cat << 'EOF' > $@
 #define HAVE_SYMLINK 0
 #endif
 
+#ifndef HAVE_SYSCONF
+#define HAVE_SYSCONF 0
+#endif
+
 #ifndef HAVE_SYS_BSDTYPES_H
 #define HAVE_SYS_BSDTYPES_H 0
 #endif
@@ -3176,10 +3231,6 @@ cat << 'EOF' > $@
 
 #ifndef HAVE_TCGETPGRP
 #define HAVE_TCGETPGRP 0
-#endif
-
-#ifndef HAVE_TDESTROY
-#define HAVE_TDESTROY 0
 #endif
 
 #ifndef HAVE_TELL
@@ -3454,6 +3505,10 @@ cat << 'EOF' > $@
 #define USE_COLORFGBG 0
 #endif
 
+#ifndef USE_FOPEN_BIN_R
+#define USE_FOPEN_BIN_R 0
+#endif
+
 #ifndef USE_GETCAP
 #define USE_GETCAP 0
 #endif
@@ -3550,7 +3605,8 @@ genrule(
     cmd = r"""
 cat << 'EOF' > $@
 /****************************************************************************
- * Copyright (c) 1998-2009,2014 Free Software Foundation, Inc.              *
+ * Copyright 2018,2020 Thomas E. Dickey                                     *
+ * Copyright 2009,2014 Free Software Foundation, Inc.                       *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -3576,17 +3632,30 @@ cat << 'EOF' > $@
  * sale, use or other dealings in this Software without prior written       *
  * authorization.                                                           *
  ****************************************************************************/
-/* $$Id: ncurses_dll.h.in,v 1.9 2014/08/02 21:30:20 tom Exp $$ */
+/* $$Id: ncurses_dll.h.in,v 1.12 2020/02/02 23:34:34 tom Exp $$ */
 
 #ifndef NCURSES_DLL_H_incl
 #define NCURSES_DLL_H_incl 1
+
+/*
+ * MinGW gcc (unlike MSYS2 and Cygwin) should define _WIN32 and possibly _WIN64.
+ */
+#if defined(__MINGW64__)
+
+#ifndef _WIN64
+#define _WIN64 1
+#endif
+
+#elif defined(__MINGW32__)
+
+#ifndef _WIN32
+#define _WIN32 1
+#endif
 
 /* 2014-08-02 workaround for broken MinGW compiler.
  * Oddly, only TRACE is mapped to trace - the other -D's are okay.
  * suggest TDM as an alternative.
  */
-#if defined(__MINGW64__)
-#elif defined(__MINGW32__)
 #if (__GNUC__ == 4) && (__GNUC_MINOR__ == 8)
 
 #ifdef trace
@@ -3595,6 +3664,7 @@ cat << 'EOF' > $@
 #endif
 
 #endif	/* broken compiler */
+
 #endif	/* MingW */
 
 /*
@@ -3611,7 +3681,7 @@ cat << 'EOF' > $@
 #undef NCURSES_DLL
 #define NCURSES_STATIC
 
-#if defined(__CYGWIN__) || defined(__MINGW32__)
+#if defined(__CYGWIN__) || defined(_WIN32)
 #  if defined(NCURSES_DLL)
 #    if defined(NCURSES_STATIC)
 #      undef NCURSES_STATIC
@@ -3662,7 +3732,8 @@ genrule(
     cmd = r"""
 cat << 'EOF' > $@
 /****************************************************************************
- * Copyright (c) 1998-2013,2017 Free Software Foundation, Inc.              *
+ * Copyright 2018-2019,2020 Thomas E. Dickey                                *
+ * Copyright 1998-2013,2017 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -3695,7 +3766,7 @@ cat << 'EOF' > $@
 /*    and: Thomas E. Dickey                        1995-on                  */
 /****************************************************************************/
 
-/* $$Id: MKterm.h.awk.in,v 1.67 2017/04/06 00:19:26 tom Exp $$ */
+/* $$Id: MKterm.h.awk.in,v 1.74 2020/02/02 23:34:34 tom Exp $$ */
 
 /*
 **	term.h -- Definition of struct term
@@ -3705,7 +3776,7 @@ cat << 'EOF' > $@
 #define NCURSES_TERM_H_incl 1
 
 #undef  NCURSES_VERSION
-#define NCURSES_VERSION "6.1"
+#define NCURSES_VERSION "6.2"
 
 #include <ncurses_dll.h>
 
@@ -3762,7 +3833,7 @@ extern "C" {
 
 #else /* !HAVE_TERMIO_H */
 
-#if __MINGW32__
+#if _WIN32
 #  include <ncurses_mingw.h>
 #  define TTY struct termios
 #else
@@ -3781,6 +3852,10 @@ extern "C" {
 #else
 #define GET_TTY(fd, buf) gtty(fd, buf)
 #define SET_TTY(fd, buf) stty(fd, buf)
+#endif
+
+#ifndef	GCC_NORETURN
+#define	GCC_NORETURN /* nothing */
 #endif
 
 #define NAMESIZE 256
@@ -4260,7 +4335,11 @@ extern "C" {
 /* older synonyms for some capabilities */
 #define beehive_glitch	no_esc_ctlc
 #define teleray_glitch	dest_tabs_magic_smso
+
+/* HPUX-11 uses this name rather than the standard one */
+#ifndef micro_char_size
 #define micro_char_size micro_col_size
+#endif
 
 #ifdef __INTERNAL_CAPS_VISIBLE
 #define termcap_init2                  CUR Strings[394]
@@ -4374,7 +4453,7 @@ typedef struct term TERMINAL;
 #endif /* NCURSES_INTERNALS */
 
 
-#if 1 && !0
+#if 0 && !0
 extern NCURSES_EXPORT_VAR(TERMINAL *) cur_term;
 #elif 0
 NCURSES_WRAPPED_VAR(TERMINAL *, cur_term);
@@ -4383,7 +4462,7 @@ NCURSES_WRAPPED_VAR(TERMINAL *, cur_term);
 extern NCURSES_EXPORT_VAR(TERMINAL *) cur_term;
 #endif
 
-#if 1 || 0
+#if 0 || 0
 NCURSES_WRAPPED_VAR(NCURSES_CONST char * const *, boolnames);
 NCURSES_WRAPPED_VAR(NCURSES_CONST char * const *, boolcodes);
 NCURSES_WRAPPED_VAR(NCURSES_CONST char * const *, boolfnames);
@@ -4434,32 +4513,34 @@ extern NCURSES_EXPORT(int) _nc_name_match (const char *const, const char *const,
 
 
 /*
- * These entrypoints are used by tack.
+ * These entrypoints are used by tack 1.07.
  */
 extern NCURSES_EXPORT(const TERMTYPE *) _nc_fallback (const char *);
 extern NCURSES_EXPORT(int) _nc_read_entry (const char * const, char * const, TERMTYPE *const);
 
-/* Normal entry points */
+/*
+ * Normal entry points
+ */
 extern NCURSES_EXPORT(TERMINAL *) set_curterm (TERMINAL *);
 extern NCURSES_EXPORT(int) del_curterm (TERMINAL *);
 
 /* miscellaneous entry points */
 extern NCURSES_EXPORT(int) restartterm (NCURSES_CONST char *, int, int *);
-extern NCURSES_EXPORT(int) setupterm (NCURSES_CONST char *,int,int *);
+extern NCURSES_EXPORT(int) setupterm (const char *,int,int *);
 
 /* terminfo entry points, also declared in curses.h */
 #if !defined(__NCURSES_H)
-extern NCURSES_EXPORT(char *) tigetstr (NCURSES_CONST char *);
+extern NCURSES_EXPORT(char *) tigetstr (const char *);
 extern NCURSES_EXPORT_VAR(char) ttytype[];
 extern NCURSES_EXPORT(int) putp (const char *);
-extern NCURSES_EXPORT(int) tigetflag (NCURSES_CONST char *);
-extern NCURSES_EXPORT(int) tigetnum (NCURSES_CONST char *);
+extern NCURSES_EXPORT(int) tigetflag (const char *);
+extern NCURSES_EXPORT(int) tigetnum (const char *);
 
 #if 1 /* NCURSES_TPARM_VARARGS */
-extern NCURSES_EXPORT(char *) tparm (NCURSES_CONST char *, ...);	/* special */
+extern NCURSES_EXPORT(char *) tparm (const char *, ...);	/* special */
 #else
-extern NCURSES_EXPORT(char *) tparm (NCURSES_CONST char *, long,long,long,long,long,long,long,long,long);	/* special */
-extern NCURSES_EXPORT(char *) tparm_varargs (NCURSES_CONST char *, ...);	/* special */
+extern NCURSES_EXPORT(char *) tparm (const char *, long,long,long,long,long,long,long,long,long);	/* special */
+extern NCURSES_EXPORT(char *) tparm_varargs (const char *, ...);	/* special */
 #endif
 
 extern NCURSES_EXPORT(char *) tiparm (const char *, ...);		/* special */
@@ -4468,11 +4549,11 @@ extern NCURSES_EXPORT(char *) tiparm (const char *, ...);		/* special */
 
 /* termcap database emulation (XPG4 uses const only for 2nd param of tgetent) */
 #if !defined(NCURSES_TERMCAP_H_incl)
-extern NCURSES_EXPORT(char *) tgetstr (NCURSES_CONST char *, char **);
+extern NCURSES_EXPORT(char *) tgetstr (const char *, char **);
 extern NCURSES_EXPORT(char *) tgoto (const char *, int, int);
 extern NCURSES_EXPORT(int) tgetent (char *, const char *);
-extern NCURSES_EXPORT(int) tgetflag (NCURSES_CONST char *);
-extern NCURSES_EXPORT(int) tgetnum (NCURSES_CONST char *);
+extern NCURSES_EXPORT(int) tgetflag (const char *);
+extern NCURSES_EXPORT(int) tgetnum (const char *);
 extern NCURSES_EXPORT(int) tputs (const char *, int, int (*)(int));
 #endif /* NCURSES_TERMCAP_H_incl */
 
@@ -4481,24 +4562,24 @@ extern NCURSES_EXPORT(int) tputs (const char *, int, int (*)(int));
  */
 #if defined(NCURSES_SP_FUNCS) && (NCURSES_SP_FUNCS != 0)
 
-extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tigetstr) (SCREEN*, NCURSES_CONST char *);
+extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tigetstr) (SCREEN*, const char *);
 extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(putp) (SCREEN*, const char *);
-extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tigetflag) (SCREEN*, NCURSES_CONST char *);
-extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tigetnum) (SCREEN*, NCURSES_CONST char *);
+extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tigetflag) (SCREEN*, const char *);
+extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tigetnum) (SCREEN*, const char *);
 
 #if 1 /* NCURSES_TPARM_VARARGS */
-extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tparm) (SCREEN*, NCURSES_CONST char *, ...);	/* special */
+extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tparm) (SCREEN*, const char *, ...);	/* special */
 #else
-extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tparm) (SCREEN*, NCURSES_CONST char *, long,long,long,long,long,long,long,long,long);	/* special */
-extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tparm_varargs) (SCREEN*, NCURSES_CONST char *, ...);	/* special */
+extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tparm) (SCREEN*, const char *, long,long,long,long,long,long,long,long,long);	/* special */
+extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tparm_varargs) (SCREEN*, const char *, ...);	/* special */
 #endif
 
 /* termcap database emulation (XPG4 uses const only for 2nd param of tgetent) */
-extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tgetstr) (SCREEN*, NCURSES_CONST char *, char **);
+extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tgetstr) (SCREEN*, const char *, char **);
 extern NCURSES_EXPORT(char *)  NCURSES_SP_NAME(tgoto) (SCREEN*, const char *, int, int);
 extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tgetent) (SCREEN*, char *, const char *);
-extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tgetflag) (SCREEN*, NCURSES_CONST char *);
-extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tgetnum) (SCREEN*, NCURSES_CONST char *);
+extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tgetflag) (SCREEN*, const char *);
+extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tgetnum) (SCREEN*, const char *);
 extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(tputs) (SCREEN*, const char *, int, NCURSES_SP_OUTC);
 
 extern NCURSES_EXPORT(TERMINAL *) NCURSES_SP_NAME(set_curterm) (SCREEN*, TERMINAL *);
@@ -4506,6 +4587,11 @@ extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(del_curterm) (SCREEN*, TERMINAL *
 
 extern NCURSES_EXPORT(int)     NCURSES_SP_NAME(restartterm) (SCREEN*, NCURSES_CONST char *, int, int *);
 #endif /* NCURSES_SP_FUNCS */
+
+/*
+ * Debugging features.
+ */
+extern NCURSES_EXPORT(void)    exit_terminfo(int) GCC_NORETURN;
 
 #ifdef __cplusplus
 }
@@ -4523,7 +4609,8 @@ genrule(
     cmd = r"""
 cat << 'EOF' > $@
 /****************************************************************************
- * Copyright (c) 1998-2000,2001 Free Software Foundation, Inc.              *
+ * Copyright 2018,2020 Thomas E. Dickey                                     *
+ * Copyright 1998-2000,2001 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -4555,13 +4642,13 @@ cat << 'EOF' > $@
  *     and: Eric S. Raymond <esr@snark.thyrsus.com>                         *
  ****************************************************************************/
 
-/* $$Id: termcap.h.in,v 1.17 2001/03/24 21:53:27 tom Exp $$ */
+/* $$Id: termcap.h.in,v 1.19 2020/02/02 23:34:34 tom Exp $$ */
 
 #ifndef NCURSES_TERMCAP_H_incl
 #define NCURSES_TERMCAP_H_incl	1
 
 #undef  NCURSES_VERSION
-#define NCURSES_VERSION "6.1"
+#define NCURSES_VERSION "6.2"
 
 #include <ncurses_dll.h>
 
@@ -4572,9 +4659,6 @@ extern "C"
 
 #include <sys/types.h>
 
-#undef  NCURSES_CONST 
-#define NCURSES_CONST const 
-
 #undef  NCURSES_OSPEED 
 #define NCURSES_OSPEED short 
 
@@ -4584,11 +4668,11 @@ extern NCURSES_EXPORT_VAR(char *) BC;
 extern NCURSES_EXPORT_VAR(NCURSES_OSPEED) ospeed; 
 
 #if !defined(NCURSES_TERM_H_incl)
-extern NCURSES_EXPORT(char *) tgetstr (NCURSES_CONST char *, char **);
+extern NCURSES_EXPORT(char *) tgetstr (const char *, char **);
 extern NCURSES_EXPORT(char *) tgoto (const char *, int, int);
 extern NCURSES_EXPORT(int) tgetent (char *, const char *);
-extern NCURSES_EXPORT(int) tgetflag (NCURSES_CONST char *);
-extern NCURSES_EXPORT(int) tgetnum (NCURSES_CONST char *);
+extern NCURSES_EXPORT(int) tgetflag (const char *);
+extern NCURSES_EXPORT(int) tgetnum (const char *);
 extern NCURSES_EXPORT(int) tputs (const char *, int, int (*)(int));
 #endif
 
@@ -4608,7 +4692,8 @@ genrule(
     cmd = r"""
 cat << 'EOF' > $@
 /****************************************************************************
- * Copyright (c) 1998-2008,2009 Free Software Foundation, Inc.              *
+ * Copyright 2020 Thomas E. Dickey                                          *
+ * Copyright 1998-2001,2009 Free Software Foundation, Inc.                  *
  *                                                                          *
  * Permission is hereby granted, free of charge, to any person obtaining a  *
  * copy of this software and associated documentation files (the            *
@@ -4648,13 +4733,13 @@ cat << 'EOF' > $@
  * as ^?. Printable characters are displayed as is.
  */
 
-/* $$Id: unctrl.h.in,v 1.11 2009/04/18 21:00:52 tom Exp $$ */
+/* $$Id: unctrl.h.in,v 1.12 2020/02/02 23:34:34 tom Exp $$ */
 
 #ifndef NCURSES_UNCTRL_H_incl
 #define NCURSES_UNCTRL_H_incl	1
 
 #undef  NCURSES_VERSION
-#define NCURSES_VERSION "6.1"
+#define NCURSES_VERSION "6.2"
 
 #ifdef __cplusplus
 extern "C" {
@@ -4682,7 +4767,7 @@ EOF
 genrule(
     name = "include/parametrized",
     outs = ["include/parametrized.h"],
-    cmd = """
+    cmd = r"""
 cat << 'EOF' > $@
 #ifndef PARAMETRIZED_H
 #define PARAMETRIZED_H 1
@@ -4696,555 +4781,421 @@ cat << 'EOF' > $@
  */
 
 static short const parametrized[] = {
-0,\t/*  cbt  */
-0,\t/*  bel  */
-0,\t/*  cr  */
-1,\t/*  csr  */
-0,\t/*  tbc  */
-0,\t/*  clear  */
-0,\t/*  el  */
-0,\t/*  ed  */
-1,\t/*  hpa  */
-0,\t/*  cmdch  */
-1,\t/*  cup  */
-0,\t/*  cud1  */
-0,\t/*  home  */
-0,\t/*  civis  */
-0,\t/*  cub1  */
-1,\t/*  mrcup  */
-0,\t/*  cnorm  */
-0,\t/*  cuf1  */
-0,\t/*  ll  */
-0,\t/*  cuu1  */
-0,\t/*  cvvis  */
-0,\t/*  dch1  */
-0,\t/*  dl1  */
-0,\t/*  dsl  */
-0,\t/*  hd  */
-0,\t/*  smacs  */
-0,\t/*  blink  */
-0,\t/*  bold  */
-0,\t/*  smcup  */
-0,\t/*  smdc  */
-0,\t/*  dim  */
-0,\t/*  smir  */
-0,\t/*  invis  */
-0,\t/*  prot  */
-0,\t/*  rev  */
-0,\t/*  smso  */
-0,\t/*  smul  */
-1,\t/*  ech  */
-0,\t/*  rmacs  */
-0,\t/*  sgr0  */
-0,\t/*  rmcup  */
-0,\t/*  rmdc  */
-0,\t/*  rmir  */
-0,\t/*  rmso  */
-0,\t/*  rmul  */
-0,\t/*  flash  */
-0,\t/*  ff  */
-0,\t/*  fsl  */
-0,\t/*  is1  */
-0,\t/*  is2  */
-0,\t/*  is3  */
-0,\t/*  if  */
-0,\t/*  ich1  */
-0,\t/*  il1  */
-0,\t/*  ip  */
-0,\t/*  kbs  */
-0,\t/*  ktbc  */
-0,\t/*  kclr  */
-0,\t/*  kctab  */
-0,\t/*  kdch1  */
-0,\t/*  kdl1  */
-0,\t/*  kcud1  */
-0,\t/*  krmir  */
-0,\t/*  kel  */
-0,\t/*  ked  */
-0,\t/*  kf0  */
-0,\t/*  kf1  */
-0,\t/*  kf10  */
-0,\t/*  kf2  */
-0,\t/*  kf3  */
-0,\t/*  kf4  */
-0,\t/*  kf5  */
-0,\t/*  kf6  */
-0,\t/*  kf7  */
-0,\t/*  kf8  */
-0,\t/*  kf9  */
-0,\t/*  khome  */
-0,\t/*  kich1  */
-0,\t/*  kil1  */
-0,\t/*  kcub1  */
-0,\t/*  kll  */
-0,\t/*  knp  */
-0,\t/*  kpp  */
-0,\t/*  kcuf1  */
-0,\t/*  kind  */
-0,\t/*  kri  */
-0,\t/*  khts  */
-0,\t/*  kcuu1  */
-0,\t/*  rmkx  */
-0,\t/*  smkx  */
-0,\t/*  lf0  */
-0,\t/*  lf1  */
-0,\t/*  lf10  */
-0,\t/*  lf2  */
-0,\t/*  lf3  */
-0,\t/*  lf4  */
-0,\t/*  lf5  */
-0,\t/*  lf6  */
-0,\t/*  lf7  */
-0,\t/*  lf8  */
-0,\t/*  lf9  */
-0,\t/*  rmm  */
-0,\t/*  smm  */
-0,\t/*  nel  */
-0,\t/*  pad  */
-1,\t/*  dch  */
-1,\t/*  dl  */
-1,\t/*  cud  */
-1,\t/*  ich  */
-1,\t/*  indn  */
-1,\t/*  il  */
-1,\t/*  cub  */
-1,\t/*  cuf  */
-1,\t/*  rin  */
-1,\t/*  cuu  */
-1,\t/*  pfkey  */
-1,\t/*  pfloc  */
-1,\t/*  pfx  */
-0,\t/*  mc0  */
-0,\t/*  mc4  */
-0,\t/*  mc5  */
-1,\t/*  rep  */
-0,\t/*  rs1  */
-0,\t/*  rs2  */
-0,\t/*  rs3  */
-0,\t/*  rf  */
-0,\t/*  rc  */
-1,\t/*  vpa  */
-0,\t/*  sc  */
-0,\t/*  ind  */
-0,\t/*  ri  */
-1,\t/*  sgr  */
-0,\t/*  hts  */
-1,\t/*  wind  */
-0,\t/*  ht  */
-1,\t/*  tsl  */
-0,\t/*  uc  */
-0,\t/*  hu  */
-0,\t/*  iprog  */
-0,\t/*  ka1  */
-0,\t/*  ka3  */
-0,\t/*  kb2  */
-0,\t/*  kc1  */
-0,\t/*  kc3  */
-1,\t/*  mc5p  */
-0,\t/*  rmp  */
--1,\t/*  acsc  */
-1,\t/*  pln  */
-0,\t/*  kcbt  */
-0,\t/*  smxon  */
-0,\t/*  rmxon  */
-0,\t/*  smam  */
-0,\t/*  rmam  */
-0,\t/*  xonc  */
-0,\t/*  xoffc  */
-0,\t/*  enacs  */
-0,\t/*  smln  */
-0,\t/*  rmln  */
-0,\t/*  kbeg  */
-0,\t/*  kcan  */
-0,\t/*  kclo  */
-0,\t/*  kcmd  */
-0,\t/*  kcpy  */
-0,\t/*  kcrt  */
-0,\t/*  kend  */
-0,\t/*  kent  */
-0,\t/*  kext  */
-0,\t/*  kfnd  */
-0,\t/*  khlp  */
-0,\t/*  kmrk  */
-0,\t/*  kmsg  */
-0,\t/*  kmov  */
-0,\t/*  knxt  */
-0,\t/*  kopn  */
-0,\t/*  kopt  */
-0,\t/*  kprv  */
-0,\t/*  kprt  */
-0,\t/*  krdo  */
-0,\t/*  kref  */
-0,\t/*  krfr  */
-0,\t/*  krpl  */
-0,\t/*  krst  */
-0,\t/*  kres  */
-0,\t/*  ksav  */
-0,\t/*  kspd  */
-0,\t/*  kund  */
-0,\t/*  kBEG  */
-0,\t/*  kCAN  */
-0,\t/*  kCMD  */
-0,\t/*  kCPY  */
-0,\t/*  kCRT  */
-0,\t/*  kDC  */
-0,\t/*  kDL  */
-0,\t/*  kslt  */
-0,\t/*  kEND  */
-0,\t/*  kEOL  */
-0,\t/*  kEXT  */
-0,\t/*  kFND  */
-1,\t/*  kHLP  */
-1,\t/*  kHOM  */
-1,\t/*  kIC  */
-1,\t/*  kLFT  */
-0,\t/*  kMSG  */
-0,\t/*  kMOV  */
-0,\t/*  kNXT  */
-0,\t/*  kOPT  */
-0,\t/*  kPRV  */
-0,\t/*  kPRT  */
-0,\t/*  kRDO  */
-0,\t/*  kRPL  */
-0,\t/*  kRIT  */
-0,\t/*  kRES  */
-0,\t/*  kSAV  */
-0,\t/*  kSPD  */
-0,\t/*  kUND  */
-0,\t/*  rfi  */
-0,\t/*  kf11  */
-0,\t/*  kf12  */
-0,\t/*  kf13  */
-0,\t/*  kf14  */
-0,\t/*  kf15  */
-0,\t/*  kf16  */
-0,\t/*  kf17  */
-0,\t/*  kf18  */
-0,\t/*  kf19  */
-0,\t/*  kf20  */
-0,\t/*  kf21  */
-0,\t/*  kf22  */
-0,\t/*  kf23  */
-0,\t/*  kf24  */
-0,\t/*  kf25  */
-0,\t/*  kf26  */
-0,\t/*  kf27  */
-0,\t/*  kf28  */
-0,\t/*  kf29  */
-0,\t/*  kf30  */
-0,\t/*  kf31  */
-0,\t/*  kf32  */
-0,\t/*  kf33  */
-0,\t/*  kf34  */
-0,\t/*  kf35  */
-0,\t/*  kf36  */
-0,\t/*  kf37  */
-0,\t/*  kf38  */
-0,\t/*  kf39  */
-0,\t/*  kf40  */
-0,\t/*  kf41  */
-0,\t/*  kf42  */
-0,\t/*  kf43  */
-0,\t/*  kf44  */
-0,\t/*  kf45  */
-0,\t/*  kf46  */
-0,\t/*  kf47  */
-0,\t/*  kf48  */
-0,\t/*  kf49  */
-0,\t/*  kf50  */
-0,\t/*  kf51  */
-0,\t/*  kf52  */
-0,\t/*  kf53  */
-0,\t/*  kf54  */
-0,\t/*  kf55  */
-0,\t/*  kf56  */
-0,\t/*  kf57  */
-0,\t/*  kf58  */
-0,\t/*  kf59  */
-0,\t/*  kf60  */
-0,\t/*  kf61  */
-0,\t/*  kf62  */
-0,\t/*  kf63  */
-0,\t/*  el1  */
-0,\t/*  mgc  */
-0,\t/*  smgl  */
-0,\t/*  smgr  */
--1,\t/*  fln  */
-1,\t/*  sclk  */
-0,\t/*  dclk  */
-0,\t/*  rmclk  */
-1,\t/*  cwin  */
-1,\t/*  wingo  */
-0,\t/*  hup  */
-1,\t/*  dial  */
-1,\t/*  qdial  */
-0,\t/*  tone  */
-0,\t/*  pulse  */
-0,\t/*  hook  */
-0,\t/*  pause  */
-0,\t/*  wait  */
-1,\t/*  u0  */
-1,\t/*  u1  */
-1,\t/*  u2  */
-1,\t/*  u3  */
-1,\t/*  u4  */
-1,\t/*  u5  */
-1,\t/*  u6  */
-1,\t/*  u7  */
-1,\t/*  u8  */
-1,\t/*  u9  */
-0,\t/*  op  */
-0,\t/*  oc  */
-1,\t/*  initc  */
-1,\t/*  initp  */
-1,\t/*  scp  */
-1,\t/*  setf  */
-1,\t/*  setb  */
-1,\t/*  cpi  */
-1,\t/*  lpi  */
-1,\t/*  chr  */
-1,\t/*  cvr  */
-1,\t/*  defc  */
-0,\t/*  swidm  */
-0,\t/*  sdrfq  */
-0,\t/*  sitm  */
-0,\t/*  slm  */
-0,\t/*  smicm  */
-0,\t/*  snlq  */
-0,\t/*  snrmq  */
-0,\t/*  sshm  */
-0,\t/*  ssubm  */
-0,\t/*  ssupm  */
-0,\t/*  sum  */
-0,\t/*  rwidm  */
-0,\t/*  ritm  */
-0,\t/*  rlm  */
-0,\t/*  rmicm  */
-0,\t/*  rshm  */
-0,\t/*  rsubm  */
-0,\t/*  rsupm  */
-0,\t/*  rum  */
-0,\t/*  mhpa  */
-0,\t/*  mcud1  */
-0,\t/*  mcub1  */
-0,\t/*  mcuf1  */
-1,\t/*  mvpa  */
-0,\t/*  mcuu1  */
-0,\t/*  porder  */
-0,\t/*  mcud  */
-0,\t/*  mcub  */
-0,\t/*  mcuf  */
-0,\t/*  mcuu  */
-1,\t/*  scs  */
-0,\t/*  smgb  */
-1,\t/*  smgbp  */
-1,\t/*  smglp  */
-1,\t/*  smgrp  */
-0,\t/*  smgt  */
-1,\t/*  smgtp  */
-0,\t/*  sbim  */
-1,\t/*  scsd  */
-0,\t/*  rbim  */
-1,\t/*  rcsd  */
-0,\t/*  subcs  */
-0,\t/*  supcs  */
-0,\t/*  docr  */
-0,\t/*  zerom  */
-1,\t/*  csnm  */
-0,\t/*  kmous  */
-0,\t/*  minfo  */
-0,\t/*  reqmp  */
-1,\t/*  getm  */
-1,\t/*  setaf  */
-1,\t/*  setab  */
-1,\t/*  pfxl  */
-0,\t/*  devt  */
-0,\t/*  csin  */
-0,\t/*  s0ds  */
-0,\t/*  s1ds  */
-0,\t/*  s2ds  */
-0,\t/*  s3ds  */
-1,\t/*  smglr  */
-1,\t/*  smgtb  */
-1,\t/*  birep  */
-0,\t/*  binel  */
-0,\t/*  bicr  */
-1,\t/*  colornm  */
-0,\t/*  defbi  */
-0,\t/*  endbi  */
-1,\t/*  setcolor  */
-1,\t/*  slines  */
-1,\t/*  dispc  */
-0,\t/*  smpch  */
-0,\t/*  rmpch  */
-0,\t/*  smsc  */
-0,\t/*  rmsc  */
-0,\t/*  pctrm  */
-0,\t/*  scesc  */
-0,\t/*  scesa  */
-0,\t/*  ehhlm  */
-0,\t/*  elhlm  */
-0,\t/*  elohlm  */
-0,\t/*  erhlm  */
-0,\t/*  ethlm  */
-0,\t/*  evhlm  */
-1,\t/*  sgr1  */
-1,\t/*  slength  */
-0,\t/*  OTi2  */
-0,\t/*  OTrs  */
-0,\t/*  OTnl  */
-0,\t/*  OTbc  */
-0,\t/*  OTko  */
-0,\t/*  OTma  */
--1,\t/*  OTG2  */
--1,\t/*  OTG3  */
--1,\t/*  OTG1  */
--1,\t/*  OTG4  */
--1,\t/*  OTGR  */
--1,\t/*  OTGL  */
--1,\t/*  OTGU  */
--1,\t/*  OTGD  */
--1,\t/*  OTGH  */
--1,\t/*  OTGV  */
--1,\t/*  OTGC  */
-0,\t/*  meml  */
-0,\t/*  memu  */
-1,\t/*  pln  */
-0,\t/*  smln  */
-0,\t/*  rmln  */
-0,\t/*  kf11  */
-0,\t/*  kf12  */
-0,\t/*  kf13  */
-0,\t/*  kf14  */
-0,\t/*  kf15  */
-0,\t/*  kf16  */
-0,\t/*  kf17  */
-0,\t/*  kf18  */
-0,\t/*  kf19  */
-0,\t/*  kf20  */
-0,\t/*  kf21  */
-0,\t/*  kf22  */
-0,\t/*  kf23  */
-0,\t/*  kf24  */
-0,\t/*  kf25  */
-0,\t/*  kf26  */
-0,\t/*  kf27  */
-0,\t/*  kf28  */
-0,\t/*  kf29  */
-0,\t/*  kf30  */
-0,\t/*  kf31  */
-0,\t/*  kf32  */
-0,\t/*  kf33  */
-0,\t/*  kf34  */
-0,\t/*  kf35  */
-0,\t/*  kf36  */
-0,\t/*  kf37  */
-0,\t/*  kf38  */
-0,\t/*  kf39  */
-0,\t/*  kf40  */
-0,\t/*  kf41  */
-0,\t/*  kf42  */
-0,\t/*  kf43  */
-0,\t/*  kf44  */
-0,\t/*  kf45  */
-0,\t/*  kf46  */
-0,\t/*  kf47  */
-0,\t/*  kf48  */
-0,\t/*  kf49  */
-0,\t/*  kf50  */
-0,\t/*  kf51  */
-0,\t/*  kf52  */
-0,\t/*  kf53  */
-0,\t/*  kf54  */
-0,\t/*  kf55  */
-0,\t/*  kf56  */
-0,\t/*  kf57  */
-0,\t/*  kf58  */
-0,\t/*  kf59  */
-0,\t/*  kf60  */
-0,\t/*  kf61  */
-0,\t/*  kf62  */
-0,\t/*  kf63  */
-0,\t/*  box1  */
-0,\t/*  box2  */
-0,\t/*  batt1  */
-0,\t/*  batt2  */
-0,\t/*  colb0  */
-0,\t/*  colb1  */
-0,\t/*  colb2  */
-0,\t/*  colb3  */
-0,\t/*  colb4  */
-0,\t/*  colb5  */
-0,\t/*  colb6  */
-0,\t/*  colb7  */
-0,\t/*  colf0  */
-0,\t/*  colf1  */
-0,\t/*  colf2  */
-0,\t/*  colf3  */
-0,\t/*  colf4  */
-0,\t/*  colf5  */
-0,\t/*  colf6  */
-0,\t/*  colf7  */
-0,\t/*  font0  */
-0,\t/*  font1  */
-0,\t/*  font2  */
-0,\t/*  font3  */
-0,\t/*  font4  */
-0,\t/*  font5  */
-0,\t/*  font6  */
-0,\t/*  font7  */
-0,\t/*  kbtab  */
-0,\t/*  kdo  */
-0,\t/*  kcmd  */
-0,\t/*  kcpn  */
-0,\t/*  kend  */
-0,\t/*  khlp  */
-0,\t/*  knl  */
-0,\t/*  knpn  */
-0,\t/*  kppn  */
-0,\t/*  kppn  */
-0,\t/*  kquit  */
-0,\t/*  ksel  */
-0,\t/*  kscl  */
-0,\t/*  kscr  */
-0,\t/*  ktab  */
-0,\t/*  kmpf1  */
-0,\t/*  kmpt1  */
-0,\t/*  kmpf2  */
-0,\t/*  kmpt2  */
-0,\t/*  kmpf3  */
-0,\t/*  kmpt3  */
-0,\t/*  kmpf4  */
-0,\t/*  kmpt4  */
-0,\t/*  kmpf5  */
-0,\t/*  kmpt5  */
-0,\t/*  apstr  */
-0,\t/*  kmpf6  */
-0,\t/*  kmpt6  */
-0,\t/*  kmpf7  */
-0,\t/*  kmpt7  */
-0,\t/*  kmpf8  */
-0,\t/*  kmpt8  */
-0,\t/*  kmpf9  */
-0,\t/*  kmpt9  */
-0,\t/*  ksf1  */
-0,\t/*  ksf2  */
-0,\t/*  ksf3  */
-0,\t/*  ksf4  */
-0,\t/*  ksf5  */
-0,\t/*  ksf6  */
-0,\t/*  ksf7  */
-0,\t/*  ksf8  */
-0,\t/*  ksf9  */
-0,\t/*  ksf10  */
-0,\t/*  kf11  */
-0,\t/*  kf12  */
-0,\t/*  kact  */
-0,\t/*  topl  */
-0,\t/*  btml  */
-0,\t/*  rvert  */
-0,\t/*  lvert  */
-} /* 548 entries */;
+0,	/*  cbt  */
+0,	/*  bel  */
+0,	/*  cr  */
+1,	/*  csr  */
+0,	/*  tbc  */
+0,	/*  clear  */
+0,	/*  el  */
+0,	/*  ed  */
+1,	/*  hpa  */
+0,	/*  cmdch  */
+1,	/*  cup  */
+0,	/*  cud1  */
+0,	/*  home  */
+0,	/*  civis  */
+0,	/*  cub1  */
+1,	/*  mrcup  */
+0,	/*  cnorm  */
+0,	/*  cuf1  */
+0,	/*  ll  */
+0,	/*  cuu1  */
+0,	/*  cvvis  */
+0,	/*  dch1  */
+0,	/*  dl1  */
+0,	/*  dsl  */
+0,	/*  hd  */
+0,	/*  smacs  */
+0,	/*  blink  */
+0,	/*  bold  */
+0,	/*  smcup  */
+0,	/*  smdc  */
+0,	/*  dim  */
+0,	/*  smir  */
+0,	/*  invis  */
+0,	/*  prot  */
+0,	/*  rev  */
+0,	/*  smso  */
+0,	/*  smul  */
+1,	/*  ech  */
+0,	/*  rmacs  */
+0,	/*  sgr0  */
+0,	/*  rmcup  */
+0,	/*  rmdc  */
+0,	/*  rmir  */
+0,	/*  rmso  */
+0,	/*  rmul  */
+0,	/*  flash  */
+0,	/*  ff  */
+0,	/*  fsl  */
+0,	/*  is1  */
+0,	/*  is2  */
+0,	/*  is3  */
+0,	/*  if  */
+0,	/*  ich1  */
+0,	/*  il1  */
+0,	/*  ip  */
+0,	/*  kbs  */
+0,	/*  ktbc  */
+0,	/*  kclr  */
+0,	/*  kctab  */
+0,	/*  kdch1  */
+0,	/*  kdl1  */
+0,	/*  kcud1  */
+0,	/*  krmir  */
+0,	/*  kel  */
+0,	/*  ked  */
+0,	/*  kf0  */
+0,	/*  kf1  */
+0,	/*  kf10  */
+0,	/*  kf2  */
+0,	/*  kf3  */
+0,	/*  kf4  */
+0,	/*  kf5  */
+0,	/*  kf6  */
+0,	/*  kf7  */
+0,	/*  kf8  */
+0,	/*  kf9  */
+0,	/*  khome  */
+0,	/*  kich1  */
+0,	/*  kil1  */
+0,	/*  kcub1  */
+0,	/*  kll  */
+0,	/*  knp  */
+0,	/*  kpp  */
+0,	/*  kcuf1  */
+0,	/*  kind  */
+0,	/*  kri  */
+0,	/*  khts  */
+0,	/*  kcuu1  */
+0,	/*  rmkx  */
+0,	/*  smkx  */
+0,	/*  lf0  */
+0,	/*  lf1  */
+0,	/*  lf10  */
+0,	/*  lf2  */
+0,	/*  lf3  */
+0,	/*  lf4  */
+0,	/*  lf5  */
+0,	/*  lf6  */
+0,	/*  lf7  */
+0,	/*  lf8  */
+0,	/*  lf9  */
+0,	/*  rmm  */
+0,	/*  smm  */
+0,	/*  nel  */
+0,	/*  pad  */
+1,	/*  dch  */
+1,	/*  dl  */
+1,	/*  cud  */
+1,	/*  ich  */
+1,	/*  indn  */
+1,	/*  il  */
+1,	/*  cub  */
+1,	/*  cuf  */
+1,	/*  rin  */
+1,	/*  cuu  */
+1,	/*  pfkey  */
+1,	/*  pfloc  */
+1,	/*  pfx  */
+0,	/*  mc0  */
+0,	/*  mc4  */
+0,	/*  mc5  */
+1,	/*  rep  */
+0,	/*  rs1  */
+0,	/*  rs2  */
+0,	/*  rs3  */
+0,	/*  rf  */
+0,	/*  rc  */
+1,	/*  vpa  */
+0,	/*  sc  */
+0,	/*  ind  */
+0,	/*  ri  */
+1,	/*  sgr  */
+0,	/*  hts  */
+1,	/*  wind  */
+0,	/*  ht  */
+1,	/*  tsl  */
+0,	/*  uc  */
+0,	/*  hu  */
+0,	/*  iprog  */
+0,	/*  ka1  */
+0,	/*  ka3  */
+0,	/*  kb2  */
+0,	/*  kc1  */
+0,	/*  kc3  */
+1,	/*  mc5p  */
+0,	/*  rmp  */
+-1,	/*  acsc  */
+1,	/*  pln  */
+0,	/*  kcbt  */
+0,	/*  smxon  */
+0,	/*  rmxon  */
+0,	/*  smam  */
+0,	/*  rmam  */
+0,	/*  xonc  */
+0,	/*  xoffc  */
+0,	/*  enacs  */
+0,	/*  smln  */
+0,	/*  rmln  */
+0,	/*  kbeg  */
+0,	/*  kcan  */
+0,	/*  kclo  */
+0,	/*  kcmd  */
+0,	/*  kcpy  */
+0,	/*  kcrt  */
+0,	/*  kend  */
+0,	/*  kent  */
+0,	/*  kext  */
+0,	/*  kfnd  */
+0,	/*  khlp  */
+0,	/*  kmrk  */
+0,	/*  kmsg  */
+0,	/*  kmov  */
+0,	/*  knxt  */
+0,	/*  kopn  */
+0,	/*  kopt  */
+0,	/*  kprv  */
+0,	/*  kprt  */
+0,	/*  krdo  */
+0,	/*  kref  */
+0,	/*  krfr  */
+0,	/*  krpl  */
+0,	/*  krst  */
+0,	/*  kres  */
+0,	/*  ksav  */
+0,	/*  kspd  */
+0,	/*  kund  */
+0,	/*  kBEG  */
+0,	/*  kCAN  */
+0,	/*  kCMD  */
+0,	/*  kCPY  */
+0,	/*  kCRT  */
+0,	/*  kDC  */
+0,	/*  kDL  */
+0,	/*  kslt  */
+0,	/*  kEND  */
+0,	/*  kEOL  */
+0,	/*  kEXT  */
+0,	/*  kFND  */
+1,	/*  kHLP  */
+1,	/*  kHOM  */
+1,	/*  kIC  */
+1,	/*  kLFT  */
+0,	/*  kMSG  */
+0,	/*  kMOV  */
+0,	/*  kNXT  */
+0,	/*  kOPT  */
+0,	/*  kPRV  */
+0,	/*  kPRT  */
+0,	/*  kRDO  */
+0,	/*  kRPL  */
+0,	/*  kRIT  */
+0,	/*  kRES  */
+0,	/*  kSAV  */
+0,	/*  kSPD  */
+0,	/*  kUND  */
+0,	/*  rfi  */
+0,	/*  kf11  */
+0,	/*  kf12  */
+0,	/*  kf13  */
+0,	/*  kf14  */
+0,	/*  kf15  */
+0,	/*  kf16  */
+0,	/*  kf17  */
+0,	/*  kf18  */
+0,	/*  kf19  */
+0,	/*  kf20  */
+0,	/*  kf21  */
+0,	/*  kf22  */
+0,	/*  kf23  */
+0,	/*  kf24  */
+0,	/*  kf25  */
+0,	/*  kf26  */
+0,	/*  kf27  */
+0,	/*  kf28  */
+0,	/*  kf29  */
+0,	/*  kf30  */
+0,	/*  kf31  */
+0,	/*  kf32  */
+0,	/*  kf33  */
+0,	/*  kf34  */
+0,	/*  kf35  */
+0,	/*  kf36  */
+0,	/*  kf37  */
+0,	/*  kf38  */
+0,	/*  kf39  */
+0,	/*  kf40  */
+0,	/*  kf41  */
+0,	/*  kf42  */
+0,	/*  kf43  */
+0,	/*  kf44  */
+0,	/*  kf45  */
+0,	/*  kf46  */
+0,	/*  kf47  */
+0,	/*  kf48  */
+0,	/*  kf49  */
+0,	/*  kf50  */
+0,	/*  kf51  */
+0,	/*  kf52  */
+0,	/*  kf53  */
+0,	/*  kf54  */
+0,	/*  kf55  */
+0,	/*  kf56  */
+0,	/*  kf57  */
+0,	/*  kf58  */
+0,	/*  kf59  */
+0,	/*  kf60  */
+0,	/*  kf61  */
+0,	/*  kf62  */
+0,	/*  kf63  */
+0,	/*  el1  */
+0,	/*  mgc  */
+0,	/*  smgl  */
+0,	/*  smgr  */
+-1,	/*  fln  */
+1,	/*  sclk  */
+0,	/*  dclk  */
+0,	/*  rmclk  */
+1,	/*  cwin  */
+1,	/*  wingo  */
+0,	/*  hup  */
+1,	/*  dial  */
+1,	/*  qdial  */
+0,	/*  tone  */
+0,	/*  pulse  */
+0,	/*  hook  */
+0,	/*  pause  */
+0,	/*  wait  */
+1,	/*  u0  */
+1,	/*  u1  */
+1,	/*  u2  */
+1,	/*  u3  */
+1,	/*  u4  */
+1,	/*  u5  */
+1,	/*  u6  */
+1,	/*  u7  */
+1,	/*  u8  */
+1,	/*  u9  */
+0,	/*  op  */
+0,	/*  oc  */
+1,	/*  initc  */
+1,	/*  initp  */
+1,	/*  scp  */
+1,	/*  setf  */
+1,	/*  setb  */
+1,	/*  cpi  */
+1,	/*  lpi  */
+1,	/*  chr  */
+1,	/*  cvr  */
+1,	/*  defc  */
+0,	/*  swidm  */
+0,	/*  sdrfq  */
+0,	/*  sitm  */
+0,	/*  slm  */
+0,	/*  smicm  */
+0,	/*  snlq  */
+0,	/*  snrmq  */
+0,	/*  sshm  */
+0,	/*  ssubm  */
+0,	/*  ssupm  */
+0,	/*  sum  */
+0,	/*  rwidm  */
+0,	/*  ritm  */
+0,	/*  rlm  */
+0,	/*  rmicm  */
+0,	/*  rshm  */
+0,	/*  rsubm  */
+0,	/*  rsupm  */
+0,	/*  rum  */
+0,	/*  mhpa  */
+0,	/*  mcud1  */
+0,	/*  mcub1  */
+0,	/*  mcuf1  */
+1,	/*  mvpa  */
+0,	/*  mcuu1  */
+0,	/*  porder  */
+0,	/*  mcud  */
+0,	/*  mcub  */
+0,	/*  mcuf  */
+0,	/*  mcuu  */
+1,	/*  scs  */
+0,	/*  smgb  */
+1,	/*  smgbp  */
+1,	/*  smglp  */
+1,	/*  smgrp  */
+0,	/*  smgt  */
+1,	/*  smgtp  */
+0,	/*  sbim  */
+1,	/*  scsd  */
+0,	/*  rbim  */
+1,	/*  rcsd  */
+0,	/*  subcs  */
+0,	/*  supcs  */
+0,	/*  docr  */
+0,	/*  zerom  */
+1,	/*  csnm  */
+0,	/*  kmous  */
+0,	/*  minfo  */
+0,	/*  reqmp  */
+1,	/*  getm  */
+1,	/*  setaf  */
+1,	/*  setab  */
+1,	/*  pfxl  */
+0,	/*  devt  */
+0,	/*  csin  */
+0,	/*  s0ds  */
+0,	/*  s1ds  */
+0,	/*  s2ds  */
+0,	/*  s3ds  */
+1,	/*  smglr  */
+1,	/*  smgtb  */
+1,	/*  birep  */
+0,	/*  binel  */
+0,	/*  bicr  */
+1,	/*  colornm  */
+0,	/*  defbi  */
+0,	/*  endbi  */
+1,	/*  setcolor  */
+1,	/*  slines  */
+1,	/*  dispc  */
+0,	/*  smpch  */
+0,	/*  rmpch  */
+0,	/*  smsc  */
+0,	/*  rmsc  */
+0,	/*  pctrm  */
+0,	/*  scesc  */
+0,	/*  scesa  */
+0,	/*  ehhlm  */
+0,	/*  elhlm  */
+0,	/*  elohlm  */
+0,	/*  erhlm  */
+0,	/*  ethlm  */
+0,	/*  evhlm  */
+1,	/*  sgr1  */
+1,	/*  slength  */
+0,	/*  OTi2  */
+0,	/*  OTrs  */
+0,	/*  OTnl  */
+0,	/*  OTbc  */
+0,	/*  OTko  */
+0,	/*  OTma  */
+-1,	/*  OTG2  */
+-1,	/*  OTG3  */
+-1,	/*  OTG1  */
+-1,	/*  OTG4  */
+-1,	/*  OTGR  */
+-1,	/*  OTGL  */
+-1,	/*  OTGU  */
+-1,	/*  OTGD  */
+-1,	/*  OTGH  */
+-1,	/*  OTGV  */
+-1,	/*  OTGC  */
+0,	/*  meml  */
+0,	/*  memu  */
+0,	/*  box1  */
+} /* 414 entries */;
 
 #endif /* PARAMETRIZED_H */
 
@@ -5255,14 +5206,14 @@ EOF
 genrule(
     name = "include/hashsize",
     outs = ["include/hashsize.h"],
-    cmd = """
+    cmd = r"""
 cat << 'EOF' > $@
 /*
  * hashsize.h -- hash and token table constants
  */
 
-#define CAPTABSIZE\t497
-#define HASHTABSIZE\t(497 * 2)
+#define CAPTABSIZE	497
+#define HASHTABSIZE	(497 * 2)
 
 EOF
 """,
@@ -5956,7 +5907,7 @@ EOF
 genrule(
     name = "ncurses/expanded",
     outs = ["ncurses/expanded.c"],
-    cmd = """
+    cmd = r"""
 cat << 'EOF' > $@
 /* generated by MKexpanded.sh */
 #define NEED_NCURSES_CH_T 1
@@ -5994,26 +5945,26 @@ _nc_InsCharCost_sp (SCREEN *sp, int count)
  void
 _nc_UpdateAttrs_sp (SCREEN *sp, const cchar_t * c)
 {
- if (!((((*((sp)->_current_attr))).attr) == (((*c)).attr) && ((((*((sp)->_current_attr))).ext_color) ? (((*((sp)->_current_attr))).ext_color) : ((int)((((unsigned long)((((*((sp)->_current_attr))).attr)) & ((chtype)((((1UL) << 8) - 1UL)) << ((0) + 8))) >> 8)))) == ((((*c)).ext_color) ? (((*c)).ext_color) : ((int)((((unsigned long)((((*c)).attr)) & ((chtype)((((1UL) << 8) - 1UL)) << ((0) + 8))) >> 8)))))) { vid_puts_sp(sp, (((*c)).attr), (short) ((((*c)).ext_color) ? (((*c)).ext_color) : ((int)((((unsigned long)((((*c)).attr)) & ((chtype)((((1UL) << 8) - 1UL)) << ((0) + 8))) >> 8)))), 0, _nc_outch_sp); };
+ if (!((((*((sp)->_current_attr))).attr) == (((*c)).attr) && ((((*((sp)->_current_attr))).ext_color) ? (((*((sp)->_current_attr))).ext_color) : ((int)((((unsigned long)((((*((sp)->_current_attr))).attr)) & ((chtype)((((1UL) << 8) - 1UL)) << ((0) + 8))) >> 8)))) == ((((*c)).ext_color) ? (((*c)).ext_color) : ((int)((((unsigned long)((((*c)).attr)) & ((chtype)((((1UL) << 8) - 1UL)) << ((0) + 8))) >> 8)))))) { do { int vid_pair = ((((*c)).ext_color) ? (((*c)).ext_color) : ((int)((((unsigned long)((((*c)).attr)) & ((chtype)((((1UL) << 8) - 1UL)) << ((0) + 8))) >> 8)))); vid_puts_sp( sp, (((*c)).attr), (short) ((((*c)).ext_color) ? (((*c)).ext_color) : ((int)((((unsigned long)((((*c)).attr)) & ((chtype)((((1UL) << 8) - 1UL)) << ((0) + 8))) >> 8)))), &vid_pair, _nc_outch_sp); } while (0); };
 }
 
 #if NCURSES_SP_FUNCS
  int
 _nc_DelCharCost (int count)
 {
- return _nc_DelCharCost_sp (_nc_screen(), count);
+ return _nc_DelCharCost_sp (SP, count);
 }
 
  int
 _nc_InsCharCost (int count)
 {
- return _nc_InsCharCost_sp(_nc_screen(), count);
+ return _nc_InsCharCost_sp(SP, count);
 }
 
  void
 _nc_UpdateAttrs (const cchar_t * c)
 {
- _nc_UpdateAttrs_sp(_nc_screen(),c);
+ _nc_UpdateAttrs_sp(SP,c);
 }
 #endif
 #else /* ! NCURSES_EXPANDED */
@@ -6027,9 +5978,9 @@ EOF
 genrule(
     name = "ncurses/fallback",
     outs = ["ncurses/fallback.c"],
-    cmd = """
+    cmd = r"""
 cat << 'EOF' > $@
-/* This file was generated by /home/armooo/server/thirdparty/ncurses/ncurses-6.1/ncurses/tinfo/MKfallback.sh */
+/* This file was generated by thirdparty/ncurses/ncurses-6.2/ncurses/tinfo/MKfallback.sh */
 
 /*
  * DO NOT EDIT THIS FILE BY HAND!
@@ -6040,7 +5991,7 @@ cat << 'EOF' > $@
 NCURSES_EXPORT(const TERMTYPE2 *)
 _nc_fallback2 (const char *name GCC_UNUSED)
 {
-\t/* the fallback list is empty */
+	/* the fallback list is empty */
     return((const TERMTYPE2 *)0);
 }
 
@@ -6048,7 +5999,7 @@ _nc_fallback2 (const char *name GCC_UNUSED)
 #undef _nc_fallback
 
 /*
- * This entrypoint is used by tack.
+ * This entrypoint is used by tack 1.07
  */
 NCURSES_EXPORT(const TERMTYPE *)
 _nc_fallback (const char *name)
@@ -6056,9 +6007,9 @@ _nc_fallback (const char *name)
     const TERMTYPE2 *tp = _nc_fallback2(name);
     const TERMTYPE *result = 0;
     if (tp != 0) {
-\tstatic TERMTYPE temp;
-\t_nc_export_termtype2(&temp, tp);
-\tresult = &temp;
+	static TERMTYPE temp;
+	_nc_export_termtype2(&temp, tp);
+	result = &temp;
     }
     return result;
 }
@@ -6073,7 +6024,7 @@ genrule(
     outs = ["ncurses/lib_gen.c"],
     cmd = r"""
 cat << 'EOF' > $@
-/* This file was generated by /home/armooo/server/thirdparty/ncurses/ncurses-6.1/ncurses/base/MKlib_gen.sh generated */
+/* This file was generated by thirdparty/ncurses/ncurses-6.2/ncurses/base/MKlib_gen.sh generated */
 
 /*
  * DO NOT EDIT THIS FILE BY HAND!
@@ -6094,11 +6045,6 @@ cat << 'EOF' > $@
 
 #include <curses.priv.h>
 
-#undef vw_scanw
-#undef vwscanw
-
-#undef vw_printw
-#undef vwprintw
 NCURSES_EXPORT(int) (addch) (const chtype z)
 {
 	T((T_CALLED("addch(%s)"), _tracechtype2(0,z)));
@@ -6586,16 +6532,6 @@ NCURSES_EXPORT(int) (vline) (chtype a1, int z)
 {
 	T((T_CALLED("vline(%s,%d)"), _tracechtype2(0,a1), z));
 	returnCode(wvline(stdscr, a1, (z)));
-}
-NCURSES_EXPORT(int) (vw_printw) (WINDOW * a1, const char * a2, va_list z)
-{
-	T((T_CALLED("vw_printw(%p,%s,%s)"), (const void *)a1, _nc_visbuf2(1,a2), "va_list"));
-	returnCode(vwprintw(a1, a2, z));
-}
-NCURSES_EXPORT(int) (vw_scanw) (WINDOW * a1, const char * a2, va_list z)
-{
-	T((T_CALLED("vw_scanw(%p,%s,%s)"), (const void *)a1, _nc_visbuf2(1,a2), "va_list"));
-	returnCode(vwscanw(a1, a2, z));
 }
 NCURSES_EXPORT(int) (waddchstr) (WINDOW * a1, const chtype * z)
 {
@@ -7422,7 +7358,7 @@ EOF
 genrule(
     name = "ncurses/init_keytry",
     outs = ["ncurses/init_keytry.h"],
-    cmd = """
+    cmd = r"""
 cat << 'EOF' > $@
 #ifndef NCU_KEYS_H
 #define NCU_KEYS_H 1
@@ -7433,157 +7369,157 @@ cat << 'EOF' > $@
 static
 #endif
 const struct tinfo_fkeys _nc_tinfo_fkeys[] = {
-\t{  139, KEY_A1           },\t/* key_a1 */
-\t{  140, KEY_A3           },\t/* key_a3 */
-\t{  141, KEY_B2           },\t/* key_b2 */
-\t{   55, KEY_BACKSPACE    },\t/* key_backspace */
-\t{  158, KEY_BEG          },\t/* key_beg */
-\t{  148, KEY_BTAB         },\t/* key_btab */
-\t{  142, KEY_C1           },\t/* key_c1 */
-\t{  143, KEY_C3           },\t/* key_c3 */
-\t{  159, KEY_CANCEL       },\t/* key_cancel */
-\t{   56, KEY_CATAB        },\t/* key_catab */
-\t{   57, KEY_CLEAR        },\t/* key_clear */
-\t{  160, KEY_CLOSE        },\t/* key_close */
-\t{  161, KEY_COMMAND      },\t/* key_command */
-\t{  162, KEY_COPY         },\t/* key_copy */
-\t{  163, KEY_CREATE       },\t/* key_create */
-\t{   58, KEY_CTAB         },\t/* key_ctab */
-\t{   59, KEY_DC           },\t/* key_dc */
-\t{   60, KEY_DL           },\t/* key_dl */
-\t{   61, KEY_DOWN         },\t/* key_down */
-\t{   62, KEY_EIC          },\t/* key_eic */
-\t{  164, KEY_END          },\t/* key_end */
-\t{  165, KEY_ENTER        },\t/* key_enter */
-\t{   63, KEY_EOL          },\t/* key_eol */
-\t{   64, KEY_EOS          },\t/* key_eos */
-\t{  166, KEY_EXIT         },\t/* key_exit */
-\t{   65, KEY_F(0)         },\t/* key_f0 */
-\t{   66, KEY_F(1)         },\t/* key_f1 */
-\t{   67, KEY_F(10)        },\t/* key_f10 */
-\t{  216, KEY_F(11)        },\t/* key_f11 */
-\t{  217, KEY_F(12)        },\t/* key_f12 */
-\t{  218, KEY_F(13)        },\t/* key_f13 */
-\t{  219, KEY_F(14)        },\t/* key_f14 */
-\t{  220, KEY_F(15)        },\t/* key_f15 */
-\t{  221, KEY_F(16)        },\t/* key_f16 */
-\t{  222, KEY_F(17)        },\t/* key_f17 */
-\t{  223, KEY_F(18)        },\t/* key_f18 */
-\t{  224, KEY_F(19)        },\t/* key_f19 */
-\t{   68, KEY_F(2)         },\t/* key_f2 */
-\t{  225, KEY_F(20)        },\t/* key_f20 */
-\t{  226, KEY_F(21)        },\t/* key_f21 */
-\t{  227, KEY_F(22)        },\t/* key_f22 */
-\t{  228, KEY_F(23)        },\t/* key_f23 */
-\t{  229, KEY_F(24)        },\t/* key_f24 */
-\t{  230, KEY_F(25)        },\t/* key_f25 */
-\t{  231, KEY_F(26)        },\t/* key_f26 */
-\t{  232, KEY_F(27)        },\t/* key_f27 */
-\t{  233, KEY_F(28)        },\t/* key_f28 */
-\t{  234, KEY_F(29)        },\t/* key_f29 */
-\t{   69, KEY_F(3)         },\t/* key_f3 */
-\t{  235, KEY_F(30)        },\t/* key_f30 */
-\t{  236, KEY_F(31)        },\t/* key_f31 */
-\t{  237, KEY_F(32)        },\t/* key_f32 */
-\t{  238, KEY_F(33)        },\t/* key_f33 */
-\t{  239, KEY_F(34)        },\t/* key_f34 */
-\t{  240, KEY_F(35)        },\t/* key_f35 */
-\t{  241, KEY_F(36)        },\t/* key_f36 */
-\t{  242, KEY_F(37)        },\t/* key_f37 */
-\t{  243, KEY_F(38)        },\t/* key_f38 */
-\t{  244, KEY_F(39)        },\t/* key_f39 */
-\t{   70, KEY_F(4)         },\t/* key_f4 */
-\t{  245, KEY_F(40)        },\t/* key_f40 */
-\t{  246, KEY_F(41)        },\t/* key_f41 */
-\t{  247, KEY_F(42)        },\t/* key_f42 */
-\t{  248, KEY_F(43)        },\t/* key_f43 */
-\t{  249, KEY_F(44)        },\t/* key_f44 */
-\t{  250, KEY_F(45)        },\t/* key_f45 */
-\t{  251, KEY_F(46)        },\t/* key_f46 */
-\t{  252, KEY_F(47)        },\t/* key_f47 */
-\t{  253, KEY_F(48)        },\t/* key_f48 */
-\t{  254, KEY_F(49)        },\t/* key_f49 */
-\t{   71, KEY_F(5)         },\t/* key_f5 */
-\t{  255, KEY_F(50)        },\t/* key_f50 */
-\t{  256, KEY_F(51)        },\t/* key_f51 */
-\t{  257, KEY_F(52)        },\t/* key_f52 */
-\t{  258, KEY_F(53)        },\t/* key_f53 */
-\t{  259, KEY_F(54)        },\t/* key_f54 */
-\t{  260, KEY_F(55)        },\t/* key_f55 */
-\t{  261, KEY_F(56)        },\t/* key_f56 */
-\t{  262, KEY_F(57)        },\t/* key_f57 */
-\t{  263, KEY_F(58)        },\t/* key_f58 */
-\t{  264, KEY_F(59)        },\t/* key_f59 */
-\t{   72, KEY_F(6)         },\t/* key_f6 */
-\t{  265, KEY_F(60)        },\t/* key_f60 */
-\t{  266, KEY_F(61)        },\t/* key_f61 */
-\t{  267, KEY_F(62)        },\t/* key_f62 */
-\t{  268, KEY_F(63)        },\t/* key_f63 */
-\t{   73, KEY_F(7)         },\t/* key_f7 */
-\t{   74, KEY_F(8)         },\t/* key_f8 */
-\t{   75, KEY_F(9)         },\t/* key_f9 */
-\t{  167, KEY_FIND         },\t/* key_find */
-\t{  168, KEY_HELP         },\t/* key_help */
-\t{   76, KEY_HOME         },\t/* key_home */
-\t{   77, KEY_IC           },\t/* key_ic */
-\t{   78, KEY_IL           },\t/* key_il */
-\t{   79, KEY_LEFT         },\t/* key_left */
-\t{   80, KEY_LL           },\t/* key_ll */
-\t{  169, KEY_MARK         },\t/* key_mark */
-\t{  170, KEY_MESSAGE      },\t/* key_message */
-\t{  355, KEY_MOUSE        },\t/* key_mouse */
-\t{  171, KEY_MOVE         },\t/* key_move */
-\t{  172, KEY_NEXT         },\t/* key_next */
-\t{   81, KEY_NPAGE        },\t/* key_npage */
-\t{  173, KEY_OPEN         },\t/* key_open */
-\t{  174, KEY_OPTIONS      },\t/* key_options */
-\t{   82, KEY_PPAGE        },\t/* key_ppage */
-\t{  175, KEY_PREVIOUS     },\t/* key_previous */
-\t{  176, KEY_PRINT        },\t/* key_print */
-\t{  177, KEY_REDO         },\t/* key_redo */
-\t{  178, KEY_REFERENCE    },\t/* key_reference */
-\t{  179, KEY_REFRESH      },\t/* key_refresh */
-\t{  180, KEY_REPLACE      },\t/* key_replace */
-\t{  181, KEY_RESTART      },\t/* key_restart */
-\t{  182, KEY_RESUME       },\t/* key_resume */
-\t{   83, KEY_RIGHT        },\t/* key_right */
-\t{  183, KEY_SAVE         },\t/* key_save */
-\t{  186, KEY_SBEG         },\t/* key_sbeg */
-\t{  187, KEY_SCANCEL      },\t/* key_scancel */
-\t{  188, KEY_SCOMMAND     },\t/* key_scommand */
-\t{  189, KEY_SCOPY        },\t/* key_scopy */
-\t{  190, KEY_SCREATE      },\t/* key_screate */
-\t{  191, KEY_SDC          },\t/* key_sdc */
-\t{  192, KEY_SDL          },\t/* key_sdl */
-\t{  193, KEY_SELECT       },\t/* key_select */
-\t{  194, KEY_SEND         },\t/* key_send */
-\t{  195, KEY_SEOL         },\t/* key_seol */
-\t{  196, KEY_SEXIT        },\t/* key_sexit */
-\t{   84, KEY_SF           },\t/* key_sf */
-\t{  197, KEY_SFIND        },\t/* key_sfind */
-\t{  198, KEY_SHELP        },\t/* key_shelp */
-\t{  199, KEY_SHOME        },\t/* key_shome */
-\t{  200, KEY_SIC          },\t/* key_sic */
-\t{  201, KEY_SLEFT        },\t/* key_sleft */
-\t{  202, KEY_SMESSAGE     },\t/* key_smessage */
-\t{  203, KEY_SMOVE        },\t/* key_smove */
-\t{  204, KEY_SNEXT        },\t/* key_snext */
-\t{  205, KEY_SOPTIONS     },\t/* key_soptions */
-\t{  206, KEY_SPREVIOUS    },\t/* key_sprevious */
-\t{  207, KEY_SPRINT       },\t/* key_sprint */
-\t{   85, KEY_SR           },\t/* key_sr */
-\t{  208, KEY_SREDO        },\t/* key_sredo */
-\t{  209, KEY_SREPLACE     },\t/* key_sreplace */
-\t{  210, KEY_SRIGHT       },\t/* key_sright */
-\t{  211, KEY_SRSUME       },\t/* key_srsume */
-\t{  212, KEY_SSAVE        },\t/* key_ssave */
-\t{  213, KEY_SSUSPEND     },\t/* key_ssuspend */
-\t{   86, KEY_STAB         },\t/* key_stab */
-\t{  214, KEY_SUNDO        },\t/* key_sundo */
-\t{  184, KEY_SUSPEND      },\t/* key_suspend */
-\t{  185, KEY_UNDO         },\t/* key_undo */
-\t{   87, KEY_UP           },\t/* key_up */
-\t{ 0, 0} };
+	{  139, KEY_A1           },	/* key_a1 */
+	{  140, KEY_A3           },	/* key_a3 */
+	{  141, KEY_B2           },	/* key_b2 */
+	{   55, KEY_BACKSPACE    },	/* key_backspace */
+	{  158, KEY_BEG          },	/* key_beg */
+	{  148, KEY_BTAB         },	/* key_btab */
+	{  142, KEY_C1           },	/* key_c1 */
+	{  143, KEY_C3           },	/* key_c3 */
+	{  159, KEY_CANCEL       },	/* key_cancel */
+	{   56, KEY_CATAB        },	/* key_catab */
+	{   57, KEY_CLEAR        },	/* key_clear */
+	{  160, KEY_CLOSE        },	/* key_close */
+	{  161, KEY_COMMAND      },	/* key_command */
+	{  162, KEY_COPY         },	/* key_copy */
+	{  163, KEY_CREATE       },	/* key_create */
+	{   58, KEY_CTAB         },	/* key_ctab */
+	{   59, KEY_DC           },	/* key_dc */
+	{   60, KEY_DL           },	/* key_dl */
+	{   61, KEY_DOWN         },	/* key_down */
+	{   62, KEY_EIC          },	/* key_eic */
+	{  164, KEY_END          },	/* key_end */
+	{  165, KEY_ENTER        },	/* key_enter */
+	{   63, KEY_EOL          },	/* key_eol */
+	{   64, KEY_EOS          },	/* key_eos */
+	{  166, KEY_EXIT         },	/* key_exit */
+	{   65, KEY_F(0)         },	/* key_f0 */
+	{   66, KEY_F(1)         },	/* key_f1 */
+	{   67, KEY_F(10)        },	/* key_f10 */
+	{  216, KEY_F(11)        },	/* key_f11 */
+	{  217, KEY_F(12)        },	/* key_f12 */
+	{  218, KEY_F(13)        },	/* key_f13 */
+	{  219, KEY_F(14)        },	/* key_f14 */
+	{  220, KEY_F(15)        },	/* key_f15 */
+	{  221, KEY_F(16)        },	/* key_f16 */
+	{  222, KEY_F(17)        },	/* key_f17 */
+	{  223, KEY_F(18)        },	/* key_f18 */
+	{  224, KEY_F(19)        },	/* key_f19 */
+	{   68, KEY_F(2)         },	/* key_f2 */
+	{  225, KEY_F(20)        },	/* key_f20 */
+	{  226, KEY_F(21)        },	/* key_f21 */
+	{  227, KEY_F(22)        },	/* key_f22 */
+	{  228, KEY_F(23)        },	/* key_f23 */
+	{  229, KEY_F(24)        },	/* key_f24 */
+	{  230, KEY_F(25)        },	/* key_f25 */
+	{  231, KEY_F(26)        },	/* key_f26 */
+	{  232, KEY_F(27)        },	/* key_f27 */
+	{  233, KEY_F(28)        },	/* key_f28 */
+	{  234, KEY_F(29)        },	/* key_f29 */
+	{   69, KEY_F(3)         },	/* key_f3 */
+	{  235, KEY_F(30)        },	/* key_f30 */
+	{  236, KEY_F(31)        },	/* key_f31 */
+	{  237, KEY_F(32)        },	/* key_f32 */
+	{  238, KEY_F(33)        },	/* key_f33 */
+	{  239, KEY_F(34)        },	/* key_f34 */
+	{  240, KEY_F(35)        },	/* key_f35 */
+	{  241, KEY_F(36)        },	/* key_f36 */
+	{  242, KEY_F(37)        },	/* key_f37 */
+	{  243, KEY_F(38)        },	/* key_f38 */
+	{  244, KEY_F(39)        },	/* key_f39 */
+	{   70, KEY_F(4)         },	/* key_f4 */
+	{  245, KEY_F(40)        },	/* key_f40 */
+	{  246, KEY_F(41)        },	/* key_f41 */
+	{  247, KEY_F(42)        },	/* key_f42 */
+	{  248, KEY_F(43)        },	/* key_f43 */
+	{  249, KEY_F(44)        },	/* key_f44 */
+	{  250, KEY_F(45)        },	/* key_f45 */
+	{  251, KEY_F(46)        },	/* key_f46 */
+	{  252, KEY_F(47)        },	/* key_f47 */
+	{  253, KEY_F(48)        },	/* key_f48 */
+	{  254, KEY_F(49)        },	/* key_f49 */
+	{   71, KEY_F(5)         },	/* key_f5 */
+	{  255, KEY_F(50)        },	/* key_f50 */
+	{  256, KEY_F(51)        },	/* key_f51 */
+	{  257, KEY_F(52)        },	/* key_f52 */
+	{  258, KEY_F(53)        },	/* key_f53 */
+	{  259, KEY_F(54)        },	/* key_f54 */
+	{  260, KEY_F(55)        },	/* key_f55 */
+	{  261, KEY_F(56)        },	/* key_f56 */
+	{  262, KEY_F(57)        },	/* key_f57 */
+	{  263, KEY_F(58)        },	/* key_f58 */
+	{  264, KEY_F(59)        },	/* key_f59 */
+	{   72, KEY_F(6)         },	/* key_f6 */
+	{  265, KEY_F(60)        },	/* key_f60 */
+	{  266, KEY_F(61)        },	/* key_f61 */
+	{  267, KEY_F(62)        },	/* key_f62 */
+	{  268, KEY_F(63)        },	/* key_f63 */
+	{   73, KEY_F(7)         },	/* key_f7 */
+	{   74, KEY_F(8)         },	/* key_f8 */
+	{   75, KEY_F(9)         },	/* key_f9 */
+	{  167, KEY_FIND         },	/* key_find */
+	{  168, KEY_HELP         },	/* key_help */
+	{   76, KEY_HOME         },	/* key_home */
+	{   77, KEY_IC           },	/* key_ic */
+	{   78, KEY_IL           },	/* key_il */
+	{   79, KEY_LEFT         },	/* key_left */
+	{   80, KEY_LL           },	/* key_ll */
+	{  169, KEY_MARK         },	/* key_mark */
+	{  170, KEY_MESSAGE      },	/* key_message */
+	{  355, KEY_MOUSE        },	/* key_mouse */
+	{  171, KEY_MOVE         },	/* key_move */
+	{  172, KEY_NEXT         },	/* key_next */
+	{   81, KEY_NPAGE        },	/* key_npage */
+	{  173, KEY_OPEN         },	/* key_open */
+	{  174, KEY_OPTIONS      },	/* key_options */
+	{   82, KEY_PPAGE        },	/* key_ppage */
+	{  175, KEY_PREVIOUS     },	/* key_previous */
+	{  176, KEY_PRINT        },	/* key_print */
+	{  177, KEY_REDO         },	/* key_redo */
+	{  178, KEY_REFERENCE    },	/* key_reference */
+	{  179, KEY_REFRESH      },	/* key_refresh */
+	{  180, KEY_REPLACE      },	/* key_replace */
+	{  181, KEY_RESTART      },	/* key_restart */
+	{  182, KEY_RESUME       },	/* key_resume */
+	{   83, KEY_RIGHT        },	/* key_right */
+	{  183, KEY_SAVE         },	/* key_save */
+	{  186, KEY_SBEG         },	/* key_sbeg */
+	{  187, KEY_SCANCEL      },	/* key_scancel */
+	{  188, KEY_SCOMMAND     },	/* key_scommand */
+	{  189, KEY_SCOPY        },	/* key_scopy */
+	{  190, KEY_SCREATE      },	/* key_screate */
+	{  191, KEY_SDC          },	/* key_sdc */
+	{  192, KEY_SDL          },	/* key_sdl */
+	{  193, KEY_SELECT       },	/* key_select */
+	{  194, KEY_SEND         },	/* key_send */
+	{  195, KEY_SEOL         },	/* key_seol */
+	{  196, KEY_SEXIT        },	/* key_sexit */
+	{   84, KEY_SF           },	/* key_sf */
+	{  197, KEY_SFIND        },	/* key_sfind */
+	{  198, KEY_SHELP        },	/* key_shelp */
+	{  199, KEY_SHOME        },	/* key_shome */
+	{  200, KEY_SIC          },	/* key_sic */
+	{  201, KEY_SLEFT        },	/* key_sleft */
+	{  202, KEY_SMESSAGE     },	/* key_smessage */
+	{  203, KEY_SMOVE        },	/* key_smove */
+	{  204, KEY_SNEXT        },	/* key_snext */
+	{  205, KEY_SOPTIONS     },	/* key_soptions */
+	{  206, KEY_SPREVIOUS    },	/* key_sprevious */
+	{  207, KEY_SPRINT       },	/* key_sprint */
+	{   85, KEY_SR           },	/* key_sr */
+	{  208, KEY_SREDO        },	/* key_sredo */
+	{  209, KEY_SREPLACE     },	/* key_sreplace */
+	{  210, KEY_SRIGHT       },	/* key_sright */
+	{  211, KEY_SRSUME       },	/* key_srsume */
+	{  212, KEY_SSAVE        },	/* key_ssave */
+	{  213, KEY_SSUSPEND     },	/* key_ssuspend */
+	{   86, KEY_STAB         },	/* key_stab */
+	{  214, KEY_SUNDO        },	/* key_sundo */
+	{  184, KEY_SUSPEND      },	/* key_suspend */
+	{  185, KEY_UNDO         },	/* key_undo */
+	{   87, KEY_UP           },	/* key_up */
+	{ 0, 0} };
 
 #endif /* NCU_KEYS_H */
 
@@ -8028,7 +7964,7 @@ genrule(
     cmd = r"""
 cat << 'EOF' > $@
 /*
- * generated by /home/armooo/server/thirdparty/ncurses/ncurses-6.1/ncurses/tinfo/MKcaptab.sh
+ * generated by thirdparty/ncurses/ncurses-6.2/ncurses/tinfo/MKcaptab.sh
  */
 
 /*
@@ -8041,6 +7977,7 @@ cat << 'EOF' > $@
 #include <tic.h>
 #include <hashsize.h>
 
+/* *INDENT-OFF* */
 /* 147 collisions out of 497 entries */
 static const char info_names_text[] = \
 "bw\0" "am\0" "xsb\0" "xhp\0" "xenl\0" "eo\0" "gn\0" "hc\0" "km\0" \
@@ -11295,6 +11232,7 @@ static const alias_table_data infoalias_data[] = {
 	{   75,    80,    85},	 /* key_select */
 };
 
+/* *INDENT-ON* */
 
 #if 1
 static void
@@ -11305,7 +11243,7 @@ next_string(const char *strings, unsigned *offset)
 
 static const struct name_table_entry *
 _nc_build_names(struct name_table_entry **actual,
-		const name_table_data *source,
+		const name_table_data * source,
 		const char *strings)
 {
     if (*actual == 0) {
@@ -11332,7 +11270,7 @@ _nc_build_names(struct name_table_entry **actual,
 
 static const struct alias *
 _nc_build_alias(struct alias **actual,
-		const alias_table_data *source,
+		const alias_table_data * source,
 		const char *strings,
 		size_t tablesize)
 {
@@ -11362,20 +11300,23 @@ _nc_build_alias(struct alias **actual,
 #define build_alias(root) _nc_ ## root ## alias_table
 #endif
 
-NCURSES_EXPORT(const struct name_table_entry *) _nc_get_table (bool termcap)
+NCURSES_EXPORT(const struct name_table_entry *)
+_nc_get_table(bool termcap)
 {
-    return termcap ? build_names(cap) : build_names(info) ;
+    return termcap ? build_names(cap) : build_names(info);
 }
 
-/* entrypoint used by tack (do not alter) */
-NCURSES_EXPORT(const HashValue *) _nc_get_hash_table (bool termcap)
+/* entrypoint used by tack 1.07 */
+NCURSES_EXPORT(const HashValue *)
+_nc_get_hash_table(bool termcap)
 {
-    return termcap ? _nc_cap_hash_table: _nc_info_hash_table ;
+    return termcap ? _nc_cap_hash_table : _nc_info_hash_table;
 }
 
-NCURSES_EXPORT(const struct alias *) _nc_get_alias_table (bool termcap)
+NCURSES_EXPORT(const struct alias *)
+_nc_get_alias_table(bool termcap)
 {
-    return termcap ? build_alias(cap) : build_alias(info) ;
+    return termcap ? build_alias(cap) : build_alias(info);
 }
 
 static HashValue
@@ -11385,7 +11326,7 @@ info_hash(const char *string)
 
     DEBUG(9, ("hashing %s", string));
     while (*string) {
-	sum += (long) (*string + (*(string + 1) << 8));
+	sum += (long) (UChar(*string) + (UChar(*(string + 1)) << 8));
 	string++;
     }
 
@@ -11422,18 +11363,21 @@ compare_info_names(const char *a, const char *b)
     return !strcmp(a, b);
 }
 
-static const HashData hash_data[2] = {
-    { HASHTABSIZE, _nc_info_hash_table, info_hash, compare_info_names },
-    { HASHTABSIZE, _nc_cap_hash_table, tcap_hash, compare_tcap_names }
+static const HashData hash_data[2] =
+{
+    {HASHTABSIZE, _nc_info_hash_table, info_hash, compare_info_names},
+    {HASHTABSIZE, _nc_cap_hash_table, tcap_hash, compare_tcap_names}
 };
 
-NCURSES_EXPORT(const HashData *) _nc_get_hash_info (bool termcap)
+NCURSES_EXPORT(const HashData *)
+_nc_get_hash_info(bool termcap)
 {
     return &hash_data[(termcap != FALSE)];
 }
 
 #if NO_LEAKS
-NCURSES_EXPORT(void) _nc_comp_captab_leaks(void)
+NCURSES_EXPORT(void)
+_nc_comp_captab_leaks(void)
 {
 #if 1
     FreeIfNeeded(_nc_cap_table);
@@ -12832,6 +12776,1230 @@ DCL(strfnames) = {
 
 
 #endif /* BROKEN_LINKER */
+
+EOF
+""",
+)
+
+genrule(
+    name = "ncurses/comp_userdefs",
+    outs = ["ncurses/comp_userdefs.c"],
+    cmd = r"""
+cat << 'EOF' > $@
+/*
+ * generated by thirdparty/ncurses/ncurses-6.2/ncurses/tinfo/MKuserdefs.sh
+ */
+
+/*
+ *    comp_userdefs.c -- The names of widely used user-defined capabilities
+ *                       indexed via a hash table for the compiler.
+ *
+ */
+
+#include <curses.priv.h>
+#include <tic.h>
+#include <hashsize.h>
+
+#if NCURSES_XNAMES
+/* 10 collisions out of 90 entries */
+static const char user_names_text[] = \
+"E3\0" "RGB\0" "TS\0" "U8\0" "XM\0" "grbom\0" "gsbom\0" "xm\0" "AN\0" \
+"AX\0" "C0\0" "C8\0" "CE\0" "CS\0" "E0\0" "G0\0" "KJ\0" "OL\0" "S0\0" \
+"TF\0" "WS\0" "XC\0" "XT\0" "Z0\0" "Z1\0" "Cr\0" "Cs\0" "Csr\0" "Ms\0" \
+"Se\0" "Smulx\0" "Ss\0" "rmxx\0" "smxx\0" "kDC3\0" "kDC4\0" "kDC5\0" \
+"kDC6\0" "kDC7\0" "kDN\0" "kDN3\0" "kDN4\0" "kDN5\0" "kDN6\0" "kDN7\0" \
+"kEND3\0" "kEND4\0" "kEND5\0" "kEND6\0" "kEND7\0" "kHOM3\0" "kHOM4\0" \
+"kHOM5\0" "kHOM6\0" "kHOM7\0" "kIC3\0" "kIC4\0" "kIC5\0" "kIC6\0" \
+"kIC7\0" "kLFT3\0" "kLFT4\0" "kLFT5\0" "kLFT6\0" "kLFT7\0" "kNXT3\0" \
+"kNXT4\0" "kNXT5\0" "kNXT6\0" "kNXT7\0" "kPRV3\0" "kPRV4\0" "kPRV5\0" \
+"kPRV6\0" "kPRV7\0" "kRIT3\0" "kRIT4\0" "kRIT5\0" "kRIT6\0" "kRIT7\0" \
+"kUP\0" "kUP3\0" "kUP4\0" "kUP5\0" "kUP6\0" "kUP7\0" "ka2\0" "kb1\0" \
+"kb3\0" "kc2\0" ;
+
+static user_table_data const user_names_data[] =
+{
+	{               0,	(1<<STRING),	0,0,	  0,  -1 },
+	{               3,	(1<<BOOLEAN|1<<NUMBER|1<<STRING),	0,0,	  1,  -1 },
+	{               7,	(1<<STRING),	0,0,	  2,  -1 },
+	{              10,	(1<<NUMBER),	0,0,	  1,  -1 },
+	{              13,	(1<<STRING),	1,0,	  3,  -1 },
+	{              16,	(1<<STRING),	0,0,	  4,  -1 },
+	{              22,	(1<<STRING),	0,0,	  5,  -1 },
+	{              28,	(1<<STRING),	8,8,	 14,  -1 },
+	{              31,	(1<<BOOLEAN),	0,0,	  1,  -1 },
+	{              34,	(1<<BOOLEAN),	0,0,	  2,  -1 },
+	{              37,	(1<<STRING),	0,0,	 15,  -1 },
+	{              40,	(1<<BOOLEAN),	0,0,	  3,  -1 },
+	{              43,	(1<<STRING),	0,0,	 16,  -1 },
+	{              46,	(1<<STRING),	0,0,	 17,  -1 },
+	{              49,	(1<<STRING),	0,0,	 18,  -1 },
+	{              52,	(1<<BOOLEAN),	0,0,	  4,  -1 },
+	{              55,	(1<<STRING),	1,1,	 19,  -1 },
+	{              58,	(1<<NUMBER),	0,0,	  2,  -1 },
+	{              61,	(1<<STRING),	1,1,	 20,  -1 },
+	{              64,	(1<<BOOLEAN),	0,0,	  5,  -1 },
+	{              67,	(1<<STRING),	2,0,	 21,  -1 },
+	{              70,	(1<<STRING),	1,1,	 22,  -1 },
+	{              73,	(1<<BOOLEAN),	0,0,	  6,  -1 },
+	{              76,	(1<<STRING),	0,0,	 23,  -1 },
+	{              79,	(1<<STRING),	0,0,	 24,  -1 },
+	{              82,	(1<<STRING),	0,0,	 25,  -1 },
+	{              85,	(1<<STRING),	1,1,	 26,  -1 },
+	{              88,	(1<<STRING),	1,0,	 27,  -1 },
+	{              92,	(1<<STRING),	2,3,	 28,  -1 },
+	{              95,	(1<<STRING),	0,0,	 29,  -1 },
+	{              98,	(1<<STRING),	1,0,	 30,  -1 },
+	{             104,	(1<<STRING),	1,0,	 31,  -1 },
+	{             107,	(1<<STRING),	0,0,	 32,  -1 },
+	{             112,	(1<<STRING),	0,0,	 33,  -1 },
+	{             117,	(1<<STRING),	0,0,	 34,  -1 },
+	{             122,	(1<<STRING),	0,0,	 35,  -1 },
+	{             127,	(1<<STRING),	0,0,	 36,  -1 },
+	{             132,	(1<<STRING),	0,0,	 37,  -1 },
+	{             137,	(1<<STRING),	0,0,	 38,   8 },
+	{             142,	(1<<STRING),	0,0,	 39,  -1 },
+	{             146,	(1<<STRING),	0,0,	 40,  -1 },
+	{             151,	(1<<STRING),	0,0,	 41,  -1 },
+	{             156,	(1<<STRING),	0,0,	 42,  -1 },
+	{             161,	(1<<STRING),	0,0,	 43,   9 },
+	{             166,	(1<<STRING),	0,0,	 44,  -1 },
+	{             171,	(1<<STRING),	0,0,	 45,  -1 },
+	{             177,	(1<<STRING),	0,0,	 46,  -1 },
+	{             183,	(1<<STRING),	0,0,	 47,  -1 },
+	{             189,	(1<<STRING),	0,0,	 48,  -1 },
+	{             195,	(1<<STRING),	0,0,	 49,  -1 },
+	{             201,	(1<<STRING),	0,0,	 50,  -1 },
+	{             207,	(1<<STRING),	0,0,	 51,  -1 },
+	{             213,	(1<<STRING),	0,0,	 52,  -1 },
+	{             219,	(1<<STRING),	0,0,	 53,  -1 },
+	{             225,	(1<<STRING),	0,0,	 54,  -1 },
+	{             231,	(1<<STRING),	0,0,	 55,  -1 },
+	{             236,	(1<<STRING),	0,0,	 56,  -1 },
+	{             241,	(1<<STRING),	0,0,	 57,  -1 },
+	{             246,	(1<<STRING),	0,0,	 58,  -1 },
+	{             251,	(1<<STRING),	0,0,	 59,  -1 },
+	{             256,	(1<<STRING),	0,0,	 60,  52 },
+	{             262,	(1<<STRING),	0,0,	 61,  53 },
+	{             268,	(1<<STRING),	0,0,	 62,  54 },
+	{             274,	(1<<STRING),	0,0,	 63,  -1 },
+	{             280,	(1<<STRING),	0,0,	 64,  -1 },
+	{             286,	(1<<STRING),	0,0,	 65,  -1 },
+	{             292,	(1<<STRING),	0,0,	 66,  -1 },
+	{             298,	(1<<STRING),	0,0,	 67,  -1 },
+	{             304,	(1<<STRING),	0,0,	 68,  -1 },
+	{             310,	(1<<STRING),	0,0,	 69,  -1 },
+	{             316,	(1<<STRING),	0,0,	 70,  -1 },
+	{             322,	(1<<STRING),	0,0,	 71,  -1 },
+	{             328,	(1<<STRING),	0,0,	 72,  65 },
+	{             334,	(1<<STRING),	0,0,	 73,  66 },
+	{             340,	(1<<STRING),	0,0,	 74,  67 },
+	{             346,	(1<<STRING),	0,0,	 75,  -1 },
+	{             352,	(1<<STRING),	0,0,	 76,  -1 },
+	{             358,	(1<<STRING),	0,0,	 77,  -1 },
+	{             364,	(1<<STRING),	0,0,	 78,  -1 },
+	{             370,	(1<<STRING),	0,0,	 79,  -1 },
+	{             376,	(1<<STRING),	0,0,	 80,  -1 },
+	{             380,	(1<<STRING),	0,0,	 81,  -1 },
+	{             385,	(1<<STRING),	0,0,	 82,  -1 },
+	{             390,	(1<<STRING),	0,0,	 83,  -1 },
+	{             395,	(1<<STRING),	0,0,	 84,  -1 },
+	{             400,	(1<<STRING),	0,0,	 85,  -1 },
+	{             405,	(1<<STRING),	0,0,	 86,  -1 },
+	{             409,	(1<<STRING),	0,0,	 87,  86 },
+	{             413,	(1<<STRING),	0,0,	 88,  -1 },
+	{             417,	(1<<STRING),	0,0,	 89,  88 }
+};
+
+static struct user_table_entry *_nc_user_table = 0;
+
+static const HashValue _nc_user_hash_table[995] =
+{
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 57,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 61,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 40,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	  6,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 44,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 75,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 87,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 79,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 46,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 19,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 73,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 29,
+	 34,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 16,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 82,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 38,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 50,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	  0,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 58,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 27,
+	 -1,
+	 62,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 41,
+	 -1,
+	  7,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 76,
+	 -1,
+	 -1,
+	 32,
+	 33,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 47,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 21,
+	 -1,
+	 -1,
+	 70,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 74,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 35,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 30,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 83,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 10,
+	 -1,
+	 14,
+	 -1,
+	 15,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 55,
+	 -1,
+	 -1,
+	 18,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 23,
+	 51,
+	 -1,
+	  1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 59,
+	 -1,
+	 13,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 63,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 25,
+	 -1,
+	  2,
+	 -1,
+	 11,
+	 20,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 42,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	  3,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 77,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 89,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 48,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 71,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 68,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 36,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 17,
+	 84,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 56,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 24,
+	 60,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 80,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 64,
+	 -1,
+	 -1,
+	  5,
+	 -1,
+	 -1,
+	 26,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 22,
+	 -1,
+	 -1,
+	 -1,
+	 28,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 31,
+	 43,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 39,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 78,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 45,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 12,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 49,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 72,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 81,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 69,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 37,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 85,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	 -1,
+	  4,
+	 -1,
+	 -1,
+	0	/* base-of-table */
+};
+
+
+#define USERTABSIZE SIZEOF(user_names_data)
+
+#if 1
+static void
+next_string(const char *strings, unsigned *offset)
+{
+    *offset += (unsigned) strlen(strings + *offset) + 1;
+}
+
+static const struct user_table_entry *
+_nc_build_names(struct user_table_entry **actual,
+		const user_table_data *source,
+		const char *strings)
+{
+    if (*actual == 0) {
+	*actual = typeCalloc(struct user_table_entry, USERTABSIZE);
+	if (*actual != 0) {
+	    unsigned n;
+	    unsigned len = 0;
+	    for (n = 0; n < USERTABSIZE; ++n) {
+		(*actual)[n].ute_name = strings + len;
+		(*actual)[n].ute_type = (int) source[n].ute_type;
+		(*actual)[n].ute_argc = source[n].ute_argc;
+		(*actual)[n].ute_args = source[n].ute_args;
+		(*actual)[n].ute_index = source[n].ute_index;
+		(*actual)[n].ute_link = source[n].ute_link;
+		next_string(strings, &len);
+	    }
+	}
+    }
+    return *actual;
+}
+
+#define build_names(root) _nc_build_names(&_nc_##root##_table, \
+					  root##_names_data, \
+					  root##_names_text)
+#else
+#define build_names(root) _nc_ ## root ## _table
+#endif
+
+NCURSES_EXPORT(const struct user_table_entry *) _nc_get_userdefs_table (void)
+{
+    return build_names(user) ;
+}
+
+static HashValue
+info_hash(const char *string)
+{
+    long sum = 0;
+
+    DEBUG(9, ("hashing %s", string));
+    while (*string) {
+	sum += (long) (*string + (*(string + 1) << 8));
+	string++;
+    }
+
+    DEBUG(9, ("sum is %ld", sum));
+    return (HashValue) (sum % HASHTABSIZE);
+}
+
+static int
+compare_info_names(const char *a, const char *b)
+{
+    return !strcmp(a, b);
+}
+
+static const HashData hash_data[] = {
+    { HASHTABSIZE, _nc_user_hash_table, info_hash, compare_info_names }
+};
+
+NCURSES_EXPORT(const HashData *) _nc_get_hash_user (void)
+{
+    return hash_data;
+}
+
+#if NO_LEAKS
+NCURSES_EXPORT(void) _nc_comp_userdefs_leaks(void)
+{
+#if 1
+    FreeIfNeeded(_nc_user_table);
+#endif
+}
+#endif /* NO_LEAKS */
+
+#else /*! NCURSES_XNAMES */
+NCURSES_EXPORT(void) _nc_comp_userdefs(void);
+NCURSES_EXPORT(void) _nc_comp_userdefs(void) { }
+#endif /* NCURSES_XNAMES */
 
 EOF
 """,

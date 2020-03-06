@@ -27,13 +27,13 @@ def convert_modules(base_dir):
             d = "widechar"
         elif d == "serial":
             d = "tty"
-        print "    '%s.c'," % (os.path.join(base_dir, d, f),)
+        print("    '%s.c'," % (os.path.join(base_dir, d, f),))
 
 srcdir = sys.argv[1]
-print "NCURSES_SRCS = ["
+print("NCURSES_SRCS = [")
 convert_modules("ncurses")
-print "]"
-print
-print "PANEL_SRCS = ["
+print("]")
+print()
+print("PANEL_SRCS = [")
 convert_modules("panel")
-print "]"
+print("]")

@@ -18,7 +18,7 @@ DEFAULT_EXTERNAL_URLS = {
     "io_pypa_wheel_whl": "https://files.pythonhosted.org/packages/8c/23/848298cccf8e40f5bbb59009b32848a4c38f4e7f3364297ab3c3e2e2cd14/wheel-0.34.2-py2.py3-none-any.whl",
     "net_zlib": "http://zlib.net/zlib-1.2.11.tar.gz",
     "org_bzip_bzip2": "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz",
-    "org_gnu_ncurses": "https://invisible-mirror.net/archives/ncurses/ncurses-6.1.tar.gz",
+    "org_gnu_ncurses": "https://invisible-mirror.net/archives/ncurses/ncurses-6.2.tar.gz",
     "org_gnu_readline": "https://ftp.gnu.org/gnu/readline/readline-8.0.tar.gz",
     "org_openssl": "https://www.openssl.org/source/openssl-1.1.1f.tar.gz",
     "org_sourceware_libffi": "https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz",
@@ -120,9 +120,9 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "org_gnu_ncurses",
         urls = [urls["org_gnu_ncurses"]],
-        sha256 = "aa057eeeb4a14d470101eff4597d5833dcef5965331be3528c08d99cebaa0d17",
+        sha256 = "30306e0c76e0f9f1f0de987cf1c82a5c21e1ce6568b9227f7da5b71cbea86c9d",
         build_file = filename_from_label("//thirdparty/ncurses:BUILD.ncurses"),
-        strip_prefix = "ncurses-6.1",
+        strip_prefix = "ncurses-6.2",
     )
 
     http_archive(

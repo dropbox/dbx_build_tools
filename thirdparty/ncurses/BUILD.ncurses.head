@@ -143,6 +143,7 @@ NCURSES_SRCS = [
     "ncurses/comp_captab.c",
     "ncurses/tinfo/comp_error.c",
     "ncurses/tinfo/comp_hash.c",
+    "ncurses/comp_userdefs.c",
     "ncurses/tinfo/db_iterator.c",
     "ncurses/tinfo/doalloc.c",
     "ncurses/tinfo/entries.c",
