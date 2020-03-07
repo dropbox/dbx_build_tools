@@ -140,7 +140,7 @@ cc_toolchain(
     name = "drte-v2-gcc-7.2.0-cuda",
     all_files = ":everything",
     ar_files = ":bin",
-    as_files = ":compiler-files",
+    as_files = ":compiler-files-cuda",
     compiler_files = ":compiler-files-cuda",
     dwp_files = ":bin",
     linker_files = ":linker-files-cuda",
