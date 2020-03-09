@@ -447,12 +447,11 @@ def dbx_pkg_deb(
     if before_upgrade:
         pack_cmd += ["--before-upgrade", before_upgrade]
 
-    # We're building with Bazel, which requires either drte-v2
-    # or drte-v3 depending on the build options.
+    # We're building with Bazel, which requires DRTE.
     # To save the effort in guessing the right one to use,
-    # set both as dependencies -- most hosts will have both anyway.
+    # set both all versions as dependencies -- most hosts will have all anyway.
     depends = set(depends)
-    depends.update(["drte-v2", "drte-v3"])
+    depends.update(["drte-v3"])
     for dependency in depends:
         pack_cmd.extend(("-d", dependency))
 

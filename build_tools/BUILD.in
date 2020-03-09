@@ -5,13 +5,6 @@ load("//build_tools/sh:sh.bzl", "dbx_sh_binary")
 load("//build_tools/py:py.bzl", "dbx_py_dbx_test")
 
 config_setting(
-    name = "use-drte-v2",
-    values = {
-        "crosstool_top": "@drte_v2_build_sysroot//:drte-v2",
-    },
-)
-
-config_setting(
     name = "use-drte-v3",
     values = {
         "crosstool_top": "@drte_v3_build_sysroot//:drte-v3",
