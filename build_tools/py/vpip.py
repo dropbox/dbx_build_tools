@@ -308,7 +308,7 @@ def build_pip_archive(workdir):
                 "--no-binary=:all:",
                 # Binary packages are not acceptable in general.
                 # These are exceptions for ML usage only.
-                "--only-binary=tensorboard,torch,tokenizers,sentencepiece",
+                "--only-binary=tensorboard,torch,tokenizers,sentencepiece,pyarrow",
             ]
             + index_url_flags_if_required()
             + list(args)
