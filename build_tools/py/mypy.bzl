@@ -30,7 +30,10 @@ load(
 load("//build_tools/py:common.bzl", "DbxPyVersionCompatibility")
 load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
 load("//build_tools/services:svc.bzl", "dbx_services_test")
-load("@dbx_build_tools//build_tools/py:toolchain.bzl", "CPYTHON_37_TOOLCHAIN_NAME")
+load("@dbx_build_tools//build_tools/py:toolchain.bzl", "BUILD_TAG_TO_TOOLCHAIN_MAP")
+load("@dbx_build_tools//build_tools/py:cfg.bzl", "ALL_ABIS")
+
+ALL_PY3_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS if abi.major_python_version == 3]
 
 MypyProvider = provider(fields = [
     "trans_srcs",
@@ -322,7 +325,7 @@ def _build_mypyc_ext_module(
     cc_toolchain = find_cpp_toolchain(ctx)
     feature_configuration = cc_common.configure_features(ctx = ctx, cc_toolchain = cc_toolchain)
 
-    so_name = "%s.cpython-37m-x86_64-linux-gnu.so" % group_name
+    so_name = "%s.cpython-38-x86_64-linux-gnu.so" % group_name
     so_file = ctx.actions.declare_file(so_name)
 
     mypyc_runtime = ctx.attr._mypyc_runtime
@@ -591,7 +594,7 @@ def _dbx_py_compiled_binary_impl(ctx):
 dbx_py_compiled_binary = rule(
     implementation = _dbx_py_compiled_binary_impl,
     attrs = _dbx_py_compiled_binary_attrs,
-    toolchains = [CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_PY3_TOOLCHAIN_NAMES,
     executable = True,
 )
 
@@ -599,7 +602,7 @@ _compiled_test_attrs = dict(dbx_py_test_attrs)
 _compiled_test_attrs.update(_mypyc_attrs)
 dbx_py_compiled_test = rule(
     implementation = _dbx_py_compiled_binary_impl,
-    toolchains = [CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_PY3_TOOLCHAIN_NAMES,
     test = True,
     attrs = _compiled_test_attrs,
 )
