@@ -69,11 +69,17 @@ cc_library(
         "include/internal/*.h",
     ]) + [
         "crypto/buildinf.h",
-        "crypto/include/internal/bn_conf.h",
-        "crypto/include/internal/dso_conf.h",
+        "include/crypto/dso_conf.h",
         "e_os.h",
     ],
-    hdrs = glob(["include/openssl/*.h"]) + ["include/openssl/opensslconf.h"],
+    hdrs = glob([
+        "include/openssl/*.h",
+        "include/crypto/*.h",
+    ]) + [
+        "include/openssl/opensslconf.h",
+        "include/crypto/bn_conf.h",
+        "include/crypto/dso_conf.h",
+    ],
     copts = OPENSSL_COPTS,
     linkopts = [
         "-pthread",
@@ -116,8 +122,8 @@ genrule(
     name = "generate-headers",
     outs = [
         "crypto/buildinf.h",
-        "crypto/include/internal/bn_conf.h",
-        "crypto/include/internal/dso_conf.h",
+        "include/crypto/dso_conf.h",
+        "include/crypto/bn_conf.h",
         "include/openssl/opensslconf.h",
         "apps/progs.h",
     ],
@@ -128,10 +134,10 @@ static const char compiler_flags[] = {'\\0'};
 #define DATE "__REDACTED__"
 E_O_F
 
-cat <<'E_O_F' >$(location crypto/include/internal/bn_conf.h)
+cat <<'E_O_F' >$(location include/crypto/bn_conf.h)
 %s
 E_O_F
-cat <<'E_O_F' >$(location crypto/include/internal/dso_conf.h)
+cat <<'E_O_F' >$(location include/crypto/dso_conf.h)
 %s
 E_O_F
 cat <<'E_O_F' >$(location include/openssl/opensslconf.h)

@@ -20,7 +20,7 @@ DEFAULT_EXTERNAL_URLS = {
     "org_bzip_bzip2": "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz",
     "org_gnu_ncurses": "https://invisible-mirror.net/archives/ncurses/ncurses-6.1.tar.gz",
     "org_gnu_readline": "https://ftp.gnu.org/gnu/readline/readline-8.0.tar.gz",
-    "org_openssl": "https://www.openssl.org/source/openssl-1.1.1d.tar.gz",
+    "org_openssl": "https://www.openssl.org/source/openssl-1.1.1e.tar.gz",
     "org_sourceware_libffi": "https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz",
     "org_sqlite": "https://sqlite.org/2020/sqlite-amalgamation-3310100.zip",
     "org_tukaani": "https://tukaani.org/xz/xz-5.2.4.tar.gz",
@@ -152,8 +152,8 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "org_openssl",
         urls = [urls["org_openssl"]],
-        sha256 = "1e3a91bc1f9dfce01af26026f856e064eab4c8ee0a8f457b5ae30b40b8b711f2",
-        strip_prefix = "openssl-1.1.1d",
+        sha256 = "694f61ac11cb51c9bf73f54e771ff6022b0327a43bbdfa1b2f19de1662a6dcbe",
+        strip_prefix = "openssl-1.1.1e",
         build_file = filename_from_label("//thirdparty/openssl:BUILD.openssl"),
     )
 
