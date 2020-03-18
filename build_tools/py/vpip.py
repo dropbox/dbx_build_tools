@@ -147,6 +147,11 @@ def get_windows_pip_env(execroot):
     # Indicate to distutils that it does not need to go looking for the compiler.
     env["MSSdk"] = "1"
     env["DISTUTILS_USE_SDK"] = "1"
+    # This tells distutils explicitly to dynamically link (and not statically)
+    # link against some MSVC libraries. This will likely not be needed
+    # if we're using a more modern distutils.
+    # See https://github.com/python/cpython/commit/ce3a4984089b8e0ce5422ca32d75ad057b008074.
+    env["PY_VCRUNTIME_REDIST"] = "1"
 
     if ARGS.include_paths:
         env["INCLUDE"] = ";".join(
