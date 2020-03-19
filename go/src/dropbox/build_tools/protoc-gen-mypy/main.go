@@ -373,11 +373,12 @@ func (w *pkgWriter) WriteMessages(
 				if ok && msg.Descriptor.Options.GetMapEntry() {
 					// map generates a special Entry wrapper message.
 					container := name("typing", "MutableMapping")
+
+					keytype, valtype := w.keyAndValueTypes(msg.Descriptor, field)
 					l("%sdef %s(self) -> %s[%s, %s]: ...",
 						maybeComment,
 						field.GetName(), container,
-						w.pythonType(msg.Descriptor.Field[0]),
-						w.pythonType(msg.Descriptor.Field[1]))
+						keytype, valtype)
 				} else {
 					container := name(protoContainersPkg, "RepeatedCompositeFieldContainer")
 					l("%sdef %s(self) -> %s[%s]: ...",
@@ -434,13 +435,15 @@ func (w *pkgWriter) WriteMessages(
 				if ok && msg.Descriptor.GetOptions().GetMapEntry() {
 					// map generates a special Entry wrapper message.
 					container := name("typing", "Mapping")
+
+					keytype, valtype := w.keyAndValueTypes(msg.Descriptor, field)
 					l("%s%s : %s[%s[%s, %s]] = ...,",
 						maybeComment,
 						field.GetName(),
 						optional,
 						container,
-						w.pythonType(msg.Descriptor.Field[0]),
-						w.pythonType(msg.Descriptor.Field[1]))
+						keytype,
+						valtype)
 				} else {
 					l("%s%s : %s[%s[%s]] = ...,",
 						maybeComment,
@@ -500,11 +503,29 @@ func (w *pkgWriter) WriteServices(services []*descriptor.ServiceDescriptorProto)
 	}
 }
 
+func (w *pkgWriter) keyAndValueTypes(msgDescriptor *descriptor.DescriptorProto, mapField *descriptor.FieldDescriptorProto) (interface{}, interface{}) {
+	keytype := w.pythonType(msgDescriptor.Field[0])
+	if proto.HasExtension(mapField.Options, mypy.E_Keytype) {
+		keytype = w.pythonTypeHelper(mapField, mypy.E_Keytype)
+	}
+
+	valtype := w.pythonType(msgDescriptor.Field[1])
+	if proto.HasExtension(mapField.Options, mypy.E_Valuetype) {
+		valtype = w.pythonTypeHelper(mapField, mypy.E_Valuetype)
+	}
+
+	return keytype, valtype
+}
+
 func (w *pkgWriter) pythonType(fd *descriptor.FieldDescriptorProto) interface{} {
+	return w.pythonTypeHelper(fd, mypy.E_Casttype)
+}
+
+func (w *pkgWriter) pythonTypeHelper(fd *descriptor.FieldDescriptorProto, ext *proto.ExtensionDesc) interface{} {
 	if fd.Options != nil {
 		casttype, err := proto.GetExtension(
 			fd.Options,
-			mypy.E_Casttype)
+			ext)
 
 		if err == nil {
 			split := strings.Split(*(casttype.(*string)), ".")
