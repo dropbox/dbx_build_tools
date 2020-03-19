@@ -283,7 +283,7 @@ def register_cmd_itest(subparsers):
     sap.set_defaults(func=cmd_itest_stop_all)
 
 
-def _get_container_name_for_target(target):
+def get_container_name_for_target(target):
     return CONTAINER_NAME_PREFIX + target.strip("/").replace("/", "-").replace(":", "-")
 
 
@@ -328,7 +328,7 @@ def _verify_args(args, itest_target, container_should_be_running):
     the mode requested.
     """
     with metrics.create_and_register_timer("verify_args_ms"):
-        container_name = _get_container_name_for_target(itest_target.name)
+        container_name = get_container_name_for_target(itest_target.name)
 
         # Load all containers because you want neither port nor container name conflicts.
         # note: this shells out to docker so it's potentially slow
@@ -410,7 +410,7 @@ def cmd_itest_run(args, bazel_args, mode_args):
     itest_target = _get_itest_target(
         args.bazel_path, args.target, use_implicit_output=True
     )
-    container_name = _get_container_name_for_target(itest_target.name)
+    container_name = get_container_name_for_target(itest_target.name)
     _verify_args(args, itest_target, container_should_be_running=False)
 
     tmpdir_name = "test_tmpdir"
@@ -650,7 +650,7 @@ def _should_remove_container_dir(args, container_dirpath):
 def cmd_itest_clean(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
     itest_target = _get_itest_target(args.bazel_path, args.target)
-    container_name = _get_container_name_for_target(itest_target.name)
+    container_name = get_container_name_for_target(itest_target.name)
     containers = _get_all_containers(args.docker_path)
     if container_name in containers:
         message = """Refusing to remove data directory because container {name} is still running. Try:
@@ -724,7 +724,7 @@ def cmd_itest_clean_all(args, bazel_args, mode_args):
 def cmd_itest_exec(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
     itest_target = _get_itest_target(args.bazel_path, args.target)
-    container_name = _get_container_name_for_target(itest_target.name)
+    container_name = get_container_name_for_target(itest_target.name)
     _verify_args(args, itest_target, container_should_be_running=True)
 
     docker_exec_args = [args.docker_path, "exec"]
@@ -762,7 +762,7 @@ def _cmd_itest_reload(args, bazel_args, mode_args):
     itest_target = _get_itest_target(
         args.bazel_path, args.target, use_implicit_output=True
     )
-    container_name = _get_container_name_for_target(itest_target.name)
+    container_name = get_container_name_for_target(itest_target.name)
     _verify_args(args, itest_target, container_should_be_running=True)
 
     host_data_dir = os.path.join(HOST_DATA_DIR_PREFIX, container_name)
@@ -842,7 +842,7 @@ fi
 def cmd_itest_stop(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
     itest_target = _get_itest_target(args.bazel_path, args.target)
-    container_name = _get_container_name_for_target(itest_target.name)
+    container_name = get_container_name_for_target(itest_target.name)
     _verify_args(args, itest_target, container_should_be_running=True)
 
     exec_wrapper.execv(args.docker_path, [args.docker_path, "rm", "-f", container_name])
