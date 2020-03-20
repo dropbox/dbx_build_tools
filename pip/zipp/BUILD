@@ -36,5 +36,6 @@ dbx_py_pypi_piplib(
     pip_version = "1.1.0",
     python3_compatible = True,
     setup_requires = ["//pip/setuptools_scm"],
+    use_pep517 = True,
     deps = ["//pip/contextlib2"],
 )

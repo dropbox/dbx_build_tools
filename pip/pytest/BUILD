@@ -214,6 +214,7 @@ dbx_py_pypi_piplib(
     python2_compatible = True,
     python3_compatible = True,
     setup_requires = ["//pip/setuptools_scm"],
+    use_pep517 = True,
     deps = [
         "//pip/atomicwrites",
         "//pip/attrs",

@@ -47,5 +47,8 @@ done
 if [[ "$OSTYPE" != "darwin"* ]]; then
     opts+=(-Wl,--as-needed,-lstdc++,--no-as-needed)
 fi
+# Append additional object files/libraries passed from vpip to the end of command line options.
+opts+=($LDSHARED_WRAPPER_ADDITIONAL_LIBS)
+
 
 $CC -shared "${opts[@]}"

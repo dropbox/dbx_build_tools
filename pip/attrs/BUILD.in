@@ -6,4 +6,5 @@ dbx_py_pypi_piplib(
     provides = ["attr"],
     python2_compatible = True,
     python3_compatible = True,
+    use_pep517 = True,
 )

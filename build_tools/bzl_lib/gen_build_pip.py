@@ -190,6 +190,7 @@ class PipBuildGenerator(BasePipBuildGenerator):
         # remaining attributes.
         for rule in pip_rules:
             name = rule.attr_map["name"]
+            wheel_name = name.replace("-", "_")
             excludes = list(rule.attr_map.get("py_excludes", DEFAULT_EXCLUDES))
             for namespace_pkg in rule.attr_map.get("namespace_pkgs", []):
                 excludes.append(namespace_pkg.replace(".", "/") + "/__init__.py")
@@ -198,8 +199,8 @@ class PipBuildGenerator(BasePipBuildGenerator):
             for build_key in _get_build_interpreters(rule.attr_map):
                 wheel = os.path.join(
                     out_dir,
-                    name + "-" + build_key,
-                    name + "-0.0.0-py2.py3-none-any.whl",
+                    wheel_name + "-" + build_key,
+                    wheel_name + "-0.0.0-py2.py3-none-any.whl",
                 )
                 if not os.path.exists(wheel):
                     continue

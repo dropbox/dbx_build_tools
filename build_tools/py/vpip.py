@@ -18,6 +18,10 @@ import tempfile
 ARGS = None
 
 
+class BuildError(Exception):
+    pass
+
+
 def run_silently(cmd, env=None, cwd=None):
     "Run a subprocess and swallow its output unless it fails."
     try:
@@ -216,17 +220,17 @@ def build_pip_archive(workdir):
         external_dir = external_dir[4:]
 
     pip_wheel = os.path.join(
-        external_dir, "io_pypa_pip_whl", "file", "pip-9.0.1-py2.py3-none-any.whl"
+        external_dir, "io_pypa_pip_whl", "file", "pip-20.0.2-py2.py3-none-any.whl"
     )
     # If you change the setuptools version, please update the //pip/setuptools target.
     st_wheel = os.path.join(
         external_dir,
         "io_pypa_setuptools_whl",
         "file",
-        "setuptools-41.0.1-py2.py3-none-any.whl",
+        "setuptools-44.0.0-py2.py3-none-any.whl",
     )
     wheel_wheel = os.path.join(
-        external_dir, "io_pypa_wheel_whl", "file", "wheel-0.33.4-py2.py3-none-any.whl"
+        external_dir, "io_pypa_wheel_whl", "file", "wheel-0.34.2-py2.py3-none-any.whl"
     )
 
     install_env = {"PYTHONPATH": pip_wheel}
@@ -290,8 +294,10 @@ def build_pip_archive(workdir):
                 "-m",
                 "pip",
                 "--disable-pip-version-check",
+                "--no-python-version-warning",
                 "--no-cache-dir",
                 cmd,
+                "--no-build-isolation",
                 "--no-binary=:all:",
                 "--only-binary=tensorboard",  # There are no source packages for //pip/tensorboard .
             ]
@@ -348,17 +354,31 @@ def build_pip_archive(workdir):
 
     cmd = pip_cmd("wheel")
     cmd.append("-vvv")
+    cmd.append("--use-pep517" if ARGS.use_pep517 else "--no-use-pep517")
     if ARGS.no_deps:
         cmd.append("--no-deps")
+
     for op in ARGS.global_options:
+        if ARGS.use_pep517:
+            raise BuildError(
+                "PEP517 installation style does not support 'global_options'"
+            )
         op = op.replace(ARGS.root_placeholder, deterministic_execroot)
         cmd.append("--global-option=%s" % op)
+
     for op in ARGS.build_options:
+        if ARGS.use_pep517:
+            raise BuildError(
+                "PEP517 installation style does not support 'build_options'"
+            )
         cmd.append("--build-option=" + op)
     cmd.extend(["--wheel-dir", wheelhouse_dir])
 
     if ARGS.extra_libs or ARGS.extra_dynamic_libs:
-        cmd.append("--global-option=build_ext")
+        if ARGS.use_pep517:
+            env["LDSHARED_WRAPPER_ADDITIONAL_LIBS"] = ""
+        else:
+            cmd.append("--global-option=build_ext")
 
         library_dirs = set()
         libraries = []
@@ -377,6 +397,7 @@ def build_pip_archive(workdir):
                 libraries.append(lib[2:])
             else:
                 link_objs.append(os.path.abspath(lib))
+
         for dyn_lib in ARGS.extra_dynamic_libs:
             library_dirs.add(os.path.abspath(os.path.dirname(dyn_lib)))
             dyn_lib_name = os.path.basename(dyn_lib)
@@ -386,14 +407,29 @@ def build_pip_archive(workdir):
             if not ARGS.msvc_toolchain and dyn_lib_name.startswith("lib"):
                 dyn_lib_name = dyn_lib_name[len("lib") :]
             libraries.append(dyn_lib_name)
+
         if library_dirs:
-            cmd.append(
-                "--global-option=--library-dirs=%s" % os.pathsep.join(library_dirs)
-            )
+            if ARGS.use_pep517:
+                for lib_dir in library_dirs:
+                    env["LDFLAGS"] += " -L{}".format(lib_dir)
+            else:
+                cmd.append(
+                    "--global-option=--library-dirs=%s" % os.pathsep.join(library_dirs)
+                )
+
         if libraries:
-            cmd.append("--global-option=--libraries=%s" % " ".join(libraries))
+            if ARGS.use_pep517:
+                for lib in libraries:
+                    env["LDSHARED_WRAPPER_ADDITIONAL_LIBS"] += " -l{}".format(lib)
+            else:
+                cmd.append("--global-option=--libraries=%s" % " ".join(libraries))
+
         if link_objs:
-            cmd.append("--global-option=--link-objects=%s" % " ".join(link_objs))
+            if ARGS.use_pep517:
+                for link_obj in link_objs:
+                    env["LDSHARED_WRAPPER_ADDITIONAL_LIBS"] += " {}".format(link_obj)
+            else:
+                cmd.append("--global-option=--link-objects=%s" % " ".join(link_objs))
 
     for framework in ARGS.extra_frameworks:
         name, _ = os.path.splitext(os.path.basename(framework))
@@ -535,6 +571,11 @@ def main():
         "--ignore-missing-static-libraries",
         action="store_true",
         help="Ignore library if it can't be linked statically.",
+    )
+    p.add_argument(
+        "--use-pep517",
+        action="store_true",
+        help="Use new installation style defined in PEP 517.",
     )
     p.add_argument("package_names", nargs="*", help="packages to install")
     ARGS = p.parse_args()

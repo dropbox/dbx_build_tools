@@ -156,6 +156,9 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     if not _debug_prefix_map_supported(ctx):
         command_args.add("--no-debug-prefix-map")
 
+    if ctx.attr.use_pep517:
+        command_args.add("--use-pep517")
+
     outputs = [wheel]
 
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -450,6 +453,7 @@ def _vpip_rule_impl(ctx, local):
 
 def _vpip_outputs(name, python2_compatible, python3_compatible):
     outs = {}
+    name = name.replace("-", "_")
     whl_file_tmpl = "{name}-{build_tag}/{name}-0.0.0-py2.py3-none-any.whl"
     py_configs = _get_build_interpreters_for_macro(
         python2_compatible = python2_compatible,
@@ -468,7 +472,7 @@ def _dbx_py_local_piplib_impl(ctx):
 
 def _find_package_root(files):
     """
-    In some cases the srcs may start with a subdirectory. So we find the setup.py
+    In some cases the srcs may start with a subdirectory. So we find the setup.py/pyproject.toml
     with the shortest path and use its directory. We want the shortest path to
     handle cases where the package has vendorized its dependencies.
     """
@@ -476,10 +480,10 @@ def _find_package_root(files):
     setup_pys = [
         f
         for f in files
-        if f.basename == "setup.py"
+        if f.basename in ("setup.py", "pyproject.toml")
     ]
     if not setup_pys:
-        fail("setup.py not found")
+        fail("setup.py/pyproject.toml not found")
 
     # This is the Starlark way to write min(seq, key=lambda x: len(x))
     package_dir = setup_pys[0].dirname
@@ -557,6 +561,11 @@ _piplib_attrs = {
         doc = """Ignore library flags that can't be linked statically.
 
 Can only be set to False when linking dynamic libraries is allowed (_py_link_dynamic_libs).""",
+    ),
+    "use_pep517": attr.bool(
+        default = False,
+        doc = """Use a new, PEP 517-defined installation style instead of the legacy, setup.py-based
+one. Note, it does not support 'global_options' and 'build_options' arguments.""",
     ),
     "_vpip_tool": attr.label(executable = True, default = Label("//build_tools/py:vpip"), cfg = "host"),
     "use_magic_mirror": attr.bool(default = True),

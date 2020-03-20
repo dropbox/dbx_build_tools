@@ -13,9 +13,9 @@ DEFAULT_EXTERNAL_URLS = {
     "cpython_37": "https://www.python.org/ftp/python/3.7.5/Python-3.7.5.tar.xz",
     "cpython_38": "https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz",
     "go_1_12_17_linux_amd64_tar_gz": "https://dl.google.com/go/go1.12.17.linux-amd64.tar.gz",
-    "io_pypa_pip_whl": "https://pypi.python.org/packages/b6/ac/7015eb97dc749283ffdec1c3a88ddb8ae03b8fad0f0e611408f196358da3/pip-9.0.1-py2.py3-none-any.whl",
-    "io_pypa_setuptools_whl": "https://files.pythonhosted.org/packages/ec/51/f45cea425fd5cb0b0380f5b0f048ebc1da5b417e48d304838c02d6288a1e/setuptools-41.0.1-py2.py3-none-any.whl",
-    "io_pypa_wheel_whl": "https://files.pythonhosted.org/packages/bb/10/44230dd6bf3563b8f227dbf344c908d412ad2ff48066476672f3a72e174e/wheel-0.33.4-py2.py3-none-any.whl",
+    "io_pypa_pip_whl": "https://files.pythonhosted.org/packages/54/0c/d01aa759fdc501a58f431eb594a17495f15b88da142ce14b5845662c13f3/pip-20.0.2-py2.py3-none-any.whl",
+    "io_pypa_setuptools_whl": "https://files.pythonhosted.org/packages/f9/d3/955738b20d3832dfa3cd3d9b07e29a8162edb480bf988332f5e6e48ca444/setuptools-44.0.0-py2.py3-none-any.whl",
+    "io_pypa_wheel_whl": "https://files.pythonhosted.org/packages/8c/23/848298cccf8e40f5bbb59009b32848a4c38f4e7f3364297ab3c3e2e2cd14/wheel-0.34.2-py2.py3-none-any.whl",
     "net_zlib": "http://zlib.net/zlib-1.2.11.tar.gz",
     "org_bzip_bzip2": "https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz",
     "org_gnu_ncurses": "https://invisible-mirror.net/archives/ncurses/ncurses-6.1.tar.gz",
@@ -170,20 +170,20 @@ def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_file(
         name = "io_pypa_pip_whl",
         urls = [urls["io_pypa_pip_whl"]],
-        downloaded_file_path = "pip-9.0.1-py2.py3-none-any.whl",
-        sha256 = "690b762c0a8460c303c089d5d0be034fb15a5ea2b75bdf565f40421f542fefb0",
+        downloaded_file_path = "pip-20.0.2-py2.py3-none-any.whl",
+        sha256 = "4ae14a42d8adba3205ebeb38aa68cfc0b6c346e1ae2e699a0b3bad4da19cef5c",
     )
 
     http_file(
         name = "io_pypa_setuptools_whl",
         urls = [urls["io_pypa_setuptools_whl"]],
-        downloaded_file_path = "setuptools-41.0.1-py2.py3-none-any.whl",
-        sha256 = "c7769ce668c7a333d84e17fe8b524b1c45e7ee9f7908ad0a73e1eda7e6a5aebf",
+        downloaded_file_path = "setuptools-44.0.0-py2.py3-none-any.whl",
+        sha256 = "180081a244d0888b0065e18206950d603f6550721bd6f8c0a10221ed467dd78e",
     )
 
     http_file(
         name = "io_pypa_wheel_whl",
         urls = [urls["io_pypa_wheel_whl"]],
-        downloaded_file_path = "wheel-0.33.4-py2.py3-none-any.whl",
-        sha256 = "5e79117472686ac0c4aef5bad5172ea73a1c2d1646b808c35926bd26bdfb0c08",
+        downloaded_file_path = "wheel-0.34.2-py2.py3-none-any.whl",
+        sha256 = "df277cb51e61359aba502208d680f90c0493adec6f0e848af94948778aed386e",
     )

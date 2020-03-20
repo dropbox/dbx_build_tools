@@ -44,4 +44,5 @@ dbx_py_pypi_piplib(
     provides = ["backports.configparser"],
     python3_compatible = True,
     setup_requires = ["//pip/setuptools_scm"],
+    use_pep517 = True,
 )
