@@ -10,7 +10,6 @@ if sys.version_info[0] == 2:
     from ConfigParser import RawConfigParser
     from StringIO import StringIO
 else:
-    # import: configparser is a Python 3 module
     from configparser import RawConfigParser
     from io import StringIO
 
