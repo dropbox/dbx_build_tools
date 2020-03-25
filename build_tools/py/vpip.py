@@ -321,7 +321,9 @@ def build_pip_archive(workdir):
         else:
             build_dir_prefix = "/tmp"
 
-        build_dir = os.path.join(build_dir_prefix, "vpip-build-{}".format(os.path.basename(ARGS.wheel)))
+        build_dir = os.path.join(
+            build_dir_prefix, "vpip-build-{}".format(os.path.basename(ARGS.wheel))
+        )
         made_build_dir = False
         try:
             os.mkdir(build_dir)
@@ -362,18 +364,19 @@ def build_pip_archive(workdir):
         libraries = []
         link_objs = []
         for lib in ARGS.extra_libs:
-            if lib.startswith("-l"):
+            if ARGS.msvc_toolchain:
+                # NOTE: Normally we want to use the `--link-objects` option for
+                #       but it doesn't appear to do anything for MSVC, so pass
+                #       in specific libraries as arguments instead.
+                #       We expect all native libraries in MSVC (e.g. kernel32)
+                #       to be specified in setup.py, so only Bazel-built inputs
+                #       should be passed in via `--extra-libs`.
+                # pip will change the working directory, so use absolute paths.
+                env["LINK"] += " " + os.path.abspath(lib)
+            elif lib.startswith("-l"):
                 libraries.append(lib[2:])
             else:
-                # NOTE: Normally we want to use the `--link-objects` option for
-                #       but it doesn't appear to do anything for MSVC, so
-                #       add the libraries to libraries/library_dirs instead.
-                # pip will change the working directory, so use absolute paths.
-                if ARGS.msvc_toolchain:
-                    libraries.append(os.path.basename(lib)[:-len(".lib")])
-                    library_dirs.add(os.path.dirname(os.path.abspath(lib)))
-                else:
-                    link_objs.append(os.path.abspath(lib))
+                link_objs.append(os.path.abspath(lib))
         for dyn_lib in ARGS.extra_dynamic_libs:
             library_dirs.add(os.path.abspath(os.path.dirname(dyn_lib)))
             dyn_lib_name = os.path.basename(dyn_lib)
@@ -384,7 +387,9 @@ def build_pip_archive(workdir):
                 dyn_lib_name = dyn_lib_name[len("lib") :]
             libraries.append(dyn_lib_name)
         if library_dirs:
-            cmd.append("--global-option=--library-dirs=%s" % os.pathsep.join(library_dirs))
+            cmd.append(
+                "--global-option=--library-dirs=%s" % os.pathsep.join(library_dirs)
+            )
         if libraries:
             cmd.append("--global-option=--libraries=%s" % " ".join(libraries))
         if link_objs:

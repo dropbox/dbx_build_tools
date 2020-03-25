@@ -191,6 +191,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     cc_compilation = cc_info.compilation_context
     cc_linking = cc_info.linking_context
     inputs_trans.append(cc_compilation.headers)
+    inputs_trans.append(cc_linking.additional_inputs)
     command_args.add_all(cc_compilation.includes, format_each = "--compile-flags=-I %s")
     command_args.add_all(
         cc_compilation.system_includes,
@@ -241,7 +242,11 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         if link_flag == "-pthread":
             # Python is going to add this anyway.
             continue
-        if not link_flag.startswith("-l"):
+
+        # On Windows, specific link inputs are passed in as command arguments to
+        # link.exe and are not passed in as flags. We assume these to be Bazel-built
+        # inputs, and should be handled the same as libraries.
+        if not link_flag.startswith("-l") and not is_windows(ctx):
             fail("only know how to handle -l linkopts, not '{}'".format(link_flag))
         command_args.add(link_flag, format = "--extra-lib=%s")
 
