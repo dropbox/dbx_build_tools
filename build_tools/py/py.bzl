@@ -312,6 +312,10 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     if ctx.attr.ignore_missing_static_libraries:
         command_args.add("--ignore-missing-static-libraries")
 
+    if is_windows(ctx):
+        command_args.add("--ducible", ctx.file._ducible)
+        tools.append(ctx.file._ducible)
+
     ctx.actions.run(
         inputs = depset(direct = inputs_direct, transitive = inputs_trans),
         tools = tools,
@@ -573,6 +577,7 @@ one. Note, it does not support 'global_options' and 'build_options' arguments.""
     "_py_link_dynamic_libs": attr.label(default = Label("//build_tools:py_link_dynamic_libs")),
     "_vinst": attr.label(default = Label("//build_tools/py:vinst"), cfg = "host", executable = True),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+    "_ducible": attr.label(default = Label("@ducible//:ducible.exe"), allow_single_file = True),
 }
 
 _pypi_piplib_attrs = dict(_piplib_attrs)

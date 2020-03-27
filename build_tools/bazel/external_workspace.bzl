@@ -26,6 +26,7 @@ DEFAULT_EXTERNAL_URLS = {
     "org_tukaani": "https://tukaani.org/xz/xz-5.2.4.tar.gz",
     "rules_pkg": "https://github.com/bazelbuild/rules_pkg/archive/2f09779667f0d6644c2ca5914d6113a82666ec63.zip",
     "six_archive": "https://pypi.python.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz",
+    "ducible": "https://github.com/jasonwhite/ducible/releases/download/v1.2.2/ducible-windows-Win32-Release.zip",
 }
 
 def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
@@ -186,4 +187,12 @@ def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
         urls = [urls["io_pypa_wheel_whl"]],
         downloaded_file_path = "wheel-0.34.2-py2.py3-none-any.whl",
         sha256 = "df277cb51e61359aba502208d680f90c0493adec6f0e848af94948778aed386e",
+    )
+
+    # Windows client only package that is required because of rule-sharing.
+    http_archive(
+        name = "ducible",
+        urls = [urls["ducible"]],
+        sha256 = "b90d636b6ee08768cd198e00f007a25b91bc1be279d417bdd3d476296060b7da",
+        build_file_content = """exports_files(["ducible.exe"])""",
     )

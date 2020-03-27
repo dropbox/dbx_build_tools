@@ -9,6 +9,7 @@ are installed and then pip creates a wheel of of this pypi dependency.
 import argparse
 import errno
 import glob
+import hashlib
 import os
 import shutil
 import subprocess
@@ -319,11 +320,9 @@ def build_pip_archive(workdir):
         # exists. Essentially, we trade determinism outside the sandbox for
         # determinism within it.
 
-        # For Windows, we default to the system-specified TEMP dir. Note that this
-        # will have the user embedded, like `C:\Users\username\AppData\Local\Temp`,
-        # and currently is not deterministic.
         if ARGS.msvc_toolchain:
-            build_dir_prefix = os.environ["TEMP"]
+            build_dir_prefix = "C:\\_bzltmp"
+            os.makedirs(build_dir_prefix, exist_ok=True)
         else:
             build_dir_prefix = "/tmp"
 
@@ -456,7 +455,42 @@ def build_pip_archive(workdir):
 
     if ARGS.wheel:
         whl_file = glob.glob(os.path.join(wheelhouse_dir, "*.whl"))[0]
-        shutil.copy(whl_file, ARGS.wheel)
+        if ARGS.msvc_toolchain:
+            run_ducible_and_copy(venv_python, whl_file, ARGS.wheel)
+        else:
+            shutil.copy(whl_file, ARGS.wheel)
+
+
+# Windows DLLs encode timestamps and some other non-deterministic information in the DLL and the corresponding PDB.
+# Remove most of these using ducible.
+def run_ducible_and_copy(python, src, dst):
+    """
+    src should be an existing wheel.
+    dst should be the location (as a filename) where the wheel should be copied.
+    """
+    wheel_exe = os.path.join(os.path.dirname(python), "scripts", "wheel.exe")
+    src_path = os.path.abspath(src)
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Unpack the wheel.
+        run_silently([wheel_exe, "unpack", src_path], cwd=tmpdir)
+        entries = os.listdir(tmpdir)
+        assert len(entries) == 1
+        wheel_dir = entries[0]
+        # Run ducible.
+        for dir, _, files in os.walk(os.path.join(tmpdir, wheel_dir)):
+            for file in files:
+                if file.endswith(".pyd"):
+                    path = os.path.join(os.path.join(tmpdir, wheel_dir, dir, file))
+                    cmd = [ARGS.ducible, path]
+                    # Check if a PDB is present.
+                    pdb_path = os.path.splitext(path)[0] + ".pdb"
+                    if os.path.isfile(pdb_path):
+                        cmd.append(pdb_path)
+                    run_silently(cmd)
+        # Repack the wheel.
+        run_silently([wheel_exe, "pack", wheel_dir], cwd=tmpdir)
+        wheel = glob.glob(tmpdir + "/*.whl")[0]
+        shutil.copy(wheel, dst)
 
 
 def main():
@@ -578,6 +612,7 @@ def main():
         help="Use new installation style defined in PEP 517.",
     )
     p.add_argument("package_names", nargs="*", help="packages to install")
+    p.add_argument("--ducible", required=False)
     ARGS = p.parse_args()
 
     if not ARGS.local_module_base and len(ARGS.package_names) == 0:
@@ -594,7 +629,21 @@ def main():
                 % vars()
             )
 
-    workdir = tempfile.mkdtemp()
+    if ARGS.msvc_toolchain:
+        # On Windows, PDB files contain absolute paths to the object files included in a library. There doesn't seem to
+        # be an easy way of cleaning those, so pick a deterministic location for the python virtual environment. This
+        # ensures pythonXX.lib's path is the same on all systems.
+        # Ideally we would just use the ARGS.wheel as that has the full path to the generated file as used in
+        # `deterministic_execroot` on POSIX above. Unfortunately that quickly runs into Windows path length limitations.
+        # Instead, use a smaller hash.
+        workdir = "C:\\_bzltmp\\wd-{}".format(
+            hashlib.sha256(ARGS.wheel.encode("utf8")).hexdigest()
+        )
+        if os.path.exists(workdir):
+            shutil.rmtree(workdir)
+        os.makedirs(workdir)
+    else:
+        workdir = tempfile.mkdtemp()
     build_pip_archive(workdir)
     shutil.rmtree(workdir, ignore_errors=True)
 
