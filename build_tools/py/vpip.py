@@ -299,7 +299,7 @@ def build_pip_archive(workdir):
                 cmd,
                 "--no-build-isolation",
                 "--no-binary=:all:",
-                "--only-binary=tensorboard",  # There are no source packages for //pip/tensorboard .
+                "--only-binary=tensorboard,torch",  # There are no source packages for //pip/tensorboard .
             ]
             + index_url_flags_if_required()
             + list(args)

@@ -44,6 +44,8 @@ def should_include_file(filename):
         return False
     elif filename.endswith((".pyc", ".pyo")):
         return False
+    elif filename.endswith("/"):
+        return False
     else:
         return True
 
