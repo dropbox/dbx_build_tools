@@ -1,4 +1,6 @@
-# mypy: allow-untyped-defs, no-check-untyped-defs
+# mypy: allow-untyped-defs
+
+from __future__ import annotations
 
 import argparse
 import os
@@ -27,7 +29,7 @@ class CapabilityException(Exception):
     pass
 
 
-def main(args):
+def main(args) -> None:
     output_dir = args.scratch_dir
 
     copy_manifest(args.manifest, output_dir)
@@ -43,17 +45,13 @@ def main(args):
             link_target = os.path.relpath(link_target, os.path.dirname(link_path))
             link_path = os.path.join(output_dir, link_path)
 
-            _maybe_makedirs(os.path.dirname(link_path))
+            os.makedirs(os.path.dirname(link_path), exist_ok=True)
             os.symlink(link_target, link_path)
             symlink_files.append(link_path)
 
     # First we modify mtimes for symlinks
-    for symlink_file in symlink_files:
-        os.utime(
-            symlink_file,
-            (CONSTANT_TIMESTAMP, CONSTANT_TIMESTAMP),
-            follow_symlinks=False,
-        )
+    for f in symlink_files:
+        os.utime(f, (CONSTANT_TIMESTAMP, CONSTANT_TIMESTAMP), follow_symlinks=False)
 
     # Then we modify mtimes for all files -- if there are symlinks we might
     # update some files multiple times, but that's fine for now.
@@ -81,13 +79,13 @@ def main(args):
             )
         except subprocess.CalledProcessError as e:
             print("Error running setcap:", e.output)
-            raise e
+            raise
 
         # There are lots of errors that setcap returns an exit code of 0 for, so we check if it
         # emitted any output, and assume that if it did, some error occurred.
         # For example, applying a capability to a non-existent file gives an exit code of 0.
         if output:
-            raise CapabilityException("\n" + output)
+            raise CapabilityException("\n%r" % output)
 
     subprocess_args = [
         runfiles.data_path("@dbx_build_tools//build_tools/chronic"),
@@ -109,21 +107,14 @@ def main(args):
     subprocess.check_call(subprocess_args)
 
 
-def create_setcap_command(capability_file, output_dir):
+def create_setcap_command(capability_file: str, output_dir: str):
     capabilities_args = []
     with open(capability_file, "r") as capf:
         for line in capf:
             filepath, capability_str = line.strip().split("\0")
-            args_to_add = (capability_str, os.path.join(output_dir, filepath))
-            capabilities_args += args_to_add
+            capabilities_args.append(capability_str)
+            capabilities_args.append(os.path.join(output_dir, filepath))
     return capabilities_args
-
-
-def _maybe_makedirs(path):
-    try:
-        os.makedirs(path)
-    except FileExistsError:
-        pass
 
 
 if __name__ == "__main__":
