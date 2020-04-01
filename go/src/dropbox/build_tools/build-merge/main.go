@@ -149,6 +149,35 @@ func maybeMergeAdditionalArg(
 			},
 			List: []build.Expr{d},
 		}
+	case *build.CallExpr:
+		identExpr, identExprOk := t.X.(*build.Ident)
+		if !identExprOk {
+			return fmt.Errorf(
+				"Cannot merge %s with addition_%s",
+				name,
+				name)
+		}
+		if identExpr.Name != "glob" {
+			return fmt.Errorf(
+				"Cannot merge %s with addition_%s",
+				name,
+				name)
+		}
+		l, ok := additional.RHS.(*build.ListExpr)
+		if !ok {
+			return fmt.Errorf(
+				"Cannot merge %s with addition_%s",
+				name,
+				name)
+		}
+
+		assign.RHS = &build.BinaryExpr{
+			X:         t,
+			Op:        "+",
+			LineBreak: true,
+			Y:         l,
+		}
+
 	default:
 		return fmt.Errorf(
 			"Cannot merge %s with additional_%s",
