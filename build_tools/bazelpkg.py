@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 from collections import defaultdict
-from typing import Text, Union
+from typing import List, Optional, Text, Union
 
 import six
 
@@ -145,15 +145,16 @@ def _copy_outputs_wrapper(args):
 
 
 def _copy_outputs_multi(
-    bazel_path,
-    outputs,
-    out_dir,
-    preserve_paths,
-    preserve_symlinks,
-    _dedup_files,
-    bazel_args,
-    bazel_build_args,
+    bazel_path,  # type: str
+    outputs,  # type: List[Text]
+    out_dir,  # type: Text
+    preserve_paths,  # type: bool
+    preserve_symlinks,  # type: bool
+    _dedup_files,  # type: Text
+    bazel_args,  # type: Optional[List[str]]
+    bazel_build_args,  # type: Optional[List[str]]
 ):
+    # type: (...) -> None
     # ask bazel where the bazel-bin directory is, to support read-only
     # workspaces where bazel is not allowed to create a bazel-bin symlink
     # at the root of the workspace
@@ -262,15 +263,16 @@ def check_for_duplicate_outputs(labels_to_outputs):
 
 
 def copy_labels(
-    labels,
-    out_dir,
-    preserve_paths=False,
-    preserve_symlinks=False,
-    _dedup_files=False,
-    bazel_query_args=None,
-    bazel_args=None,
-    bazel_build_args=None,
+    labels,  # type: List[str]
+    out_dir,  # type: Text
+    preserve_paths=False,  # type: bool
+    preserve_symlinks=False,  # type: bool
+    _dedup_files=False,  # type: bool
+    bazel_query_args=None,  # type: Optional[List[str]]
+    bazel_args=None,  # type: Optional[List[str]]
+    bazel_build_args=None,  # type: Optional[List[str]]
 ):
+    # type: (...) -> None
     if _dedup_files:
         contents_path = os.path.join(out_dir, ".contents")
     else:

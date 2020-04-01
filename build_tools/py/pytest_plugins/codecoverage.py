@@ -5,6 +5,7 @@
 import os
 
 from os.path import expandvars
+from typing import List, Optional
 
 import coverage  # type: ignore[import]
 import coverage.collector  # type: ignore[import]
@@ -52,6 +53,7 @@ def pytest_configure(config):
 
 class CovPlugin(object):
     def __init__(self, coverage_source, coverage_output):
+        # type: (List[str], Optional[str]) -> None
         self.cov = coverage.Coverage(
             source=[s.replace("/", ".")[:-3] for s in coverage_source]
         )

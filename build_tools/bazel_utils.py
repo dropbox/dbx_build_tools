@@ -163,6 +163,7 @@ def _expand_bazel_target(
 
 
 def find_workspace(starting_dir=None):
+    # type: (Optional[str]) -> str
     """Return the path of the enclosing Bazel workspace."""
     if starting_dir is None:
         starting_dir = os.getcwd()
@@ -179,6 +180,7 @@ def find_package_dir(starting_dir):
 
 
 def find_workspace_and_package(test_path):
+    # type: (str) -> Tuple[str, str, str]
     """Return the workspace and Bazel package containing the file `path`."""
     package_dir = _find_parent_directory_containing(test_path, "BUILD")
     workspace_dir = find_workspace(package_dir)
