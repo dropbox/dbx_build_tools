@@ -167,7 +167,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         python_interp.headers,
         cc_toolchain.all_files,
     ]
-    tools_trans = [t.files for t in ctx.attr.tools]
+    tools = [t[DefaultInfo].files_to_run for t in ctx.attr.tools]
 
     cc_infos = []
     frameworks = []
@@ -311,7 +311,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
 
     ctx.actions.run(
         inputs = depset(direct = inputs_direct, transitive = inputs_trans),
-        tools = depset(transitive = tools_trans),
+        tools = tools,
         outputs = outputs,
         mnemonic = "PyPip",
         env = env,
