@@ -125,7 +125,9 @@ def main(args):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Install a wheel")
+    parser = argparse.ArgumentParser(
+        description="Install a wheel", fromfile_prefix_chars="@"
+    )
     subparsers = parser.add_subparsers(dest="cmd")
     install_parser = subparsers.add_parser("install", help="install a wheel")
     install_parser.add_argument("wheel", help="wheel to install")

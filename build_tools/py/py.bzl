@@ -335,6 +335,8 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     extracted_files = [ctx.actions.declare_file(f, sibling = wheel) for f in contents]
     if contents:  # may be empty if bzl genning
         install_args = ctx.actions.args()
+        install_args.set_param_file_format("multiline")
+        install_args.use_param_file("@%s", use_always = True)
         install_args.add("install")
         install_args.add(wheel)
         install_args.add(wheel.dirname)
