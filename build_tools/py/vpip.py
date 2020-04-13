@@ -200,17 +200,23 @@ def get_windows_pip_env(execroot):
 def build_pip_archive(workdir):
     wheelhouse_dir = os.path.join(workdir, "wheelhouse")
 
-    # Make a "virtualenv" by copying the Python prefix. We expect ARGS.python to be in the
-    # execroot in a "bin" directory.
+    # Make a "virtualenv" by copying the Python prefix.
     venv = os.path.join(workdir, "env")
     assert not ARGS.python.startswith("/"), "expecting execroot-relative python"
-    venv_source = os.path.dirname(os.path.dirname(ARGS.python))
+    if ARGS.msvc_toolchain:
+        # On Windows the python executable is at the root of the installation, and Lib/ and other folders are siblings.
+        venv_source = os.path.dirname(ARGS.python)
+        venv_python = os.path.join(venv, os.path.basename(ARGS.python))
+    else:
+        # We expect ARGS.python to be in the execroot in a "bin" directory.
+        venv_source = os.path.dirname(os.path.dirname(ARGS.python))
+        venv_python = os.path.join(
+            venv,
+            os.path.basename(os.path.dirname(ARGS.python)),
+            os.path.basename(ARGS.python),
+        )
+
     shutil.copytree(venv_source, venv, symlinks=False)
-    venv_python = os.path.join(
-        venv,
-        os.path.basename(os.path.dirname(ARGS.python)),
-        os.path.basename(ARGS.python),
-    )
 
     # Bootstrap the Python toolchain from wheels.
     external_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..")
