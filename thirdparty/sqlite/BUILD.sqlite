@@ -24,6 +24,7 @@ dbx_thirdparty_cc_library(
         "-DHAVE_UTIME",
         "-DHAVE_POSIX_FALLOCATE",
         "-DSQLITE_DEFAULT_MEMSTATUS=0",
+        "-DSQLITE_ENABLE_JSON1",
         "-DSQLITE_OMIT_LOAD_EXTENSION",
     ],
     linkopts = ["-pthread"],
