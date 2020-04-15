@@ -22,7 +22,7 @@ BUILD_OUTPUT = "BUILD.gen_build_pip~"
 
 PIP_RULE_TYPES = ("dbx_py_pypi_piplib", "dbx_py_local_piplib")
 
-LOAD_STATEMENT = "load('@dbx_build_tools//build_tools/py:py.bzl', %s)" % (
+LOAD_STATEMENT = "load('//build_tools/py:py.bzl', %s)" % (
     ", ".join([repr(t) for t in PIP_RULE_TYPES])
 )
 

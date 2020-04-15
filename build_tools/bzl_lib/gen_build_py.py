@@ -11,43 +11,26 @@ from typing import Dict, List, Optional, Text
 import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
 
+from build_tools.bzl_lib.cfg import (
+    ALT_BUILD,
+    BUILD_INPUT,
+    DEFAULT_BUILD,
+    EXTERNAL_PIP_MODULE_TARGETS,
+    PIP_RULE_TYPES,
+    PY_EXTENSION_RULE_TYPES,
+    PY_LIBRARY_RULE_TYPES,
+    PY_LOAD_STATEMENT,
+    PY_RULE_TYPES,
+    WELL_KNOWN_PIP_DIRS,
+    WELL_KNOWN_PY_EXTENSION_DIRS,
+)
 from build_tools.bzl_lib.parse_py_imports import parse_imports
 
-EXTENSION_RULE_TYPES = (
-)
-
-
-WELL_KNOWN_PIP_DIRS = (
-    "pip",
-    "thirdparty",
-)
-
-WELL_KNOWN_EXTENSION_DIRS = (
-)
-
-BUILD = "BUILD"
-BUILD_BZL = "BUILD.in"
 BUILD_OUTPUT = "BUILD.gen_build_py~"
-
-PIP_RULE_TYPES = ("dbx_py_pypi_piplib", "dbx_py_local_piplib", "dbx_py_piplib_alias")
-PY_RULE_TYPES = (
-    "dbx_py_library",
-    "dbx_py_binary",
-    "dbx_py_compiled_binary",
-    "dbx_py_pytest_test",
-    "dbx_py_compiled_pytest_test",
-)
 
 PY_BIN_RULE_TYPES = [
     r for r in PY_RULE_TYPES if r.endswith(("_binary", "_test", "_plugin"))
 ]
-PY_LIBRARY_RULE_TYPES = ("dbx_py_library", "py_library")
-
-LOAD_STATEMENT = """
-load('@dbx_build_tools//build_tools/py:py.bzl', 'dbx_py_library', 'dbx_py_binary', 'dbx_py_pytest_test')
-"""
-EXTERNAL_PIP_MODULE_TARGETS = {
-}
 
 # A unified list of Python 2.7 and 3.7 standard library modules. Generated with:
 # sort -u <(python2 build_tools/py/stdlib_modules.py) <(python3.7 build_tools/py/stdlib_modules.py)
@@ -372,13 +355,13 @@ class ParsedBuildFileCache(object):
         if directory in self.empty_build_dirs:
             return "", None
 
-        build_file = os.path.join(directory, "BUILD")
-        assert directory.startswith(self.workspace_dir), (
-            "Trying to read BUILD outside of workspace: " + directory
-        )
+        build_file = os.path.join(directory, DEFAULT_BUILD)
+        assert directory.startswith(
+            self.workspace_dir
+        ), "Trying to read {} outside of workspace: {}".format(DEFAULT_BUILD, directory)
 
         if not os.path.isfile(build_file):
-            build_file = os.path.join(directory, "BUILD.bazel")
+            build_file = os.path.join(directory, ALT_BUILD)
             if not os.path.isfile(build_file):
                 self.empty_build_dirs.add(directory)
                 return "", None
@@ -407,10 +390,10 @@ class ParsedBuildFileCache(object):
         if directory in self.empty_bzl_dirs:
             return "", None
 
-        bzl_file = os.path.join(directory, "BUILD.in")
-        assert directory.startswith(self.workspace_dir), (
-            "Trying to read BUILD.in outside of workspace: " + directory
-        )
+        bzl_file = os.path.join(directory, BUILD_INPUT)
+        assert directory.startswith(
+            self.workspace_dir
+        ), "Trying to read {} outside of workspace: {}".format(BUILD_INPUT, directory)
 
         if not os.path.isfile(bzl_file):
             self.empty_bzl_dirs.add(directory)
@@ -544,8 +527,8 @@ class PythonPathMapping(AbstractPythonPath):
 
         for pip_dir in pip_directories:
             for bzl_file in glob.glob(
-                os.path.join(self.workspace_dir, pip_dir, "*", BUILD_BZL)
-            ) + glob.glob(os.path.join(self.workspace_dir, pip_dir, BUILD_BZL)):
+                os.path.join(self.workspace_dir, pip_dir, "*", BUILD_INPUT)
+            ) + glob.glob(os.path.join(self.workspace_dir, pip_dir, BUILD_INPUT)):
                 root = os.path.dirname(bzl_file)
 
                 _, parsed = self.parsed_file_cache.get_bzl(root)
@@ -575,7 +558,7 @@ class PythonPathMapping(AbstractPythonPath):
                 if not parsed:
                     continue
 
-                for rule in parsed.get_rules_by_types(EXTENSION_RULE_TYPES):
+                for rule in parsed.get_rules_by_types(PY_EXTENSION_RULE_TYPES):
                     pkg = self._to_pkg(root)
                     name = rule.attr_map["name"]
                     target = pkg + ":" + name
@@ -834,7 +817,7 @@ class PythonPathMappingCache(object):
                     "",
                     parsed_file_cache,
                     WELL_KNOWN_PIP_DIRS,
-                    extension_directories=WELL_KNOWN_EXTENSION_DIRS,
+                    extension_directories=WELL_KNOWN_PY_EXTENSION_DIRS,
                 ),
                 SystemPythonPathMapping(),
             ]
@@ -948,7 +931,7 @@ class PyBuildGenerator(object):
 
             if not py_rules:
                 if self.verbose:
-                    print("No py targets found in %s:%s" % (pkg, BUILD_BZL))
+                    print("No py targets found in %s:%s" % (pkg, BUILD_INPUT))
                 continue
 
             if self.verbose:
@@ -966,7 +949,7 @@ class PyBuildGenerator(object):
 
     def generate_build_file(self, pkg, py_rules):
         to_traverse = []  # type: ignore[var-annotated]
-        output = [LOAD_STATEMENT, ""]
+        output = [PY_LOAD_STATEMENT, ""]
 
         # XXX(patrick): maybe verify that the py_rules is a covering set
         # of all py files in the directory.
