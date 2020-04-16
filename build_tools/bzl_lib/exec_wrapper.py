@@ -2,20 +2,18 @@
 Helper functions that replace os.exec* functions. This is mostly for debugging
 and metrics purposes.
 """
-from __future__ import print_function
-
 import os
 import pipes
 import subprocess
 import sys
 
-from typing import Any, List, Mapping, Optional, Text
+from typing import Any, List, Mapping, Optional
 
 from build_tools.bzl_lib import metrics
 
 
 def execv(binary, args):
-    # type: (Text, List[Any]) -> None
+    # type: (str, List[Any]) -> None
     metrics.report_metrics()
     if os.getenv("BZL_DEBUG"):
         print(
@@ -26,7 +24,7 @@ def execv(binary, args):
 
 
 def execvp(binary, args):
-    # type: (Text, List[str]) -> None
+    # type: (str, List[str]) -> None
     metrics.report_metrics()
     if os.getenv("BZL_DEBUG"):
         print(
@@ -37,7 +35,7 @@ def execvp(binary, args):
 
 
 def execve(binary, args, env):
-    # type: (Text, List[str], Mapping[str, str]) -> None
+    # type: (str, List[str], Mapping[str, str]) -> None
     metrics.report_metrics()
     if os.getenv("BZL_DEBUG"):
         print(
@@ -51,7 +49,7 @@ def execve(binary, args, env):
 
 
 def execvpe(binary, args, env):
-    # type: (Text, List[str], Mapping[str, str]) -> None
+    # type: (str, List[str], Mapping[str, str]) -> None
     metrics.report_metrics()
     if os.getenv("BZL_DEBUG"):
         print(
@@ -74,7 +72,7 @@ def execvpe(binary, args, env):
 # to keep code simple. All uses for subprocess_exec is currently expected to be interactive, from a shell.
 # Shells will send signal to the entire session.
 def subprocess_exec(binary, args, env=None):
-    # type: (Text, List[str], Optional[Mapping[Text, Text]]) -> int
+    # type: (str, List[str], Optional[Mapping[str, str]]) -> int
     if os.getenv("BZL_DEBUG"):
         print(
             "subprocess_exec: {} {}".format(

@@ -8,10 +8,12 @@ load("//build_tools/py:py.bzl", "dbx_py_library")
 dbx_py_library(
     name = "commands",
     srcs = ["commands.py"],
+    python2_compatible = False,
     validate = "strict",
     deps = [
         ":exec_wrapper",
         "//build_tools:bazel_utils",
+        "//pip/typing",
     ],
 )
 
@@ -74,6 +76,7 @@ dbx_py_library(
 dbx_py_library(
     name = "exec_wrapper",
     srcs = ["exec_wrapper.py"],
+    python2_compatible = False,
     validate = "strict",
     deps = [
         ":metrics",
@@ -84,6 +87,7 @@ dbx_py_library(
 dbx_py_library(
     name = "metrics",
     srcs = ["metrics.py"],
+    python2_compatible = False,
     validate = "strict",
     deps = [
         "//pip/typing",
@@ -93,6 +97,7 @@ dbx_py_library(
 dbx_py_library(
     name = "run",
     srcs = ["run.py"],
+    python2_compatible = False,
     validate = "strict",
     deps = [
         "//build_tools/go:env",

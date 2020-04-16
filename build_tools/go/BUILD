@@ -11,6 +11,7 @@ load("//build_tools/sh:sh.bzl", "dbx_sh_binary")
 dbx_py_library(
     name = "env",
     srcs = ["env.py"],
+    python2_compatible = False,
     validate = "strict",
     deps = [
         "//build_tools:bazel_utils",

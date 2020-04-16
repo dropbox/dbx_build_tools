@@ -1,6 +1,8 @@
 # mypy: allow-untyped-defs
-
+import argparse
 import os
+
+from typing import List
 
 import build_tools.bazel_utils as bazel_utils
 import build_tools.bzl_lib.exec_wrapper as exec_wrapper
@@ -28,6 +30,7 @@ bazel_modes = (
 
 
 def cmd_bazel(args, bazel_args, mode_args):
+    # type: (argparse.Namespace, List[str], List[str]) -> None
     exec_wrapper.subprocess_exec(
         args.bazel_path, [args.bazel_path] + bazel_args + [args.mode] + mode_args
     )
@@ -41,6 +44,7 @@ def register_cmd_bazel(sp):
 
 
 def cmd_gen_as_tool(args, bazel_args, mode_args):
+    # type: (argparse.Namespace, List[str], List[str]) -> None
     workspace_dir = bazel_utils.find_workspace()
     bzl_gen = bazel_utils.build_tool(args.bazel_path, "@dbx_build_tools//build_tools:bzl-gen")
     bzl_gen_path = os.path.join(workspace_dir, bzl_gen)
