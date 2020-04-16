@@ -35,9 +35,10 @@ class BazelTarget(object):
                 cwd = os.getcwd()
             if not workspace:
                 workspace = find_workspace()
-            self.package = os.path.join(os.path.relpath(cwd, workspace), self.package)
-            self.package = self.package.lstrip("./")
-            self.package = self.package.rstrip("/")
+            package_path = os.path.join(os.path.relpath(cwd, workspace), self.package)
+            unclean_package_target = normalize_os_path_to_target(package_path)
+            unclean_package_target = unclean_package_target.lstrip("./")
+            self.package = unclean_package_target.rstrip("/")
         self.label = "//{}:{}".format(self.package, self.name)
         self.build_file = build_file_for_target(label)
 
@@ -66,6 +67,11 @@ def expand_bazel_target_dirs(
     workspace, targets, normalize=True, require_build_file=True, cwd="."
 ):
     # type: (Text, List[Any], bool, bool, Text) -> List[Any]
+    """Expand the Bazel target syntax into a list of directories that
+    represent Bazel targets. If normalize is 'False', replace '//' with
+    the workspace.  If require_build_file is 'False', target directory without
+    BUILD files are included in the result set.
+    """
     ntargets = expand_bazel_targets(
         workspace,
         targets,
@@ -74,12 +80,6 @@ def expand_bazel_target_dirs(
         cwd=cwd,
     )
     return [x.split(":")[0] for x in ntargets]
-
-
-# Expand the Bazel target syntax into a list of directories that
-# represent Bazel targets. If normalize is 'False', replace '//' with
-# the workspace.  If require_build_file is 'False', target directory without
-# BUILD files are included in the result set.
 
 
 def expand_bazel_targets(
@@ -159,6 +159,11 @@ def _expand_bazel_target(
         targets = [os.path.abspath(x).replace(workspace, "/") for x in targets]
         if "/" in targets:
             targets[targets.index("/")] = "//"
+
+    # Despite the name, items in "targets" are actually paths that are likely to have
+    # a mix of forward and backwards slashes on Windows.
+    targets = [normalize_os_path_to_target(target) for target in targets]
+
     return targets
 
 
@@ -188,7 +193,10 @@ def find_workspace_and_package(test_path):
         # Avoid building '//.' from relpath(), which in Bazel is a syntax error
         package = "//"
     else:
-        package = "//" + os.path.relpath(package_dir, workspace_dir)
+        target = normalize_os_path_to_target(
+            os.path.relpath(package_dir, workspace_dir)
+        )
+        package = "//" + target
     return workspace_dir, package_dir, package
 
 
@@ -405,7 +413,8 @@ def executable_for_label(target):
     else:
         # Handle implicit names.
         target = os.path.join(target, target.split("/")[-1])
-    return os.path.join("bazel-bin", remote, target)
+    target_path = normalize_relative_target_to_os_path(target)
+    return os.path.join("bazel-bin", remote, target_path)
 
 
 # Scan for args that look like targets. We have to guess because I am
@@ -424,7 +433,26 @@ def split_args_targets(argv):
 
 def build_file_for_target(target):
     # type: (str) -> str
-    return os.path.join(target.lstrip("//").split(":")[0], "BUILD")
+    target_dir = normalize_relative_target_to_os_path(target.lstrip("//").split(":")[0])
+    return os.path.join(target_dir, "BUILD")
+
+
+def normalize_os_path_to_target(path):
+    # type: (Text) -> Any
+    """A simple helper function that converts OS-specific path separators
+    to the forward slash "/" as is used in Bazel targets."""
+    return path.replace(os.path.sep, "/")
+
+
+def normalize_relative_target_to_os_path(target):
+    # type: (Text) -> Any
+    """A simple helper function that converts Bazel targets into paths
+    with the appropriate OS-specific file separator (e.g. for use with os.path).
+
+    Note that this is intended for use with relative targets that do not contain ":".
+    Callers are expected to remove the "//" prefix if using absolute targets.
+    """
+    return target.replace("/", os.path.sep)
 
 
 # A macro to build an internal tool in the background.
