@@ -7,30 +7,10 @@ import os
 from typing import Text
 
 from build_tools import bazel_utils, build_parser
+from build_tools.bzl_lib.cfg import BUILD_INPUT, GO_RULE_TYPES, WHITELISTED_GO_SRCS_PATHS
 from build_tools.bzl_lib.run import run_cmd
 
 from dropbox import runfiles
-
-GO_RULE_TYPES = ("dbx_go_binary", "dbx_go_library", "dbx_go_test")
-
-WHITELISTED_GO_SRCS_PATHS = [
-    # ES does seem special things with tests for multimetro setup
-    "go/src/dropbox/edgestore/coreservice/BUILD.in",
-    "go/src/dropbox/edgestore/integration/BUILD.in",
-    "go/src/dropbox/edgestore/load_generator/generators/BUILD.in",
-    # Tensorflow has special srcs because they come from external workspace
-    "go/src/dropbox/tensorflow/BUILD.in",
-    # Apparmor/seccomp build tags
-    "go/src/github.com/opencontainers/runc/libcontainer/apparmor/BUILD.in",
-    "go/src/github.com/opencontainers/runc/libcontainer/seccomp/BUILD.in",
-    # Want to run 3rd-party gohbase tests
-    "go/src/github.com/tsuna/gohbase/hrpc/BUILD.in",
-    "go/src/github.com/tsuna/gohbase/region/BUILD.in",
-    "go/src/github.com/tsuna/gohbase/BUILD.in",
-    "go/src/github.com/tsuna/gohbase/integrations/BUILD.in",
-    # Another 3rd party test
-    "go/src/github.com/scritchley/orc/BUILD.in",
-]
 
 
 def srcs_allowed(path):
@@ -124,7 +104,7 @@ class GoBuildGenerator(object):
                 self.generated_files[dirpath].append(chunks[1])
                 self.visited_dirs.add(dirpath)
 
-                bzl_path = os.path.join(dirpath, "BUILD.in")
+                bzl_path = os.path.join(dirpath, BUILD_INPUT)
                 if not os.path.isfile(bzl_path):
                     continue
 

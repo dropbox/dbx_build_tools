@@ -12,19 +12,18 @@ import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
 
 from build_tools.bzl_lib import build_merge
-from build_tools.bzl_lib.cfg import PY2_ABIS, PY3_ABIS
+from build_tools.bzl_lib.cfg import (
+    BUILD_INPUT,
+    DEFAULT_BUILD,
+    PIP_DEFAULT_EXCLUDES,
+    PIP_GEN_RULE_TYPES,
+    PIP_LOAD_STATEMENT,
+    PY2_ABIS,
+    PY3_ABIS,
+)
 from build_tools.py import vinst
 
-DEFAULT_EXCLUDES = ["test", "tests", "testing", "SelfTest", "Test", "Tests"]
-BUILD_INPUT = "BUILD.in"
-BUILD = "BUILD"
 BUILD_OUTPUT = "BUILD.gen_build_pip~"
-
-PIP_RULE_TYPES = ("dbx_py_pypi_piplib", "dbx_py_local_piplib")
-
-LOAD_STATEMENT = "load('//build_tools/py:py.bzl', %s)" % (
-    ", ".join([repr(t) for t in PIP_RULE_TYPES])
-)
 
 PUBLIC_STATEMENT = "package(default_visibility = ['//visibility:public'])\n"
 
@@ -104,7 +103,7 @@ class BasePipBuildGenerator(object):
 
             parsed = build_parser.parse_file(build_bzl)
 
-            pip_rules = parsed.get_rules_by_types(PIP_RULE_TYPES)
+            pip_rules = parsed.get_rules_by_types(PIP_GEN_RULE_TYPES)
             if not pip_rules:
                 if self.verbose:
                     print("No pip targets found in %s/%s" % (target_dir, BUILD_INPUT))
@@ -162,9 +161,9 @@ class PipBuildGenerator(BasePipBuildGenerator):
         # BUILD file around to ensure we can recursively generate pips.
         # The temporary BUILD files will be overwritten by gazel as the
         # last step.
-        build = os.path.join(self.workspace_dir, target_dir, BUILD)
+        build = os.path.join(self.workspace_dir, target_dir, DEFAULT_BUILD)
 
-        content = [PUBLIC_STATEMENT, LOAD_STATEMENT]
+        content = [PUBLIC_STATEMENT, PIP_LOAD_STATEMENT]
 
         for rule in pip_rules:
             attrs_copy = dict(rule.attr_map)
@@ -184,14 +183,14 @@ class PipBuildGenerator(BasePipBuildGenerator):
         )
 
         out_dir = os.path.join(self.workspace_dir, "bazel-bin", target_dir)
-        output = [LOAD_STATEMENT]
+        output = [PIP_LOAD_STATEMENT]
         # For each piplib rule, list the zipfile created by Bazel and insert
         # the 'contents' attribute.  We'll rely on gazel to merge in the
         # remaining attributes.
         for rule in pip_rules:
             name = rule.attr_map["name"]
             wheel_name = name.replace("-", "_")
-            excludes = list(rule.attr_map.get("py_excludes", DEFAULT_EXCLUDES))
+            excludes = list(rule.attr_map.get("py_excludes", PIP_DEFAULT_EXCLUDES))
             for namespace_pkg in rule.attr_map.get("namespace_pkgs", []):
                 excludes.append(namespace_pkg.replace(".", "/") + "/__init__.py")
 

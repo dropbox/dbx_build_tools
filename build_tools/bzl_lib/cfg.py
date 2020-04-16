@@ -15,8 +15,6 @@ PY3_ABIS = ["cpython-37", "cpython-38"]
 
 PY_EXTENSION_RULE_TYPES = ()
 
-PIP_RULE_TYPES = ("dbx_py_pypi_piplib", "dbx_py_local_piplib", "dbx_py_piplib_alias")
-
 PY_RULE_TYPES = (
     "dbx_py_library",
     "dbx_py_binary",
@@ -36,3 +34,17 @@ load('@dbx_build_tools//build_tools/py:py.bzl', 'dbx_py_library', 'dbx_py_binary
 """
 
 EXTERNAL_PIP_MODULE_TARGETS = {}  # type: Dict[str, List[str]]
+
+PIP_DEFAULT_EXCLUDES = ["test", "tests", "testing", "SelfTest", "Test", "Tests"]
+PIP_GEN_RULE_TYPES = ("dbx_py_pypi_piplib", "dbx_py_local_piplib")
+PIP_RULE_TYPES = PIP_GEN_RULE_TYPES + ("dbx_py_piplib_alias",)
+PIP_LOAD_STATEMENT = "load('@dbx_build_tools//build_tools/py:py.bzl', %s)" % (
+    ", ".join([repr(t) for t in PIP_RULE_TYPES])
+)
+
+###
+### Go-related configuration.
+###
+GO_RULE_TYPES = ("dbx_go_binary", "dbx_go_library", "dbx_go_test")
+
+WHITELISTED_GO_SRCS_PATHS = []  # type: List[str]
