@@ -1,6 +1,6 @@
 # BEGIN GENERATED CODE (see bazelify.sh)
 
-OPENSSL_VERSION = "1.1.1f"
+OPENSSL_VERSION = "1.1.1g"
 
 OPENSSLCONF_H = """#include <openssl/opensslv.h>
 #ifdef  __cplusplus
