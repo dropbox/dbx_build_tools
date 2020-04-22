@@ -112,15 +112,8 @@ def copy_manifest(manifest_path, out_dir):
                 )
             args.append((short_dest, src, out_dir, contents_path))
 
-    wpool = multiprocessing.Pool(initializer=_init_worker)
-
-    try:
-        # Use async + timeout to make sure KeyboardInterrupt fires.
+    with multiprocessing.Pool(initializer=_init_worker) as wpool:
         wpool.map_async(_copy_manifest_wrapper, args, chunksize=1).get(3600)
-    except KeyboardInterrupt:
-        wpool.terminate()
-        wpool.join()
-        raise
 
     shutil.rmtree(contents_path)
 
