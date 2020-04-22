@@ -1,0 +1,10 @@
+package(default_visibility = ["//visibility:public"])
+
+licenses(["notice"])  # MIT
+
+dbx_py_pypi_piplib(
+    name = "toml",
+    pip_version = "0.10.0",
+    python2_compatible = True,
+    python3_compatible = True,
+)

@@ -14,7 +14,7 @@
 # from previous attempts. This script is not an exception. Perhaps the
 # first widely used tool to build toolchains was Dan Kegel's crosstool
 # script (http://www.kegel.com/crosstool/). Google's adaption of this
-# crosstool script, build-grte, is available to us thanks to the the
+# crosstool script, build-grte, is available to us thanks to the
 # Google Search Appliance and the magic of the GPL:
 # https://code.google.com/archive/p/google-search-appliance-mirror/downloads
 # LRTE (https://github.com/bazelment/lrte) modernized a bunch of the
