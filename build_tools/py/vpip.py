@@ -270,7 +270,7 @@ def build_pip_archive(workdir):
     #       high probability that this symlink already exists (left over from a previous run).
     #       This should be fixed.
     if not ARGS.msvc_toolchain:
-        deterministic_execroot = "/tmp/vpip-execroot-{}".format(
+        deterministic_execroot = "/tmp/vpip-execroot-".format(
             ARGS.wheel.replace("/", "_")
         )
         try:
@@ -306,9 +306,7 @@ def build_pip_archive(workdir):
                 cmd,
                 "--no-build-isolation",
                 "--no-binary=:all:",
-                # Binary packages are not acceptable in general.
-                # These are exceptions for ML usage only.
-                "--only-binary=tensorboard,torch,tokenizers,sentencepiece",
+                "--only-binary=tensorboard,torch",  # There are no source packages for //pip/tensorboard .
             ]
             + index_url_flags_if_required()
             + list(args)
