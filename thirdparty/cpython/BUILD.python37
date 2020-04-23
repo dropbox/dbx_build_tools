@@ -1004,7 +1004,6 @@ genrule(
     ],
     outs = ["test-stdlib.zip"],
     cmd = "$(location @dbx_build_tools//thirdparty/cpython:zip-stdlib) sloppy $@ $(SRCS)",
-    output_to_bindir = True,
     tools = ["@dbx_build_tools//thirdparty/cpython:zip-stdlib"],
 )
 
@@ -1047,7 +1046,6 @@ gram=$$($(location :bin/python)-prime $(location @dbx_build_tools//thirdparty/cp
 patgram=$$($(location :bin/python)-prime $(location @dbx_build_tools//thirdparty/cpython:gen_2to3_grammar.py) $(location Lib/lib2to3/PatternGrammar.txt))
 $(location :bin/python)-prime $(location @dbx_build_tools//thirdparty/cpython:zip_stdlib.py) final $@ $(locations :production-stdlib) $$gram $$patgram
 """,
-    output_to_bindir = True,
     tools = [
         "@dbx_build_tools//thirdparty/cpython:gen_2to3_grammar.py",
         "@dbx_build_tools//thirdparty/cpython:zip-stdlib",
