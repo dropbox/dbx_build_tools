@@ -84,5 +84,8 @@ dbx_py_pypi_piplib(
     python2_compatible = True,
     python3_compatible = True,
     use_pep517 = True,
-    deps = ["//pip/setuptools"],
+    deps = [
+        "//pip/setuptools",
+        "//pip/toml",
+    ],
 )
