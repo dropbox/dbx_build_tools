@@ -29,12 +29,6 @@ CPYTHON_27_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_27"
 CPYTHON_37_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_37"
 CPYTHON_38_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_38"
 
-ALL_TOOLCHAIN_NAMES = [
-    CPYTHON_27_TOOLCHAIN_NAME,
-    CPYTHON_37_TOOLCHAIN_NAME,
-    CPYTHON_38_TOOLCHAIN_NAME,
-]
-
 BUILD_TAG_TO_TOOLCHAIN_MAP = {
     cpython_37.build_tag: CPYTHON_37_TOOLCHAIN_NAME,
     cpython_38.build_tag: CPYTHON_38_TOOLCHAIN_NAME,

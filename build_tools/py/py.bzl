@@ -28,6 +28,7 @@ load(
 )
 load(
     "//build_tools/py:common.bzl",
+    "ALL_TOOLCHAIN_NAMES",
     "DbxPyVersionCompatibility",
     "allow_dynamic_links",
     "collect_required_piplibs",
@@ -42,8 +43,6 @@ load(
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load("//build_tools/apple:apple.bzl", "DbxAppleFramework")
 load("//build_tools/windows:windows.bzl", "is_windows")
-
-ALL_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS]
 
 # This logic is duplicated in build_tools/bzl_lib/gen_build_pip.py::_get_build_interpreters and must
 # be kept in sync.

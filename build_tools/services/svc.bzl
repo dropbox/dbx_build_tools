@@ -1,6 +1,7 @@
 load("//build_tools/bazel:runfiles.bzl", "runfiles_attrs", "write_runfiles_tmpl")
 load(
     "//build_tools/py:common.bzl",
+    "ALL_TOOLCHAIN_NAMES",
     "DbxPyVersionCompatibility",
     "emit_py_binary",
     "py_binary_attrs",
@@ -9,8 +10,6 @@ load(
 load(
     "//build_tools/py:toolchain.bzl",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
-    "CPYTHON_27_TOOLCHAIN_NAME",
-    "CPYTHON_37_TOOLCHAIN_NAME",
     "DbxPyInterpreter",
     "cpython_27",
 )
@@ -381,7 +380,7 @@ _service_internal_attrs.update(_service_common_attrs)
 service_internal = rule(
     implementation = service_impl,
     attrs = _service_internal_attrs,
-    toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_TOOLCHAIN_NAMES,
     executable = True,
 )
 
@@ -451,7 +450,7 @@ _service_group_internal_attrs.update(_service_common_attrs)
 service_group_internal = rule(
     implementation = service_group_impl,
     attrs = _service_group_internal_attrs,
-    toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_TOOLCHAIN_NAMES,
     executable = True,
 )
 
@@ -514,7 +513,7 @@ services_internal_test = rule(
     implementation = services_bin_impl,
     attrs = _services_bin_attrs,
     test = True,
-    toolchains = [CPYTHON_27_TOOLCHAIN_NAME, CPYTHON_37_TOOLCHAIN_NAME],
+    toolchains = ALL_TOOLCHAIN_NAMES,
     executable = True,
 )
 
