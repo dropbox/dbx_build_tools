@@ -54,7 +54,8 @@ class CopyGenerator(object):
         for target in targets:
             assert target.startswith("//"), "Target must be absolute: " + target
             pkg, _, _ = target.partition(":")
-            target_dir = os.path.join(self.workspace_dir, pkg[2:])
+            pkg_path = bazel_utils.normalize_relative_target_to_os_path(pkg[2:])
+            target_dir = os.path.join(self.workspace_dir, pkg_path)
 
             if target_dir in self.visited_dirs:
                 continue
@@ -120,7 +121,12 @@ def regenerate_build_files(
 
             if should_regen:
                 # convert abs path to relative to workspace
-                bazel_targets.add("//" + os.path.relpath(path, workspace_dir))
+                bazel_targets.add(
+                    "//"
+                    + bazel_utils.normalize_os_path_to_target(
+                        os.path.relpath(path, workspace_dir)
+                    )
+                )
 
     generated_files = defaultdict(list)  # type: ignore[var-annotated]
 
@@ -156,7 +162,10 @@ def regenerate_build_files(
         if newly_visited_dirs:
             # continue processing
             prev_visited_dirs = visited_dirs
-            bazel_targets = [d.replace(workspace_dir, "/") for d in newly_visited_dirs]
+            bazel_targets = [
+                bazel_utils.normalize_os_path_to_target(d.replace(workspace_dir, "/"))
+                for d in newly_visited_dirs
+            ]
         else:
             break
 

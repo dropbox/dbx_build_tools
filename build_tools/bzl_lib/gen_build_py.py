@@ -338,7 +338,7 @@ class ParsedBuildFileCache(object):
     """keeps track of parsed BUILD and BUILD.in files"""
 
     def __init__(self, workspace_dir):
-        self.workspace_dir = os.path.realpath(workspace_dir) + "/"
+        self.workspace_dir = os.path.realpath(workspace_dir) + os.path.sep
 
         # (real or symlink) dir path -> parsed entry
         self.parsed_builds = {}
@@ -381,8 +381,8 @@ class ParsedBuildFileCache(object):
         return real_build_file, entry
 
     def get_bzl(self, directory):
-        if not directory.endswith("/"):
-            directory += "/"
+        if not directory.endswith(os.path.sep):
+            directory += os.path.sep
 
         if directory in self.parsed_bzls:
             return self.parsed_bzls[directory]
@@ -507,7 +507,8 @@ class PythonPathMapping(AbstractPythonPath):
         assert directory.startswith(self.workspace_dir), (
             "Programming error: " + directory
         )
-        return directory.replace(self.workspace_dir, "/")
+        directory = directory.replace(self.workspace_dir, "/")
+        return bazel_utils.normalize_os_path_to_target(directory)
 
     def get_pip_module_targets(self):
         # type: () -> Dict[str, List[str]]
@@ -659,6 +660,7 @@ class PythonPathMapping(AbstractPythonPath):
             self.processed_local_build_dirs.add(build_dir)
 
             pkg = build_dir.replace(self.workspace_dir, "/")
+            pkg = bazel_utils.normalize_os_path_to_target(pkg)
 
             self._collect_local_targets(pkg, parsed)
 
@@ -754,12 +756,12 @@ class PythonPathMapping(AbstractPythonPath):
         path_without_extension = file_path.rsplit(".", 1)[0]
         if path_without_extension.endswith("__init__"):
             path_without_extension = os.path.dirname(path_without_extension)
-        return path_without_extension.replace("/", ".")
+        return path_without_extension.replace(os.path.sep, ".")
 
     @classmethod
     # convert from a.b.c -> a/b/c (note lack of .py)
     def convert_from_module_to_file_path(cls, module_path):
-        return module_path.replace(".", "/")
+        return module_path.replace(".", os.path.sep)
 
 
 class CompositePythonPathMapping(AbstractPythonPath):
@@ -889,7 +891,11 @@ class PyBuildGenerator(object):
             return
         self.visited_non_bzl_targets.add(expanded_target)
 
-        _, parsed = self.parsed_cache.get_build(self.workspace_dir + pkg[1:])
+        # Note that expanded_target is guaranteed to be an absolute target.
+        pkg_path = bazel_utils.normalize_relative_target_to_os_path(pkg[2:])
+        _, parsed = self.parsed_cache.get_build(
+            os.path.join(self.workspace_dir, pkg_path)
+        )
         if parsed is None:
             return
 
@@ -899,7 +905,8 @@ class PyBuildGenerator(object):
             return
 
         self.regenerate(
-            rule.attr_map.get("deps", []), cwd=os.path.join(self.workspace_dir, pkg[2:])
+            rule.attr_map.get("deps", []),
+            cwd=os.path.join(self.workspace_dir, pkg_path),
         )
 
     def regenerate(self, bazel_targets, cwd="."):
@@ -913,7 +920,7 @@ class PyBuildGenerator(object):
         for target in targets:
             assert target.startswith("//"), "Target must be absolute: " + target
             pkg, _, _ = target.partition(":")
-            target_dir = pkg[2:]
+            target_dir = bazel_utils.normalize_relative_target_to_os_path(pkg[2:])
 
             _, parsed = self.parsed_cache.get_bzl(
                 os.path.join(self.workspace_dir, target_dir)
@@ -1090,7 +1097,8 @@ class PyBuildGenerator(object):
                     "BUILD.in file): %s/%s" % (pkg, name, target_dir, src)
                 )
 
-            src_pkg = os.path.dirname(filename).replace(self.workspace_dir, "/")
+            pkg_path = os.path.dirname(filename).replace(self.workspace_dir, "/")
+            src_pkg = bazel_utils.normalize_os_path_to_target(pkg_path)
 
             if src_pkg != pkg:
                 print(
