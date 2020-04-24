@@ -98,7 +98,7 @@ var linkerMp = map[string]struct {
 		Deps: []string{"//rust/examples/go_dep:go_dep_lib"},
 	},
 	"rust_ffi_namespace_view_lib": {
-		Deps: []string{"//rust/pallet/namespace_view:namespace_view_lib"},
+		Deps: []string{"//rust/dropbox/namespace_view_ffi:namespace_view_ffi_lib"},
 	},
 	"snappy": {
 		Deps: []string{"@snappy//:snappy"},
