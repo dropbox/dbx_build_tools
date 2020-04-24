@@ -156,11 +156,10 @@ class PipBuildGenerator(BasePipBuildGenerator):
         return False
 
     def generate_build_file(self, target_dir, pip_rules):
-        # Temporarily make BUILD.in file a real BUILD file, and generate
-        # the piplib zips.  Unlike piplibgen, we will leave the temporary
-        # BUILD file around to ensure we can recursively generate pips.
-        # The temporary BUILD files will be overwritten by gazel as the
-        # last step.
+        # Temporarily make BUILD.in file a real BUILD file, and generate the
+        # piplib zips.  We will leave the temporary BUILD file around to ensure
+        # we can recursively generate pips.  The temporary BUILD files will be
+        # overwritten by gazel as the last step.
         build = os.path.join(self.workspace_dir, target_dir, DEFAULT_BUILD)
 
         content = [PUBLIC_STATEMENT, PIP_LOAD_STATEMENT]
