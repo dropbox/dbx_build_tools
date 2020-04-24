@@ -183,29 +183,34 @@ def merge_generated_build_files(generated_files):
             run_cmd([buildfmt_path, output_file])
             continue
 
-        with open(output_file, "w") as fd:
-            fd.write(HEADER)
+        # Clean out any existing BUILD/BUILD.bazel files beforehand.
+        # Note that this may clobber unexpected files on case-insensitive systems.
+        removed_alt_output = False
+        if os.path.isfile(output_file):
+            os.remove(output_file)
+        if os.path.isfile(alt_output_file):
+            removed_alt_output = True
+            os.remove(alt_output_file)
 
-        # Extra crap to deal with OSX's shitty case insensitive file system.
+        # Extra crap to deal with shitty case-insensitive file systems.
         build_names = []
         for name in os.listdir(dirpath):
             if name.lower() == "build":
                 build_names.append(name)
 
-        if len(build_names) > 1:
+        if len(build_names) > 0:
             print(
                 (
                     "WARNING: %s renamed to BUILD.bazel due to case "
-                    "insensitivity name conflict" % output_file
+                    "insensitivity or folder name conflict" % output_file
                 )
             )
-            os.remove(output_file)
             output_file = alt_output_file
-            with open(output_file, "w") as fd:
-                fd.write(HEADER)
-        elif os.path.isfile(alt_output_file):
+        elif removed_alt_output:
             print("WARNING: %s removed" % alt_output_file)
-            os.remove(alt_output_file)
+
+        with open(output_file, "w") as fd:
+            fd.write(HEADER)
 
         assert intermediate_build_files, dirpath
         assert output_file not in intermediate_build_files
