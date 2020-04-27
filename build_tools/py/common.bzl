@@ -47,6 +47,10 @@ _asan_environment = """
 export ASAN_OPTIONS="detect_leaks=0:suppressions=$RUNFILES/build_tools/py/asan-suppressions.txt:$ASAN_OPTIONS"
 """
 
+_shared_libraries_windows_tmpl = """
+set PATH={library_search_path};%PATH%
+"""
+
 _shared_libraries_tmpl = """
 DBX_LIBRARY_PATH="{library_search_path}"
 if [[ "$OSTYPE" == "darwin"* ]]; then
@@ -74,10 +78,12 @@ _runfile_tmpl = """
 """
 
 _runfile_windows_tmpl = """
+{shared_library_path_setup}
 {python_bin} {python_flags} %PYTHONARGS% "%RUNFILES%\{inner_wrapper}" "%RUNFILES%" {default_args}
 """
 
 _inner_wrapper = """
+import os
 import sys
 runfiles = sys.argv[1]
 sys.argv = sys.argv[0:1] + sys.argv[2:]
@@ -87,11 +93,11 @@ sys.argv = sys.argv[0:1] + sys.argv[2:]
 # in. We need to do this before importing os to prevent conflicts with the
 # types module. 3rdparty libraries go at the very end.
 sys.path[:1] = [
-    runfiles + '/' + p
+    runfiles + os.sep + p
     for p in ({relative_user_python_path},)
 ]
 sys.path.extend([
-    runfiles + '/' + p
+    runfiles + os.sep + p
     for p in ({relative_piplib_python_path})
 ])
 {dbx_importer}
@@ -420,6 +426,8 @@ def emit_py_binary(
             extracted_files = piplib.extracted_files
             runfiles_trans.append(extracted_files)
             extracted_dir = piplib.archive.short_path.rpartition("/")[0]
+            if is_windows(ctx):
+                extracted_dir = extracted_dir.replace("/", "\\")
             label = piplib.label
             piplib_paths.append(repr(extracted_dir) + ", ")
             installed[label.name] = None
@@ -539,10 +547,19 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
     # Handle dynamic libraries.
     shared_library_path_setup = ""
     if library_search_entries or framework_search_entries:
-        shared_library_path_setup = _shared_libraries_tmpl.format(
-            library_search_path = ":".join(library_search_entries.keys()),
-            framework_search_path = ":".join(framework_search_entries.keys()),
-        )
+        if is_windows(ctx):
+            entries = [
+                "%RUNFILES%/{}".format(e.replace("/", "\\"))
+                for e in library_search_entries.keys()
+            ]
+            shared_library_path_setup = _shared_libraries_windows_tmpl.format(
+                library_search_path = ";".join(entries),
+            )
+        else:
+            shared_library_path_setup = _shared_libraries_tmpl.format(
+                library_search_path = ":".join(library_search_entries.keys()),
+                framework_search_path = ":".join(framework_search_entries.keys()),
+            )
 
     if is_windows(ctx):
         wrapper_path = inner_wrapper.short_path.replace("/", "\\")
