@@ -582,6 +582,8 @@ class PythonPathMapping(AbstractPythonPath):
             elif path_prefix.startswith(self.python_path + "/"):
                 path_prefix = path_prefix[len(self.python_path) + 1 :]
 
+        pkg_path = bazel_utils.normalize_relative_target_to_os_path(path_prefix)
+
         # NOTE: We purposely ignore dbx_py_binary targets, even through it's
         # technically allowed to use dbx_py_binary as deps.
         for lib in parsed.get_rules_by_types(PY_LIBRARY_RULE_TYPES):
@@ -593,7 +595,7 @@ class PythonPathMapping(AbstractPythonPath):
             for src in srcs:
                 assert src.endswith(".py"), "Invalid python src %s in %s" % (src, pkg)
 
-                file_path = os.path.join(path_prefix, src)
+                file_path = os.path.join(pkg_path, src)
                 module_path = PythonPathMapping.convert_from_file_path_to_module(
                     file_path
                 )
@@ -1079,7 +1081,7 @@ class PyBuildGenerator(object):
         mapping = self.python_path_mappings.get(python_path)
         self_modules = mapping.compute_self_modules(pkg, srcs)
 
-        target_dir = pkg[2:]
+        target_dir = bazel_utils.normalize_relative_target_to_os_path(pkg[2:])
 
         all_deps = set()  # type: ignore[var-annotated]
         all_unknown_imports = set()  # type: ignore[var-annotated]
