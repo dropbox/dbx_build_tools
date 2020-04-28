@@ -549,7 +549,7 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
     if library_search_entries or framework_search_entries:
         if is_windows(ctx):
             entries = [
-                "%RUNFILES%/{}".format(e.replace("/", "\\"))
+                "%RUNFILES%\\{}".format(e.replace("/", "\\"))
                 for e in library_search_entries.keys()
             ]
             shared_library_path_setup = _shared_libraries_windows_tmpl.format(
