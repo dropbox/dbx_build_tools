@@ -490,11 +490,12 @@ def _find_package_root(files):
     if not setup_pys:
         fail("setup.py/pyproject.toml not found")
 
-    # This is the Starlark way to write min(seq, key=lambda x: len(x))
-    package_dir = setup_pys[0].dirname
+    package_dir = None
     for f in setup_pys:
-        if len(package_dir) > len(f.dirname):
-            package_dir = f.dirname
+        # Shed prefix ("bazel-out/...") in case the file is from a genrule.
+        normalized_dirname = f.dirname[len(f.root.path):].lstrip("/")
+        if package_dir == None or len(package_dir) > len(normalized_dirname):
+            package_dir = normalized_dirname
 
     return package_dir
 
@@ -513,19 +514,18 @@ def _build_sdist_tar(ctx):
     package_root = _find_package_root(all_files)
     start_idx = len(package_root) + 1
 
-    required_files = [
-        f
-        for f in all_files
-        if f.path.startswith(package_root)
-    ]
-
     manifest_file = ctx.actions.declare_file("{}-manifest".format(ctx.label.name))
 
     sdist_args = ctx.actions.args()
 
-    manifest_struct = struct(
-        files = [struct(src = inf.path, dst = inf.path[start_idx:]) for inf in required_files],
-    )
+    manifest_struct = struct(files = [])
+    required_files = []
+    for inf in all_files:
+        normalized_path = inf.path[len(inf.root.path):].lstrip("/")
+        if normalized_path.startswith(package_root):
+            dst_path = normalized_path[start_idx:]
+            manifest_struct.files.append(struct(src = inf.path, dst = dst_path))
+            required_files.append(inf)
     ctx.actions.write(
         output = manifest_file,
         content = manifest_struct.to_json(),
