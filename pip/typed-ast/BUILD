@@ -8,19 +8,6 @@ load("//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
 dbx_py_pypi_piplib(
     name = "typed-ast",
     contents = {
-        "cpython-37": [
-            "typed_ast-1.4.0.dist-info/LICENSE",
-            "typed_ast-1.4.0.dist-info/METADATA",
-            "typed_ast-1.4.0.dist-info/RECORD",
-            "typed_ast-1.4.0.dist-info/WHEEL",
-            "typed_ast-1.4.0.dist-info/top_level.txt",
-            "typed_ast/__init__.py",
-            "typed_ast/_ast27.cpython-37m-x86_64-linux-gnu.so",
-            "typed_ast/_ast3.cpython-37m-x86_64-linux-gnu.so",
-            "typed_ast/ast27.py",
-            "typed_ast/ast3.py",
-            "typed_ast/conversions.py",
-        ],
         "cpython-38": [
             "typed_ast-1.4.0.dist-info/LICENSE",
             "typed_ast-1.4.0.dist-info/METADATA",

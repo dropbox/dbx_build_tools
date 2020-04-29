@@ -1,4 +1,4 @@
-load("@dbx_build_tools//build_tools/py:toolchain.bzl", "cpython_27", "cpython_37", "cpython_38")
+load("@dbx_build_tools//build_tools/py:toolchain.bzl", "cpython_27", "cpython_38")
 
 GLOBAL_PYTEST_PLUGINS = [
     "@dbx_build_tools//build_tools/py/pytest_plugins:preserve_symlinks",
@@ -21,7 +21,6 @@ PYPI_MIRROR_URL = "https://pypi.org/simple/"
 
 ALL_ABIS = [
     cpython_27,
-    cpython_37,
     cpython_38,
 ]
 

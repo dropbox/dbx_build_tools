@@ -16,14 +16,6 @@ dbx_py_pypi_piplib(
             "atomicwrites-1.3.0.dist-info/top_level.txt",
             "atomicwrites/__init__.py",
         ],
-        "cpython-37": [
-            "atomicwrites-1.3.0.dist-info/LICENSE",
-            "atomicwrites-1.3.0.dist-info/METADATA",
-            "atomicwrites-1.3.0.dist-info/RECORD",
-            "atomicwrites-1.3.0.dist-info/WHEEL",
-            "atomicwrites-1.3.0.dist-info/top_level.txt",
-            "atomicwrites/__init__.py",
-        ],
         "cpython-38": [
             "atomicwrites-1.3.0.dist-info/LICENSE",
             "atomicwrites-1.3.0.dist-info/METADATA",

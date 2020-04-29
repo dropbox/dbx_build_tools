@@ -7,6 +7,5 @@ drte_deps()
 
 register_toolchains(
     "//thirdparty/cpython:drte-off-27-toolchain",
-    "//thirdparty/cpython:drte-off-37-toolchain",
     "//thirdparty/cpython:drte-off-38-toolchain",
 )

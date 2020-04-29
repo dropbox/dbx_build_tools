@@ -16,14 +16,6 @@ dbx_py_pypi_piplib(
             "six-1.14.0.dist-info/top_level.txt",
             "six.py",
         ],
-        "cpython-37": [
-            "six-1.14.0.dist-info/LICENSE",
-            "six-1.14.0.dist-info/METADATA",
-            "six-1.14.0.dist-info/RECORD",
-            "six-1.14.0.dist-info/WHEEL",
-            "six-1.14.0.dist-info/top_level.txt",
-            "six.py",
-        ],
         "cpython-38": [
             "six-1.14.0.dist-info/LICENSE",
             "six-1.14.0.dist-info/METADATA",

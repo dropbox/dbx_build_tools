@@ -11,7 +11,7 @@ ALT_BUILD = "BUILD.bazel"
 ### Python-related configuration.
 ###
 PY2_ABIS = ["cpython-27"]
-PY3_ABIS = ["cpython-37", "cpython-38"]
+PY3_ABIS = ["cpython-38"]
 
 PY_EXTENSION_RULE_TYPES = ()
 

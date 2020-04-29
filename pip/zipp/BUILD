@@ -16,14 +16,6 @@ dbx_py_pypi_piplib(
             "zipp-1.1.1.dist-info/top_level.txt",
             "zipp.py",
         ],
-        "cpython-37": [
-            "zipp-1.1.1.dist-info/LICENSE",
-            "zipp-1.1.1.dist-info/METADATA",
-            "zipp-1.1.1.dist-info/RECORD",
-            "zipp-1.1.1.dist-info/WHEEL",
-            "zipp-1.1.1.dist-info/top_level.txt",
-            "zipp.py",
-        ],
         "cpython-38": [
             "zipp-1.1.1.dist-info/LICENSE",
             "zipp-1.1.1.dist-info/METADATA",

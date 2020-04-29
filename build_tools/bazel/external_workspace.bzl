@@ -10,7 +10,6 @@ DEFAULT_EXTERNAL_URLS = {
     "bazel_skylib": "https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz",
     "com_github_plougher_squashfs-tools": "https://github.com/plougher/squashfs-tools/archive/4.4.tar.gz",
     "cpython_27": "https://www.python.org/ftp/python/2.7.17/Python-2.7.17.tar.xz",
-    "cpython_37": "https://www.python.org/ftp/python/3.7.5/Python-3.7.5.tar.xz",
     "cpython_38": "https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz",
     "go_1_12_17_linux_amd64_tar_gz": "https://dl.google.com/go/go1.12.17.linux-amd64.tar.gz",
     "io_pypa_pip_whl": "https://files.pythonhosted.org/packages/54/0c/d01aa759fdc501a58f431eb594a17495f15b88da142ce14b5845662c13f3/pip-20.0.2-py2.py3-none-any.whl",
@@ -51,14 +50,6 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
         sha256 = "4d43f033cdbd0aa7b7023c81b0e986fd11e653b5248dac9144d508f11812ba41",
         build_file = filename_from_label("@dbx_build_tools//thirdparty/cpython:BUILD.python27"),
         strip_prefix = "Python-2.7.17",
-    )
-
-    http_archive(
-        name = "org_python_cpython_37",
-        urls = [urls["cpython_37"]],
-        sha256 = "e85a76ea9f3d6c485ec1780fca4e500725a4a7bbc63c78ebc44170de9b619d94",
-        build_file = filename_from_label("@dbx_build_tools//thirdparty/cpython:BUILD.python37"),
-        strip_prefix = "Python-3.7.5",
     )
 
     http_archive(

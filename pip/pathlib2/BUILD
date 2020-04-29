@@ -16,14 +16,6 @@ dbx_py_pypi_piplib(
             "pathlib2-2.3.5.dist-info/top_level.txt",
             "pathlib2/__init__.py",
         ],
-        "cpython-37": [
-            "pathlib2-2.3.5.dist-info/LICENSE.rst",
-            "pathlib2-2.3.5.dist-info/METADATA",
-            "pathlib2-2.3.5.dist-info/RECORD",
-            "pathlib2-2.3.5.dist-info/WHEEL",
-            "pathlib2-2.3.5.dist-info/top_level.txt",
-            "pathlib2/__init__.py",
-        ],
         "cpython-38": [
             "pathlib2-2.3.5.dist-info/LICENSE.rst",
             "pathlib2-2.3.5.dist-info/METADATA",

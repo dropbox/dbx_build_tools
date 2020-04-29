@@ -16,16 +16,6 @@ dbx_py_pypi_piplib(
             "funcsigs/__init__.py",
             "funcsigs/version.py",
         ],
-        "cpython-37": [
-            "funcsigs-1.0.2.dist-info/LICENSE",
-            "funcsigs-1.0.2.dist-info/METADATA",
-            "funcsigs-1.0.2.dist-info/RECORD",
-            "funcsigs-1.0.2.dist-info/WHEEL",
-            "funcsigs-1.0.2.dist-info/pbr.json",
-            "funcsigs-1.0.2.dist-info/top_level.txt",
-            "funcsigs/__init__.py",
-            "funcsigs/version.py",
-        ],
         "cpython-38": [
             "funcsigs-1.0.2.dist-info/LICENSE",
             "funcsigs-1.0.2.dist-info/METADATA",

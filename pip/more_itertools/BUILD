@@ -18,16 +18,6 @@ dbx_py_pypi_piplib(
             "more_itertools/more.py",
             "more_itertools/recipes.py",
         ],
-        "cpython-37": [
-            "more_itertools-5.0.0.dist-info/LICENSE",
-            "more_itertools-5.0.0.dist-info/METADATA",
-            "more_itertools-5.0.0.dist-info/RECORD",
-            "more_itertools-5.0.0.dist-info/WHEEL",
-            "more_itertools-5.0.0.dist-info/top_level.txt",
-            "more_itertools/__init__.py",
-            "more_itertools/more.py",
-            "more_itertools/recipes.py",
-        ],
         "cpython-38": [
             "more_itertools-5.0.0.dist-info/LICENSE",
             "more_itertools-5.0.0.dist-info/METADATA",

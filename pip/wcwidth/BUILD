@@ -20,18 +20,6 @@ dbx_py_pypi_piplib(
             "wcwidth/table_zero.py",
             "wcwidth/wcwidth.py",
         ],
-        "cpython-37": [
-            "wcwidth-0.1.7.dist-info/LICENSE.txt",
-            "wcwidth-0.1.7.dist-info/METADATA",
-            "wcwidth-0.1.7.dist-info/RECORD",
-            "wcwidth-0.1.7.dist-info/WHEEL",
-            "wcwidth-0.1.7.dist-info/top_level.txt",
-            "wcwidth-0.1.7.dist-info/zip-safe",
-            "wcwidth/__init__.py",
-            "wcwidth/table_wide.py",
-            "wcwidth/table_zero.py",
-            "wcwidth/wcwidth.py",
-        ],
         "cpython-38": [
             "wcwidth-0.1.7.dist-info/LICENSE.txt",
             "wcwidth-0.1.7.dist-info/METADATA",

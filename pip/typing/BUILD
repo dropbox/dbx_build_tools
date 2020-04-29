@@ -18,14 +18,6 @@ dbx_py_pypi_piplib(
             "typing-3.7.4.1.dist-info/top_level.txt",
             "typing.py",
         ],
-        "cpython-37": [
-            "typing-3.7.4.1.dist-info/LICENSE",
-            "typing-3.7.4.1.dist-info/METADATA",
-            "typing-3.7.4.1.dist-info/RECORD",
-            "typing-3.7.4.1.dist-info/WHEEL",
-            "typing-3.7.4.1.dist-info/top_level.txt",
-            "typing.py",
-        ],
         "cpython-38": [
             "typing-3.7.4.1.dist-info/LICENSE",
             "typing-3.7.4.1.dist-info/METADATA",

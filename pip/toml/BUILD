@@ -22,18 +22,6 @@ dbx_py_pypi_piplib(
             "toml/ordered.py",
             "toml/tz.py",
         ],
-        "cpython-37": [
-            "toml-0.10.0.dist-info/LICENSE",
-            "toml-0.10.0.dist-info/METADATA",
-            "toml-0.10.0.dist-info/RECORD",
-            "toml-0.10.0.dist-info/WHEEL",
-            "toml-0.10.0.dist-info/top_level.txt",
-            "toml/__init__.py",
-            "toml/decoder.py",
-            "toml/encoder.py",
-            "toml/ordered.py",
-            "toml/tz.py",
-        ],
         "cpython-38": [
             "toml-0.10.0.dist-info/LICENSE",
             "toml-0.10.0.dist-info/METADATA",
