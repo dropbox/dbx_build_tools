@@ -17,7 +17,7 @@ DbxPyVersionCompatibility = provider(fields = [
 
 ALL_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS]
 
-ALLOWED_DRTE_VERSIONS = ["v2", "v3"]
+ALLOWED_DRTE_VERSIONS = ["v3"]
 
 # The minimum attributes needed to be able to emit py binaries (see emit_py_binary below).
 py_binary_attrs = {
