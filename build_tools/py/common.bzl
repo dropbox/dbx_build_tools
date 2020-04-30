@@ -83,7 +83,6 @@ _runfile_windows_tmpl = """
 """
 
 _inner_wrapper = """
-import os
 import sys
 runfiles = sys.argv[1]
 sys.argv = sys.argv[0:1] + sys.argv[2:]
@@ -93,11 +92,11 @@ sys.argv = sys.argv[0:1] + sys.argv[2:]
 # in. We need to do this before importing os to prevent conflicts with the
 # types module. 3rdparty libraries go at the very end.
 sys.path[:1] = [
-    runfiles + os.sep + p
+    runfiles + {path_sep} + p
     for p in ({relative_user_python_path},)
 ]
 sys.path.extend([
-    runfiles + os.sep + p
+    runfiles + {path_sep} + p
     for p in ({relative_piplib_python_path})
 ])
 {dbx_importer}
@@ -525,6 +524,7 @@ __path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
             relative_user_python_path = user_python_path,
             relative_piplib_python_path = piplib_python_path,
             dbx_importer = dbx_importer,
+            path_sep = repr("\\" if is_windows(ctx) else "/"),
         ),
     )
 
