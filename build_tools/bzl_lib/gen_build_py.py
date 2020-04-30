@@ -590,7 +590,7 @@ class PythonPathMapping(AbstractPythonPath):
             name = lib.attr_map["name"]
             target = pkg + ":" + name
 
-            srcs = lib.attr_map.get("srcs", [])
+            srcs = build_parser.maybe_expand_attribute(lib.attr_map.get("srcs", []))
 
             for src in srcs:
                 assert src.endswith(".py"), "Invalid python src %s in %s" % (src, pkg)
@@ -907,7 +907,7 @@ class PyBuildGenerator(object):
             return
 
         self.regenerate(
-            rule.attr_map.get("deps", []),
+            build_parser.maybe_expand_attribute(rule.attr_map.get("deps", [])),
             cwd=os.path.join(self.workspace_dir, pkg_path),
         )
 
@@ -970,10 +970,12 @@ class PyBuildGenerator(object):
             name = rule.attr_map["name"]
             main = rule.attr_map.get("main", None)
             pip_main = rule.attr_map.get("pip_main", None)
-            srcs = rule.attr_map.get("srcs", None)
-            stub_srcs = rule.attr_map.get("stub_srcs", None)
+            srcs = build_parser.maybe_expand_attribute(rule.attr_map.get("srcs", None))
+            stub_srcs = build_parser.maybe_expand_attribute(
+                rule.attr_map.get("stub_srcs", None)
+            )
             autogen_deps = rule.attr_map.get("autogen_deps", True)
-            deps = rule.attr_map.get("deps", [])
+            deps = build_parser.maybe_expand_attribute(rule.attr_map.get("deps", []))
             validate = "strict" in rule.attr_map.get("validate", "strict")
             python_path = rule.attr_map.get("pythonpath", "")
             is_py2_compat = rule.attr_map.get("python2_compatible", True)

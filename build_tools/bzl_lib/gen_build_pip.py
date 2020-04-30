@@ -6,7 +6,7 @@ import os.path
 import subprocess
 import zipfile
 
-from typing import List
+from typing import Any, Dict, List
 
 import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
@@ -48,11 +48,12 @@ PUBLIC_STATEMENT = "package(default_visibility = ['//visibility:public'])\n"
 # give it.
 #     bazel query 'attr(python3_compatible, 1, kind(dbx_pypi_piplib_internal, ...) + kind(dbx_py_local_piplib_internal, ...)) | tac | sed s/:.*// | xargs -n 1 bzl-gen
 # 6) Go grab something to drink, this will take awhile since it will re-generate every pip library serially.
-def _get_build_interpreters(attr):
+def _get_build_interpreters(attr_map):
+    # type: (Dict[str, Any]) -> List[str]
     interpreters = []
-    if attr.get("python2_compatible", True):
+    if attr_map.get("python2_compatible", True):
         interpreters.extend(PY2_ABIS)
-    if attr.get("python3_compatible", True):
+    if attr_map.get("python3_compatible", True):
         interpreters.extend(PY3_ABIS)
     return interpreters
 
@@ -112,7 +113,9 @@ class BasePipBuildGenerator(object):
             if not self.skip_deps_generation:
                 for rule in pip_rules:
                     self.regenerate(
-                        rule.attr_map.get("deps", []),
+                        build_parser.maybe_expand_attribute(
+                            rule.attr_map.get("deps", [])
+                        ),
                         cwd=os.path.join(self.workspace_dir, target_dir),
                     )
 
@@ -189,8 +192,14 @@ class PipBuildGenerator(BasePipBuildGenerator):
         for rule in pip_rules:
             name = rule.attr_map["name"]
             wheel_name = name.replace("-", "_")
-            excludes = list(rule.attr_map.get("py_excludes", PIP_DEFAULT_EXCLUDES))
-            for namespace_pkg in rule.attr_map.get("namespace_pkgs", []):
+            excludes = list(
+                build_parser.maybe_expand_attribute(
+                    rule.attr_map.get("py_excludes", PIP_DEFAULT_EXCLUDES)
+                )
+            )
+            for namespace_pkg in build_parser.maybe_expand_attribute(
+                rule.attr_map.get("namespace_pkgs", [])
+            ):
                 excludes.append(namespace_pkg.replace(".", "/") + "/__init__.py")
 
             contents = {}

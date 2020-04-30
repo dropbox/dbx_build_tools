@@ -470,8 +470,9 @@ def run_rule(args, bazel_args, mode_args, target, rule):
     attrs.pop(
         "visibility", None
     )  # always a legal param, but we have no use for it here
+    expanded_attrs = {k: build_parser.maybe_expand_attribute(attrs[k]) for k in attrs}
     if rule.rule_type == "dbx_pkg_deb":
-        dbx_pkg_deb(args, bazel_args, mode_args, target, **attrs)
+        dbx_pkg_deb(args, bazel_args, mode_args, target, **expanded_attrs)
     else:
         raise bazel_utils.BazelError("invalid rule type: " + rule.rule_type)
 

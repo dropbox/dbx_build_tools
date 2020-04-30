@@ -146,6 +146,11 @@ py_library(
     deps = [],
 )
 
+dbx_py_pytest_test(
+    name = "build_parser_tests",
+    srcs = ["build_parser_tests.py"],
+)
+
 dbx_sh_binary(
     name = "buildfmt",
     srcs = ["buildfmt.sh"],

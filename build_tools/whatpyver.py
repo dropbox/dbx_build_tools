@@ -192,7 +192,9 @@ class PythonVersionCache(object):
                 "python3_compatible",
                 rule.rule_type not in RULE_TYPES_WITHOUT_PY3_SUPPORT,
             )
-            for src in rule.attr_map.get("srcs", []):
+            for src in build_parser.maybe_expand_attribute(
+                rule.attr_map.get("srcs", [])
+            ):
                 src = os.path.join(dir, src)
                 if py2:
                     self._py2_files.add(src)

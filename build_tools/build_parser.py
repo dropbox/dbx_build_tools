@@ -6,11 +6,9 @@
 import glob
 import os.path
 
-from typing import Any
-
 MYPY = False
 if MYPY:
-    from typing import List, Dict, Text
+    from typing import Any, List, Dict, Text, Optional
 
 
 def _exec_wrapper(code, namespace):
@@ -98,10 +96,97 @@ def bazel_glob(dirname, include, exclude=None, exclude_directories=True):
     return final
 
 
+def select_func(*args, **kwargs):
+    # type: (*Any, **Any) -> List[Select]
+    """Hacky way to handle `select()` calls in BUILD files.
+
+    Note that this treats `select()`s like lists, so it'll
+    fail to parse BUILD files that try to add `select()`s
+    to non-list items."""
+    return [Select(args[0])]
+
+
+def maybe_expand_attribute(attr_val):
+    # type: (Any) -> Any
+    """Attempts to expand any `select()`s found in attr_val.
+
+    Useful for normalizing values that might contain `select()`s.
+    """
+    # If an attribute value has a Select, it must be in a list.
+    if not isinstance(attr_val, list):
+        return attr_val
+
+    expanded = []
+    for val in attr_val:
+        if isinstance(val, Select):
+            expanded.extend(val.expand())
+        else:
+            expanded.append(val)
+
+    return expanded
+
+
+def get_select_aware_attribute_repr(attr_val):
+    # type: (Any) -> str
+    """Returns a string representation of an attribute value
+    that respects potential `select()`s."""
+    # If an attribute value has a Select, it must be in a list.
+    if not isinstance(attr_val, list):
+        return repr(attr_val)
+
+    selects = []
+    non_selects = []
+    for val in attr_val:
+        if isinstance(val, Select):
+            selects.append(val)
+        else:
+            non_selects.append(val)
+
+    if not selects:
+        return repr(non_selects)
+
+    select_repr = " + ".join([repr(i) for i in selects])
+    if not non_selects:
+        return select_repr
+
+    return repr(non_selects) + " + " + select_repr
+
+
 class Rule(object):
     def __init__(self, rule_type, attr_map):
         self.rule_type = rule_type
         self.attr_map = attr_map
+
+
+class Select(object):
+    """Represents a `select()` call in Starlark."""
+
+    def __init__(self, select_map):
+        # type: (Dict[str, Any]) -> None
+        self.select_map = select_map
+        self.expanded = None  # type: Optional[List[Any]]
+
+    def __repr__(self):
+        # type: () -> str
+        return "select({})".format(repr(self.select_map))
+
+    def expand(self):
+        # type: () -> List[Any]
+        if self.expanded:
+            return self.expanded
+
+        # For the sake of simplicity, we assume we're either
+        # dealing with lists or constants. This doesn't do
+        # the right thing with dicts -- callers will have to
+        # figure it out themselves.
+        expanded = []  # type: List[Any]
+        for values in self.select_map.values():
+            if isinstance(values, list):
+                expanded.extend(values)
+            else:
+                expanded.append(values)
+        self.expanded = expanded
+        return self.expanded
 
 
 class BuildParser(object):
@@ -114,16 +199,6 @@ class BuildParser(object):
             def __missing__(d_self, name):
                 def f(*args, **kargs):
                     self.clauses.append((name, args, kargs))
-                    # The bazel select function needs to return a value for callers
-                    # to exec properly. Here we'll return the concatenation of all options
-                    # which matches output of bazel query, e.g. bzl query 'labels(label, //target)'.
-                    if name == "select":
-                        condition_dict = args[0]
-                        return [
-                            condition_val
-                            for condition_values in condition_dict.values()
-                            for condition_val in condition_values
-                        ]
 
                 return f
 
@@ -144,16 +219,17 @@ class BuildParser(object):
         build_globals["True"] = True
         build_globals["False"] = False
         build_globals["str"] = str
+        build_globals["select"] = select_func
         try:
             _exec_wrapper(data, build_globals)
         except Exception as e:
-            # Add a small mount of file context to the error
+            # Add a small amount of file context to the error
             e.args += (fname,)
             raise e
 
         for key, value in build_globals.items():
             if key.isupper():
-                # This only happens if the parser is reused for mutliple files
+                # This only happens if the parser is reused for multiple files
                 assert key not in self.constants, "Constant name conflicit: " + key
                 self.constants[key] = value
 
@@ -192,7 +268,7 @@ class BuildParser(object):
     def default_visibility(self):
         # type: () -> List[Text]
         for rule in self.get_all_rules():
-            if rule.attr_map.get("default_visibility"):
+            if "default_visibility" in rule.attr_map:
                 return rule.attr_map["default_visibility"]
         return []
 

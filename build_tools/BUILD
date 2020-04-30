@@ -4,7 +4,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//build_tools/bazel:config.bzl", "dbx_string_value")
-load("//build_tools/py:py.bzl", "dbx_py_binary", "dbx_py_dbx_test", "dbx_py_library")
+load("//build_tools/py:py.bzl", "dbx_py_binary", "dbx_py_dbx_test", "dbx_py_library", "dbx_py_pytest_test")
 load("//build_tools/sh:sh.bzl", "dbx_sh_binary")
 
 dbx_py_library(
@@ -57,6 +57,14 @@ dbx_py_binary(
     deps = [
         ":bazelpkg",
         "//dropbox:runfiles",
+    ],
+)
+
+dbx_py_pytest_test(
+    name = "build_parser_tests",
+    srcs = ["build_parser_tests.py"],
+    deps = [
+        ":build_parser_lib",
     ],
 )
 
