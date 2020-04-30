@@ -17,6 +17,7 @@ import sys
 import tempfile
 
 ARGS = None
+SOURCE_DATE_EPOCH = "1541963471"
 
 
 class BuildError(Exception):
@@ -288,7 +289,7 @@ def build_pip_archive(workdir):
         env = get_unix_pip_env(venv=venv, venv_source=venv_source, execroot=execroot)
 
     # Force wheel zip file entries have a constant modified timestamp.
-    env["SOURCE_DATE_EPOCH"] = "1541963471"
+    env["SOURCE_DATE_EPOCH"] = SOURCE_DATE_EPOCH
 
     # Inhibit pyc creation during installation. It's not very useful and inhibits some packages from
     # writing (non-deterministic) pycs into the build product.
@@ -476,11 +477,14 @@ def run_ducible_and_copy(python, src, dst):
     src should be an existing wheel.
     dst should be the location (as a filename) where the wheel should be copied.
     """
+    env = os.environ.copy()
+    env["SOURCE_DATE_EPOCH"] = SOURCE_DATE_EPOCH
+
     wheel_exe = os.path.join(os.path.dirname(python), "scripts", "wheel.exe")
     src_path = os.path.abspath(src)
     with tempfile.TemporaryDirectory() as tmpdir:
         # Unpack the wheel.
-        run_silently([wheel_exe, "unpack", src_path], cwd=tmpdir)
+        run_silently([wheel_exe, "unpack", src_path], env=env, cwd=tmpdir)
         entries = os.listdir(tmpdir)
         assert len(entries) == 1
         wheel_dir = entries[0]
@@ -494,9 +498,9 @@ def run_ducible_and_copy(python, src, dst):
                     pdb_path = os.path.splitext(path)[0] + ".pdb"
                     if os.path.isfile(pdb_path):
                         cmd.append(pdb_path)
-                    run_silently(cmd)
+                    run_silently(cmd, env=env)
         # Repack the wheel.
-        run_silently([wheel_exe, "pack", wheel_dir], cwd=tmpdir)
+        run_silently([wheel_exe, "pack", wheel_dir], env=env, cwd=tmpdir)
         wheel = glob.glob(tmpdir + "/*.whl")[0]
         shutil.copy(wheel, dst)
 
