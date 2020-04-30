@@ -23,7 +23,7 @@ DEFAULT_EXTERNAL_URLS = {
     "org_sourceware_libffi": "https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz",
     "org_sqlite": "https://sqlite.org/2020/sqlite-amalgamation-3310100.zip",
     "org_tukaani": "https://tukaani.org/xz/xz-5.2.4.tar.gz",
-    "rules_pkg": "https://github.com/bazelbuild/rules_pkg/archive/2f09779667f0d6644c2ca5914d6113a82666ec63.zip",
+    "rules_pkg": "https://github.com/bazelbuild/rules_pkg/releases/download/0.2.6-1/rules_pkg-0.2.6.tar.gz",
     "six_archive": "https://pypi.python.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz",
     "ducible": "https://github.com/jasonwhite/ducible/releases/download/v1.2.2/ducible-windows-Win32-Release.zip",
 }
@@ -82,8 +82,7 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "rules_pkg",
         urls = [urls["rules_pkg"]],
-        sha256 = "3bc6bf7982e5ab0c89a5a3e0895cf32d63d234db54e9e9211c8c4d511b845f7a",
-        strip_prefix = "rules_pkg-2f09779667f0d6644c2ca5914d6113a82666ec63/pkg",
+        sha256 = "aeca78988341a2ee1ba097641056d168320ecc51372ef7ff8e64b139516a4937",
     )
 
     http_archive(
