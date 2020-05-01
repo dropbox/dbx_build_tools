@@ -393,11 +393,14 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
 
 def _vpip_rule_impl(ctx, local):
     if local and NON_THIRDPARTY_PACKAGE_PREFIXES:
-        package_prefix, _, _ = ctx.label.package.partition("/")
+        thirdparty_package = not any([
+            ctx.label.package == prefix or ctx.label.package.startswith(prefix + "/")
+            for prefix in NON_THIRDPARTY_PACKAGE_PREFIXES
+        ])
         pip_version = hasattr(ctx.attr, "pip_version") and ctx.attr.pip_version.strip()
-        if (package_prefix in NON_THIRDPARTY_PACKAGE_PREFIXES) and pip_version:
+        if (not thirdparty_package and pip_version):
             fail('non-thirdparty local piplib should not specify "pip_version"')
-        elif (package_prefix not in NON_THIRDPARTY_PACKAGE_PREFIXES) and not pip_version:
+        elif (thirdparty_package and not pip_version):
             fail('thirdparty local piplib should specify its version using "pip_version"')
 
     (
