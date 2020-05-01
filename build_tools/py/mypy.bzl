@@ -145,7 +145,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
     target: rule name for aspect, None for bootstrap
     ctx: original context
     deps, srcs, stub_srcs: rule attributes
-    python_version: '2.7' or '3.7'
+    python_version: '2.7' or '3.8'
     """
     if python_version == "2.7":
         use_mypyc = False
@@ -437,12 +437,12 @@ def _dbx_mypy_aspect_impl(target, ctx):
 
 _dbx_mypy_typeshed_attrs = {
     "_typeshed_2_7": attr.label(default = Label("//thirdparty/typeshed:typeshed-2.7")),
-    "_typeshed_3_7": attr.label(default = Label("//thirdparty/typeshed:typeshed-3.7")),
+    "_typeshed_3_8": attr.label(default = Label("//thirdparty/typeshed:typeshed-3.8")),
 }
 _dbx_mypy_aspect_attrs = {
-    "python_version": attr.string(values = ["2.7", "3.7"]),
+    "python_version": attr.string(values = ["2.7", "3.8"]),
     "_mypy_stubs_2_7": attr.label(default = Label("//mypy-stubs:mypy-stubs-2.7")),
-    "_mypy_stubs_3_7": attr.label(default = Label("//mypy-stubs:mypy-stubs-3.7")),
+    "_mypy_stubs_3_8": attr.label(default = Label("//mypy-stubs:mypy-stubs-3.8")),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
     "_mypyc_runtime": attr.label(default = Label("//thirdparty/mypy:mypyc_runtime")),
     "_module_shim_template": attr.label(default = Label("//thirdparty/mypy:module_shim_template")),
@@ -517,7 +517,7 @@ def dbx_mypy_test(
             suffix = ""
         things.append((suffix, "2.7"))
     if python3_compatible:
-        things.append(("", "3.7"))
+        things.append(("", "3.8"))
     for suffix, python_version in things:
         _dbx_mypy_test(
             name = name + suffix,
@@ -575,7 +575,7 @@ _mypyc_attrs = {
         providers = [[PyInfo], [DbxPyVersionCompatibility]],
         aspects = [dbx_mypy_aspect],
     ),
-    "python_version": attr.string(default = "3.7"),
+    "python_version": attr.string(default = "3.8"),
     "python2_compatible": attr.bool(default = True),
 }
 
