@@ -31,7 +31,7 @@ dbx_py_library(
         "//go/src/dropbox/build_tools/gen-build-go",
     ],
     python2_compatible = False,
-    validate = "allow-unused",
+    validate = "strict",
     deps = [
         ":build_merge_lib",
         ":cfg",

@@ -20,7 +20,6 @@ dbx_py_library(
         "//go/src/dropbox/build_tools/gen-build-go",
     ],
     python2_compatible = False,
-    validate = "allow-unused",
 )
 
 dbx_py_library(
