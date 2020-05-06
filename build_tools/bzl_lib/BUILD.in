@@ -1,4 +1,4 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//build_tools:__subpackages__"])
 
 dbx_py_library(
     name = "commands",
@@ -28,6 +28,7 @@ dbx_py_library(
         "parse_py_imports.py",
     ],
     python2_compatible = False,
+    visibility = ["//visibility:public"],
 )
 
 dbx_py_library(
