@@ -195,12 +195,36 @@ class BuildParser(object):
         self.constants = {}
 
     def parse(self, data, fname=None):
+        class MissingItem(object):
+            """An object that can pretend to be either a function or a struct.
+            While most items in a BUILD file are rules, we can occasionally get
+            structs (such as the `selects` struct in bazel-skylib).
+            
+            Be aware that this may be exposed directly in `clauses`, such as
+            cases when a named constant variable is used.
+            """
+
+            def __init__(mi_self, name):
+                # type: (str) -> None
+                mi_self.name = name
+
+            def __call__(mi_self, *args, **kargs):
+                # type: (*Any, **Any) -> None
+                """Handles the case where the item is a function."""
+                self.clauses.append(
+                    (object.__getattribute__(mi_self, "name"), args, kargs)
+                )
+
+            def __getattribute__(mi_self, key):
+                # type: (str) -> MissingItem
+                """Handles the case where the item is a struct."""
+                return MissingItem(
+                    "{}.{}".format(object.__getattribute__(mi_self, "name"), key)
+                )
+
         class MacroDict(dict):
             def __missing__(d_self, name):
-                def f(*args, **kargs):
-                    self.clauses.append((name, args, kargs))
-
-                return f
+                return MissingItem(name)
 
         pkg_name = ""
         glob_func = lambda *args, **kwargs: []

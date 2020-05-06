@@ -41,6 +41,33 @@ rule1(
 """
 
 
+BUILD_WITH_STRUCT = """
+load("@bazel_skylib//lib:selects.bzl", "selects")
+
+config_setting(
+    name = "sunny",
+    define_values = {
+        "sunny": "1",
+    },
+)
+
+config_setting(
+    name = "warm",
+    define_values = {
+        "warm": "1",
+    },
+)
+
+selects.config_setting_group(
+    name = "perfect-day",
+    match_all = [
+        ":warm",
+        ":sunny",
+    ],
+)
+"""
+
+
 def test_parse_basic_build_file():
     # type: () -> None
     """Ensures that we can parse simple BUILD files."""
@@ -128,3 +155,14 @@ def test_select_aware_repr():
     ]
     assert new_select_item.select_map["//conditions:osx"] == ["osx1", "osx2"]
     assert new_select_item.select_map["//conditions:linux"] == ["linux1"]
+
+
+def test_build_with_structs():
+    # type: () -> None
+    """Ensures that build_parser doesn't choke on BUILD files that load
+    structs."""
+    bp = build_parser.parse(BUILD_WITH_STRUCT)
+
+    rule = bp.get_rule("perfect-day")
+    assert rule.rule_type == "selects.config_setting_group"
+    assert rule.attr_map["match_all"] == [":warm", ":sunny"]

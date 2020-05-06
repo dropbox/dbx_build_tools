@@ -18,7 +18,7 @@ def normalize_module(src, module_path):
     orig_module_path = module_path
 
     target_dir = os.path.dirname(src)
-    relative_to = target_dir.split("/")
+    relative_to = target_dir.split(os.path.sep)
     module_path = module_path[1:]
 
     while module_path.startswith("."):
