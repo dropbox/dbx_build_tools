@@ -92,7 +92,7 @@ class BasePipBuildGenerator(object):
 
         for target in targets:
             assert target.startswith("//"), "Target must be absolute: " + target
-            target_dir = target[2:]
+            target_dir = bazel_utils.normalize_relative_target_to_os_path(target[2:])
 
             if target_dir in self.visited_dirs:
                 continue
