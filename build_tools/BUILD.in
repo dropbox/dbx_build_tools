@@ -83,9 +83,19 @@ dbx_string_value(
     value = "disallowed",
 )
 
+config_setting(
+    name = "no_py_debug_prefix_map",
+    define_values = {
+        "py-debug-prefix-map": "0",
+    },
+)
+
 dbx_string_value(
     name = "py_debug_prefix_map_supported",
-    value = "yes",
+    value = select({
+        ":no_py_debug_prefix_map": "off",
+        "//conditions:default": "yes",
+    }),
 )
 
 dbx_py_library(

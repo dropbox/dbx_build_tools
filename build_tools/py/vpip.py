@@ -93,8 +93,10 @@ def get_unix_pip_env(venv, venv_source, execroot):
         # Prevent the absolute execroot path from being hardcoded in debug info. (Recall that the
         # toolchain lives in the execroot rather than the system.)
         env["CFLAGS"] += " -fdebug-prefix-map=%s/=" % os.getcwd()
+        env["CFLAGS"] += " -fmacro-prefix-map=%s/=" % os.getcwd()
         # Similarly, map the "venv", which is living in a temporary directory into its source.
         env["CFLAGS"] += " -fdebug-prefix-map=%s/=%s/" % (venv, venv_source)
+        env["CFLAGS"] += " -fmacro-prefix-map=%s/=%s/" % (venv, venv_source)
 
     ensure_absolute = False
     for compile_flag in ARGS.compile_flags:
