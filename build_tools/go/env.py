@@ -19,4 +19,5 @@ def make_go_env():
         "GOPATH": os.path.join(bazel_utils.find_workspace(), "go"),
         # go-errcheck behaves incorrectly if $GOROOT/bin is not added to $PATH
         "PATH": os.path.join(GOROOT, "bin") + os.pathsep + os.getenv("PATH", ""),
+        "GOCACHE": "/tmp/go_build_cache",
     }
