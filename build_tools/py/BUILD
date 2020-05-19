@@ -3,7 +3,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary", "dbx_py_binary", "dbx_py_library")
+load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary", "dbx_py_library")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 dbx_py_library(
@@ -11,18 +11,6 @@ dbx_py_library(
     srcs = ["vinst.py"],
     python3_compatible = True,
     validate = "strict",
-)
-
-dbx_py_binary(
-    name = "build_cffi_binding",
-    srcs = ["build_cffi_binding.py"],
-    main = "build_cffi_binding.py",
-    python2_compatible = False,
-    python3_compatible = True,
-    validate = "strict",
-    deps = [
-        "//pip/cffi",
-    ],
 )
 
 dbx_py_library(

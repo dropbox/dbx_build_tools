@@ -1,95 +1,80 @@
 load("//build_tools/py:py.bzl", "dbx_py_local_piplib")
 
-def local_new_file(ctx, name):
-    """
-    Create a new file prefixed with the current label name
-    """
-    return ctx.actions.declare_file(ctx.label.name + "/" + name)
+_CFFIBUILD_PY_TEMPLATE = """
+from cffi import FFI
 
-def gen_ext_module(ctx, use_cpp):
-    # disutils will add diffrent linker flags if the source files are c++
-    if use_cpp:
-        file_ext = ".cpp"
-    else:
-        file_ext = ".c"
-
-    c_ext_module = local_new_file(ctx, ctx.attr.module_name + file_ext)
-    ctx.actions.run(
-        inputs = [ctx.file.cdef, ctx.file.source],
-        outputs = [c_ext_module],
-        executable = ctx.executable._gen_ext_module_c,
-        use_default_shell_env = True,
-        arguments = [
-            "--out",
-            c_ext_module.path,
-            "--ext-name",
-            ctx.attr.module_name,
-            "--cdef",
-            ctx.file.cdef.path,
-            "--source",
-            ctx.file.source.path,
-        ],
-        progress_message = "creating cffi {}".format(ctx.attr.module_name),
+__ffi__ = FFI()
+__ffi__.set_unicode(True)
+with open("{cdef}") as fp:
+    __ffi__.cdef(fp.read())
+with open("{source}") as fp:
+    __ffi__.set_source(
+        "{ext_name}",
+        fp.read(),
+        libraries={libraries},
+        extra_compile_args={extra_compile_args},
+        extra_link_args={extra_link_args},
+        source_extension="{extension}",
     )
-    return c_ext_module
+"""
 
-SETUP_PY = """
-from setuptools import setup, Extension
+def _gen_cffibuild_py(ctx):
+    cffibuild = ctx.actions.declare_file("_cffibuild.py")
+
+    # Some targets currently pass in things like ".h" files,
+    # so just assume C in those cases.
+    if ctx.file.source.extension == ".cpp":
+        extension = ".cpp"
+    else:
+        extension = ".c"
+
+    ctx.actions.write(
+        output = cffibuild,
+        content = _CFFIBUILD_PY_TEMPLATE.format(
+            cdef = ctx.file.cdef.basename,
+            source = ctx.file.source.basename,
+            ext_name = ctx.attr.module_name,
+            libraries = repr(ctx.attr.libraries),
+            extra_compile_args = repr(ctx.attr.copts),
+            extra_link_args = repr(ctx.attr.linkopts),
+            extension = extension,
+        ),
+    )
+
+    return cffibuild
+
+_SETUP_PY_TEMPLATE = """
+from setuptools import setup
+
 setup(
-    name='{package_name}',
-    version='1',
-    ext_modules=[
-        Extension(
-            name='{module_name}',
-            sources=[{sources}],
-            extra_compile_args=[{extra_compile_args}],
-            extra_link_args={extra_link_args},
-            libraries={libraries},
-        )
-    ]
-) """
+    name="{package_name}",
+    version="1",
+    cffi_modules=["_cffibuild.py:__ffi__"],
+    zip_safe=False,
+)
+"""
 
-def gen_setup_py(ctx, c_files, extra_compile_args = [], extra_link_args = [], libraries = []):
-    setup_py = local_new_file(ctx, "setup.py")
-    prefix_len = len(setup_py.dirname) + 1
-    sources = ", ".join([
-        "'{}'".format(f.path[prefix_len:])
-        for f in c_files
-    ])
-    extra_compile_args = ", ".join([
-        "'{}'".format(arg)
-        for arg in extra_compile_args
-    ])
-    extra_link_args = repr(extra_link_args)
-    libraries = repr(libraries)
+def _gen_setup_py(ctx):
+    setup_py = ctx.actions.declare_file("setup.py")
     ctx.actions.write(
         output = setup_py,
-        content = SETUP_PY.format(
+        content = _SETUP_PY_TEMPLATE.format(
             package_name = ctx.label.name,
-            module_name = ctx.attr.module_name,
-            sources = sources,
-            extra_compile_args = extra_compile_args,
-            extra_link_args = extra_link_args,
-            libraries = libraries,
         ),
     )
     return setup_py
 
 def _cffi_module_impl(ctx):
-    c_ext_module = gen_ext_module(ctx, ctx.attr.use_cpp)
-    setup_py = gen_setup_py(
-        ctx = ctx,
-        c_files = [c_ext_module],
-        extra_compile_args = ctx.attr.copts,
-        extra_link_args = ctx.attr.linkopts,
-        libraries = ctx.attr.libraries,
-    )
+    cffibuild_py = _gen_cffibuild_py(ctx)
+    setup_py = _gen_setup_py(ctx)
 
-    return struct(
-        files = depset(
-            [c_ext_module] +
-            [setup_py],
-        ),
+    return DefaultInfo(
+        files = depset([
+            ctx.file.cdef,
+            ctx.file.source,
+            cffibuild_py,
+            setup_py,
+        ]),
     )
 
 _cffi_module = rule(
@@ -110,11 +95,6 @@ _cffi_module = rule(
         "copts": attr.string_list(),
         "linkopts": attr.string_list(),
         "libraries": attr.string_list(),
-        "_gen_ext_module_c": attr.label(
-            default = Label("//build_tools/py:build_cffi_binding"),
-            cfg = "host",
-            executable = True,
-        ),
     },
 )
 
@@ -145,7 +125,7 @@ def dbx_cffi_module(
         if python2_compatible:
             contents["cpython-27"] = [module_name + ".so"]
         if python3_compatible:
-            contents["cpython-38"] = [module_name + ".cpython-38-x86_64-linux-gnu.so"]
+            contents["cpython-38"] = [module_name + ".abi3.so"]
     dbx_py_local_piplib(
         name = name,
         provides = [module_name],
@@ -155,6 +135,7 @@ def dbx_cffi_module(
         visibility = visibility,
         python2_compatible = python2_compatible,
         python3_compatible = python3_compatible,
+        setup_requires = ["//pip/cffi"],
         ignore_missing_static_libraries = ignore_missing_static_libraries,
         tags = tags,
         import_test_tags = import_test_tags,

@@ -44,15 +44,6 @@ py_binary(
     python_version = "PY3",
 )
 
-dbx_py_binary(
-    name = "build_cffi_binding",
-    srcs = ["build_cffi_binding.py"],
-    main = "build_cffi_binding.py",
-    python2_compatible = False,
-    python3_compatible = True,
-    validate = "strict",
-)
-
 filegroup(
     name = "sanitizer-extra-runfiles",
     srcs = select({
