@@ -414,10 +414,17 @@ def emit_py_binary(
         if not internal_bootstrap and allow_dynamic_links(ctx):
             runfiles_trans.append(dynamic_libraries)
             for f in dynamic_libraries.to_list():
-                if f.extension == "framework":
-                    framework_search_entries[f.short_path.rpartition("/")[0]] = True
-                else:
-                    library_search_entries[f.short_path.rpartition("/")[0]] = True
+                library_search_entries[f.short_path.rpartition("/")[0]] = True
+            for f in frameworks_trans.to_list():
+                runfiles_trans.append(f.framework_files)
+                for dir in f.framework_dirs:
+                    # framework_dirs are full paths to the .framework including
+                    # the execution root.  The search path needs the dirname of
+                    # the .framework dir, and relative to the execution root as
+                    # it will be prefixed with the runfiles path.
+                    # +1 to remove the leading '/'.
+                    dir_basename_short_path = dir.rpartition("/")[0][len(ctx.bin_dir.path) + 1:]
+                    framework_search_entries[dir_basename_short_path] = True
 
         # Scan through transitive piplibs. Collect namespace packages and check for conflicts.
         installed = {}
