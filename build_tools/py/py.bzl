@@ -41,7 +41,6 @@ load(
     "workspace_root_to_pythonpath",
 )
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
-load("//build_tools/apple:apple.bzl", "DbxAppleFramework")
 load("//build_tools/windows:windows.bzl", "is_windows")
 
 # This logic is duplicated in build_tools/bzl_lib/gen_build_pip.py::_get_build_interpreters and must
@@ -181,9 +180,9 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         elif hasattr(dep, "crate_type"):
             # dep is a rust_library.
             rust_deps.append(dep)
-        elif DbxAppleFramework in dep:
+        elif apple_common.AppleDynamicFramework in dep:
             if allow_dynamic_links(ctx):
-                frameworks.append(dep[DbxAppleFramework].framework)
+                frameworks.append(dep[apple_common.AppleDynamicFramework])
             else:
                 fail("Encountered Apple framework while dynamic links were disallowed.")
         elif not hasattr(dep, "piplib_contents"):
@@ -237,9 +236,9 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     command_args.add_all(dynamic_libs, before_each = "--extra-dynamic-lib")
     inputs_direct.extend(dynamic_libs)
 
-    # Frameworks are directories, but we want to pass the path of the directory.
-    command_args.add_all(frameworks, before_each = "--extra-framework", expand_directories = False)
-    inputs_direct.extend(frameworks)
+    for framework in frameworks:
+        command_args.add_all(framework.framework_dirs, before_each = "--extra-framework")
+        inputs_trans.append(framework.framework_files)
     for link_flag in cc_linking.user_link_flags:
         if link_flag == "-pthread":
             # Python is going to add this anyway.
@@ -389,7 +388,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     return struct(
         piplib_contents = depset([piplib_contents]),
         pip_main = main,
-    ), dynamic_libs + frameworks
+    ), dynamic_libs, frameworks
 
 def _vpip_rule_impl(ctx, local):
     if local and NON_THIRDPARTY_PACKAGE_PREFIXES:
@@ -409,6 +408,7 @@ def _vpip_rule_impl(ctx, local):
         extra_pythonpath,
         versioned_deps,
         dynamic_libraries_trans,
+        frameworks_trans,
     ) = collect_transitive_srcs_and_libs(
         ctx,
         deps = ctx.attr.deps,
@@ -432,7 +432,7 @@ def _vpip_rule_impl(ctx, local):
     for py_config in py_configs:
         python_impl = py_config.target
         wheel = getattr(ctx.outputs, py_config.attr)
-        wheel_out, dynamic_libraries = _build_wheel(ctx, wheel, python_impl, sdist_tar)
+        wheel_out, dynamic_libraries, frameworks = _build_wheel(ctx, wheel, python_impl, sdist_tar)
         pip_main[py_config.build_tag] = wheel_out.pip_main
         piplib_contents[py_config.build_tag] = depset(
             transitive = [piplib_contents[py_config.build_tag], wheel_out.piplib_contents],
@@ -454,6 +454,7 @@ def _vpip_rule_impl(ctx, local):
         provides = ctx.attr.provides,
         piplib_contents = piplib_contents,
         dynamic_libraries = depset(direct = dynamic_libraries, transitive = [dynamic_libraries_trans]),
+        frameworks = depset(direct = frameworks, transitive = [frameworks_trans]),
         extra_pythonpath = extra_pythonpath,
         runfiles = ctx.runfiles(collect_default = True),
         required_piplibs = required_piplibs,
@@ -905,6 +906,7 @@ def _dbx_py_library_impl(ctx):
         extra_pythonpath,
         versioned_deps,
         dynamic_libraries,
+        frameworks,
     ) = collect_transitive_srcs_and_libs(
         ctx,
         deps = ctx.attr.deps,
@@ -949,6 +951,7 @@ def _dbx_py_library_impl(ctx):
         versioned_deps = versioned_deps,
         piplib_contents = piplib_contents,
         dynamic_libraries = dynamic_libraries,
+        frameworks = frameworks,
         pyc_files_by_build_tag = pyc_files_by_build_tag,
         extra_pythonpath = extra_pythonpath,
         required_piplibs = required_piplibs,

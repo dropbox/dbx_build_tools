@@ -173,6 +173,7 @@ def collect_transitive_srcs_and_libs(
     versioned_deps_direct = []
     versioned_deps_trans = []
     dynamic_libraries_trans = []
+    frameworks_trans = []
 
     if not python2_compatible and not python3_compatible:
         fail("Neither compatible with Python 2 or Python 3.")
@@ -217,6 +218,7 @@ def collect_transitive_srcs_and_libs(
                     pyc_files_by_build_tag_trans[abi.build_tag].append(files_by_build_tag[abi.build_tag])
 
             dynamic_libraries_trans.append(x.dynamic_libraries)
+            frameworks_trans.append(x.frameworks)
 
     pyc_files_by_build_tag = {
         abi.build_tag: depset(transitive = pyc_files_by_build_tag_trans[abi.build_tag])
@@ -235,8 +237,9 @@ def collect_transitive_srcs_and_libs(
     }
 
     dylibs = depset(transitive = dynamic_libraries_trans)
+    frameworks = depset(transitive = frameworks_trans)
 
-    return pyc_files_by_build_tag, piplib_contents, extra_pythonpath, versioned_deps, dylibs
+    return pyc_files_by_build_tag, piplib_contents, extra_pythonpath, versioned_deps, dylibs, frameworks
 
 def _produce_versioned_deps_output(ctx, base_out_file, versioned_deps):
     content = ctx.actions.args()
@@ -384,6 +387,7 @@ def emit_py_binary(
             extra_pythonpath,
             versioned_deps,
             dynamic_libraries,
+            frameworks_trans,
         ) = collect_transitive_srcs_and_libs(
             ctx,
             deps = deps,
