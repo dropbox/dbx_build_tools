@@ -11,6 +11,12 @@ if MYPY:
     from typing import Any, List, Dict, Text, Optional
 
 
+def normalize_path(p):
+    # type: (str) -> str
+    """Convenience function to convert all path separators to forward slashes."""
+    return p.replace(os.path.sep, "/")
+
+
 def _exec_wrapper(code, namespace):
     exec(code, namespace)
 
@@ -26,7 +32,14 @@ def _glob_pattern(dirname, pattern, exclude_directories):
     )
 
     if len(chunks) == 1:  # non-recursive
-        return glob.glob(os.path.join(dirname, pattern)), []
+        return (
+            {
+                normalize_path(f)
+                for f in glob.glob(os.path.join(dirname, pattern))
+                if not exclude_directories or os.path.isfile(f)
+            },
+            set(),
+        )
 
     prefix, suffix = chunks
 
@@ -60,6 +73,12 @@ def _glob_pattern(dirname, pattern, exclude_directories):
             if "BUILD" in files and root != dirname:
                 sub_pkgs.add(root)
 
+    results = {
+        normalize_path(result)
+        for result in results
+        if not exclude_directories or os.path.isfile(result)
+    }
+    sub_pkgs = {normalize_path(pkg) for pkg in sub_pkgs}
     return results, sub_pkgs
 
 
@@ -67,6 +86,8 @@ def _glob_pattern(dirname, pattern, exclude_directories):
 def bazel_glob(dirname, include, exclude=None, exclude_directories=True):
     results = set()
     sub_pkgs = set()
+
+    dirname = normalize_path(dirname)
 
     for pattern in include:
         files, pkgs = _glob_pattern(dirname, pattern, exclude_directories)
@@ -199,7 +220,7 @@ class BuildParser(object):
             """An object that can pretend to be either a function or a struct.
             While most items in a BUILD file are rules, we can occasionally get
             structs (such as the `selects` struct in bazel-skylib).
-            
+
             Be aware that this may be exposed directly in `clauses`, such as
             cases when a named constant variable is used.
             """
