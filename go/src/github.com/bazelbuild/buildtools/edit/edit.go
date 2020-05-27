@@ -21,7 +21,6 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -135,12 +134,15 @@ func InterpretLabelForWorkspaceLocation(root string, target string) (buildFile s
 		// TODO(rodrigoq): report error for other repos
 	}
 
+	defaultBuildFileName := "BUILD"
 	if strings.HasPrefix(target, "//") {
-		buildFile = filepath.Join(rootDir, pkg, "BUILD")
-		if !isFile(buildFile) && isFile(buildFile+".bazel") {
-			// try it with the .bazel extension
-			buildFile += ".bazel"
+		for _, buildFileName := range BuildFileNames {
+			buildFile = filepath.Join(rootDir, pkg, buildFileName)
+			if isFile(buildFile) {
+				return
+			}
 		}
+		buildFile = filepath.Join(rootDir, pkg, defaultBuildFileName)
 		return
 	}
 	if isFile(pkg) {
@@ -149,15 +151,19 @@ func InterpretLabelForWorkspaceLocation(root string, target string) (buildFile s
 		pkg = filepath.Join(relativePath, filepath.Dir(pkg))
 		return
 	}
-	if pkg != "" {
-		buildFile = filepath.Join(pkg, "/BUILD")
-	} else {
-		buildFile = "BUILD"
+
+	found := false
+	for _, buildFileName := range BuildFileNames {
+		buildFile = filepath.Join(pkg, buildFileName)
+		if isFile(buildFile) {
+			found = true
+			break
+		}
 	}
-	if !isFile(buildFile) && isFile(buildFile+".bazel") {
-		// try it with the .bazel extension
-		buildFile += ".bazel"
+	if !found {
+		buildFile = filepath.Join(pkg, defaultBuildFileName)
 	}
+
 	pkg = filepath.Join(relativePath, pkg)
 	return
 }
@@ -1026,12 +1032,7 @@ func AppendToLoad(load *build.LoadStmt, from, to []string) bool {
 	}
 
 	// Append the remaining loads to the load statement.
-	sortedSymbols := []string{}
 	for s := range symbolsToLoad {
-		sortedSymbols = append(sortedSymbols, s)
-	}
-	sort.Strings(sortedSymbols)
-	for _, s := range sortedSymbols {
 		load.From = append(load.From, &build.Ident{Name: symbolsToLoad[s]})
 		load.To = append(load.To, &build.Ident{Name: s})
 	}
@@ -1109,4 +1110,49 @@ func InsertLoad(stmts []build.Expr, location string, from, to []string) []build.
 		all = append(all, load)
 	}
 	return all
+}
+
+// ReplaceLoad removes load statements for passed to-symbols and replaces them with a new
+// load at the top of the list of statements. The new load statement is constructed using
+// a string location and two slices of from- and to-symbols. If stmts already contains a
+// load for the location in arguments, appends the symbols to load to it.
+// The function panics if the slices aren't of the same lentgh.
+func ReplaceLoad(stmts []build.Expr, location string, from, to []string) []build.Expr {
+	if len(from) != len(to) {
+		panic(fmt.Errorf("length mismatch: %v (from) and %v (to)", len(from), len(to)))
+	}
+
+	toSymbols := make(map[string]bool, len(to))
+	for _, name := range to {
+		toSymbols[name] = true
+	}
+
+	// 1. Remove loads that will be replaced.
+	var all []build.Expr
+	for _, stmt := range stmts {
+		load, ok := stmt.(*build.LoadStmt)
+		if !ok {
+			all = append(all, stmt)
+			continue
+		}
+
+		for i, to := range load.To {
+			if toSymbols[to.Name] {
+				if i < len(load.From)-1 {
+					load.From = append(load.From[:i], load.From[i+1:]...)
+					load.To = append(load.To[:i], load.To[i+1:]...)
+				} else {
+					load.From = load.From[:i]
+					load.To = load.To[:i]
+				}
+			}
+		}
+
+		if len(load.To) > 0 {
+			all = append(all, load)
+		}
+	}
+
+	// 2. Insert new loads.
+	return InsertLoad(all, location, from, to)
 }

@@ -6,6 +6,7 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "warn",
     srcs = [
+        "multifile.go",
         "types.go",
         "warn.go",
         "warn_bazel.go",
@@ -13,7 +14,9 @@ dbx_go_library(
         "warn_bazel_operation.go",
         "warn_control_flow.go",
         "warn_cosmetic.go",
+        "warn_deprecated.go",
         "warn_docstring.go",
+        "warn_macro.go",
         "warn_naming.go",
         "warn_operation.go",
         "warn_visibility.go",

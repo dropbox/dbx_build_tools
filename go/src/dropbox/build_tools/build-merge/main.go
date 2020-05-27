@@ -568,9 +568,8 @@ func main() {
 			os.Exit(1)
 		}
 
-		warn.FixWarnings(output, []string{"load"}, false) // Remove unused loads.
-		var info build.RewriteInfo
-		build.Rewrite(output, &info)
+		warn.FixWarnings(output, []string{"load"}, false, nil) // Remove unused loads.
+		build.Rewrite(output)
 		data := build.Format(output)
 
 		err = ioutil.WriteFile(outputFile, data, 0644)
