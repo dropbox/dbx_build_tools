@@ -112,7 +112,8 @@ def copy_manifest(manifest_path, out_dir):
                 )
             args.append((short_dest, src, out_dir, contents_path))
 
-    with multiprocessing.Pool(initializer=_init_worker) as wpool:
+    # This only works on Python 3.
+    with multiprocessing.Pool(initializer=_init_worker) as wpool:  # type: ignore[attr-defined]
         wpool.map_async(_copy_manifest_wrapper, args, chunksize=1).get(3600)
 
     shutil.rmtree(contents_path)
