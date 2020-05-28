@@ -8,7 +8,6 @@ import os
 import pipes
 import subprocess
 import sys
-import urllib.request
 
 from build_tools import bazel_utils
 from build_tools.bzl_lib import exec_wrapper, metrics
@@ -117,21 +116,6 @@ def _get_itest_target_body(bazel_path, target, use_implicit_output):
     # we can safely normalize the target name
     target = bazel_utils.BazelTarget(target).label
     return ITestTarget(name=target, has_services=True)
-
-
-def _record_instance_type():
-    # Heuristic to avoid trying to look up instance type from anywhere besides an EC2 instance.
-    if not os.path.exists("/var/lib/cloud"):
-        return
-    special_aws_url = "http://169.254.169.254/latest/meta-data/instance-type"
-    try:
-        # AWS's utility route typically responds in under 10ms, but set timeout just in case.
-        instance_type = (
-            urllib.request.urlopen(special_aws_url, timeout=0.5).read().decode("utf-8")
-        )
-    except Exception:
-        instance_type = "unknown"
-    metrics.set_extra_attributes("instance_type", instance_type)
 
 
 def _get_itest_target(bazel_path, target, use_implicit_output=False):
@@ -422,7 +406,6 @@ def _guess_mem_limit_kb():
 
 def cmd_itest_run(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
-    _record_instance_type()
     _build_target(args, bazel_args, mode_args, args.target)
     itest_target = _get_itest_target(
         args.bazel_path, args.target, use_implicit_output=True
@@ -666,7 +649,6 @@ def _should_remove_container_dir(args, container_dirpath):
 
 def cmd_itest_clean(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
-    _record_instance_type()
     itest_target = _get_itest_target(args.bazel_path, args.target)
     container_name = get_container_name_for_target(itest_target.name)
     containers = _get_all_containers(args.docker_path)
@@ -741,7 +723,6 @@ def cmd_itest_clean_all(args, bazel_args, mode_args):
 
 def cmd_itest_exec(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
-    _record_instance_type()
     itest_target = _get_itest_target(args.bazel_path, args.target)
     container_name = get_container_name_for_target(itest_target.name)
     _verify_args(args, itest_target, container_should_be_running=True)
@@ -777,7 +758,6 @@ def cmd_itest_reload(args, bazel_args, mode_args):
 
 def _cmd_itest_reload(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
-    _record_instance_type()
     _build_target(args, bazel_args, mode_args, args.target)
     itest_target = _get_itest_target(
         args.bazel_path, args.target, use_implicit_output=True
@@ -861,7 +841,6 @@ fi
 
 def cmd_itest_stop(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
-    _record_instance_type()
     itest_target = _get_itest_target(args.bazel_path, args.target)
     container_name = get_container_name_for_target(itest_target.name)
     _verify_args(args, itest_target, container_should_be_running=True)
