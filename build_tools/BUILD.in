@@ -1,6 +1,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//build_tools/bazel:config.bzl", "dbx_string_value")
+load("//build_tools/bazel:pkg.bzl", "dbx_pkg_sqfs")
 load("//build_tools/sh:sh.bzl", "dbx_sh_binary")
 load("//build_tools/py:py.bzl", "dbx_py_dbx_test")
 
@@ -186,6 +187,15 @@ dbx_py_binary(
     ],
     main = "bzl-gen.py",
     python2_compatible = False,
+)
+
+dbx_pkg_sqfs(
+    name = "bzl.sqfs",
+    data = [
+        ":bzl",
+        ":bzl-gen",
+    ],
+    release_tests = ["//build_tools/bzl_lib/..."],
 )
 
 cc_binary(

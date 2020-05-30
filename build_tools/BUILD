@@ -4,6 +4,7 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//build_tools/bazel:config.bzl", "dbx_string_value")
+load("//build_tools/bazel:pkg.bzl", "dbx_pkg_sqfs")
 load("//build_tools/py:py.bzl", "dbx_py_binary", "dbx_py_dbx_test", "dbx_py_library", "dbx_py_pytest_test")
 load("//build_tools/sh:sh.bzl", "dbx_sh_binary")
 
@@ -251,6 +252,15 @@ dbx_sh_binary(
         "buildifier.json",
         "//go/src/github.com/bazelbuild/buildtools/buildifier",
     ],
+)
+
+dbx_pkg_sqfs(
+    name = "bzl.sqfs",
+    data = [
+        ":bzl",
+        ":bzl-gen",
+    ],
+    release_tests = ["//build_tools/bzl_lib/..."],
 )
 
 cc_binary(
