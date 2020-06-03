@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import functools
 import os
 
 from collections import defaultdict
@@ -130,17 +131,26 @@ def regenerate_build_files(
 
     generated_files = defaultdict(list)  # type: ignore[var-annotated]
 
-    generator_instances = [
-        generator(
-            workspace_dir,
-            generated_files,
-            verbose,
-            skip_deps_generation,
-            dry_run,
-            use_magic_mirror,
+    generator_instances = []
+    for generator in generators:
+        # Most of the time `generator` is a class. Sometimes it's a functools.partial, so handle that too.
+        generator_name = (
+            generator.func.__name__
+            if isinstance(generator, functools.partial)
+            else generator.__name__
         )
-        for generator in generators
-    ]
+        with metrics.Timer("bzl_gen_{}_init_ms".format(generator_name)) as init_timer:
+            generator_instances.append(
+                generator(
+                    workspace_dir,
+                    generated_files,
+                    verbose,
+                    skip_deps_generation,
+                    dry_run,
+                    use_magic_mirror,
+                )
+            )
+        metrics.log_cumulative_rate(init_timer.name, init_timer.get_interval_ms())
 
     # In order to ensure we don't miss generating specific target types,
     # recursively expands the generated set until it converges.
@@ -169,7 +179,10 @@ def regenerate_build_files(
         else:
             break
 
-    merge_generated_build_files(generated_files)
+    with metrics.Timer("bzl_gen_merge_build_files_ms") as merge_timer:
+        merge_generated_build_files(generated_files)
+    metrics.log_cumulative_rate(merge_timer.name, merge_timer.get_interval_ms())
+
     updated_pkgs.update(generated_files.keys())
     return updated_pkgs
 

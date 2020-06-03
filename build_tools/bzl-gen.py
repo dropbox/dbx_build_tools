@@ -68,5 +68,6 @@ def main():
 
 
 if __name__ == "__main__":
+    metrics.set_mode("bzl-gen")
     with metrics.main_metrics_scope():
         main()
