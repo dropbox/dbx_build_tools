@@ -35,7 +35,7 @@ load("@dbx_build_tools//build_tools/py:cfg.bzl", "ALL_ABIS")
 
 ALL_PY3_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS if abi.major_python_version == 3]
 
-MypyProvider = provider(fields = [
+_mypy_provider_fields = [
     "trans_srcs",
     "trans_roots",
     "trans_outs",
@@ -45,18 +45,22 @@ MypyProvider = provider(fields = [
     "trans_group",
     "trans_ext_modules",
     "compilation_context",
-])
+]
 
-_null_result = MypyProvider(
-    trans_outs = depset(),
-    trans_srcs = depset(),
-    trans_roots = depset(),
-    trans_cache_map = depset(),
-    trans_junits = depset(),
-    trans_group = depset(),
-    trans_ext_modules = depset(),
-    compilation_context = None,
-)
+MypyProvider = provider(fields = _mypy_provider_fields)
+MypycProvider = provider(fields = _mypy_provider_fields)
+
+def _null_result(mypy_provider):
+    return mypy_provider(
+        trans_outs = depset(),
+        trans_srcs = depset(),
+        trans_roots = depset(),
+        trans_cache_map = depset(),
+        trans_junits = depset(),
+        trans_group = depset(),
+        trans_ext_modules = depset(),
+        compilation_context = None,
+    )
 
 def _get_stub_roots(stub_srcs):
     """
@@ -80,48 +84,24 @@ def _get_stub_roots(stub_srcs):
                 break
     return roots
 
-def _get_trans_roots(target, srcs, stub_srcs, deps, ctx):
+def _get_trans_roots(target, srcs, stub_srcs, deps, mypy_provider, ctx):
     direct = [src.root.path for src in srcs]
     if not target:
         direct += _get_stub_roots(stub_srcs)
         if str(ctx.label).startswith("//mypy-stubs:mypy-stubs"):
             direct += ["mypy-stubs"]
     transitive = [
-        dep[MypyProvider].trans_roots
+        dep[mypy_provider].trans_roots
         for dep in deps
     ]
     if target:
         transitive.append(target.extra_pythonpath)
     return depset(direct = direct, transitive = transitive)
 
-def _get_trans_outs(outs, deps):
+def _get_trans_field(outs, deps, field, mypy_provider):
     return depset(
         direct = outs,
-        transitive = [dep[MypyProvider].trans_outs for dep in deps],
-    )
-
-def _get_trans_srcs(srcs, deps):
-    return depset(
-        direct = srcs,
-        transitive = [dep[MypyProvider].trans_srcs for dep in deps],
-    )
-
-def _get_trans_cache_map(cache_map, deps):
-    return depset(
-        direct = cache_map,
-        transitive = [dep[MypyProvider].trans_cache_map for dep in deps],
-    )
-
-def _get_trans_group(group, deps):
-    return depset(
-        direct = group,
-        transitive = [dep[MypyProvider].trans_group for dep in deps],
-    )
-
-def _get_trans_ext_modules(ext_modules, deps):
-    return depset(
-        direct = ext_modules,
-        transitive = [dep[MypyProvider].trans_ext_modules for dep in deps],
+        transitive = [getattr(dep[mypy_provider], "trans_" + field) for dep in deps],
     )
 
 def _format_group(group):
@@ -130,7 +110,7 @@ def _format_group(group):
 
 # Rules into which we descend.  Other rules are ignored.  Edit to taste.
 _supported_rules = [
-    "dbx_mypy_bootstrap",
+    "_dbx_mypy_bootstrap",
     "dbx_py_library",
     "dbx_py_binary",
     "dbx_py_compiled_binary",
@@ -138,7 +118,7 @@ _supported_rules = [
     "services_internal_test",
 ]
 
-def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, use_mypyc):
+def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, use_mypyc, compile_target = False):
     """
     Code shared between aspect and bootstrap rule.
 
@@ -147,13 +127,16 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
     deps, srcs, stub_srcs: rule attributes
     python_version: '2.7' or '3.8'
     """
-    if python_version == "2.7":
-        use_mypyc = False
+    mypy_provider = MypycProvider if use_mypyc else MypyProvider
+
+    if python_version == "2.7" or not use_mypyc:
+        compile_target = False
 
     pyver_dash = python_version.replace(".", "-")
     pyver_under = python_version.replace(".", "_")
 
     # Except for the bootstrap rule, add typeshed and mypy-stubs to the dependencies.
+    is_typeshed = False
     if target:
         typeshed = getattr(ctx.attr, "_typeshed_" + pyver_under)
         mypy_stubs = getattr(ctx.attr, "_mypy_stubs_" + pyver_under)
@@ -161,32 +144,32 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
     elif str(ctx.label).startswith("//mypy-stubs:mypy-stubs"):
         # Two-stage bootstrap, mypy-stubs depend on typeshed, but not vice versa.
         deps = deps + [getattr(ctx.attr, "_typeshed_" + pyver_under)]
+    else:
+        is_typeshed = True
 
-    trans_roots = _get_trans_roots(target, srcs, stub_srcs, deps, ctx)
+    trans_roots = _get_trans_roots(target, srcs, stub_srcs, deps, mypy_provider, ctx)
 
-    trans_caches = _get_trans_outs([], deps)
+    trans_caches = _get_trans_field([], deps, "outs", mypy_provider)
 
     # Merge srcs and stub_srcs -- when foo.py and foo.pyi are both present,
     # only keep the latter.
     stub_paths = {stub.path: None for stub in stub_srcs}  # Used as a set
     srcs = [src for src in srcs if src.path + "i" not in stub_paths] + stub_srcs
 
-    trans_srcs = _get_trans_srcs(srcs, deps)
+    trans_srcs = _get_trans_field(srcs, deps, "srcs", mypy_provider)
     if not trans_srcs:
-        return [_null_result]
+        return [_null_result(mypy_provider)]
 
     outs = []
-    junit_xml = "%s-%s-junit.xml" % (ctx.label.name.replace("/", "-"), pyver_dash)
-    junit_xml_file = ctx.actions.declare_file(junit_xml)
     cache_map = []  # Items for cache_map file.
 
     ext_modules = []
     compilation_contexts = [
-        dep[MypyProvider].compilation_context
+        dep[mypy_provider].compilation_context
         for dep in deps
-        if dep[MypyProvider].compilation_context
+        if dep[mypy_provider].compilation_context
     ]
-    if use_mypyc:
+    if compile_target:
         # If we are using mypyc, mypy will generate C source as part of its output.
         # Create a C extension module using that source.
         shim_template = ctx.attr._module_shim_template[DefaultInfo].files.to_list()[0]
@@ -218,6 +201,26 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         compilation_context = _merge_compilation_contexts(compilation_contexts)
         group = None
 
+    if use_mypyc and not compile_target and not is_typeshed:
+        # If we are in mypyc mode but aren't compiling this (and it isn't typeshed),
+        # just skip everything and return only the transitive dependencies.
+        return [
+            mypy_provider(
+                trans_srcs = _get_trans_field([], deps, "srcs", mypy_provider),
+                trans_roots = trans_roots,
+                trans_outs = _get_trans_field([], deps, "outs", mypy_provider),
+                trans_cache_map = _get_trans_field([], deps, "cache_map", mypy_provider),
+                trans_junits = _get_trans_field([], deps, "junits", mypy_provider),
+                trans_group = _get_trans_field([], deps, "group", mypy_provider),
+                trans_ext_modules = _get_trans_field([], deps, "ext_modules", mypy_provider),
+                compilation_context = compilation_context,
+            ),
+        ]
+
+    mypyc_part = "-mypyc" if use_mypyc else ""
+    junit_xml = "%s-%s%s-junit.xml" % (ctx.label.name.replace("/", "-"), pyver_dash, mypyc_part)
+    junit_xml_file = ctx.actions.declare_file(junit_xml)
+
     for src in srcs:
         # Every test ends up with this file, so multiple tests in
         # a directory will create conflicting json files
@@ -226,9 +229,10 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         cache_map.append(src)
         path = src.path
         path_base = path[:path.rindex(".")]  # Strip .py or .pyi suffix
-        kinds = ["meta", "data"] + (["ir"] if use_mypyc else [])
+        kinds = ["meta", "data"] + (["ir"] if compile_target else [])
         for kind in kinds:
-            path = "%s.%s.%s.json" % (path_base, python_version, kind)
+            mypyc_part = ".mypyc" if use_mypyc else ""
+            path = "%s.%s%s.%s.json" % (path_base, python_version, mypyc_part, kind)
             file = ctx.actions.declare_file(path)
 
             outs.append(file)
@@ -236,7 +240,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
                 cache_map.append(file)
 
         # If we are using mypyc, generate a shim extension module for each module
-        if use_mypyc:
+        if compile_target:
             full_modname = path_base.replace("/", ".")
             modname = full_modname.split(".")[-1]
             file = ctx.actions.declare_file(modname + ".c")
@@ -253,9 +257,9 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
 
             ext_modules.append(_build_mypyc_ext_module(ctx, modname, file)[0])
 
-    trans_outs = _get_trans_outs(outs, deps)
-    trans_cache_map = _get_trans_cache_map(cache_map, deps)
-    trans_group = _get_trans_group([group] if group else [], deps)
+    trans_outs = _get_trans_field(outs, deps, "outs", mypy_provider)
+    trans_cache_map = _get_trans_field(cache_map, deps, "cache_map", mypy_provider)
+    trans_group = _get_trans_field([group] if group else [], deps, "group", mypy_provider)
 
     inputs = depset(transitive = [
         trans_srcs,
@@ -269,10 +273,15 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
     args.use_param_file("@%s", use_always = True)
     args.set_param_file_format("multiline")
 
-    if use_mypyc:
+    if compile_target:
         args.add("--mypyc")
         args.add_joined(trans_group, join_with = ";", map_each = _format_group)
         args.add(junit_xml_file.root.path)
+
+    if use_mypyc:
+        # In mypyc mode we skip everything that we don't depend on!!
+        args.add("--follow-imports=skip")
+        args.add("--ignore-missing-imports")
 
     args.add("--bazel")
     if python_version != "2.7":
@@ -291,23 +300,20 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         arguments = [args],
         inputs = inputs,
         outputs = outs + [junit_xml_file],
-        mnemonic = "mypy",
-        progress_message = "Type-checking %s" % ctx.label,
+        mnemonic = "mypyc" if use_mypyc else "mypy",
+        progress_message = "%s %s" % ("Compiling" if use_mypyc else "Type-checking", ctx.label),
         tools = [],
     )
 
     return [
-        MypyProvider(
+        mypy_provider(
             trans_srcs = trans_srcs,
             trans_roots = trans_roots,
             trans_outs = trans_outs,
             trans_cache_map = trans_cache_map,
-            trans_junits = depset(
-                direct = [junit_xml_file],
-                transitive = [dep[MypyProvider].trans_junits for dep in deps],
-            ),
+            trans_junits = _get_trans_field([junit_xml_file], deps, "junits", mypy_provider),
             trans_group = trans_group,
-            trans_ext_modules = _get_trans_ext_modules(ext_modules, deps),
+            trans_ext_modules = _get_trans_field(ext_modules, deps, "ext_modules", mypy_provider),
             compilation_context = compilation_context,
         ),
     ]
@@ -409,8 +415,11 @@ _dbx_mypy_common_attrs = {
 
 def _dbx_mypy_aspect_impl(target, ctx):
     rule = ctx.rule
+
+    mypy_provider = MypycProvider if ctx.attr._use_mypyc else MypyProvider
+
     if rule.kind not in _supported_rules:
-        return [_null_result]
+        return [_null_result(mypy_provider)]
     if not hasattr(rule.attr, "deps") and hasattr(rule.attr, "bin"):
         if rule.kind != "services_internal_test":
             fail("Expected rule kind services_internal_test, got %s" % rule.kind)
@@ -423,7 +432,7 @@ def _dbx_mypy_aspect_impl(target, ctx):
             [],
             [],
             ctx.attr.python_version,
-            False,
+            use_mypyc = False,
         )
     return _dbx_mypy_common_code(
         target,
@@ -432,15 +441,18 @@ def _dbx_mypy_aspect_impl(target, ctx):
         rule.files.srcs,
         rule.files.stub_srcs,
         ctx.attr.python_version,
-        use_mypyc = getattr(rule.attr, "compiled", False),
+        use_mypyc = ctx.attr._use_mypyc,
+        compile_target = getattr(rule.attr, "compiled", False),
     )
 
 _dbx_mypy_typeshed_attrs = {
     "_typeshed_2_7": attr.label(default = Label("//thirdparty/typeshed:typeshed-2.7")),
     "_typeshed_3_8": attr.label(default = Label("//thirdparty/typeshed:typeshed-3.8")),
 }
+
 _dbx_mypy_aspect_attrs = {
     "python_version": attr.string(values = ["2.7", "3.8"]),
+    "_use_mypyc": attr.bool(default = False),
     "_mypy_stubs_2_7": attr.label(default = Label("//mypy-stubs:mypy-stubs-2.7")),
     "_mypy_stubs_3_8": attr.label(default = Label("//mypy-stubs:mypy-stubs-3.8")),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
@@ -456,6 +468,17 @@ dbx_mypy_aspect = aspect(
     attrs = _dbx_mypy_aspect_attrs,
     fragments = ["cpp"],
     provides = [MypyProvider],
+)
+
+_dbx_mypyc_aspect_attrs = dict(_dbx_mypy_aspect_attrs)
+_dbx_mypyc_aspect_attrs["_use_mypyc"] = attr.bool(default = True)
+
+dbx_mypyc_aspect = aspect(
+    implementation = _dbx_mypy_aspect_impl,
+    attr_aspects = ["deps", "bin"],
+    attrs = _dbx_mypyc_aspect_attrs,
+    fragments = ["cpp"],
+    provides = [MypycProvider],
 )
 
 # Test rule used to trigger mypy via a test target.
@@ -539,7 +562,15 @@ def _dbx_mypy_bootstrap_impl(ctx):
         [],
         ctx.files.stub_srcs,
         ctx.attr.python_version,
-        False,
+        use_mypyc = False,
+    ) + _dbx_mypy_common_code(
+        None,
+        ctx,
+        [],
+        [],
+        ctx.files.stub_srcs,
+        ctx.attr.python_version,
+        use_mypyc = True,
     )
 
 _dbx_mypy_bootstrap_attrs = {
@@ -573,7 +604,7 @@ dbx_mypy_bootstrap_stubs = rule(
 _mypyc_attrs = {
     "deps": attr.label_list(
         providers = [[PyInfo], [DbxPyVersionCompatibility]],
-        aspects = [dbx_mypy_aspect],
+        aspects = [dbx_mypyc_aspect],
     ),
     "python_version": attr.string(default = "3.8"),
     "python2_compatible": attr.bool(default = True),
@@ -587,7 +618,7 @@ def _dbx_py_compiled_binary_impl(ctx):
         fail("Compiled binaries do not support Python 2")
 
     ext_modules = depset(
-        transitive = [dep[MypyProvider].trans_ext_modules for dep in ctx.attr.deps],
+        transitive = [dep[MypycProvider].trans_ext_modules for dep in ctx.attr.deps],
     )
     return dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = ext_modules)
 
