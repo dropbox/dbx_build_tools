@@ -150,9 +150,9 @@ def main(ap, self_target):
         bootstrap_ms = int(os.environ.get("BZL_BOOTSTRAP_MS", 0))
         metrics.create_and_register_timer("bzl_bootstrap_ms", interval_ms=bootstrap_ms)
     if rebuild_and_exec:
+        metrics.set_mode("_bzl_bootstrap")
         # If the tool requires an update, build it and re-exec.  Do this before we parse args in
         # case we have defined a newer mode.
-        metrics.set_mode("_bzl_bootstrap")
         targets = []
         # Pass in targets that we are going to build. On average this minimizes target flapping
         # within bazel and saves time on small incremental updates without sacrificing correct
