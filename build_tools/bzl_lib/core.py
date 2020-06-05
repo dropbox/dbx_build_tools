@@ -105,24 +105,17 @@ def run_build_tool(bazel_path, target, targets, squelch_output=False):
     if not workspace:
         return
     try:
-        if not os.environ.get("BZL_SKIP_BOOTSTRAP"):
-            # If we can bootstrap a new version, do it once.
-            with metrics.create_and_register_timer("bzl_bootstrap_ms") as t:
-                bzl_script = build_tool(
-                    bazel_path, target, targets, squelch_output=squelch_output
-                )
-            bzl_script_path = os.path.join(workspace, bzl_script)
-            argv = [bzl_script_path] + list(sys.argv[1:])
-            os.environ["BZL_SKIP_BOOTSTRAP"] = "1"
-            os.environ["BZL_BOOTSTRAP_MS"] = str(t.get_interval_ms())
-            os.environ["BZL_RUNNING_REBUILT_BZL"] = "1"
-            exec_wrapper.execv(bzl_script_path, argv)
-        else:
-            # Propagate stats forward so we can sort of track the full metrics of itest.
-            bootstrap_ms = int(os.environ.get("BZL_BOOTSTRAP_MS", 0))
-            metrics.create_and_register_timer(
-                "bzl_bootstrap_ms", interval_ms=bootstrap_ms
+        # If we can bootstrap a new version, do it once.
+        with metrics.create_and_register_timer("bzl_bootstrap_ms") as t:
+            bzl_script = build_tool(
+                bazel_path, target, targets, squelch_output=squelch_output
             )
+        bzl_script_path = os.path.join(workspace, bzl_script)
+        argv = [bzl_script_path] + list(sys.argv[1:])
+        os.environ["BZL_SKIP_BOOTSTRAP"] = "1"
+        os.environ["BZL_BOOTSTRAP_MS"] = str(t.get_interval_ms())
+        os.environ["BZL_RUNNING_REBUILT_BZL"] = "1"
+        exec_wrapper.execv(bzl_script_path, argv)
     except subprocess.CalledProcessError:
         print(
             "WARN: Failed to build %s, continuing without self-update." % target,
@@ -130,8 +123,6 @@ def run_build_tool(bazel_path, target, targets, squelch_output=False):
         )
         # If something goes wrong during rebuild, just run this version.
         pass
-
-
 def main(ap, self_target):
     try:
         workspace = bazel_utils.find_workspace()
@@ -146,13 +137,18 @@ def main(ap, self_target):
         with open("/dev/null", "w") as devnull:
             sys.stdout, sys.stderr = devnull, devnull
             test_args, unknown_args = ap.parse_known_args()
-        # No build-in mode requires bzl to be up-to-date.
+        # No built-in Bazel mode requires bzl to be up-to-date.
         rebuild_and_exec = test_args.mode not in bazel_modes
     except (SystemExit, AttributeError):
         rebuild_and_exec = True
     finally:
         sys.stdout, sys.stderr = stdout, stderr
 
+    if os.environ.get("BZL_SKIP_BOOTSTRAP"):
+        rebuild_and_exec = False
+        # Propagate stats forward so we can sort of track the full metrics of itest.
+        bootstrap_ms = int(os.environ.get("BZL_BOOTSTRAP_MS", 0))
+        metrics.create_and_register_timer("bzl_bootstrap_ms", interval_ms=bootstrap_ms)
     if rebuild_and_exec:
         # If the tool requires an update, build it and re-exec.  Do this before we parse args in
         # case we have defined a newer mode.

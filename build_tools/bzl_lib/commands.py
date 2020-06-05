@@ -43,11 +43,16 @@ def register_cmd_bazel(sp):
         sap.bzl_allow_unknown_args = True
 
 
+def _get_bzl_gen_path(bazel_path):
+    # type: (str) -> str
+    workspace_dir = bazel_utils.find_workspace()
+    bzl_gen = bazel_utils.build_tool(bazel_path, "@dbx_build_tools//build_tools:bzl-gen")
+    return os.path.join(workspace_dir, bzl_gen)
+
+
 def cmd_gen_as_tool(args, bazel_args, mode_args):
     # type: (argparse.Namespace, List[str], List[str]) -> None
-    workspace_dir = bazel_utils.find_workspace()
-    bzl_gen = bazel_utils.build_tool(args.bazel_path, "@dbx_build_tools//build_tools:bzl-gen")
-    bzl_gen_path = os.path.join(workspace_dir, bzl_gen)
+    bzl_gen_path = _get_bzl_gen_path(args.bazel_path)
     argv = [os.path.basename(bzl_gen_path)] + mode_args
     exec_wrapper.execv(bzl_gen_path, argv)
 
