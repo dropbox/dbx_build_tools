@@ -14,19 +14,21 @@ load(
     "cpython_27",
 )
 
-DbxServiceExtensionPyBinaryInfo = provider(fields = [
+DbxServicePyBinaryExtension = provider(fields = [
     "service",
     "main",
     "lib",
     "python",
-    "args",
 ])
 
-DbxServiceExtensionDependencyInfo = provider(fields = [
+DbxServiceDefinitionExtension = provider(fields = [
     "service",  # service this extension is targeting
     "deps",  # additional dependency to bring in to this service
+    "version_file",  # additional version_file for this service
     "extensions",  # extensions provided transitively by the deps
     "services",  # mapping of all service definitions in this deps
+    "health_checks",  # extra health checks for this service
+    "args",  # extra arguments for this service
 ])
 
 execute_runfiles_cmd_tmpl = '''
@@ -93,16 +95,18 @@ def _apply_service_extensions(ctx, services, extensions):
     service_exe = dict()
     service_exe_args = dict()
     service_deps = dict()
+    service_health_checks = dict()
     for service in services:
         service_version_files[service.service_name] = [service.version_file]
         service_exe[service.service_name] = service.launch_cmd.exe
-        service_exe_args[service.service_name] = service.launch_cmd.args
+        service_exe_args[service.service_name] = list(service.launch_cmd.args)
         service_deps[service.service_name] = list(service.dependencies)
+        service_health_checks[service.service_name] = list(service.health_checks)
 
     py_binary_info = dict()
     for ext in extensions.to_list():
-        if DbxServiceExtensionPyBinaryInfo in ext:
-            info = ext[DbxServiceExtensionPyBinaryInfo]
+        if DbxServicePyBinaryExtension in ext:
+            info = ext[DbxServicePyBinaryExtension]
             if info.service not in service_exe:
                 fail("Extension target service {} which is not in the dependency tree".format(info.service))
             if info.service not in py_binary_info:
@@ -119,21 +123,21 @@ def _apply_service_extensions(ctx, services, extensions):
                     python2_compatible = python2_compatible,
                     python3_compatible = python3_compatible,
                     python = info.python,
-                    args = [],
                 )
-                py_binary_info[info.service].args.extend(info.args)
             else:
                 if info.main != py_binary_info[info.service].main:
                     fail("Multiple main py binaries provided for %s", info.service)
                 if info.python != py_binary_info[info.service].python:
                     fail("Multiple python attrs provided for %s", info.service)
                 py_binary_info[info.service].libs.append(info.lib)
-                py_binary_info[info.service].args.extend(info.args)
-        if DbxServiceExtensionDependencyInfo in ext:
-            info = ext[DbxServiceExtensionDependencyInfo]
+        if DbxServiceDefinitionExtension in ext:
+            info = ext[DbxServiceDefinitionExtension]
             if info.service not in service_deps:
                 fail("Extension target service {} which is not in the dependency tree".format(info.service))
             service_deps[info.service] += info.deps
+            service_exe_args[info.service].extend(info.args)
+            service_version_files[info.service].append(info.version_file)
+            service_health_checks[info.service].extend(info.health_checks)
 
     all_runfiles = ctx.runfiles()
     hidden_output_transitive = []
@@ -158,7 +162,6 @@ def _apply_service_extensions(ctx, services, extensions):
             python3_compatible = info.python3_compatible,
         )
         service_exe[service] = binary_out_file.short_path
-        service_exe_args[service] = service_exe_args[service] + info.args
 
         version_file_deps = [binary_out_file]
         version_file = ctx.actions.declare_file(
@@ -185,7 +188,7 @@ def _apply_service_extensions(ctx, services, extensions):
                 env_vars = service.launch_cmd.env_vars,
             ),
             dependencies = depset(direct = service_deps[service.service_name]).to_list(),
-            health_checks = service.health_checks,
+            health_checks = service_health_checks[service.service_name],
             verbose = service.verbose,
             owner = service.owner,
             version_files = service_version_files[service.service_name],
@@ -279,8 +282,8 @@ def service_impl(ctx):
     # more accurate (so that, e.g., the `services` attribute actually contains
     # all service definitions that may be used in this tree)
     for ext in ctx.attr.extensions:
-        if DbxServiceExtensionDependencyInfo in ext:
-            info = ext[DbxServiceExtensionDependencyInfo]
+        if DbxServiceDefinitionExtension in ext:
+            info = ext[DbxServiceDefinitionExtension]
             transitive_extensions.append(info.extensions)
             services.update(info.services)
 
@@ -399,8 +402,8 @@ def service_group_impl(ctx):
     # more accurate (so that, e.g., the `services` attribute actually contains
     # all service definitions that may be used in this tree)
     for ext in ctx.attr.extensions:
-        if DbxServiceExtensionDependencyInfo in ext:
-            info = ext[DbxServiceExtensionDependencyInfo]
+        if DbxServiceDefinitionExtension in ext:
+            info = ext[DbxServiceDefinitionExtension]
             transitive_extensions.append(info.extensions)
             services.update(info.services)
 
@@ -521,35 +524,14 @@ def service_extension_py_binary_impl(ctx):
     main = ctx.files.main[0]
     runfiles = ctx.runfiles(collect_default = True)
     runfiles = runfiles.merge(ctx.attr.lib[DefaultInfo].default_runfiles)
-    dependents = []
-    transitive_extensions = []
-    services = dict()
-
-    for dep in ctx.attr.deps:
-        for root_svc in dep.root_services:
-            if root_svc == ctx.attr.service.service_name:
-                # this can happen when an extension of one service depends on
-                # another extension of the same service, in which case what is
-                # important is we combine the extensions below
-                continue
-            dependents.append(root_svc)
-        transitive_extensions.append(dep.extensions)
-        services.update(dep.services)
 
     return struct(
         providers = [
-            DbxServiceExtensionPyBinaryInfo(
+            DbxServicePyBinaryExtension(
                 main = main,
                 lib = ctx.attr.lib,
                 service = ctx.attr.service.service_name,
                 python = ctx.attr.python,
-                args = ctx.attr.args,
-            ),
-            DbxServiceExtensionDependencyInfo(
-                service = ctx.attr.service.service_name,
-                deps = dependents,
-                extensions = depset(transitive = transitive_extensions),
-                services = services,
             ),
             DefaultInfo(
                 runfiles = runfiles,
@@ -565,16 +547,95 @@ service_extension_py_binary_internal = rule(
             mandatory = True,
             providers = [[PyInfo], [DbxPyVersionCompatibility]],
         ),
-        "args": attr.string_list(),
-        "deps": attr.label_list(providers = ["services", "root_services", "extensions"]),
         "service": attr.label(providers = ["service_name"], mandatory = True),
         "python": attr.string(default = cpython_27.build_tag, values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys()),
     },
 )
 
-def dbx_service_extension_py_binary(**kwargs):
+def dbx_service_py_binary_extension(**kwargs):
     service_extension_py_binary_internal(
         testonly = True,
+        **kwargs
+    )
+
+def service_extension_definition_impl(ctx):
+    version_file_deps_trans = _get_version_files_transitive_dep_from_data(ctx.attr.data)
+    version_file_deps = ctx.files.data
+
+    version_file = ctx.actions.declare_file(ctx.label.name + ".version")
+    _create_version_file(
+        ctx,
+        depset(direct = version_file_deps, transitive = version_file_deps_trans),
+        output = version_file,
+    )
+
+    runfiles = ctx.runfiles(
+        files = [version_file],
+        collect_default = True,
+    )
+    for data in ctx.attr.data:
+        runfiles = runfiles.merge(data[DefaultInfo].default_runfiles)
+
+    dependents = []
+    transitive_extensions = []
+    services = dict()
+
+    for dep in ctx.attr.deps:
+        for root_svc in dep.root_services:
+            if root_svc == ctx.attr.service.service_name:
+                # this can happen when an extension of one service depends on
+                # another extension of the same service, in which case what is
+                # important is we combine the extensions below
+                continue
+            dependents.append(root_svc)
+        transitive_extensions.append(dep.extensions)
+        services.update(dep.services)
+
+    health_checks = []
+
+    for verify in ctx.attr.verify_cmds:
+        health_checks += [struct(type = HEALTH_CHECK_TYPE_CMD, cmd = struct(cmd = verify))]
+
+    if ctx.attr.http_health_check:
+        health_checks += [struct(
+            type = HEALTH_CHECK_TYPE_HTTP,
+            http_health_check = struct(url = ctx.attr.http_health_check),
+        )]
+
+    return struct(
+        providers = [
+            DbxServiceDefinitionExtension(
+                service = ctx.attr.service.service_name,
+                deps = dependents,
+                extensions = depset(transitive = transitive_extensions),
+                services = services,
+                args = ctx.attr.args,
+                version_file = "//" + version_file.short_path,
+                health_checks = health_checks,
+            ),
+            DefaultInfo(
+                runfiles = runfiles,
+            ),
+        ],
+    )
+
+service_extension_definition_internal = rule(
+    implementation = service_extension_definition_impl,
+    attrs = {
+        "create_version_file": attr.bool(mandatory = True),
+        "verify_cmds": attr.string_list(),
+        "http_health_check": attr.string(),
+        "args": attr.string_list(),
+        "deps": attr.label_list(providers = ["services", "root_services", "extensions"]),
+        "data": attr.label_list(allow_files = True),
+        "service": attr.label(providers = ["service_name"], mandatory = True),
+    },
+)
+
+def dbx_service_definition_extension(**kwargs):
+    service_extension_definition_internal(
+        testonly = True,
+        create_version_file = select(_svc_create_version_file_choices),
         **kwargs
     )
 
