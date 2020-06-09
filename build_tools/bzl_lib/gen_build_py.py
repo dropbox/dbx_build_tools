@@ -642,9 +642,10 @@ class PythonPathMapping(AbstractPythonPath):
         if self.python_path and target_dir.startswith(self.python_path):
             trim_prefix = len(self.python_path) + 1
 
+        pkg_path = bazel_utils.normalize_relative_target_to_os_path(target_dir)
         self_modules = set()
         for src in srcs:
-            file_path = os.path.join(target_dir, src)
+            file_path = os.path.join(pkg_path, src)
             module_path = PythonPathMapping.convert_from_file_path_to_module(file_path)
             self_modules.add(module_path[trim_prefix:])
 
