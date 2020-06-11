@@ -144,7 +144,8 @@ def _apply_service_extensions(ctx, services, extensions):
 
     for service in py_binary_info:
         info = py_binary_info[service]
-        binary_out_file = ctx.actions.declare_file(ctx.label.name + "-service-extensions/py-binary/" + service.strip("/") + "_py_binary")
+        name_prefix = service.split("/")[-1]  # have a prefix that isn't just root service/test label so we can easily identify the process
+        binary_out_file = ctx.actions.declare_file(name_prefix + "-" + ctx.label.name + "-service-extensions/py-binary/" + service.strip("/") + "_py_binary")
 
         python = ctx.toolchains[BUILD_TAG_TO_TOOLCHAIN_MAP[info.python]].interpreter[DbxPyInterpreter]
         runfiles, _, hidden_output = emit_py_binary(
