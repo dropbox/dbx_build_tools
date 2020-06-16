@@ -95,6 +95,7 @@ dbx_py_binary(
         ":bazel_utils",
         "//build_tools/bzl_lib:gazel_lib",
         "//build_tools/bzl_lib:metrics",
+        "//pip/typing",
     ],
 )
 

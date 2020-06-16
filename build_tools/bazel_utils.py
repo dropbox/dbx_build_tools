@@ -66,7 +66,7 @@ class BazelRule(object):
 def expand_bazel_target_dirs(
     workspace, targets, normalize=True, require_build_file=True, cwd="."
 ):
-    # type: (Text, List[Any], bool, bool, Text) -> List[Any]
+    # type: (Text, Iterable[Any], bool, bool, Text) -> List[Any]
     """Expand the Bazel target syntax into a list of directories that
     represent Bazel targets. If normalize is 'False', replace '//' with
     the workspace.  If require_build_file is 'False', target directory without
@@ -85,7 +85,7 @@ def expand_bazel_target_dirs(
 def expand_bazel_targets(
     workspace, targets, normalize=True, require_build_file=True, cwd="."
 ):
-    # type: (Text, List[Any], bool, bool, Text) -> List[Any]
+    # type: (Text, Iterable[Any], bool, bool, Text) -> List[Any]
     matched = set()  # type: ignore[var-annotated]
     filtered = set()  # type: ignore[var-annotated]
     for target in targets:

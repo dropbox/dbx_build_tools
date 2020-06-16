@@ -2,10 +2,14 @@
 
 import functools
 
+from typing import Any, Callable, Optional, Sequence
+
 import build_tools.bzl_lib.gazel as gazel
 
+from build_tools.bzl_lib.generator import Generator
 
-def cmd_gen(args, bazel_args, mode_args, generators):
+
+def cmd_gen(args: Any, bazel_args, mode_args, generators) -> None:
     gazel.regenerate_build_files(
         args.targets,
         verbose=args.verbose,
@@ -17,7 +21,9 @@ def cmd_gen(args, bazel_args, mode_args, generators):
     )
 
 
-def register_cmd_gen(sp, generators, sap=None):
+def register_cmd_gen(
+    sp: Any, generators: Sequence[Callable[..., Generator]], sap: Optional[Any] = None
+) -> None:
     if not sap:
         sap = sp.add_parser(
             "gen", help="Generate a BUILD file or proto files for a list of targets."

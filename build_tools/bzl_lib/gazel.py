@@ -1,16 +1,14 @@
 # mypy: allow-untyped-defs, allow-untyped-globals
 
-from __future__ import print_function
-
-import functools
 import os
 
-from collections import defaultdict
+from typing import Callable, DefaultDict, Iterable, List, Sequence, Set
 
 import build_tools.bzl_lib.metrics as metrics
 
 from build_tools import bazel_utils
 from build_tools.bzl_lib import build_merge
+from build_tools.bzl_lib.generator import Generator
 from build_tools.bzl_lib.run import run_cmd
 
 from dropbox import runfiles
@@ -24,7 +22,7 @@ HEADER = (
 )
 
 
-class CopyGenerator(object):
+class CopyGenerator(Generator):
     """This creates empty BUILD.gen_empty files to ensure BUILD.in contents are
     copied into BUILD, even when it does not include any generated targets"""
 
@@ -44,7 +42,8 @@ class CopyGenerator(object):
 
         self.visited_dirs = set()
 
-    def regenerate(self, bazel_targets, cwd="."):
+    def regenerate(self, bazel_targets: Iterable[str], cwd: str = ".") -> None:
+
         targets = bazel_utils.expand_bazel_target_dirs(
             self.workspace_dir,
             [t for t in bazel_targets if not t.startswith("@")],
@@ -77,23 +76,21 @@ class CopyGenerator(object):
             self.generated_files[target_dir].append(out)
 
 
-options = None
-
-
 class GazelError(Exception):
     pass
 
 
 def regenerate_build_files(
-    bazel_targets,
-    generators,
-    verbose=False,
-    skip_deps_generation=False,
-    dry_run=False,
-    reverse_deps_generation=False,
-    use_magic_mirror=False,
-):
+    bazel_targets_l: Sequence[str],
+    generators: Sequence[Callable[..., Generator]],
+    verbose: bool = False,
+    skip_deps_generation: bool = False,
+    dry_run: bool = False,
+    reverse_deps_generation: bool = False,
+    use_magic_mirror: bool = False,
+) -> Set[str]:
     workspace_dir = bazel_utils.find_workspace()
+    bazel_targets = set(bazel_targets_l)
 
     if reverse_deps_generation:
         targets = bazel_utils.expand_bazel_target_dirs(
@@ -107,7 +104,6 @@ def regenerate_build_files(
         patterns = ['"%s"' % pkg for pkg in pkgs]
         patterns.extend(['"%s:' % pkg for pkg in pkgs])
 
-        bazel_targets = set(bazel_targets)
         for path, dirs, files in os.walk(workspace_dir):
             if "BUILD" not in files:
                 continue
@@ -129,19 +125,15 @@ def regenerate_build_files(
                     )
                 )
 
-    generated_files = defaultdict(list)  # type: ignore[var-annotated]
+    generated_files = DefaultDict[str, List[str]](list)
 
-    generator_instances = []
-    for generator in generators:
+    generator_instances: List[Generator] = []
+    for gen in generators:
         # Most of the time `generator` is a class. Sometimes it's a functools.partial, so handle that too.
-        generator_name = (
-            generator.func.__name__
-            if isinstance(generator, functools.partial)
-            else generator.__name__
-        )
+        generator_name = gen.__name__
         with metrics.Timer("bzl_gen_{}_init_ms".format(generator_name)) as init_timer:
             generator_instances.append(
-                generator(
+                gen(
                     workspace_dir,
                     generated_files,
                     verbose,
@@ -154,8 +146,8 @@ def regenerate_build_files(
 
     # In order to ensure we don't miss generating specific target types,
     # recursively expands the generated set until it converges.
-    prev_visited_dirs = set()  # type: ignore[var-annotated]
-    updated_pkgs = set()  # type: ignore[var-annotated]
+    prev_visited_dirs: Set[str] = set()
+    updated_pkgs: Set[str] = set()
 
     while bazel_targets:
         for generator in generator_instances:
@@ -172,10 +164,14 @@ def regenerate_build_files(
         if newly_visited_dirs:
             # continue processing
             prev_visited_dirs = visited_dirs
-            bazel_targets = [
-                bazel_utils.normalize_os_path_to_target(d.replace(workspace_dir, "/"))
-                for d in newly_visited_dirs
-            ]
+            bazel_targets = set(
+                [
+                    bazel_utils.normalize_os_path_to_target(
+                        d.replace(workspace_dir, "/")
+                    )
+                    for d in newly_visited_dirs
+                ]
+            )
         else:
             break
 

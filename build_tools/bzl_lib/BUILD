@@ -25,6 +25,7 @@ dbx_py_library(
         "gen_build_pip.py",
         "gen_build_py.py",
         "gen_commands.py",
+        "generator.py",
     ],
     data = [
         "//build_tools:buildfmt",

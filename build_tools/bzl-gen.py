@@ -5,7 +5,7 @@
 Setting the environment variable BZL_DEBUG=1 yields additional debug info.
 """
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, annotations, print_function
 
 import argparse
 import functools
@@ -13,16 +13,19 @@ import os
 import subprocess
 import sys
 
+from typing import Callable, List, Sequence
+
 from build_tools import bazel_utils
 from build_tools.bzl_lib import gazel, gen_build_go, gen_build_pip, gen_build_py, metrics
 from build_tools.bzl_lib.gen_commands import register_cmd_gen
-def get_generators():
-    generators = (
+from build_tools.bzl_lib.generator import Generator
+def get_generators() -> Sequence[Callable[..., Generator]]:
+    generators: List[Callable[..., Generator]] = [
         gen_build_go.GoBuildGenerator,
         gen_build_py.PyBuildGenerator,
         gen_build_pip.PipBuildGenerator,
         gazel.CopyGenerator,
-    )
+    ]
     return generators
 
 

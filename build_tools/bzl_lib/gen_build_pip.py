@@ -6,7 +6,7 @@ import os.path
 import subprocess
 import zipfile
 
-from typing import Any, Dict, List
+from typing import Any, Dict, Iterable, List
 
 import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
@@ -21,6 +21,7 @@ from build_tools.bzl_lib.cfg import (
     PY2_ABIS,
     PY3_ABIS,
 )
+from build_tools.bzl_lib.generator import Generator
 from build_tools.py import vinst
 
 BUILD_OUTPUT = "BUILD.gen_build_pip~"
@@ -58,7 +59,7 @@ def _get_build_interpreters(attr_map):
     return interpreters
 
 
-class BasePipBuildGenerator(object):
+class BasePipBuildGenerator(Generator):
     """Base class for generators on pip rules. Its regenerate function will parse
     the BUILD files for pip versions, and subclasses should implement process_pip_rules
     to gen based on those pip rules.
@@ -82,7 +83,7 @@ class BasePipBuildGenerator(object):
 
         self.visited_dirs = set()
 
-    def regenerate(self, bazel_targets, cwd="."):
+    def regenerate(self, bazel_targets: Iterable[str], cwd: str = ".") -> None:
         targets = bazel_utils.expand_bazel_target_dirs(
             self.workspace_dir,
             [t for t in bazel_targets if not t.startswith("@")],

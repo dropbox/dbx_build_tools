@@ -6,7 +6,7 @@ import glob
 import os
 import os.path
 
-from typing import Dict, List, Optional, Text
+from typing import Dict, Iterable, List, Optional, Set, Text
 
 import build_tools.bazel_utils as bazel_utils
 import build_tools.build_parser as build_parser
@@ -24,6 +24,7 @@ from build_tools.bzl_lib.cfg import (
     WELL_KNOWN_PIP_DIRS,
     WELL_KNOWN_PY_EXTENSION_DIRS,
 )
+from build_tools.bzl_lib.generator import Generator
 from build_tools.bzl_lib.parse_py_imports import parse_imports
 
 BUILD_OUTPUT = "BUILD.gen_build_py~"
@@ -847,7 +848,7 @@ class PythonPathMappingCache(object):
         return entry
 
 
-class PyBuildGenerator(object):
+class PyBuildGenerator(Generator):
     """This creates intermediate BUILD.gen_build_py files which contains
     dbx_py targets.  The targets' deps are auto-populated if the target
     has autogen_deps set to True.  bzl gen will consume the intermediate
@@ -855,12 +856,12 @@ class PyBuildGenerator(object):
 
     def __init__(
         self,
-        workspace_dir,
-        generated_files,
-        verbose,
-        skip_deps_generation,
-        dry_run,
-        use_magic_mirror,
+        workspace_dir: str,
+        generated_files: Dict[str, List[str]],
+        verbose: bool,
+        skip_deps_generation: bool,
+        dry_run: bool,
+        use_magic_mirror: bool,
     ):
         self.workspace_dir = workspace_dir
         self.generated_files = generated_files
@@ -869,11 +870,11 @@ class PyBuildGenerator(object):
         self.dry_run = dry_run
 
         # Set of visited directory with BUILD.in
-        self.visited_bzl_dirs = set()
+        self.visited_bzl_dirs: Set[str] = set()
 
         # Set of targets in directories without BUILD.in which has been
         # traversed
-        self.visited_non_bzl_targets = set()
+        self.visited_non_bzl_targets: Set[str] = set()
 
         self.parsed_cache = ParsedBuildFileCache(workspace_dir)
 
@@ -912,7 +913,7 @@ class PyBuildGenerator(object):
             cwd=os.path.join(self.workspace_dir, pkg_path),
         )
 
-    def regenerate(self, bazel_targets, cwd="."):
+    def regenerate(self, bazel_targets: Iterable[str], cwd: str = ".") -> None:
         targets = bazel_utils.expand_bazel_targets(
             self.workspace_dir,
             [t for t in bazel_targets if not t.startswith("@")],
@@ -1163,7 +1164,7 @@ class PyBuildGenerator(object):
         return sort_deps(pkg, all_deps), all_unknown_imports, all_unknown_froms
 
 
-def sort_deps(curr_pkg_dir, deps):
+def sort_deps(curr_pkg_dir: str, deps: Set[str]) -> List[str]:
     targets = []
 
     for target in deps:

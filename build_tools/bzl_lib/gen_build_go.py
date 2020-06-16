@@ -4,10 +4,11 @@ from __future__ import print_function
 
 import os
 
-from typing import Text
+from typing import Dict, Iterable, List, Set, Text
 
 from build_tools import bazel_utils, build_parser
 from build_tools.bzl_lib.cfg import BUILD_INPUT, GO_RULE_TYPES, WHITELISTED_GO_SRCS_PATHS
+from build_tools.bzl_lib.generator import Generator
 from build_tools.bzl_lib.run import run_cmd
 
 from dropbox import runfiles
@@ -20,6 +21,7 @@ def srcs_allowed(path):
 
 # Convert bazel targets into Go packages in the GOPATH.
 def targets2packages(bazel_targets):
+    # tpe: (Iterable[Text]) -> List[Text]
     go_packages = []
     workspace_dir = bazel_utils.find_workspace()
     targets = bazel_utils.expand_bazel_target_dirs(
@@ -31,19 +33,19 @@ def targets2packages(bazel_targets):
     return go_packages
 
 
-class GoBuildGenerator(object):
+class GoBuildGenerator(Generator):
     """This creates intermediate BUILD.gen-build-go files which contains
     various go targets.  bzl gen will consume the intermediate files
     to generate the fully merged BUILD files."""
 
     def __init__(
         self,
-        workspace_dir,
-        generated_files,
-        verbose,
-        skip_deps_generation,
-        dry_run,
-        use_magic_mirror,
+        workspace_dir: str,
+        generated_files: Dict[str, List[str]],
+        verbose: bool,
+        skip_deps_generation: bool,
+        dry_run: bool,
+        use_magic_mirror: bool,
     ):
         self.go_src_dir = os.path.join(workspace_dir, "go/src")
         self.generated_files = generated_files
@@ -51,9 +53,9 @@ class GoBuildGenerator(object):
         self.skip_deps_generation = skip_deps_generation
         self.dry_run = dry_run
 
-        self.visited_dirs = set()
+        self.visited_dirs: Set[str] = set()
 
-    def regenerate(self, bazel_targets):
+    def regenerate(self, bazel_targets: Iterable[str]) -> None:
         go_packages = targets2packages(bazel_targets)
         go_packages = [
             p
