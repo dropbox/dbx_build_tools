@@ -71,6 +71,11 @@ filegroup(
 # pick up Bazel's magic builtin __init__.py generation behavior.
 py_binary(
     name = "dbx_importer",
+    srcs = [":dbx_importer_lib"],
+)
+
+py_library(
+    name = "dbx_importer_lib",
     srcs = ["dbx_importer.py"],
 )
 

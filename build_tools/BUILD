@@ -200,6 +200,13 @@ config_setting(
     },
 )
 
+config_setting(
+    name = "vscode_python_debugging",
+    define_values = {
+        "vscode_python_debugging": "1",
+    },
+)
+
 dbx_string_value(
     name = "py_link_dynamic_libs",
     # Cannot be overridden in rSERVER.
