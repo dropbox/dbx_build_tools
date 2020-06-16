@@ -88,7 +88,7 @@ def regenerate_build_files(
     dry_run: bool = False,
     reverse_deps_generation: bool = False,
     use_magic_mirror: bool = False,
-) -> Set[str]:
+) -> None:
     workspace_dir = bazel_utils.find_workspace()
     bazel_targets = set(bazel_targets_l)
 
@@ -147,17 +147,11 @@ def regenerate_build_files(
     # In order to ensure we don't miss generating specific target types,
     # recursively expands the generated set until it converges.
     prev_visited_dirs: Set[str] = set()
-    updated_pkgs: Set[str] = set()
 
     while bazel_targets:
         for generator in generator_instances:
             with metrics.generator_metric_context(generator.__class__.__name__):
-                res = generator.regenerate(bazel_targets)
-            # Generators are expected to do one/both of
-            # - return a list of packages/directores where it could have modified BUILD files
-            # - Update self.generated_files mapping for BUILD path -> BUILD file fragments
-            if res:
-                updated_pkgs.update(res)
+                generator.regenerate(bazel_targets)
 
         visited_dirs = set(generated_files.keys())
         newly_visited_dirs = visited_dirs.difference(prev_visited_dirs)
@@ -178,9 +172,6 @@ def regenerate_build_files(
     with metrics.Timer("bzl_gen_merge_build_files_ms") as merge_timer:
         merge_generated_build_files(generated_files)
     metrics.log_cumulative_rate(merge_timer.name, merge_timer.get_interval_ms())
-
-    updated_pkgs.update(generated_files.keys())
-    return updated_pkgs
 
 
 def merge_generated_build_files(generated_files):
