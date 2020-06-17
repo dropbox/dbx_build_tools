@@ -83,7 +83,7 @@ class GoBuildGenerator(Generator):
         tmp_buildfile = "BUILD.gen-build-go~"
         args += ["--build-filename", tmp_buildfile]
         args += go_packages
-        output = run_cmd(args, verbose=self.verbose)
+        output = run_cmd(args, use_go_env=True, verbose=self.verbose)
 
         if self.dry_run or self.verbose:
             print(output)

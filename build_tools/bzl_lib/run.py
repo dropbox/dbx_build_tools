@@ -6,9 +6,12 @@ from typing import List
 from build_tools.go.env import make_go_env
 
 
-def run_cmd(cmd, verbose=False):
-    # type: (List[str], bool) -> str
-    env = make_go_env()
+def run_cmd(cmd, use_go_env=False, verbose=False):
+    # type: (List[str], bool, bool) -> str
+    env = dict()
+    if use_go_env:
+        env = make_go_env()
+
     env_args = ["%s=%s" % x for x in sorted(env.items())]
     if verbose:
         print("exec:", " ".join(env_args + cmd), file=sys.stderr)
