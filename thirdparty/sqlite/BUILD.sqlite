@@ -7,7 +7,7 @@ dbx_thirdparty_cc_library(
         "sqlite3.h",
         "sqlite3ext.h",
     ],
-    # See http://sqlite.org/compile.html for fun things to put in here.
+    # See https://sqlite.org/compile.html for fun things to put in here.
     copts = [
         "-DHAVE_FDATASYNC",
         "-DHAVE_GETTIME_R",
@@ -28,7 +28,7 @@ dbx_thirdparty_cc_library(
         "-DSQLITE_OMIT_LOAD_EXTENSION",
     ],
     linkopts = ["-pthread"],
-    tags = ["dbx-shelflife-version:sqlite=3.32.2"],
+    tags = ["dbx-shelflife-version:sqlite=3.32.3"],
     visibility = ["//visibility:public"],
 )
 
