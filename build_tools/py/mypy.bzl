@@ -194,7 +194,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         )
         ext_modules.append(ext_module)
 
-        group = (srcs, group_name)
+        group = (tuple(srcs), group_name)
     else:
         # If we aren't using mypyc, we still need to create a
         # compilation context that merges our deps' contexts.
