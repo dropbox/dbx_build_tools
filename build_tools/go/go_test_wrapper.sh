@@ -16,7 +16,7 @@ temp=$(mktemp)
 # Set +e for this block so that we can get the retcode
 set +e
 # -test.v is required to obtain the full event log for JUnit creation.
-"$test_exec" -test.coverprofile="$coverage_out" -test.v "$@" | tee "$temp"
+"$test_exec" -test.coverprofile="$coverage_out" -test.v -test.failfast="${TESTBRIDGE_TEST_RUNNER_FAIL_FAST:-0}" "$@" | tee "$temp"
 retcode=${PIPESTATUS[0]}
 set -e
 

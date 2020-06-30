@@ -1020,6 +1020,8 @@ def extract_pytest_args(
         # $TESTBRIDGE_TEST_ONLY is set to the exact string sent to `--test_filter`.
         "-k",
         "${TESTBRIDGE_TEST_ONLY:-.}",
+        "--maxfail",
+        "${TESTBRIDGE_TEST_RUNNER_FAIL_FAST:-0}",
     ]
 
     return pytest_args, pytest_deps
