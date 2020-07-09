@@ -6,8 +6,9 @@ import os
 
 from typing import Any, Union
 
-from build_tools.py.python_encoding import decode_python_encoding
 from typed_ast import ast27
+
+from build_tools.py.python_encoding import decode_python_encoding
 
 
 def normalize_module(src, module_path):

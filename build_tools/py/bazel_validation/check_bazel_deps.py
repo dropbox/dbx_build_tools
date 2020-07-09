@@ -3,6 +3,13 @@ import sys
 
 from pathlib import Path
 from typing import List, Tuple
+
+from build_tools.py.bazel_validation.bazel_deps import (
+    flatten_provides,
+    Import,
+    parse_imports,
+    validate_bazel_deps,
+)
 def _split_equal(s: str) -> Tuple[str, str]:
     spli = s.split("=")
     assert len(spli) == 2

@@ -8,7 +8,7 @@ import os.path
 
 MYPY = False
 if MYPY:
-    from typing import Any, List, Dict, Text, Optional
+    from typing import Any, Dict, List, Optional, Text
 
 
 def normalize_path(p):

@@ -5,10 +5,11 @@ import os.path
 from pathlib import Path
 from typing import List, Mapping, MutableMapping, NamedTuple, Set, Tuple
 
+from typed_ast import ast3, ast27
+
 from build_tools.bzl_lib.parse_py_imports import normalize_module
 from build_tools.py.bazel_validation.builtins import get_builtins_with_compatibility
 from build_tools.py.python_encoding import decode_python_encoding
-from typed_ast import ast3, ast27
 
 SourceLocation = NamedTuple("SourceLocation", [("source_file", Path), ("lineno", int)])
 

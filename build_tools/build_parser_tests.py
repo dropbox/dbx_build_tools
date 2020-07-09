@@ -1,6 +1,5 @@
 from build_tools import build_parser
 
-
 BUILD_WITHOUT_SELECT = """
 package(default_visibility=["//visibility:private"])
 

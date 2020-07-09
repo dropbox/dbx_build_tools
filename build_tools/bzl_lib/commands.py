@@ -4,8 +4,8 @@ import os
 
 from typing import List
 
-import build_tools.bazel_utils as bazel_utils
-import build_tools.bzl_lib.exec_wrapper as exec_wrapper
+from build_tools import bazel_utils as bazel_utils
+from build_tools.bzl_lib import exec_wrapper as exec_wrapper
 
 bazel_modes = (
     "analyze-profile",

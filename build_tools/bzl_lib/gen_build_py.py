@@ -8,9 +8,7 @@ import os.path
 
 from typing import Dict, Iterable, List, Optional, Set, Text
 
-import build_tools.bazel_utils as bazel_utils
-import build_tools.build_parser as build_parser
-
+from build_tools import bazel_utils as bazel_utils, build_parser as build_parser
 from build_tools.bzl_lib.cfg import (
     ALT_BUILD,
     BUILD_INPUT,

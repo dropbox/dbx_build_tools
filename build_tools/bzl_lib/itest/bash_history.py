@@ -3,7 +3,6 @@
 import re
 import time
 
-
 default_excludes = []
 regex_excludes = []
 for x in default_excludes:

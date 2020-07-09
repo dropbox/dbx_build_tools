@@ -4,10 +4,8 @@ import os
 
 from typing import Callable, DefaultDict, Iterable, List, Sequence, Set
 
-import build_tools.bzl_lib.metrics as metrics
-
 from build_tools import bazel_utils
-from build_tools.bzl_lib import build_merge
+from build_tools.bzl_lib import build_merge, metrics as metrics
 from build_tools.bzl_lib.generator import Generator
 from build_tools.bzl_lib.run import run_cmd
 
