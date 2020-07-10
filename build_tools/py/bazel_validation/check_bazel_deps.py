@@ -10,6 +10,8 @@ from build_tools.py.bazel_validation.bazel_deps import (
     parse_imports,
     validate_bazel_deps,
 )
+
+
 def _split_equal(s: str) -> Tuple[str, str]:
     spli = s.split("=")
     assert len(spli) == 2
