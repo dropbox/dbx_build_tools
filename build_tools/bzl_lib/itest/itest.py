@@ -26,7 +26,7 @@ CONTAINER_NAME_PREFIX = "bzl-itest_"
 POSSIBLE_CONTAINER_NAME_PREFIXES = ("bzl-develop_", CONTAINER_NAME_PREFIX)
 SVCCTL_TARGET = "@dbx_build_tools//go/src/dropbox/build_tools/svcctl/cmd/svcctl"
 
-DEFAULT_IMAGE = "ubuntu:19.10"
+DEFAULT_IMAGE = "ubuntu:20.04"
 # NOTE: Must be kept up-to-date with the path in rSERVER/dropbox/provost/socket_util.py
 DEFAULT_SOCKET_DIRECTORY_PATH = b"/run/dropbox/sock-drawer/"
 
