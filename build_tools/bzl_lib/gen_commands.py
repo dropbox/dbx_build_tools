@@ -4,7 +4,7 @@ import functools
 
 from typing import Any, Callable, Optional, Sequence
 
-from build_tools.bzl_lib import gazel as gazel
+from build_tools.bzl_lib import gazel
 from build_tools.bzl_lib.generator import Generator
 
 

@@ -8,7 +8,7 @@ import zipfile
 
 from typing import Any, Dict, Iterable, List
 
-from build_tools import bazel_utils as bazel_utils, build_parser as build_parser
+from build_tools import bazel_utils, build_parser
 from build_tools.bzl_lib import build_merge
 from build_tools.bzl_lib.cfg import (
     BUILD_INPUT,
