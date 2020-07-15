@@ -79,7 +79,7 @@ _runfile_tmpl = """
 
 _runfile_windows_tmpl = """
 {shared_library_path_setup}
-{python_bin} {python_flags} %PYTHONARGS% "%RUNFILES%\{inner_wrapper}" "%RUNFILES%" {default_args}
+{python_bin} {python_flags} %PYTHONARGS% "%RUNFILES%\\{inner_wrapper}" "%RUNFILES%" {default_args}
 """
 
 _inner_wrapper = """
@@ -417,7 +417,7 @@ def emit_py_binary(
                 library_search_entries[f.short_path.rpartition("/")[0]] = True
             for f in frameworks_trans.to_list():
                 runfiles_trans.append(f.framework_files)
-                for dir in f.framework_dirs:
+                for dir in f.framework_dirs.to_list():
                     # framework_dirs are full paths to the .framework including
                     # the execution root.  The search path needs the dirname of
                     # the .framework dir, and relative to the execution root as
