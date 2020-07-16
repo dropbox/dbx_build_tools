@@ -30,9 +30,12 @@ def _modules_from_srcs(srcs, pythonpath = None):
     ms = []
     for src in srcs:
         if external_pypath:
+            path = src.path
             if not src.path.startswith("external/"):
                 fail("If pythonpath is ../ then presumably the paths should be an external workspace")
-        m = src.path.replace("/", ".")[:-3]
+        else:
+            path = src.short_path
+        m = path.replace("/", ".")[:-3]
         if m.endswith("__init__"):
             m = m[:-9]
         m = m[pythonpath_len:]
