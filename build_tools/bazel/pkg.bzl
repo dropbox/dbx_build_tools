@@ -91,9 +91,9 @@ def _add_runfiles_to_file_map(file_map, runfiles, runfiles_prefix, empty_file):
         file_map[runfiles_prefix + get_canonical_path(f.short_path, legacy = True)] = f
         file_map[runfiles_prefix + get_canonical_path(f.short_path, legacy = False)] = f
     for ln in runfiles.symlinks.to_list():
-        file_map[runfiles_prefix + ln.path] = ln.artifact if hasattr(ln, "artifact") else ln.target_file
+        file_map[runfiles_prefix + ln.path] = ln.target_file
     for ln in runfiles.root_symlinks.to_list():
-        file_map[ln.path] = ln.artifact if hasattr(ln, "artifact") else ln.target_file
+        file_map[ln.path] = ln.target_file
     for path in runfiles.empty_filenames.to_list():
         file_map[runfiles_prefix + get_canonical_path(path, legacy = True)] = empty_file
         file_map[runfiles_prefix + get_canonical_path(path, legacy = False)] = empty_file
