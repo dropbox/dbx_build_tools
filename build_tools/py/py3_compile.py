@@ -67,9 +67,9 @@ def main() -> None:
                         ):
                             node.body[0].value = new_docstring  # type: ignore
 
-                co = compile(root, dest_path, "exec", dont_inherit=True)
+                co = compile(root, short_path, "exec", dont_inherit=True)
             else:
-                co = compile(src, dest_path, "exec", dont_inherit=True)
+                co = compile(src, short_path, "exec", dont_inherit=True)
 
             source_hash = importlib.util.source_hash(  # type: ignore
                 src.encode("utf-8")
