@@ -83,27 +83,52 @@ $(location //build_tools:chronic) $(location @com_github_plougher_squashfs-tools
 # New-age Bazel sandboxed packaging rules below.
 ##########
 
-def _add_runfiles_to_file_map(file_map, runfiles, runfiles_prefix, empty_file):
+def _add_runfiles_to_args(args, runfiles, runfiles_prefix):
     # For files and empty files, we must handle the case where the files live in
     # external workspaces -- we would like to put them in both ../WORKSPACE and
     # external/WORKSPACE.
-    for f in runfiles.files.to_list():
-        file_map[runfiles_prefix + get_canonical_path(f.short_path, legacy = True)] = f
-        file_map[runfiles_prefix + get_canonical_path(f.short_path, legacy = False)] = f
+    files = []
+    app = files.append
+    fmt = runfiles_prefix + "%s"
+    args.add_all(runfiles.files, format_each = fmt, map_each = _get_paths_for_file)
+    symlinks = {}
     for ln in runfiles.symlinks.to_list():
-        file_map[runfiles_prefix + ln.path] = ln.target_file
-    for ln in runfiles.root_symlinks.to_list():
-        file_map[ln.path] = ln.target_file
-    for path in runfiles.empty_filenames.to_list():
-        file_map[runfiles_prefix + get_canonical_path(path, legacy = True)] = empty_file
-        file_map[runfiles_prefix + get_canonical_path(path, legacy = False)] = empty_file
+        symlinks[runfiles_prefix + ln.path] = ln
+        app(ln.target_file)
+    args.add_all(symlinks.values(), format_each = fmt, map_each = _get_symlink_entry_path)
+    args.add_all(runfiles.empty_filenames, format_each = fmt, map_each = _get_paths_for_empty)
+    return depset(transitive = [runfiles.files], direct = files)
 
-def _pkg_path(item):
-    (name_in_pkg, f) = item
-    return name_in_pkg + "\000" + f.path
+def _get_symlink_entry_path(ln):
+    return ln.path + "\000" + ln.target_file.path
+
+def _get_paths_for_file(f):
+    return _get_paths(f.short_path, f.path)
+
+def _get_paths_for_empty(f):
+    return _get_paths(f, "")
+
+def _get_paths(file_path, full):
+    # If the file is in an external workspace, the path can start with either '../WORKSPACE'
+    # or 'external/WORKSPACE'.
+    # If the file isn't from an external workspace, this function returns the input unchanged.
+    canonical = file_path + "\000" + full
+    if file_path.startswith("../"):
+        return ["external/" + file_path[3:] + "\000" + full, canonical]
+    if file_path.startswith("external/"):
+        return ["../" + file_path[9:] + "\000" + full, canonical]
+    return canonical
+
+def _get_path_legacy(f):
+    file_path = f.short_path
+    if file_path.startswith("../"):
+        return "external/" + file_path[3:] + "\000" + f.path
+    return file_path + "\000" + f.path
 
 def _collect_data(ctx, data, symlink_map_attr, binary_link_dir):
-    file_map = {}
+    files = []
+    content = ctx.actions.args()
+    content.set_param_file_format("multiline")
 
     # Allow symlinks so users can maintain some semblance of backwards compatibility.
     # This should be a temporary tactic for configuration files -- users who are using
@@ -123,16 +148,14 @@ def _collect_data(ctx, data, symlink_map_attr, binary_link_dir):
         else:
             is_executable = False
 
-        empty_file = ctx.actions.declare_file(ctx.label.name + ".empty")
-        ctx.actions.write(empty_file, "")
-
         if not ctx.attr.allow_empty_targets and not is_executable and not target[DefaultInfo].files:
             fail(str(target.label) + " has no files to package. " +
                  "if using a filegroup, files should be specified under srcs and not data")
 
-        for f in target[DefaultInfo].files.to_list():
-            # Empirically, external files will have a short_path starting with '../WORKSPACE'.
-            file_map[get_canonical_path(f.short_path, legacy = True)] = f
+        # Empirically, external files will have a short_path starting with '../WORKSPACE'.
+        target_files = target[DefaultInfo].files
+        content.add_all(target_files, map_each = _get_path_legacy)
+        files.append(target_files)
 
         if is_executable:
             root_runfiles_prefix = ""
@@ -152,43 +175,21 @@ def _collect_data(ctx, data, symlink_map_attr, binary_link_dir):
             # Symlink the executable and its runfiles directory to binary_link_dir.
             if binary_link_dir != None:
                 executable = files_to_run.executable
-                symlink_map[binary_link_dir + executable.basename] = get_canonical_path(executable.short_path, legacy = True)
+                symlink_map[binary_link_dir + executable.basename] = "external/" + executable.short_path[3:] if executable.short_path.startswith("../") else executable.short_path
                 symlink_map[binary_link_dir + target.label.name + ".runfiles"] = root_runfiles_prefix
 
-            _add_runfiles_to_file_map(
-                file_map,
-                target[DefaultInfo].data_runfiles,
-                package_runfiles_prefix,
-                empty_file,
-            )
-            _add_runfiles_to_file_map(
-                file_map,
+            files.append(_add_runfiles_to_args(
+                content,
                 target[DefaultInfo].default_runfiles,
                 package_runfiles_prefix,
-                empty_file,
-            )
-
-    content = ctx.actions.args()
-    content.set_param_file_format("multiline")
-    content.add_all(file_map.items(), map_each = _pkg_path)
+            ))
 
     manifest = ctx.actions.declare_file(ctx.label.name + ".manifest")
     ctx.actions.write(manifest, content)
 
     symlink = _write_map_to_file(ctx, "symlink", symlink_map)
 
-    return file_map.values(), manifest, symlink
-
-def get_canonical_path(file_path, legacy = False):
-    # If the file is in an external workspace, the path can start with either '../WORKSPACE'
-    # or 'external/WORKSPACE'. If legacy is True, it returns 'external/WORKSPACE', otherwise
-    # it returns '../WORKSPACE'..
-    # If the file isn't from an external workspace, this function returns the input unchanged.
-    if legacy and file_path.startswith("../"):
-        return "external/" + file_path[3:]
-    if not legacy and file_path.startswith("external/"):
-        return "../" + file_path[9:]
-    return file_path
+    return depset(transitive = files), manifest, symlink
 
 def _write_map_to_file(ctx, name, dictionary):
     file_to_write = ctx.actions.declare_file(ctx.label.name + "." + name)
@@ -263,7 +264,7 @@ def pkg_sqfs_impl(ctx):
 
     ctx.actions.run(
         outputs = [ctx.outputs.executable],
-        inputs = files + extra_input_files,
+        inputs = depset(transitive = [files], direct = extra_input_files),
         executable = ctx.executable._build_sqfs,
         arguments = [args],
         mnemonic = "sqfs",
