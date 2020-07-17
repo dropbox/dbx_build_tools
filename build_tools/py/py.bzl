@@ -138,13 +138,10 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     command_args.add("--build-tag", build_tag)
 
     # Add linux specific exclusions when that is the target platform.
-    # TODO: Once we are on Bazel >2.1, which introduces
-    # `ctx.target_platform_has_constraint(...)`, we can use that instead of
-    # hardcoding to target cpu.
-    if ctx.var["TARGET_CPU"] in ("k8", "piii"):
+    if ctx.target_platform_has_constraint(ctx.attr._linux_platform[platform_common.ConstraintValueInfo]):
         command_args.add("--linux-exclude-libs")
         command_args.add("--target-dynamic-lib-suffix", ".so")
-    elif ctx.var["TARGET_CPU"] == "darwin":
+    elif ctx.target_platform_has_constraint(ctx.attr._macos_platform[platform_common.ConstraintValueInfo]):
         command_args.add("--target-dynamic-lib-suffix", ".dylib")
     elif is_windows(ctx):
         command_args.add("--msvc-toolchain")
@@ -583,6 +580,9 @@ one. Note, it does not support 'global_options' and 'build_options' arguments.""
     "_vinst": attr.label(default = Label("//build_tools/py:vinst"), cfg = "host", executable = True),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
     "_ducible": attr.label(default = Label("@ducible//:ducible.exe"), allow_single_file = True),
+    "_linux_platform": attr.label(default = Label("@platforms//os:linux")),
+    "_macos_platform": attr.label(default = Label("@platforms//os:macos")),
+    "_windows_platform": attr.label(default = Label("@platforms//os:windows")),
 }
 
 _pypi_piplib_attrs = dict(_piplib_attrs)

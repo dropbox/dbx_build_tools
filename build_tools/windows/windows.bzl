@@ -1,2 +1,2 @@
 def is_windows(ctx):
-    return ctx.var["TARGET_CPU"] in ("x64_windows", "x86_windows")
+    return ctx.target_platform_has_constraint(ctx.attr._windows_platform[platform_common.ConstraintValueInfo])

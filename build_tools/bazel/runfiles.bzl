@@ -40,6 +40,7 @@ runfiles_attrs = {
         default = Label("//build_tools/bazel:runfiles.bat.tmpl"),
         allow_single_file = True,
     ),
+    "_windows_platform": attr.label(default = Label("@platforms//os:windows")),
 }
 
 # This will write different types of files depending on the OS.

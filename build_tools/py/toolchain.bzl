@@ -86,6 +86,7 @@ dbx_py_interpreter = rule(
         "headers": attr.label(),
         "runtime": attr.label(),
         "major_python_version": attr.int(default = 2),
+        "_windows_platform": attr.label(default = Label("@platforms//os:windows")),
     },
 )
 
