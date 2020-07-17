@@ -495,7 +495,7 @@ def emit_py_binary(
                 namespace_inits.append(namespace_init)
                 ctx.actions.write(namespace_init, """
 import os
-__path__ = [os.path.join(os.environ['RUNFILES'], d) for d in (%s,)]
+__path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
 """ % ", ".join(impl_dirs))
             runfiles_direct.extend(namespace_inits)
             runfiles_direct.extend(compile_pycs(ctx, namespace_inits, python))
