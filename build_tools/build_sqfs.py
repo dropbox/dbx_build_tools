@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import multiprocessing
 import os
+import shutil
 import stat
 import subprocess
 
-from build_tools.bazelpkg import copy_manifest
+from build_tools.bazelpkg import dedup_file
 
 from dropbox import runfiles
 
@@ -27,6 +29,44 @@ FILE_MODE_AND_MASK = ~(stat.S_IWOTH | stat.S_IWUSR | stat.S_IWGRP)
 
 class CapabilityException(Exception):
     pass
+
+
+def _copy_manifest_wrapper(args):
+    short_dest, src, out_dir, contents_path = args
+    dest = os.path.join(out_dir, short_dest)
+    os.makedirs(os.path.dirname(dest), exist_ok=True)
+    if src:
+        # TODO: Possible optimization: only copy if it doesn't already exist in .contents.
+        shutil.copy2(src, dest)
+    else:
+        # Make an empty file.
+        open(dest, "wb").close()
+    # Even though mksquashfs dedupes, it seems that deduping before handing it off to
+    # mksquashfs is faster.
+    dedup_file(dest, contents_path)
+
+
+def copy_manifest(manifest_path, out_dir):
+    contents_path = os.path.join(out_dir, ".contents")
+    args = []
+    conflicts = set()
+    with open(manifest_path) as manifest:
+        for line in manifest:
+            short_dest, _, src = line.rstrip().partition("\0")
+            if os.path.isdir(src):
+                raise ValueError(
+                    "A raw target pointing to a directory was detected: %s\n"
+                    "Please use a filegroup instead." % short_dest
+                )
+            if short_dest in conflicts:
+                raise ValueError("conflict %r" % (short_dest,))
+            conflicts.add(short_dest)
+            args.append((short_dest, src, out_dir, contents_path))
+
+    with multiprocessing.Pool() as wpool:
+        wpool.map_async(_copy_manifest_wrapper, args, chunksize=1).get(3600)
+
+    shutil.rmtree(contents_path)
 
 
 def main(args) -> None:

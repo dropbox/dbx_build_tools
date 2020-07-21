@@ -88,45 +88,6 @@ def dedup_file(fpath, contents_path):
         raise bazel_utils.BazelError("hard link error", e, f_hash_path, fpath)
 
 
-def _copy_manifest_wrapper(args):
-    short_dest, src, out_dir, contents_path = args
-    dest = os.path.join(out_dir, short_dest)
-    _maybe_makedirs(os.path.dirname(dest))
-    if src:
-        # TODO: Possible optimization: only copy if it doesn't already exist in .contents.
-        shutil.copy2(src, dest)
-    else:
-        # Make an empty file.
-        open(dest, "wb").close()
-    # Even though mksquashfs dedupes, it seems that deduping before handing it off to
-    # mksquashfs is faster.
-    dedup_file(dest, contents_path)
-
-
-def copy_manifest(manifest_path, out_dir):
-    contents_path = os.path.join(out_dir, ".contents")
-    args = []
-    conflicts = set()
-    with open(manifest_path) as manifest:
-        for line in manifest:
-            short_dest, _, src = line.rstrip().partition("\0")
-            if os.path.isdir(src):
-                raise bazel_utils.BazelError(
-                    "A raw target pointing to a directory was detected: %s\n"
-                    "Please use a filegroup instead." % short_dest
-                )
-            if short_dest in conflicts:
-                raise ValueError("conflict %r" % (short_dest,))
-            conflicts.add(short_dest)
-            args.append((short_dest, src, out_dir, contents_path))
-
-    # This only works on Python 3.
-    with multiprocessing.Pool(initializer=_init_worker) as wpool:  # type: ignore[attr-defined]
-        wpool.map_async(_copy_manifest_wrapper, args, chunksize=1).get(3600)
-
-    shutil.rmtree(contents_path)
-
-
 def _init_worker():
     # type: () -> None
     signal.signal(signal.SIGINT, signal.SIG_IGN)
