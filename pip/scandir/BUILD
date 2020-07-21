@@ -7,25 +7,5 @@ load("//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
 
 dbx_py_pypi_piplib(
     name = "scandir",
-    contents = {
-        "cpython-27": [
-            "_scandir.so",
-            "scandir-1.10.0.dist-info/LICENSE.txt",
-            "scandir-1.10.0.dist-info/METADATA",
-            "scandir-1.10.0.dist-info/RECORD",
-            "scandir-1.10.0.dist-info/WHEEL",
-            "scandir-1.10.0.dist-info/top_level.txt",
-            "scandir.py",
-        ],
-        "cpython-38": [
-            "_scandir.cpython-38-x86_64-linux-gnu.so",
-            "scandir-1.10.0.dist-info/LICENSE.txt",
-            "scandir-1.10.0.dist-info/METADATA",
-            "scandir-1.10.0.dist-info/RECORD",
-            "scandir-1.10.0.dist-info/WHEEL",
-            "scandir-1.10.0.dist-info/top_level.txt",
-            "scandir.py",
-        ],
-    },
     pip_version = "1.10.0",
 )

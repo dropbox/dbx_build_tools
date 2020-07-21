@@ -26,12 +26,6 @@ py_binary(
     python_version = "PY3",
 )
 
-dbx_py_library(
-    name = "vinst_lib",
-    srcs = ["vinst.py"],
-    python3_compatible = True,
-)
-
 py_binary(
     name = "vinst",
     srcs = ["vinst.py"],

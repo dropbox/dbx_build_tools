@@ -7,28 +7,6 @@ load("//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
 
 dbx_py_pypi_piplib(
     name = "configparser",
-    contents = {
-        "cpython-27": [
-            "backports/configparser/__init__.py",
-            "backports/configparser/helpers.py",
-            "configparser-4.0.2.dist-info/LICENSE",
-            "configparser-4.0.2.dist-info/METADATA",
-            "configparser-4.0.2.dist-info/RECORD",
-            "configparser-4.0.2.dist-info/WHEEL",
-            "configparser-4.0.2.dist-info/top_level.txt",
-            "configparser.py",
-        ],
-        "cpython-38": [
-            "backports/configparser/__init__.py",
-            "backports/configparser/helpers.py",
-            "configparser-4.0.2.dist-info/LICENSE",
-            "configparser-4.0.2.dist-info/METADATA",
-            "configparser-4.0.2.dist-info/RECORD",
-            "configparser-4.0.2.dist-info/WHEEL",
-            "configparser-4.0.2.dist-info/top_level.txt",
-            "configparser.py",
-        ],
-    },
     namespace_pkgs = ["backports"],
     pip_version = "4.0.2",
     provides = ["backports.configparser"],

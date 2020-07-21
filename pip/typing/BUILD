@@ -9,24 +9,6 @@ licenses(["notice"])  # Python Software Foundation License
 
 dbx_py_pypi_piplib(
     name = "typing",
-    contents = {
-        "cpython-27": [
-            "typing-3.7.4.1.dist-info/LICENSE",
-            "typing-3.7.4.1.dist-info/METADATA",
-            "typing-3.7.4.1.dist-info/RECORD",
-            "typing-3.7.4.1.dist-info/WHEEL",
-            "typing-3.7.4.1.dist-info/top_level.txt",
-            "typing.py",
-        ],
-        "cpython-38": [
-            "typing-3.7.4.1.dist-info/LICENSE",
-            "typing-3.7.4.1.dist-info/METADATA",
-            "typing-3.7.4.1.dist-info/RECORD",
-            "typing-3.7.4.1.dist-info/WHEEL",
-            "typing-3.7.4.1.dist-info/top_level.txt",
-            "typing.py",
-        ],
-    },
     pip_version = "3.7.4.1",
     python2_compatible = True,
     python3_compatible = True,

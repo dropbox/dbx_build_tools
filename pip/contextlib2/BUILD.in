@@ -1,6 +1,6 @@
-package(default_visibility = ["//visibility:public"])
-
 load("//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
+
+package(default_visibility = ["//visibility:public"])
 
 dbx_py_pypi_piplib(
     name = "contextlib2",

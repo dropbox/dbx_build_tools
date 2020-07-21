@@ -7,24 +7,6 @@ licenses(["notice"])  # MIT
 
 dbx_py_pypi_piplib(
     name = "six",
-    contents = {
-        "cpython-27": [
-            "six-1.15.0.dist-info/LICENSE",
-            "six-1.15.0.dist-info/METADATA",
-            "six-1.15.0.dist-info/RECORD",
-            "six-1.15.0.dist-info/WHEEL",
-            "six-1.15.0.dist-info/top_level.txt",
-            "six.py",
-        ],
-        "cpython-38": [
-            "six-1.15.0.dist-info/LICENSE",
-            "six-1.15.0.dist-info/METADATA",
-            "six-1.15.0.dist-info/RECORD",
-            "six-1.15.0.dist-info/WHEEL",
-            "six-1.15.0.dist-info/top_level.txt",
-            "six.py",
-        ],
-    },
     pip_version = "1.15.0",
     visibility = ["//visibility:public"],
 )

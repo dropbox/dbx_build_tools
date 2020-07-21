@@ -43,8 +43,6 @@ load(
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load("//build_tools/windows:windows.bzl", "is_windows")
 
-# This logic is duplicated in build_tools/bzl_lib/gen_build_pip.py::_get_build_interpreters and must
-# be kept in sync.
 def _get_build_interpreters(attr):
     interpreters = []
     if attr.python2_compatible:
@@ -131,6 +129,7 @@ def _debug_prefix_map_supported(ctx):
 
 def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     build_tag = python_interp.build_tag
+    toolchain = ctx.toolchains[get_py_toolchain_name(build_tag)]
     command_args = ctx.actions.args()
     command_args.add("--no-deps")
     command_args.add("--wheel", wheel)
@@ -322,49 +321,38 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         progress_message = "fetch/build {} for {}".format(description, build_tag),
     )
 
-    # contents will be empty when we are building under bzl gen
-    if ctx.attr.contents:
-        contents = ctx.attr.contents[build_tag]
-    else:
-        contents = []
-    extracted_files = [ctx.actions.declare_file(f, sibling = wheel) for f in contents]
-    if contents:  # may be empty if bzl genning
-        install_args = ctx.actions.args()
-        install_args.set_param_file_format("multiline")
-        install_args.use_param_file("@%s", use_always = True)
-        install_args.add("install")
-        install_args.add(wheel)
-        install_args.add(wheel.dirname)
-        install_args.add_all(contents)
-        ctx.actions.run(
-            inputs = [wheel],
-            tools = [],
-            outputs = extracted_files,
-            executable = ctx.executable._vinst,
-            use_default_shell_env = True,
-            arguments = [install_args],
-            mnemonic = "ExtractWheel",
-            progress_message = "ExtractWheel {}".format(wheel.path),
-            execution_requirements = {"local": "1"},
-        )
-        pycs = compile_pycs(
-            ctx,
-            [f for f in extracted_files if f.extension == "py"],
-            python_interp,
-            allow_failures = True,  # Thirdparty .py files can contain all manner of brokenness.
-        )
-        extracted_files.extend(pycs)
+    extracted_dir = ctx.actions.declare_directory(ctx.label.name + "-" + build_tag + "/lib")
+    install_args = ctx.actions.args()
+    install_args.add("install")
+    install_args.add_all(ctx.attr.py_excludes, before_each = "--exclude")
+    install_args.add_all(ctx.attr.namespace_pkgs, before_each = "--namespace_pkg")
+    if toolchain.pyc_compilation_enabled:
+        install_args.add("--pyc_python", python_interp.path)
+        install_args.add("--pyc_compiler", toolchain.pyc_compile_exe)
+        if python_interp.major_python_version != 2:
+            install_args.add("--pyc_build_tag", build_tag)
+    install_args.add(wheel)
+    install_args.add(extracted_dir.path)
+    install_args.add(extracted_dir.short_path)
+    ctx.actions.run(
+        inputs = depset(direct = [wheel], transitive = [python_interp.runtime]),
+        tools = [toolchain.pyc_compile_files_to_run] if toolchain.pyc_compilation_enabled else [],
+        outputs = [extracted_dir],
+        executable = ctx.executable._vinst,
+        use_default_shell_env = True,
+        arguments = [install_args],
+        mnemonic = "PyExtractWheel",
+    )
 
     piplib_contents = struct(
         archive = wheel,
-        extracted_dir = wheel.dirname,
-        extracted_files = depset(direct = extracted_files),
+        extracted_dir = extracted_dir,
         namespace_pkgs = ctx.attr.namespace_pkgs,
         label = ctx.label,
     )
 
     if ctx.attr.pip_main:
-        main = ctx.actions.declare_file("_bin/" + ctx.attr.pip_main.split("/")[-1], sibling = wheel)
+        main = ctx.actions.declare_file(ctx.label.name + "-" + build_tag + "/bin/" + ctx.attr.pip_main.split("/")[-1])
         main_args = ctx.actions.args()
         main_args.add("script")
         main_args.add(wheel)
@@ -377,7 +365,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
             executable = ctx.executable._vinst,
             use_default_shell_env = True,
             arguments = [main_args],
-            progress_message = "extract " + ctx.attr.pip_main,
+            mnemonic = "PyExtractScript",
         )
     else:
         main = None
@@ -435,9 +423,6 @@ def _vpip_rule_impl(ctx, local):
             transitive = [piplib_contents[py_config.build_tag], wheel_out.piplib_contents],
         )
         valid_build_tags.append(py_config.build_tag)
-    for build_tag in ctx.attr.contents:
-        if build_tag not in valid_build_tags:
-            fail("%r is not a valid build tag" % (build_tag,))
 
     return struct(
         providers = [
@@ -558,7 +543,7 @@ _piplib_attrs = {
     "extra_path": attr.string_list(),
     "pip_main": attr.string(),
     "provides": attr.string_list(),
-    "py_excludes": attr.string_list(),  # used by bzl gen
+    "py_excludes": attr.string_list(default = ["test", "tests", "testing", "SelfTest", "Test", "Tests"]),
     "python2_compatible": attr.bool(default = True),
     "python3_compatible": attr.bool(default = True),
     "env": attr.string_dict(),
@@ -588,7 +573,6 @@ one. Note, it does not support 'global_options' and 'build_options' arguments.""
 _pypi_piplib_attrs = dict(_piplib_attrs)
 _pypi_piplib_attrs.update({
     "pip_version": attr.string(mandatory = True),
-    "contents": attr.string_list_dict(),
     "copts": attr.string_list(),
     "namespace_pkgs": attr.string_list(),
     "setup_requires": attr.label_list(providers = ["piplib_contents", DbxPyVersionCompatibility]),
@@ -606,7 +590,6 @@ dbx_py_pypi_piplib_internal = rule(
 _local_piplib_attrs = dict(_piplib_attrs)
 _local_piplib_attrs.update({
     "copts": attr.string_list(),
-    "contents": attr.string_list_dict(),
     "namespace_pkgs": attr.string_list(),
     "pip_version": attr.string(),
     "setup_requires": attr.label_list(providers = ["piplib_contents", DbxPyVersionCompatibility]),

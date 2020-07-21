@@ -20,8 +20,7 @@ def main() -> None:
         items[:n], items[n : 2 * n], items[2 * n :]
     ):
         try:
-            if not os.path.exists(os.path.dirname(dest_path)):
-                os.mkdir(os.path.dirname(dest_path))
+            os.makedirs(os.path.dirname(dest_path), exist_ok=True)
 
             with open(src_path, "r") as f:
                 src = f.read()

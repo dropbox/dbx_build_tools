@@ -527,11 +527,11 @@ class PythonPathMapping(AbstractPythonPath):
 
         for pip_dir in pip_directories:
             for bzl_file in glob.glob(
-                os.path.join(self.workspace_dir, pip_dir, "*", BUILD_INPUT)
-            ) + glob.glob(os.path.join(self.workspace_dir, pip_dir, BUILD_INPUT)):
+                os.path.join(self.workspace_dir, pip_dir, "*", DEFAULT_BUILD)
+            ) + glob.glob(os.path.join(self.workspace_dir, pip_dir, DEFAULT_BUILD)):
                 root = os.path.dirname(bzl_file)
 
-                _, parsed = self.parsed_file_cache.get_bzl(root)
+                _, parsed = self.parsed_file_cache.get_bzl_or_build(root)
                 assert parsed, "programming error " + root
 
                 for rule in parsed.get_rules_by_types(PIP_RULE_TYPES):

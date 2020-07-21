@@ -7,13 +7,6 @@ load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary", "dbx_py_libr
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 dbx_py_library(
-    name = "vinst_lib",
-    srcs = ["vinst.py"],
-    python3_compatible = True,
-    validate = "strict",
-)
-
-dbx_py_library(
     name = "python_encoding",
     srcs = ["python_encoding.py"],
     python2_compatible = False,

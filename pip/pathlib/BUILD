@@ -7,24 +7,6 @@ load("//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
 
 dbx_py_pypi_piplib(
     name = "pathlib",
-    contents = {
-        "cpython-27": [
-            "pathlib-1.0.1.dist-info/LICENSE.txt",
-            "pathlib-1.0.1.dist-info/METADATA",
-            "pathlib-1.0.1.dist-info/RECORD",
-            "pathlib-1.0.1.dist-info/WHEEL",
-            "pathlib-1.0.1.dist-info/top_level.txt",
-            "pathlib.py",
-        ],
-        "cpython-38": [
-            "pathlib-1.0.1.dist-info/LICENSE.txt",
-            "pathlib-1.0.1.dist-info/METADATA",
-            "pathlib-1.0.1.dist-info/RECORD",
-            "pathlib-1.0.1.dist-info/WHEEL",
-            "pathlib-1.0.1.dist-info/top_level.txt",
-            "pathlib.py",
-        ],
-    },
     pip_version = "1.0.1",
     python3_compatible = True,
 )

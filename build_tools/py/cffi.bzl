@@ -105,12 +105,10 @@ def dbx_cffi_module(
         deps = [],
         python2_compatible = True,
         python3_compatible = None,
-        contents = None,
         ignore_missing_static_libraries = True,
         tags = [],
         import_test_tags = [],
         **kwargs):
-    contents = contents or {}
     if module_name == None:
         module_name = name
     cffi_name = name + "_cffi"
@@ -121,15 +119,9 @@ def dbx_cffi_module(
         tags = tags,
         **kwargs
     )
-    if not contents:
-        if python2_compatible:
-            contents["cpython-27"] = [module_name + ".so"]
-        if python3_compatible:
-            contents["cpython-38"] = [module_name + ".abi3.so"]
     dbx_py_local_piplib(
         name = name,
         provides = [module_name],
-        contents = contents,
         srcs = [":" + cffi_name],
         deps = ["//pip/cffi"] + deps,
         visibility = visibility,

@@ -7,23 +7,5 @@ load("//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
 
 dbx_py_pypi_piplib(
     name = "contextlib2",
-    contents = {
-        "cpython-27": [
-            "contextlib2-0.6.0.post1.dist-info/LICENSE.txt",
-            "contextlib2-0.6.0.post1.dist-info/METADATA",
-            "contextlib2-0.6.0.post1.dist-info/RECORD",
-            "contextlib2-0.6.0.post1.dist-info/WHEEL",
-            "contextlib2-0.6.0.post1.dist-info/top_level.txt",
-            "contextlib2.py",
-        ],
-        "cpython-38": [
-            "contextlib2-0.6.0.post1.dist-info/LICENSE.txt",
-            "contextlib2-0.6.0.post1.dist-info/METADATA",
-            "contextlib2-0.6.0.post1.dist-info/RECORD",
-            "contextlib2-0.6.0.post1.dist-info/WHEEL",
-            "contextlib2-0.6.0.post1.dist-info/top_level.txt",
-            "contextlib2.py",
-        ],
-    },
     pip_version = "0.6.0.post1",
 )

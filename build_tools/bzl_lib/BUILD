@@ -22,7 +22,6 @@ dbx_py_library(
     srcs = [
         "gazel.py",
         "gen_build_go.py",
-        "gen_build_pip.py",
         "gen_build_py.py",
         "gen_commands.py",
         "generator.py",
@@ -41,7 +40,6 @@ dbx_py_library(
         ":run",
         "//build_tools:bazel_utils",
         "//build_tools:build_parser_lib",
-        "//build_tools/py:vinst_lib",
         "//dropbox:runfiles",
         "//pip/typing",
     ],

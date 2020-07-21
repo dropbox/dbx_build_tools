@@ -11,7 +11,6 @@ dbx_py_library(
     srcs = [
         "gazel.py",
         "gen_build_go.py",
-        "gen_build_pip.py",
         "gen_build_py.py",
         "gen_commands.py",
         "generator.py",

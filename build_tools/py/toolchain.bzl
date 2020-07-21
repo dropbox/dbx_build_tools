@@ -7,8 +7,6 @@ _cpython_37_BUILD_TAG = "cpython-37"
 _cpython_38_BUILD_TAG = "cpython-38"
 _cpython_27_BUILD_TAG = "cpython-27"
 
-# If you add a new build_tag here also need to update ALL_PYTHON_TAGS in
-# build_tools/gen_build_pip.py or bzl gen will not add contexts for its wheels.
 cpython_37 = struct(
     build_tag = _cpython_37_BUILD_TAG,
     attr = _cpython_37_ATTR,

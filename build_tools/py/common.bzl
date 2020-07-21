@@ -254,12 +254,17 @@ def _produce_versioned_deps_output(ctx, base_out_file, versioned_deps):
     )
     return stamp_file
 
-PIPLIB_SEPARATOR = "=" * 10
+_PIPLIB_SEPARATOR = "=" * 10
 
-def _piplib_conflict_check(piplib):
-    extracted_dir = piplib.archive.short_path.rpartition("/")[0]
-    dir_len = len(extracted_dir)
-    return [PIPLIB_SEPARATOR + str(piplib.label) + PIPLIB_SEPARATOR] + [f.short_path[dir_len:] for f in piplib.extracted_files.to_list()]
+def _piplib_conflict_check(piplib, expander):
+    cut_len = len(piplib.extracted_dir.path) + 1
+    res = [_PIPLIB_SEPARATOR + str(piplib.label) + _PIPLIB_SEPARATOR]
+    for f in expander.expand(piplib.extracted_dir):
+        relative_path = f.path[cut_len:]
+        if f.path.endswith("/__init__.py") and relative_path[:-12].replace("/", ".") in piplib.namespace_pkgs:
+            continue
+        res.append(relative_path)
+    return res
 
 def collect_required_piplibs(deps):
     required_piplibs_trans = []
@@ -275,7 +280,7 @@ def _pyc_path(src, build_tag):
 def _short_path(src):
     return src.short_path
 
-def compile_pycs(ctx, srcs, python, allow_failures = False):
+def compile_pycs(ctx, srcs, python):
     # For CPython 2, we build custom pydbxc files that us the md5 of the source instead of the mtime
     # for the py file for invalidation. This allows the files to be remotely cached. We need to
     # disable hash randomization to the generated files have deterministic ordering of sets and dict
@@ -295,23 +300,15 @@ def compile_pycs(ctx, srcs, python, allow_failures = False):
         new_pyc_files = [ctx.actions.declare_file(_pyc_path(src, python.build_tag), sibling = src) for src in srcs]
 
     lib_args = ctx.actions.args()
-    if allow_failures:
-        lib_args.add("--allow-failures")
-    else:
-        lib_args.add("--noallow-failures")
+    lib_args.add("--noallow-failures")
     lib_args.add_all(srcs)
     lib_args.add_all(srcs, map_each = _short_path)
     lib_args.add_all(new_pyc_files)
 
     ctx.actions.run(
         outputs = new_pyc_files,
-        inputs = srcs + python.runtime.to_list(),
-        # Just including the executable by itself isn't enough,
-        # because that doesn't include the exe's runfiles for some
-        # reason. Adding the "files_to_run" to this action's tools fix
-        # the problem. See the dbx_py_toolchain doc for more details.
-        tools = [toolchain.pyc_compile_files_to_run],
-        executable = toolchain.pyc_compile_exe,
+        inputs = depset(direct = srcs, transitive = [python.runtime]),
+        executable = toolchain.pyc_compile_files_to_run,
         arguments = [lib_args],
         mnemonic = "PyCompile",
         env = {
@@ -408,7 +405,8 @@ def emit_py_binary(
             extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath])
             dbx_importer = ""
 
-        piplib_contents_map = piplib_contents[build_tag]
+        piplib_contents_set = piplib_contents[build_tag]
+        all_piplib_contents = piplib_contents_set.to_list()
         runfiles_trans.append(pyc_files_by_build_tag[build_tag])
 
         if not internal_bootstrap and allow_dynamic_links(ctx):
@@ -429,20 +427,17 @@ def emit_py_binary(
         # Scan through transitive piplibs. Collect namespace packages and check for conflicts.
         installed = {}
         namespace_pkgs = {}
-        if internal_bootstrap and piplib_contents_map:
+        if internal_bootstrap and all_piplib_contents:
             fail("python internal bootstrap binaries can't contain pip dependencies")
 
-        for piplib in piplib_contents_map.to_list():
-            extracted_files = piplib.extracted_files
-            runfiles_trans.append(extracted_files)
-            extracted_dir = piplib.archive.short_path.rpartition("/")[0]
+        for piplib in all_piplib_contents:
+            runfiles_direct.append(piplib.extracted_dir)
+            extracted_dir = piplib.extracted_dir.short_path
             if is_windows(ctx):
                 extracted_dir = extracted_dir.replace("/", "\\")
             label = piplib.label
             piplib_paths.append(repr(extracted_dir) + ", ")
             installed[label.name] = None
-            if not extracted_files:
-                fail("We must know the contents of {}".format(piplib))
 
             for ns in piplib.namespace_pkgs:
                 namespace_pkgs.setdefault(ns, []).append(extracted_dir)
@@ -455,10 +450,11 @@ def emit_py_binary(
             conflict_args.set_param_file_format("multiline")
             conflict_args.use_param_file("@%s", use_always = True)
             conflict_args.add("--output-file", conflict_out)
-            conflict_args.add_all(piplib_contents_map, map_each = _piplib_conflict_check)
+            conflict_args.add_all(namespace_pkgs.keys(), before_each = "--namespace_pkg")
+            conflict_args.add_all(piplib_contents_set, map_each = _piplib_conflict_check)
 
             ctx.actions.run(
-                inputs = [],
+                inputs = [p.extracted_dir for p in all_piplib_contents],
                 tools = [],
                 outputs = [conflict_out],
                 mnemonic = "PiplibCheckConflict",
