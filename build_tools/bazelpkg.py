@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 from collections import defaultdict
-from typing import List, Optional, Text, Union
+from typing import Any, List, Optional, Text, Union
 
 import six
 
@@ -152,6 +152,25 @@ def _copy_outputs_multi(
         raise
 
 
+def _copytree(src, dst, ignore=None):
+    # type: (str, str, Any) -> None
+    names = os.listdir(src)
+    if ignore is not None:
+        ignored_names = ignore(src, names)
+    else:
+        ignored_names = set()
+    os.makedirs(dst)
+    for name in names:
+        if name in ignored_names:
+            continue
+        srcname = os.path.join(src, name)
+        dstname = os.path.join(dst, name)
+        if os.path.isdir(srcname):
+            _copytree(srcname, dstname, ignore)
+        else:
+            shutil.copy2(srcname, dstname)
+
+
 def _copy_outputs(
     outputs, bazel_bin_dir, out_dir, preserve_paths, preserve_symlinks, contents_path
 ):
@@ -186,9 +205,7 @@ def _copy_outputs(
                             file_path, output_file, preserve_symlinks=preserve_symlinks
                         )
             else:
-                shutil.copytree(
-                    abs_output, out_path, ignore=shutil.ignore_patterns("*.pyc")
-                )
+                _copytree(abs_output, out_path, ignore=shutil.ignore_patterns("*.pyc"))
             if contents_path:
                 # Deduplicate before compiling so all embedded timestamps match.
                 dedup_dir(out_path, contents_path)
