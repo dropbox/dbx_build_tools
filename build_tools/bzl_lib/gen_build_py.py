@@ -425,7 +425,7 @@ class AbstractPythonPath(object):
         """Returns a set of modules"""
         raise NotImplementedError
 
-    def find_closest_bzl_or_build(self, module):
+    def find_closest_bzl_or_build(self, file_path):
         """Returns (filename, parsed BUILD / BUILD.in)"""
         raise NotImplementedError
 
@@ -450,7 +450,7 @@ class SystemPythonPathMapping(AbstractPythonPath):
     def compute_self_modules(self, pkg, srcs):
         return set()
 
-    def find_closest_bzl_or_build(self, module):
+    def find_closest_bzl_or_build(self, file_path):
         return "", None
 
     def _find_targets(self, modules):
@@ -668,8 +668,7 @@ class PythonPathMapping(AbstractPythonPath):
 
         return filename, parsed
 
-    def find_closest_bzl_or_build(self, module_path):
-        file_path = PythonPathMapping.convert_from_module_to_file_path(module_path)
+    def find_closest_bzl_or_build(self, file_path):
         path = os.path.join(self.python_path_dir, file_path)
         if os.path.isfile(path + ".py"):
             build_dir = os.path.dirname(path)
@@ -694,7 +693,9 @@ class PythonPathMapping(AbstractPythonPath):
         if module in self.invalid_modules:
             return []
 
-        self.find_closest_bzl_or_build(module)
+        self.find_closest_bzl_or_build(
+            PythonPathMapping.convert_from_module_to_file_path(module)
+        )
         if module in self.local_module_targets:
             return [self.local_module_targets[module][0]]
 
@@ -1092,9 +1093,9 @@ class PyBuildGenerator(Generator):
         for src in set(srcs):
             src = os.path.join(target_dir, src)
 
-            module_path = PythonPathMapping.convert_from_file_path_to_module(src)
-
-            filename, parsed = mapping.find_closest_bzl_or_build(module_path)
+            filename, parsed = mapping.find_closest_bzl_or_build(
+                os.path.splitext(src)[0]
+            )
             if not filename:
                 raise bazel_utils.BazelError(
                     "Cannot locate %s:%s's source (or its closest BUILD / "
