@@ -146,9 +146,20 @@ def _filter_sources_on_tagmap(ctx, go_version):
     return srcs
 
 def _go_package(ctx):
+    package = ctx.label.package.replace("go/src/", "")
     if getattr(ctx.attr, "package", None) == "main":
-        return ctx.attr.package
-    return ctx.label.package.replace("go/src/", "")
+        package = ctx.attr.package
+    if hasattr(ctx.attr, "module_major_version"):
+        module_major_version = ctx.attr.module_major_version
+        if module_major_version:
+            # Append the module version onto the package.
+            module_name = ctx.attr.module_name
+            if not module_name:
+                fail("module_major_version %s was specified, but module_name was not" % module_major_version)
+            if module_name not in package:
+                fail("Specified module_name %s is not a substring of package %s. Is this a typo?" % (module_name, package))
+            package = package.replace(module_name, module_name + "/" + module_major_version, 1)
+    return package
 
 def _use_go_race(ctx):
     # Only do race detection in the target configuration and if --define=go_race=1 is passed.
@@ -837,6 +848,8 @@ _go_library_attrs.update({
     #
     # However, passing a single string value through works just fine.
     "single_go_version_override": attr.string(),
+    "module_major_version": attr.string(),
+    "module_name": attr.string(),
 })
 
 dbx_go_library = rule(
