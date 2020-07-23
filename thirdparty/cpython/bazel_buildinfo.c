@@ -32,7 +32,7 @@ compute_buildinfo(void)
 {
     char pretty_build_time[25] = "redacted";
     if (_bazel_build_timestamp) {
-        time_t build_time_t = _bazel_build_timestamp / 1000;
+        time_t build_time_t = _bazel_build_timestamp;
         struct tm build_time;
         gmtime_r(&build_time_t, &build_time);
         strftime(pretty_build_time, sizeof(pretty_build_time), "%Y_%m_%d, %H:%M:%SZ", &build_time);
