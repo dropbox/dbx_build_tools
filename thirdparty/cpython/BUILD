@@ -92,6 +92,6 @@ py_binary(
 cc_library(
     name = "buildinfo",
     srcs = ["bazel_buildinfo.c"],
-    linkstamp = "bazel_linkstamp.c",
+    linkstamp = "bazel_linkstamp.cc",
     visibility = ["//visibility:public"],
 )

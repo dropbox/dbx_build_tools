@@ -5,7 +5,7 @@
 #include <string.h>
 #include <time.h>
 
-/* These are defined in bazel_linkstamp.c. */
+/* These are defined in bazel_linkstamp.cc. */
 extern const char _bazel_embed_label[];
 extern const long long _bazel_build_timestamp;
 extern const char _bazel_username[];
