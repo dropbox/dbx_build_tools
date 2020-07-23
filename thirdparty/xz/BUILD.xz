@@ -166,7 +166,7 @@ dbx_thirdparty_cc_library(
         "-lrt",
     ],
     strip_include_prefix = "src/liblzma/api",
-    tags = ["dbx-shelflife-version:liblzma=5.2.4"],
+    tags = ["dbx-shelflife-version:liblzma=5.2.5"],
     visibility = ["//visibility:public"],
 )
 

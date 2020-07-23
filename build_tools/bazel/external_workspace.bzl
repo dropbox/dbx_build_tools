@@ -22,7 +22,7 @@ DEFAULT_EXTERNAL_URLS = {
     "org_openssl": ["https://www.openssl.org/source/openssl-1.1.1g.tar.gz"],
     "org_sourceware_libffi": ["https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz"],
     "org_sqlite": ["https://sqlite.org/2020/sqlite-amalgamation-3320300.zip"],
-    "org_tukaani": ["https://tukaani.org/xz/xz-5.2.4.tar.gz"],
+    "org_tukaani": ["https://downloads.sourceforge.net/project/lzmautils/xz-5.2.5.tar.xz"],
     "rules_pkg": ["https://github.com/bazelbuild/rules_pkg/releases/download/0.2.6-1/rules_pkg-0.2.6.tar.gz"],
     "six_archive": ["https://pypi.python.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"],
     "ducible": ["https://github.com/jasonwhite/ducible/releases/download/v1.2.2/ducible-windows-Win32-Release.zip"],
@@ -135,8 +135,8 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "org_tukaani",
         urls = urls["org_tukaani"],
-        strip_prefix = "xz-5.2.4",
-        sha256 = "b512f3b726d3b37b6dc4c8570e137b9311e7552e8ccbab4d39d47ce5f4177145",
+        strip_prefix = "xz-5.2.5",
+        sha256 = "3e1e518ffc912f86608a8cb35e4bd41ad1aec210df2a47aaa1f95e7f5576ef56",
         build_file = filename_from_label("//thirdparty/xz:BUILD.xz"),
     )
 
