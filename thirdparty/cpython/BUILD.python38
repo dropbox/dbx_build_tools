@@ -610,7 +610,6 @@ cc_binary(
         "Python/traceback.c",
         "Python/wordcode_helpers.h",
         # A few things in Modules/ that are not just for built in extensions
-        "Modules/getbuildinfo.c",
         "Modules/getpath.c",
         "Modules/main.c",
         # plus the main python target
