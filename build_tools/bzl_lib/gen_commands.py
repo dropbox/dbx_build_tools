@@ -11,6 +11,7 @@ from build_tools.bzl_lib.generator import Generator
 def cmd_gen(args: Any, bazel_args, mode_args, generators) -> None:
     gazel.regenerate_build_files(
         args.targets,
+        bazel_path=args.bazel_path,
         verbose=args.verbose,
         skip_deps_generation=not args.deps_generation,
         dry_run=args.dry_run,
@@ -48,6 +49,7 @@ def register_cmd_gen(
     )
     sap.add_argument("-v", "--verbose", action="store_true")
     sap.add_argument("targets", nargs="+", help="A list of bazel targets.")
+    sap.add_argument("--bazel-path", type=str, default="bazel")
     sap.set_defaults(
         func=functools.partial(cmd_gen, generators=generators),
         missing_build_file_ok=True,

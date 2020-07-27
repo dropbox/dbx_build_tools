@@ -53,7 +53,8 @@ def _get_bzl_gen_path(bazel_path):
 def cmd_gen_as_tool(args, bazel_args, mode_args):
     # type: (argparse.Namespace, List[str], List[str]) -> None
     bzl_gen_path = _get_bzl_gen_path(args.bazel_path)
-    argv = [os.path.basename(bzl_gen_path)] + mode_args
+    bazel_path_args = ["--bazel-path", args.bazel_path]
+    argv = [os.path.basename(bzl_gen_path)] + bazel_path_args + mode_args
     exec_wrapper.execv(bzl_gen_path, argv)
 
 

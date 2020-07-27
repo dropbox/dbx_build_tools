@@ -32,6 +32,7 @@ class CopyGenerator(Generator):
         skip_deps_generation,
         dry_run,
         use_magic_mirror,
+        bazel_path,
     ):
 
         self.workspace_dir = workspace_dir
@@ -81,6 +82,7 @@ class GazelError(Exception):
 def regenerate_build_files(
     bazel_targets_l: Sequence[str],
     generators: Sequence[Callable[..., Generator]],
+    bazel_path: str,
     verbose: bool = False,
     skip_deps_generation: bool = False,
     dry_run: bool = False,
@@ -138,6 +140,7 @@ def regenerate_build_files(
                     skip_deps_generation,
                     dry_run,
                     use_magic_mirror,
+                    bazel_path,
                 )
             )
         metrics.log_cumulative_rate(init_timer.name, init_timer.get_interval_ms())

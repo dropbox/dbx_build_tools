@@ -861,6 +861,7 @@ class PyBuildGenerator(Generator):
         skip_deps_generation: bool,
         dry_run: bool,
         use_magic_mirror: bool,
+        bazel_path: str,
     ):
         self.workspace_dir = workspace_dir
         self.generated_files = generated_files

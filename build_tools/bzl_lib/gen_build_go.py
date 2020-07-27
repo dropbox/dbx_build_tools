@@ -46,6 +46,7 @@ class GoBuildGenerator(Generator):
         skip_deps_generation: bool,
         dry_run: bool,
         use_magic_mirror: bool,
+        bazel_path: str,
     ):
         self.go_src_dir = os.path.join(workspace_dir, "go/src")
         self.generated_files = generated_files
