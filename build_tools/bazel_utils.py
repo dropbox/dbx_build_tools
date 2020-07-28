@@ -455,6 +455,27 @@ def normalize_relative_target_to_os_path(target):
     return target.replace("/", os.path.sep)
 
 
+def normalize_relative_target_to_absolute(package, target):
+    # type: (Text, Text) -> Text
+    """
+    Given a target pattern that may be relative to a package (for example, ':my_lib' or 'tests/...') and an absolute package,
+    return an absolute version of the target pattern.
+    If the target pattern is already absolute, it'll just be returned as-is.
+    """
+    if target.startswith("//"):
+        return target
+    colon = target.find(":")
+    if colon == -1:
+        return "//" + os.path.join(package, target)
+    return (
+        "//"
+        + normalize_os_path_to_target(
+            os.path.normpath(os.path.join(package, target[:colon]).rstrip("./"))
+        )
+        + target[colon:]
+    )
+
+
 # A macro to build an internal tool in the background.
 # Returns a path to the executable.
 def build_tool(bazel_path, target, targets=(), squelch_output=True):

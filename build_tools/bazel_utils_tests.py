@@ -144,3 +144,11 @@ def test_outputs_for_rules():
     # Lightweight test is enough here, because we are already testing the
     # functionality well above.
     assert len(outputs_map.keys()) == 3
+
+
+def test_normalize_relative_target_to_absolute():
+    # type: () -> None
+    norm = bazel_utils.normalize_relative_target_to_absolute
+    assert norm("foo/bar", "actions/...") == "//foo/bar/actions/..."
+    assert norm("foo/bar", ":baz") == "//foo/bar:baz"
+    assert norm("foo/bar", "../wat:baz") == "//foo/wat:baz"
