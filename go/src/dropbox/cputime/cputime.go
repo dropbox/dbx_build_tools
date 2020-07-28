@@ -1,9 +1,6 @@
 package cputime
 
-/*
- #include <unistd.h>
- long sysconf(int name);
-*/
+// #include <unistd.h>
 import "C"
 
 import (
@@ -11,9 +8,9 @@ import (
 	"sync"
 	"time"
 
-	"dropbox/procfs"
-
 	goprocinfo "github.com/c9s/goprocinfo/linux"
+
+	"dropbox/procfs"
 )
 
 var (
