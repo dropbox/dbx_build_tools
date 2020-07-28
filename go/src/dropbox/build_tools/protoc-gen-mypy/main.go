@@ -503,6 +503,13 @@ func (w *pkgWriter) WriteServices(services []*descriptor.ServiceDescriptorProto)
 	}
 }
 
+func (w *pkgWriter) WriteFileDescriptor() {
+	l := w.Line
+	name := w.Name
+
+	l("DESCRIPTOR: %s", name("google.protobuf.descriptor", "FileDescriptor"))
+}
+
 func (w *pkgWriter) keyAndValueTypes(msgDescriptor *descriptor.DescriptorProto, mapField *descriptor.FieldDescriptorProto) (interface{}, interface{}) {
 	keytype := w.pythonType(msgDescriptor.Field[0])
 	if proto.HasExtension(mapField.Options, mypy.E_Keytype) {
@@ -642,6 +649,8 @@ func generateMypyStubs(
 		mypyStubs.WriteMessages(fd.MessageType, "", comments,
 			getFieldNumber(fd, "message_type"))
 		mypyStubs.WriteExtensions(fd.Extension)
+
+		mypyStubs.WriteFileDescriptor()
 
 		if fd.Options.GetPyGenericServices() {
 			mypyStubs.WriteServices(fd.Service)
