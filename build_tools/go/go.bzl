@@ -245,9 +245,7 @@ def go_binary_impl(ctx):
 
     link_args.add("-linkmode=external")
     link_args.add("-extld", cc_toolchain.compiler_executable)
-    l2ls = main_package.native_info.linking_context.libraries_to_link
-    if hasattr(l2ls, "to_list"):
-        l2ls = l2ls.to_list()
+    l2ls = main_package.native_info.linking_context.libraries_to_link.to_list()
     link_inputs_direct.extend([l2l.pic_static_library for l2l in l2ls])
     features = []
     if getattr(ctx.attr, "standalone", False):
