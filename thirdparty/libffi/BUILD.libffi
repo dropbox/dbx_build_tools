@@ -1,12 +1,9 @@
-load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
-
-dbx_thirdparty_cc_library(
+cc_library(
     name = "textual-includes",
-    tags = ["dbx-shelflife-version:libffi=3.3"],
     textual_hdrs = ["src/dlmalloc.c"],
 )
 
-dbx_thirdparty_cc_library(
+cc_library(
     name = "ffi",
     srcs = [
         "include/ffi_cfi.h",
@@ -38,7 +35,6 @@ dbx_thirdparty_cc_library(
         # that for safety.
     ],
     strip_include_prefix = "include",
-    tags = ["dbx-shelflife-version:libffi=3.3"],
     visibility = ["//visibility:public"],
     deps = [
         ":textual-includes",

@@ -3,8 +3,6 @@
 # generate that code then simply checking the generated artifacts as genrules.
 # See generate.sh in this directory for how to recreate those files.
 
-load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
-
 NCURSES_COPTS = [
     "-I",
     "external/org_gnu_ncurses/ncurses",
@@ -221,9 +219,8 @@ PANEL_SRCS = [
     "panel/p_win.c",
 ]
 
-dbx_thirdparty_cc_library(
+cc_library(
     name = "textual-includes",
-    tags = ["dbx-shelflife-version:ncurses=6.1"],
     textual_hdrs = [
         "ncurses/tinfo/doalloc.c",
         "ncurses/names.c",

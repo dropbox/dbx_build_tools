@@ -1,8 +1,5 @@
-load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
-
-dbx_thirdparty_cc_library(
+cc_library(
     name = "crypto-textual-hdrs",
-    tags = ["dbx-shelflife-version:openssl={}".format(OPENSSL_VERSION)],
     textual_hdrs = [
         "crypto/des/ncbc_enc.c",
         "crypto/LPdir_unix.c",

@@ -1,6 +1,4 @@
-load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
-
-dbx_thirdparty_cc_library(
+cc_library(
     name = "lzma",
     srcs = [
         "src/common/mythread.h",
@@ -166,7 +164,6 @@ dbx_thirdparty_cc_library(
         "-lrt",
     ],
     strip_include_prefix = "src/liblzma/api",
-    tags = ["dbx-shelflife-version:liblzma=5.2.5"],
     visibility = ["//visibility:public"],
 )
 

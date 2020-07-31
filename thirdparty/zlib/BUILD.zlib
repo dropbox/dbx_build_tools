@@ -1,6 +1,4 @@
-load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
-
-dbx_thirdparty_cc_library(
+cc_library(
     name = "z",
     srcs = [
         "adler32.c",
@@ -37,7 +35,6 @@ dbx_thirdparty_cc_library(
         "-DZ_HAVE_STDARG_H",
     ],
     includes = ["."],
-    tags = ["dbx-shelflife-version:zlib=1.2.11"],
     visibility = ["//visibility:private"],
 )
 

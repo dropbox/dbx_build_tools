@@ -1,6 +1,4 @@
-load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
-
-dbx_thirdparty_cc_library(
+cc_library(
     name = "sqlite3",
     srcs = ["sqlite3.c"],
     hdrs = [
@@ -28,7 +26,6 @@ dbx_thirdparty_cc_library(
         "-DSQLITE_OMIT_LOAD_EXTENSION",
     ],
     linkopts = ["-pthread"],
-    tags = ["dbx-shelflife-version:sqlite=3.32.3"],
     visibility = ["//visibility:public"],
 )
 

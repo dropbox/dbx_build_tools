@@ -1,5 +1,3 @@
-load("@dbx_build_tools//build_tools/cc:cc.bzl", "dbx_thirdparty_cc_library")
-
 cc_binary(
     name = "rl",
     srcs = ["examples/rlbasic.c"],
@@ -9,11 +7,8 @@ cc_binary(
     ],
 )
 
-dbx_shelflife_version_tag = "dbx-shelflife-version:readline=8.0"
-
-dbx_thirdparty_cc_library(
+cc_library(
     name = "textual-includes",
-    tags = [dbx_shelflife_version_tag],
     textual_hdrs = [
         "emacs_keymap.c",
         "vi_keymap.c",
@@ -132,7 +127,7 @@ cc_library(
     ],
 )
 
-dbx_thirdparty_cc_library(
+cc_library(
     name = "tilde",
     srcs = [
         "ansi_stdlib.h",
@@ -145,7 +140,6 @@ dbx_thirdparty_cc_library(
     copts = COPTS + [
         "-DREADLINE_LIBRARY",
     ],
-    tags = [dbx_shelflife_version_tag],
 )
 
 # Straight from readline ./configure.
