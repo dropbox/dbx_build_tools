@@ -21,7 +21,6 @@ ALLOWED_DRTE_VERSIONS = ["v3"]
 
 # The minimum attributes needed to be able to emit py binaries (see emit_py_binary below).
 py_binary_attrs = {
-    "_stamp_pypi": attr.bool(default = True),
     "_check_conflicts": attr.label(default = Label("//build_tools/py:check_conflicts"), executable = True, cfg = "host"),
     "_sanitizer_extra_runfiles": attr.label(default = Label("//build_tools/py:sanitizer-extra-runfiles")),
     "_sanitizer": attr.label(
@@ -170,27 +169,16 @@ def collect_transitive_srcs_and_libs(
     for abi in ALL_ABIS:
         piplib_contents_trans[abi.build_tag] = []
     extra_pythonpath_trans = []
-    versioned_deps_direct = []
-    versioned_deps_trans = []
     dynamic_libraries_trans = []
     frameworks_trans = []
 
     if not python2_compatible and not python3_compatible:
         fail("Neither compatible with Python 2 or Python 3.")
 
-    if pip_version:
-        if not is_local_piplib:
-            type = "pypi"
-        else:
-            type = "thirdparty"
-        versioned_deps_direct.append(struct(type = type, name = ctx.label.name, version = pip_version).to_json())
-
     if data:
         for x in data:
             if hasattr(x, "piplib_contents"):
                 fail("pip dependencies should not be passed in via `data`, use `deps` instead => (%s, %s)" % (ctx.label, x.label))
-            if hasattr(x, "versioned_deps"):
-                versioned_deps_trans.append(x.versioned_deps)
 
     for x in deps:
         paths = getattr(x, "extra_pythonpath", None)
@@ -203,9 +191,6 @@ def collect_transitive_srcs_and_libs(
                 fail("%s is not compatible with Python 2." % (x.label,))
             if python3_compatible and not versions.python3_compatible:
                 fail("%s is not compatible with Python 3." % (x.label,))
-
-        if hasattr(x, "versioned_deps"):
-            versioned_deps_trans.append(x.versioned_deps)
 
         if hasattr(x, "piplib_contents"):
             # Likely to be a dbx_py_library
@@ -225,10 +210,6 @@ def collect_transitive_srcs_and_libs(
         for abi in ALL_ABIS
     }
 
-    versioned_deps = depset(
-        direct = versioned_deps_direct,
-        transitive = versioned_deps_trans,
-    )
     extra_pythonpath = depset(transitive = extra_pythonpath_trans)
 
     piplib_contents = {
@@ -239,20 +220,7 @@ def collect_transitive_srcs_and_libs(
     dylibs = depset(transitive = dynamic_libraries_trans)
     frameworks = depset(transitive = frameworks_trans)
 
-    return pyc_files_by_build_tag, piplib_contents, extra_pythonpath, versioned_deps, dylibs, frameworks
-
-def _produce_versioned_deps_output(ctx, base_out_file, versioned_deps):
-    content = ctx.actions.args()
-    content.set_param_file_format("multiline")
-    content.add_joined(versioned_deps, join_with = ",", format_joined = "[%s]")
-
-    stamp_file = ctx.actions.declare_file(base_out_file.basename + ".dep_versions", sibling = base_out_file)
-    ctx.actions.write(
-        output = stamp_file,
-        content = content,
-        is_executable = False,
-    )
-    return stamp_file
+    return pyc_files_by_build_tag, piplib_contents, extra_pythonpath, dylibs, frameworks
 
 _PIPLIB_SEPARATOR = "=" * 10
 
@@ -382,7 +350,6 @@ def emit_py_binary(
             pyc_files_by_build_tag,
             piplib_contents,
             extra_pythonpath,
-            versioned_deps,
             dynamic_libraries,
             frameworks_trans,
         ) = collect_transitive_srcs_and_libs(
@@ -501,9 +468,6 @@ __path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
 
         if ext_modules:
             runfiles_trans.append(ext_modules)
-
-        if ctx.attr._stamp_pypi:
-            runfiles_direct.append(_produce_versioned_deps_output(ctx, out_file, versioned_deps))
 
     python_paths = [repr(p) for p in extra_pythonpath.to_list()]
     user_python_path = ", ".join(python_paths)

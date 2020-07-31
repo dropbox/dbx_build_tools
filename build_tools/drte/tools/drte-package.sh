@@ -110,15 +110,6 @@ for so in $(find "$RUNTIME_SYSROOT/lib64" -name "*.so*"); do
 done
 cp -R "output/drte/final/packaging/debug-src/"* "$DEBUG_ROOT"
 
-# Generate version file for shelflife. We assume only gcc and glibc libraries
-# make it into the runtime sysroot.
-cat <<EOF > "$RUNTIME_SYSROOT/.dep_versions"
-[
-  {"type": "upstream", "name": "gcc", "version": "${gcc_version}"},
-  {"type": "ubuntu", "name": "libc6", "version": "${glibc_ubuntu_version}"}
-]
-EOF
-
 # Generate packages.
 echo "Generating packages"
 tar -caf "drte-${DRTEVERSION}-build-sysroot_${DRTEPACKAGEVERSION}.tar.xz" --mtime=2018-11-11 --numeric-owner --owner=65534 --group=65534 -C "$BUILD_SYSROOT" --sort=name .

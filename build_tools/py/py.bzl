@@ -391,7 +391,6 @@ def _vpip_rule_impl(ctx, local):
         pyc_files_by_build_tag,
         piplib_contents,
         extra_pythonpath,
-        versioned_deps,
         dynamic_libraries_trans,
         frameworks_trans,
     ) = collect_transitive_srcs_and_libs(
@@ -432,7 +431,6 @@ def _vpip_rule_impl(ctx, local):
             ),
         ],
         pip_main = pip_main,
-        versioned_deps = versioned_deps,
         provides = ctx.attr.provides,
         piplib_contents = piplib_contents,
         dynamic_libraries = depset(direct = dynamic_libraries, transitive = [dynamic_libraries_trans]),
@@ -887,7 +885,6 @@ def _dbx_py_library_impl(ctx):
         pyc_files_by_build_tag,
         piplib_contents,
         extra_pythonpath,
-        versioned_deps,
         dynamic_libraries,
         frameworks,
     ) = collect_transitive_srcs_and_libs(
@@ -931,7 +928,6 @@ def _dbx_py_library_impl(ctx):
                 python3_compatible = ctx.attr.python3_compatible,
             ),
         ],
-        versioned_deps = versioned_deps,
         piplib_contents = piplib_contents,
         dynamic_libraries = dynamic_libraries,
         frameworks = frameworks,
