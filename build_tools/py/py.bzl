@@ -431,7 +431,6 @@ def _vpip_rule_impl(ctx, local):
             ),
         ],
         pip_main = pip_main,
-        provides = ctx.attr.provides,
         piplib_contents = piplib_contents,
         dynamic_libraries = depset(direct = dynamic_libraries, transitive = [dynamic_libraries_trans]),
         frameworks = depset(direct = frameworks, transitive = [frameworks_trans]),
