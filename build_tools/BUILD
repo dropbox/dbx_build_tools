@@ -58,6 +58,7 @@ dbx_py_binary(
     deps = [
         ":bazelpkg",
         "//dropbox:runfiles",
+        "//pip/typing",
     ],
 )
 
