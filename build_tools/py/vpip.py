@@ -311,7 +311,10 @@ def build_pip_archive(workdir):
                 "--no-binary=:all:",
                 # Binary packages are not acceptable in general.
                 # These are exceptions for ML usage only.
-                "--only-binary=tensorboard,tensorflow,torch,tokenizers,sentencepiece,pyarrow",
+                #
+                # Note: tensorboard and tensorflow_estimator are pure Python, but are erroneously
+                # marked as binary packages by the tensorflow build process (arch=none-any)
+                "--only-binary=tensorboard,tensorflow,tensorflow_estimator,torch,tokenizers,sentencepiece,pyarrow",
             ]
             + index_url_flags_if_required()
             + list(args)
