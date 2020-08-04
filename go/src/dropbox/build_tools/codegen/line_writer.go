@@ -2,6 +2,7 @@ package codegen
 
 import (
 	"fmt"
+	"strings"
 )
 
 type LineWriter interface {
@@ -26,26 +27,23 @@ type line struct {
 	values    []interface{}
 }
 
-func (l *line) String() string {
+func (l *line) writeTo(s *strings.Builder) {
 	if l.format == "" {
-		return "\n"
+		s.WriteByte('\n')
+		return
 	}
-
-	s := ""
 	for i := 0; i < l.indent; i++ {
-		s += l.indentStr
+		s.WriteString(l.indentStr)
 	}
-
 	// format at the very end to allow for late binding
-	s += fmt.Sprintf(l.format, l.values...) + "\n"
-
-	return s
+	fmt.Fprintf(s, l.format, l.values...)
+	s.WriteByte('\n')
 }
 
 type lineWriter struct {
 	indentStr string
 	indent    int
-	content   []*line
+	content   []line
 }
 
 func (w *lineWriter) PushIndent() {
@@ -57,9 +55,8 @@ func (w *lineWriter) PopIndent() {
 }
 
 func (w *lineWriter) Line(format string, values ...interface{}) {
-	w.content = append(
-		w.content,
-		&line{
+	w.content = append(w.content,
+		line{
 			indentStr: w.indentStr,
 			indent:    w.indent,
 			format:    format,
@@ -68,10 +65,9 @@ func (w *lineWriter) Line(format string, values ...interface{}) {
 }
 
 func (w *lineWriter) String() string {
-	s := ""
+	var b strings.Builder
 	for _, l := range w.content {
-		s += l.String()
+		l.writeTo(&b)
 	}
-
-	return s
+	return b.String()
 }
