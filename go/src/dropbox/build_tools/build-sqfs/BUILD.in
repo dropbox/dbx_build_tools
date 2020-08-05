@@ -1,0 +1,7 @@
+dbx_go_binary(
+    name = "build-sqfs",
+    data = [
+        "//build_tools:chronic",
+        "@com_github_plougher_squashfs-tools//:mksquashfs",
+    ],
+)

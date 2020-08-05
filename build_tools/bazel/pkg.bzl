@@ -317,7 +317,7 @@ _dbx_pkg_sqfs = rule(
             executable = False,
         ),
         "_build_sqfs": attr.label(
-            default = Label("//build_tools:build_sqfs"),
+            default = Label("//go/src/dropbox/build_tools/build-sqfs"),
             executable = True,
             cfg = "host",
         ),

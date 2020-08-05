@@ -45,23 +45,6 @@ dbx_py_library(
     ],
 )
 
-dbx_py_binary(
-    name = "build_sqfs",
-    srcs = ["build_sqfs.py"],
-    data = [
-        ":chronic",
-        "@com_github_plougher_squashfs-tools//:mksquashfs",
-    ],
-    main = "build_sqfs.py",
-    python2_compatible = False,
-    python3_compatible = True,
-    deps = [
-        ":bazelpkg",
-        "//dropbox:runfiles",
-        "//pip/typing",
-    ],
-)
-
 dbx_py_pytest_test(
     name = "build_parser_tests",
     srcs = ["build_parser_tests.py"],
