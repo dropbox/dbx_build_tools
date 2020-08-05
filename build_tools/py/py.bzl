@@ -397,10 +397,8 @@ def _vpip_rule_impl(ctx, local):
         ctx,
         deps = ctx.attr.deps,
         data = ctx.attr.data,
-        pip_version = ctx.attr.pip_version,
         python2_compatible = ctx.attr.python2_compatible,
         python3_compatible = ctx.attr.python3_compatible,
-        is_local_piplib = local,
     )
     required_piplibs = depset(transitive = [collect_required_piplibs(ctx.attr.deps)], direct = [ctx.label.name])
 
@@ -889,11 +887,9 @@ def _dbx_py_library_impl(ctx):
     ) = collect_transitive_srcs_and_libs(
         ctx,
         deps = ctx.attr.deps,
+        data = ctx.attr.data,
         python2_compatible = ctx.attr.python2_compatible,
         python3_compatible = ctx.attr.python3_compatible,
-        is_local_piplib = False,
-        data = ctx.attr.data,
-        pip_version = None,
     )
 
     direct_pythonpath = [workspace_root_to_pythonpath(ctx.label.workspace_root)]

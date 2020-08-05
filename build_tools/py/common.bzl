@@ -1,4 +1,3 @@
-# for defining common interfaces used between starlark files
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load(
     "@dbx_build_tools//build_tools/py:toolchain.bzl",
@@ -158,9 +157,7 @@ def collect_transitive_srcs_and_libs(
         deps,
         data,
         python2_compatible,
-        python3_compatible,
-        pip_version,
-        is_local_piplib):
+        python3_compatible):
     pyc_files_by_build_tag_trans = {}
     for abi in ALL_ABIS:
         pyc_files_by_build_tag_trans[abi.build_tag] = []
@@ -356,10 +353,8 @@ def emit_py_binary(
             ctx,
             deps = deps,
             data = data,
-            pip_version = None,
             python2_compatible = python2_compatible,
             python3_compatible = python3_compatible,
-            is_local_piplib = False,
         )
         if py_toolchain.dbx_importer:
             # The importer is only used on py2 non-bootstrap builds
