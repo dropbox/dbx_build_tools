@@ -2960,11 +2960,6 @@ func Marshal(pb Message) ([]byte, error) {
 // a Buffer for most applications.
 func (p *Buffer) Marshal(pb Message) error {
 	var err error
-	if p.deterministic {
-		if _, ok := pb.(Marshaler); ok {
-			return fmt.Errorf("proto: deterministic not supported by the Marshal method of %T", pb)
-		}
-	}
 	if m, ok := pb.(newMarshaler); ok {
 		siz := m.XXX_Size()
 		p.grow(siz) // make sure buf has enough capacity
@@ -2972,6 +2967,9 @@ func (p *Buffer) Marshal(pb Message) error {
 		return err
 	}
 	if m, ok := pb.(Marshaler); ok {
+		if p.deterministic {
+			return fmt.Errorf("proto: deterministic not supported by the Marshal method of %T", pb)
+		}
 		// If the message can marshal itself, let it do it, for compatibility.
 		// NOTE: This is not efficient.
 		var b []byte
