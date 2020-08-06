@@ -10,7 +10,7 @@ dbx_go_binary(
     ],
     data = [
         "//build_tools:chronic",
-        "@com_github_plougher_squashfs-tools//:mksquashfs",
+        "@com_github_plougher_squashfs_tools//:mksquashfs",
     ],
     visibility = [
         "//visibility:public",

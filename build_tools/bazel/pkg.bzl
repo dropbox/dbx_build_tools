@@ -69,13 +69,13 @@ def dbx_unsquash(name, srcs, outs, visibility = None):
         name = name,
         srcs = srcs,
         cmd = """
-$(location //build_tools:chronic) $(location @com_github_plougher_squashfs-tools//:unsquashfs) -f -d {} $< {}
+$(location //build_tools:chronic) $(location @com_github_plougher_squashfs_tools//:unsquashfs) -f -d {} $< {}
 """.format(dest, " ".join(outs)),
         outs = outs,
         visibility = visibility,
         tools = [
             "//build_tools:chronic",
-            "@com_github_plougher_squashfs-tools//:unsquashfs",
+            "@com_github_plougher_squashfs_tools//:unsquashfs",
         ],
     )
 

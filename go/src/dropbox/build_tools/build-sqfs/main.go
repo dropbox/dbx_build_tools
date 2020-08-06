@@ -550,7 +550,7 @@ func main() {
 	}
 
 	args := []string{
-		runfiles.MustDataPath("@com_github_plougher_squashfs-tools//mksquashfs"), *scratch, *outputSqfs,
+		runfiles.MustDataPath("@com_github_plougher_squashfs_tools//mksquashfs"), *scratch, *outputSqfs,
 		"-no-progress",
 		"-noappend",
 		"-no-fragments",
