@@ -62,12 +62,8 @@ type marshalInfo struct {
 	sizecache    field                      // offset of XXX_sizecache
 	initialized  int32                      // 0 -- only typ is set, 1 -- fully initialized
 	messageset   bool                       // uses message set wire format
-	hasmarshaler bool                       // has custom marshaler
 	sync.RWMutex                            // protect extElems map, also for initialization
 	extElems     map[int32]*marshalElemInfo // info of extension elements
-
-	hassizer      bool // has custom sizer
-	hasprotosizer bool // has custom protosizer
 
 	bytesExtensions field // offset of XXX_extensions where the field type is []byte
 }
@@ -172,25 +168,6 @@ func (u *marshalInfo) size(ptr pointer) int {
 		u.computeMarshalInfo()
 	}
 
-	// If the message can marshal itself, let it do it, for compatibility.
-	// NOTE: This is not efficient.
-	if u.hasmarshaler {
-		// Uses the message's Size method if available
-		if u.hassizer {
-			s := ptr.asPointerTo(u.typ).Interface().(Sizer)
-			return s.Size()
-		}
-		// Uses the message's ProtoSize method if available
-		if u.hasprotosizer {
-			s := ptr.asPointerTo(u.typ).Interface().(ProtoSizer)
-			return s.ProtoSize()
-		}
-
-		m := ptr.asPointerTo(u.typ).Interface().(Marshaler)
-		b, _ := m.Marshal()
-		return len(b)
-	}
-
 	n := 0
 	for _, f := range u.fields {
 		if f.isPointer && ptr.offset(f.field).getPointer().isNil() {
@@ -230,7 +207,7 @@ func (u *marshalInfo) size(ptr pointer) int {
 // cachedsize gets the size from cache. If there is no cache (i.e. message is not generated),
 // fall back to compute the size.
 func (u *marshalInfo) cachedsize(ptr pointer) int {
-	if u.sizecache.IsValid() {
+	if atomic.LoadInt32(&u.initialized) == 1 && u.sizecache.IsValid() {
 		return int(atomic.LoadInt32(ptr.offset(u.sizecache).toInt32()))
 	}
 	return u.size(ptr)
@@ -243,15 +220,6 @@ func (u *marshalInfo) cachedsize(ptr pointer) int {
 func (u *marshalInfo) marshal(b []byte, ptr pointer, deterministic bool) ([]byte, error) {
 	if atomic.LoadInt32(&u.initialized) == 0 {
 		u.computeMarshalInfo()
-	}
-
-	// If the message can marshal itself, let it do it, for compatibility.
-	// NOTE: This is not efficient.
-	if u.hasmarshaler {
-		m := ptr.asPointerTo(u.typ).Interface().(Marshaler)
-		b1, err := m.Marshal()
-		b = append(b, b1...)
-		return b, err
 	}
 
 	var err, errLater error
@@ -338,20 +306,6 @@ func (u *marshalInfo) computeMarshalInfo() {
 	u.bytesExtensions = invalidField
 	u.sizecache = invalidField
 	isOneofMessage := false
-
-	if reflect.PtrTo(t).Implements(sizerType) {
-		u.hassizer = true
-	}
-	if reflect.PtrTo(t).Implements(protosizerType) {
-		u.hasprotosizer = true
-	}
-	// If the message can marshal itself, let it do it, for compatibility.
-	// NOTE: This is not efficient.
-	if reflect.PtrTo(t).Implements(marshalerType) {
-		u.hasmarshaler = true
-		atomic.StoreInt32(&u.initialized, 1)
-		return
-	}
 
 	n := t.NumField()
 
