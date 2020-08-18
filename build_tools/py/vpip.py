@@ -45,6 +45,11 @@ def asan_options():
     )
 
 
+def _find_and_replace(env, oldsub, newsub):
+    for n, v in env.items():
+        env[n] = v.replace(oldsub, newsub)
+
+
 def get_unix_pip_env(venv, venv_source, execroot):
     env = {}
 
@@ -137,6 +142,18 @@ def get_unix_pip_env(venv, venv_source, execroot):
         env["PATH"] += ":" + ":".join(
             os.path.join(execroot, path) for path in ARGS.extra_path
         )
+
+    # NOTE: Bazel relies on placeholder values for `DEVELOPER_DIR` and `SDKROOT` and while these
+    #       are re-written prior to execution via `wrapped_clang` and `xcrunwrapper`, this command
+    #       injects various compiler flags as environment variables (e.g. `CFLAGS`): thus, we need
+    #       to replace those with their true values. This is based on `wrapped_clang`, see:
+    #       https://github.com/bazelbuild/bazel/blob/9993785fa0c4fa4172aa31d306f3abea76833abf/tools/osx/crosstool/wrapped_clang.cc#L225
+    if sys.platform.startswith("darwin"):
+        developer_dir = os.environ["DEVELOPER_DIR"]
+        sdk_root = os.environ["SDKROOT"]
+
+        _find_and_replace(env, "__BAZEL_XCODE_DEVELOPER_DIR__", developer_dir)
+        _find_and_replace(env, "__BAZEL_XCODE_SDKROOT__", sdk_root)
 
     return env
 
