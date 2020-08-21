@@ -6,7 +6,7 @@ licenses(["notice"])  # MIT
 
 dbx_py_pypi_piplib(
     name = "cffi",
-    pip_version = "1.14.1",
+    pip_version = "1.14.2",
     deps = [
         "//pip/pycparser",
         "@org_sourceware_libffi//:ffi",
