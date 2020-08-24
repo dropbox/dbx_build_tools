@@ -224,15 +224,20 @@ def _find_parent_directory_containing(start, filename):
         path = next_directory_up
 
 
-def _exclude_query(exclude_tags):
-    # type: (Optional[Iterable[str]]) -> str
-    exclude_queries = []
-    if exclude_tags:
-        for tag in exclude_tags:
-            exclude_queries.append(
-                'except (attr("tags", "(\[| ){}(\]|,)", $t))'.format(tag)
+def _tags_query(operator, tags):
+    # type: (str, Optional[Iterable[str]]) -> str
+    assert operator in [
+        "except",
+        "intersect",
+        "union",
+    ], "bazel query operator {} not in list".format(operator)
+    queries = []
+    if tags:
+        for tag in tags:
+            queries.append(
+                '{} (attr("tags", "(\[| ){}(\]|,)", $t))'.format(operator, tag)
             )
-    return " ".join(exclude_queries)
+    return " ".join(queries)
 
 
 def check_output_silently(cmd):
@@ -256,17 +261,22 @@ def check_output_silently(cmd):
 # filter a list of labels by kinds. Return xml output.
 # (['binary'], ['//code/sfp:all']) -> xml representation of ['//code/sfp:bin']
 # (['binary'], ['//code/sfp:bin', '//code/sfp:lib']) -> xml representation of ['//code/sfp:bin']
-# exclude_tags should be a list of tags
-def targets_of_kinds_for_labels_xml(bazel_bin_path, kinds, labels, exclude_tags=None):
-    # type: (str, List[str], List[str], Optional[Iterable[str]]) -> Any
+# exclude_tags: tags to ignore.
+# require_tags: require all tags to be present.
+def targets_of_kinds_for_labels_xml(
+    bazel_bin_path, kinds, labels, exclude_tags=None, require_tags=None
+):
+    # type: (str, List[str], List[str], Optional[Iterable[str]], Optional[Iterable[str]]) -> Any
     labels_string = " + ".join(labels)
     kinds_queries = ['kind("{}", {})'.format(k, labels_string) for k in kinds]
     bazel_cmd = [
         bazel_bin_path,
         "query",
         "--output=xml",
-        "let t = {} in $t {}".format(
-            " + ".join(kinds_queries), _exclude_query(exclude_tags)
+        "let t = {} in $t {} {}".format(
+            " + ".join(kinds_queries),
+            _tags_query("except", exclude_tags),
+            _tags_query("intersect", require_tags),
         ),
     ]
     output = check_output_silently(bazel_cmd)
@@ -275,14 +285,19 @@ def targets_of_kinds_for_labels_xml(bazel_bin_path, kinds, labels, exclude_tags=
 
 # [//code/sfp:all] -> [//code/sfp:sfp_test, //code/sfp:sfp2_test]
 # [code/sfp:sfp_test] -> [//code/sfp:sfp_test]
-# exclude_tags should be a list of tags
-def test_targets_for_labels(bazel_bin_path, labels, exclude_tags=None):
-    # type: (str, List[str], Optional[Iterable[str]]) -> List[Text]
+# exclude_tags: a list of tags to exclude from the query
+# require_tags: a list of must have tags for the query
+def test_targets_for_labels(
+    bazel_bin_path, labels, exclude_tags=None, require_tags=None
+):
+    # type: (str, List[str], Optional[Iterable[str]], Optional[Iterable[str]]) -> List[Text]
     bazel_cmd = [
         bazel_bin_path,
         "query",
-        "let t = tests({}) in $t {}".format(
-            " + ".join(labels), _exclude_query(exclude_tags)
+        "let t = tests({}) in $t {} {}".format(
+            " + ".join(labels),
+            _tags_query("except", exclude_tags),
+            _tags_query("intersect", require_tags),
         ),
     ]
     output = check_output_silently(bazel_cmd)
