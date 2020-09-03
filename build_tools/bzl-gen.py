@@ -46,7 +46,10 @@ def main():
             require_build_file = not getattr(args, "missing_build_file_ok", False)
 
             targets = bazel_utils.expand_bazel_targets(
-                workspace, targets, require_build_file=require_build_file
+                workspace,
+                targets,
+                require_build_file=require_build_file,
+                allow_nonexistent_npm_folders=True,
             )
 
             if not targets:

@@ -9,6 +9,7 @@ from build_tools.bzl_lib.generator import Generator
 
 
 def cmd_gen(args: Any, bazel_args, mode_args, generators) -> None:
+
     gazel.regenerate_build_files(
         args.targets,
         bazel_path=args.bazel_path,
