@@ -90,31 +90,6 @@ def regenerate_build_files(
     use_magic_mirror: bool = False,
 ) -> None:
     workspace_dir = bazel_utils.find_workspace()
-    generated_files = DefaultDict[str, List[str]](list)
-
-    generator_instances: List[Generator] = []
-    for gen in generators:
-        # Most of the time `generator` is a class. Sometimes it's a functools.partial, so handle that too.
-        generator_name = gen.__name__
-        with metrics.Timer("bzl_gen_{}_init_ms".format(generator_name)) as init_timer:
-            generator_instances.append(
-                gen(
-                    workspace_dir,
-                    generated_files,
-                    verbose,
-                    skip_deps_generation,
-                    dry_run,
-                    use_magic_mirror,
-                    bazel_path,
-                )
-            )
-        metrics.log_cumulative_rate(init_timer.name, init_timer.get_interval_ms())
-
-    # let generators potentially create folders / BUILD.in files and add these
-    # to the targets we're generating
-    for generator in generator_instances:
-        bazel_targets_l = generator.preprocess_targets(bazel_targets_l)
-
     bazel_targets = set(bazel_targets_l)
 
     if reverse_deps_generation:
@@ -149,6 +124,26 @@ def regenerate_build_files(
                         os.path.relpath(path, workspace_dir)
                     )
                 )
+
+    generated_files = DefaultDict[str, List[str]](list)
+
+    generator_instances: List[Generator] = []
+    for gen in generators:
+        # Most of the time `generator` is a class. Sometimes it's a functools.partial, so handle that too.
+        generator_name = gen.__name__
+        with metrics.Timer("bzl_gen_{}_init_ms".format(generator_name)) as init_timer:
+            generator_instances.append(
+                gen(
+                    workspace_dir,
+                    generated_files,
+                    verbose,
+                    skip_deps_generation,
+                    dry_run,
+                    use_magic_mirror,
+                    bazel_path,
+                )
+            )
+        metrics.log_cumulative_rate(init_timer.name, init_timer.get_interval_ms())
 
     # In order to ensure we don't miss generating specific target types,
     # recursively expands the generated set until it converges.
