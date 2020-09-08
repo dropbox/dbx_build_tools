@@ -44,7 +44,6 @@ drte_deps()
 
 register_toolchains(
     "@dbx_build_tools//thirdparty/cpython:drte-off-27-toolchain",
-    "@dbx_build_tools//thirdparty/cpython:drte-off-37-toolchain",
     "@dbx_build_tools//thirdparty/cpython:drte-off-38-toolchain",
 )
 ```
