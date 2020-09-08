@@ -83,9 +83,14 @@ def expand_bazel_target_dirs(
 
 
 def expand_bazel_targets(
-    workspace, targets, normalize=True, require_build_file=True, cwd="."
+    workspace,
+    targets,
+    normalize=True,
+    require_build_file=True,
+    cwd=".",
+    allow_nonexistent_npm_folders=False,
 ):
-    # type: (Text, Iterable[Any], bool, bool, Text) -> List[Any]
+    # type: (Text, Iterable[Any], bool, bool, Text, bool) -> List[Any]
     matched = set()  # type: ignore[var-annotated]
     filtered = set()  # type: ignore[var-annotated]
     for target in targets:
@@ -99,6 +104,7 @@ def expand_bazel_targets(
                     normalize=normalize,
                     require_build_file=require_build_file,
                     cwd=cwd,
+                    allow_nonexistent_npm_folders=allow_nonexistent_npm_folders,
                 )
             )
         else:
@@ -109,15 +115,21 @@ def expand_bazel_targets(
                     normalize=normalize,
                     require_build_file=require_build_file,
                     cwd=cwd,
+                    allow_nonexistent_npm_folders=allow_nonexistent_npm_folders,
                 )
             )
     return list(sorted(matched - filtered))
 
 
 def _expand_bazel_target(
-    workspace, target, normalize=True, require_build_file=True, cwd="."
+    workspace,
+    target,
+    normalize=True,
+    require_build_file=True,
+    cwd=".",
+    allow_nonexistent_npm_folders=False,
 ):
-    # type: (Text, Any, bool, bool, Text) -> List[Any]
+    # type: (Text, Any, bool, bool, Text, bool) -> List[Any]
     if target.endswith("..."):
         recursive = True
         target_dir = target[:-3]
@@ -134,7 +146,11 @@ def _expand_bazel_target(
     target_dir = os.path.abspath(target_dir)
 
     if not os.path.isdir(target_dir):
-        raise NoSuchTargetError("no such target directory: " + target_dir)
+        if recursive or not (
+            allow_nonexistent_npm_folders
+            and (os.path.sep + "npm" + os.path.sep) in target_dir
+        ):
+            raise NoSuchTargetError("no such target directory: " + target_dir)
 
     if recursive:
         targets = [t[0] for t in os.walk(target_dir)]
