@@ -600,10 +600,10 @@ dbx_py_local_piplib_internal = rule(
     toolchains = ALL_TOOLCHAIN_NAMES,
 )
 
-def get_default_py_toolchain_name(python2_compatible):
-    if not python2_compatible:
-        return BUILD_TAG_TO_TOOLCHAIN_MAP[PY3_DEFAULT_BINARY_ABI.build_tag]
-    return CPYTHON_27_TOOLCHAIN_NAME
+def get_default_py_toolchain_name(python3_compatible):
+    if not python3_compatible:
+        return CPYTHON_27_TOOLCHAIN_NAME
+    return BUILD_TAG_TO_TOOLCHAIN_MAP[PY3_DEFAULT_BINARY_ABI.build_tag]
 
 def _dbx_py_binary_impl(ctx):
     return dbx_py_binary_base_impl(ctx, internal_bootstrap = False)
@@ -622,7 +622,7 @@ def dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = None)
         if ctx.attr.python:
             toolchain_name = get_py_toolchain_name(ctx.attr.python)
         else:
-            toolchain_name = get_default_py_toolchain_name(ctx.attr.python2_compatible)
+            toolchain_name = get_default_py_toolchain_name(ctx.attr.python3_compatible)
 
         python = ctx.toolchains[toolchain_name].interpreter[DbxPyInterpreter]
         build_tag = python.build_tag
