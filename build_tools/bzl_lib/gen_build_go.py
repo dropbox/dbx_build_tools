@@ -1,27 +1,24 @@
 # mypy: allow-untyped-defs
 
-from __future__ import print_function
-
 import os
 
 from typing import Dict, Iterable, List, Set, Text
 
 from build_tools import bazel_utils, build_parser
 from build_tools.bzl_lib.cfg import BUILD_INPUT, GO_RULE_TYPES, WHITELISTED_GO_SRCS_PATHS
-from build_tools.bzl_lib.generator import Generator
+from build_tools.bzl_lib.generator import Config, Generator
 from build_tools.bzl_lib.run import run_cmd
 
 from dropbox import runfiles
 
 
-def srcs_allowed(path):
-    # type: (Text) -> bool
+def srcs_allowed(path: str) -> bool:
     return any(path.endswith(p) for p in WHITELISTED_GO_SRCS_PATHS)
 
 
 # Convert bazel targets into Go packages in the GOPATH.
 def targets2packages(bazel_targets):
-    # tpe: (Iterable[Text]) -> List[Text]
+    # type: (Iterable[Text]) -> List[Text]
     go_packages = []
     workspace_dir = bazel_utils.find_workspace()
     targets = bazel_utils.expand_bazel_target_dirs(
@@ -39,20 +36,11 @@ class GoBuildGenerator(Generator):
     to generate the fully merged BUILD files."""
 
     def __init__(
-        self,
-        workspace_dir: str,
-        generated_files: Dict[str, List[str]],
-        verbose: bool,
-        skip_deps_generation: bool,
-        dry_run: bool,
-        use_magic_mirror: bool,
-        bazel_path: str,
-    ):
+        self, workspace_dir: str, generated_files: Dict[str, List[str]], cfg: Config
+    ) -> None:
         self.go_src_dir = os.path.join(workspace_dir, "go/src")
         self.generated_files = generated_files
-        self.verbose = verbose
-        self.skip_deps_generation = skip_deps_generation
-        self.dry_run = dry_run
+        self.cfg = cfg
 
         self.visited_dirs: Set[str] = set()
 
@@ -72,11 +60,11 @@ class GoBuildGenerator(Generator):
         )
 
         args = [tool_path]
-        if self.verbose:
+        if self.cfg.verbose:
             args += ["--verbose"]
-        if self.skip_deps_generation:
+        if self.cfg.skip_deps_generation:
             args += ["--skip-deps-generation"]
-        if self.dry_run:
+        if self.cfg.dry_run:
             args += ["--dry-run"]
 
         # Write out some temporary BUILD files that we can merge with
@@ -84,12 +72,12 @@ class GoBuildGenerator(Generator):
         tmp_buildfile = "BUILD.gen-build-go~"
         args += ["--build-filename", tmp_buildfile]
         args += go_packages
-        output = run_cmd(args, use_go_env=True, verbose=self.verbose)
+        output = run_cmd(args, use_go_env=True, verbose=self.cfg.verbose)
 
-        if self.dry_run or self.verbose:
+        if self.cfg.dry_run or self.cfg.verbose:
             print(output)
 
-        if self.dry_run:
+        if self.cfg.dry_run:
             return
 
         for line in output.split("\n"):

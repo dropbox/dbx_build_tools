@@ -1,7 +1,5 @@
 # mypy: allow-untyped-defs
 
-from __future__ import print_function
-
 import glob
 import os
 import os.path
@@ -22,7 +20,7 @@ from build_tools.bzl_lib.cfg import (
     WELL_KNOWN_PIP_DIRS,
     WELL_KNOWN_PY_EXTENSION_DIRS,
 )
-from build_tools.bzl_lib.generator import Generator
+from build_tools.bzl_lib.generator import Config, Generator
 from build_tools.bzl_lib.parse_py_imports import parse_imports
 
 BUILD_OUTPUT = "BUILD.gen_build_py~"
@@ -854,20 +852,11 @@ class PyBuildGenerator(Generator):
     files to generate the fully merged BUILD files."""
 
     def __init__(
-        self,
-        workspace_dir: str,
-        generated_files: Dict[str, List[str]],
-        verbose: bool,
-        skip_deps_generation: bool,
-        dry_run: bool,
-        use_magic_mirror: bool,
-        bazel_path: str,
-    ):
+        self, workspace_dir: str, generated_files: Dict[str, List[str]], cfg: Config
+    ) -> None:
         self.workspace_dir = workspace_dir
         self.generated_files = generated_files
-        self.verbose = verbose
-        self.skip_deps_generation = skip_deps_generation
-        self.dry_run = dry_run
+        self.cfg = cfg
 
         # Set of visited directory with BUILD.in
         self.visited_bzl_dirs: Set[str] = set()
@@ -882,8 +871,8 @@ class PyBuildGenerator(Generator):
             workspace_dir, self.parsed_cache
         )
 
-    def maybe_traverse_non_bzl(self, expanded_target):
-        if self.skip_deps_generation:
+    def maybe_traverse_non_bzl(self, expanded_target: str) -> None:
+        if self.cfg.skip_deps_generation:
             return
 
         pkg, _, name = expanded_target.partition(":")
@@ -941,24 +930,24 @@ class PyBuildGenerator(Generator):
             py_rules = parsed.get_rules_by_types(PY_RULE_TYPES)
 
             if not py_rules:
-                if self.verbose:
+                if self.cfg.verbose:
                     print("No py targets found in %s:%s" % (pkg, BUILD_INPUT))
                 continue
 
-            if self.verbose:
-                head = "(dry run) " if self.dry_run else ""
+            if self.cfg.verbose:
+                head = "(dry run) " if self.cfg.dry_run else ""
                 print(
                     head
                     + "Processing py targets in %s: %s"
                     % (pkg, [rule.attr_map["name"] for rule in py_rules])
                 )
 
-            if self.dry_run:
+            if self.cfg.dry_run:
                 continue
 
             self.generate_build_file(pkg, py_rules)
 
-    def generate_build_file(self, pkg, py_rules):
+    def generate_build_file(self, pkg: str, py_rules: List[build_parser.Rule]) -> None:
         to_traverse = []  # type: ignore[var-annotated]
         output = [PY_LOAD_STATEMENT, ""]
 
@@ -1060,7 +1049,7 @@ class PyBuildGenerator(Generator):
 
         self.generated_files[build_outdir].append(build_output)
 
-        if not self.skip_deps_generation:
+        if not self.cfg.skip_deps_generation:
             self.regenerate(
                 set(to_traverse), cwd=os.path.join(self.workspace_dir, pkg[2:])
             )

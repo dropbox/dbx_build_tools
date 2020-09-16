@@ -2,11 +2,11 @@
 
 import os
 
-from typing import Callable, DefaultDict, Iterable, List, Sequence, Set
+from typing import Callable, DefaultDict, Dict, Iterable, List, Sequence, Set
 
 from build_tools import bazel_utils
 from build_tools.bzl_lib import build_merge, metrics
-from build_tools.bzl_lib.generator import Generator
+from build_tools.bzl_lib.generator import Config, Generator
 from build_tools.bzl_lib.run import run_cmd
 
 from dropbox import runfiles
@@ -25,21 +25,14 @@ class CopyGenerator(Generator):
     copied into BUILD, even when it does not include any generated targets"""
 
     def __init__(
-        self,
-        workspace_dir,
-        generated_files,
-        verbose,
-        skip_deps_generation,
-        dry_run,
-        use_magic_mirror,
-        bazel_path,
-    ):
+        self, workspace_dir: str, generated_files: Dict[str, List[str]], cfg: Config
+    ) -> None:
 
         self.workspace_dir = workspace_dir
         self.generated_files = generated_files
-        self.dry_run = dry_run
+        self.cfg = cfg
 
-        self.visited_dirs = set()
+        self.visited_dirs: Set[str] = set()
 
     def regenerate(self, bazel_targets: Iterable[str], cwd: str = ".") -> None:
 
@@ -66,7 +59,7 @@ class CopyGenerator(Generator):
             if target_dir in self.generated_files:
                 continue
 
-            if self.dry_run:
+            if self.cfg.dry_run:
                 continue
 
             out = os.path.join(target_dir, "BUILD.gen_empty")
@@ -82,12 +75,8 @@ class GazelError(Exception):
 def regenerate_build_files(
     bazel_targets_l: Sequence[str],
     generators: Sequence[Callable[..., Generator]],
-    bazel_path: str,
-    verbose: bool = False,
-    skip_deps_generation: bool = False,
-    dry_run: bool = False,
+    cfg: Config,
     reverse_deps_generation: bool = False,
-    use_magic_mirror: bool = False,
 ) -> None:
     workspace_dir = bazel_utils.find_workspace()
     generated_files = DefaultDict[str, List[str]](list)
@@ -97,17 +86,7 @@ def regenerate_build_files(
         # Most of the time `generator` is a class. Sometimes it's a functools.partial, so handle that too.
         generator_name = gen.__name__
         with metrics.Timer("bzl_gen_{}_init_ms".format(generator_name)) as init_timer:
-            generator_instances.append(
-                gen(
-                    workspace_dir,
-                    generated_files,
-                    verbose,
-                    skip_deps_generation,
-                    dry_run,
-                    use_magic_mirror,
-                    bazel_path,
-                )
-            )
+            generator_instances.append(gen(workspace_dir, generated_files, cfg))
         metrics.log_cumulative_rate(init_timer.name, init_timer.get_interval_ms())
 
     # let generators potentially create folders / BUILD.in files and add these

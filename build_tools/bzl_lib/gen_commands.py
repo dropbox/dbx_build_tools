@@ -5,20 +5,22 @@ import functools
 from typing import Any, Callable, Optional, Sequence
 
 from build_tools.bzl_lib import gazel
-from build_tools.bzl_lib.generator import Generator
+from build_tools.bzl_lib.generator import Config, Generator
 
 
 def cmd_gen(args: Any, bazel_args, mode_args, generators) -> None:
 
     gazel.regenerate_build_files(
         args.targets,
-        bazel_path=args.bazel_path,
-        verbose=args.verbose,
-        skip_deps_generation=not args.deps_generation,
-        dry_run=args.dry_run,
+        cfg=Config(
+            bazel_path=args.bazel_path,
+            verbose=args.verbose,
+            skip_deps_generation=not args.deps_generation,
+            dry_run=args.dry_run,
+            use_magic_mirror=args.use_magic_mirror,
+        ),
         reverse_deps_generation=args.reverse_deps_generation,
         generators=generators,
-        use_magic_mirror=args.use_magic_mirror,
     )
 
 
