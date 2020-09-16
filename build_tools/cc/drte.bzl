@@ -109,6 +109,13 @@ def _impl(ctx):
                 ],
                 with_features = [with_feature_set(features = ["opt"])],
             ),
+        ],
+    )
+
+    cc_std_feature = feature(
+        name = "cc_std_feature",
+        enabled = ctx.attr.compiler != "cuda",
+        flag_sets = [
             flag_set(
                 actions = [
                     ACTION_NAMES.linkstamp_compile,
@@ -326,6 +333,7 @@ def _impl(ctx):
 
     features = [
         default_compile_flags_feature,
+        cc_std_feature,
         default_link_flags_feature,
         dynamic_interpreter_feature,
         fdo_optimize_feature,

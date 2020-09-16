@@ -1,6 +1,7 @@
 load("@bazel_tools//tools/cpp:toolchain_utils.bzl", "find_cpp_toolchain")
 load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
+    "CPP_COMPILE_ACTION_NAME",
     "CPP_LINK_DYNAMIC_LIBRARY_ACTION_NAME",
     "C_COMPILE_ACTION_NAME",
 )
@@ -66,7 +67,7 @@ def _get_build_interpreters_for_target(ctx):
 # Placeholder text which gets replaced with base/root directory where action is executed.
 ROOT_PLACEHOLDER = "____root____"
 
-def _add_vpip_compiler_args(ctx, cc_toolchain, copts, args):
+def _add_vpip_compiler_args(ctx, cc_toolchain, copts, conly, args):
     # Set the compiler to the crosstool compilation driver.
     args.add(cc_toolchain.compiler_executable, format = "--compiler-executable=%s")
     args.add(cc_toolchain.ar_executable, format = "--archiver=%s")
@@ -86,7 +87,7 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, args):
     )
     compiler_options = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
-        action_name = C_COMPILE_ACTION_NAME,
+        action_name = C_COMPILE_ACTION_NAME if conly else CPP_COMPILE_ACTION_NAME,
         variables = compile_variables,
     )
     args.add_all(compiler_options, format_each = "--compile-flags=%s")
@@ -156,7 +157,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     outputs = [wheel]
 
     cc_toolchain = find_cpp_toolchain(ctx)
-    link_env = _add_vpip_compiler_args(ctx, cc_toolchain, ctx.attr.copts, command_args)
+    link_env = _add_vpip_compiler_args(ctx, cc_toolchain, ctx.attr.copts, ctx.attr.conly, command_args)
 
     inputs_direct = []
     inputs_trans = [
@@ -533,6 +534,8 @@ _piplib_attrs = {
     "srcs": attr.label_list(allow_files = True),
     "deps": attr.label_list(allow_files = True),
     "data": attr.label_list(allow_files = True),
+    "copts": attr.string_list(),
+    "conly": attr.bool(default = False),
     "global_options": attr.string_list(),
     "build_options": attr.string_list(),
     "extra_path": attr.string_list(),
@@ -568,7 +571,6 @@ one. Note, it does not support 'global_options' and 'build_options' arguments.""
 _pypi_piplib_attrs = dict(_piplib_attrs)
 _pypi_piplib_attrs.update({
     "pip_version": attr.string(mandatory = True),
-    "copts": attr.string_list(),
     "namespace_pkgs": attr.string_list(),
     "setup_requires": attr.label_list(providers = ["piplib_contents", DbxPyVersionCompatibility]),
     "tools": attr.label_list(cfg = "host"),
@@ -584,7 +586,6 @@ dbx_py_pypi_piplib_internal = rule(
 
 _local_piplib_attrs = dict(_piplib_attrs)
 _local_piplib_attrs.update({
-    "copts": attr.string_list(),
     "namespace_pkgs": attr.string_list(),
     "pip_version": attr.string(),
     "setup_requires": attr.label_list(providers = ["piplib_contents", DbxPyVersionCompatibility]),
