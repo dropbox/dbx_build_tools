@@ -172,9 +172,11 @@ def _expand_bazel_target(
 
     # Normalize target paths to use //
     if normalize:
-        targets = [os.path.abspath(x).replace(workspace, "/") for x in targets]
-        if "/" in targets:
-            targets[targets.index("/")] = "//"
+        targets = [
+            "//" + os.path.relpath(os.path.abspath(x), workspace) for x in targets
+        ]
+        if "//." in targets:
+            targets[targets.index("//.")] = "//"
 
     # Despite the name, items in "targets" are actually paths that are likely to have
     # a mix of forward and backwards slashes on Windows.
