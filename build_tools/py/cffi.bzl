@@ -91,7 +91,6 @@ _cffi_module = rule(
             allow_single_file = True,
             mandatory = True,
         ),
-        "use_cpp": attr.bool(default = False),
         "copts": attr.string_list(),
         "linkopts": attr.string_list(),
         "libraries": attr.string_list(),
@@ -106,6 +105,7 @@ def dbx_cffi_module(
         python2_compatible = True,
         python3_compatible = None,
         ignore_missing_static_libraries = True,
+        conly = False,
         tags = [],
         import_test_tags = [],
         **kwargs):
@@ -129,6 +129,7 @@ def dbx_cffi_module(
         python3_compatible = python3_compatible,
         setup_requires = ["//pip/cffi"],
         ignore_missing_static_libraries = ignore_missing_static_libraries,
+        conly = conly,
         tags = tags,
         import_test_tags = import_test_tags,
     )
