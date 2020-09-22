@@ -697,7 +697,7 @@ _dbx_py_binary_base_attrs = {
     "data": attr.label_list(allow_files = True),
     "pythonpath": attr.string(),
     "extra_args": attr.string_list(),
-    "python2_compatible": attr.bool(default = True),
+    "python2_compatible": attr.bool(default = False),
     "python3_compatible": attr.bool(default = True),
     "python": attr.string(values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys() + [""]),
 }
