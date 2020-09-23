@@ -89,6 +89,11 @@ def regenerate_build_files(
             generator_instances.append(gen(workspace_dir, generated_files, cfg))
         metrics.log_cumulative_rate(init_timer.name, init_timer.get_interval_ms())
 
+    # let generators potentially create folders / BUILD.in files and add these
+    # to the targets we're generating
+    for generator in generator_instances:
+        bazel_targets_l = generator.preprocess_targets(bazel_targets_l)
+
     bazel_targets = set(bazel_targets_l)
 
     if reverse_deps_generation:

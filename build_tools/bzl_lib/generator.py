@@ -1,7 +1,7 @@
 import dataclasses
 
 from abc import abstractmethod
-from typing import Iterable
+from typing import Iterable, Sequence
 
 
 @dataclasses.dataclass(frozen=True)
@@ -30,6 +30,11 @@ class Config:
 
 
 class Generator:
+    def preprocess_targets(self, bazel_targets: Sequence[str]) -> Sequence[str]:
+        """ Given the list of targets we plan to generate, do any preprocessing needed and return a new list of targets.  Preprocessing could including making folders with BUILD.in files for non-existant packages.
+        """
+        return bazel_targets
+
     @abstractmethod
     def regenerate(self, bazel_targets: Iterable[str]) -> None:
         """
