@@ -9,8 +9,6 @@ import sys
 
 from xml.dom import minidom  # type: ignore[import]
 
-from build_tools.npm_utils import target_to_npm_name
-
 MYPY = False
 if MYPY:
     from typing import Any, Dict, Iterable, List, Optional, Sequence, Text, Tuple
@@ -85,14 +83,9 @@ def expand_bazel_target_dirs(
 
 
 def expand_bazel_targets(
-    workspace,
-    targets,
-    normalize=True,
-    require_build_file=True,
-    cwd=".",
-    allow_nonexistent_npm_folders=False,
+    workspace, targets, normalize=True, require_build_file=True, cwd="."
 ):
-    # type: (Text, Iterable[Any], bool, bool, Text, bool) -> List[Any]
+    # type: (Text, Iterable[Any], bool, bool, Text) -> List[Any]
     matched = set()  # type: ignore[var-annotated]
     filtered = set()  # type: ignore[var-annotated]
     for target in targets:
@@ -106,7 +99,6 @@ def expand_bazel_targets(
                     normalize=normalize,
                     require_build_file=require_build_file,
                     cwd=cwd,
-                    allow_nonexistent_npm_folders=allow_nonexistent_npm_folders,
                 )
             )
         else:
@@ -117,21 +109,15 @@ def expand_bazel_targets(
                     normalize=normalize,
                     require_build_file=require_build_file,
                     cwd=cwd,
-                    allow_nonexistent_npm_folders=allow_nonexistent_npm_folders,
                 )
             )
     return list(sorted(matched - filtered))
 
 
 def _expand_bazel_target(
-    workspace,
-    target,
-    normalize=True,
-    require_build_file=True,
-    cwd=".",
-    allow_nonexistent_npm_folders=False,
+    workspace, target, normalize=True, require_build_file=True, cwd="."
 ):
-    # type: (Text, Any, bool, bool, Text, bool) -> List[Any]
+    # type: (Text, Any, bool, bool, Text) -> List[Any]
     if target.endswith("..."):
         recursive = True
         target_dir = target[:-3]
@@ -148,10 +134,7 @@ def _expand_bazel_target(
     target_dir = os.path.abspath(target_dir)
 
     if not os.path.isdir(target_dir):
-        if recursive or not (
-            allow_nonexistent_npm_folders and target_to_npm_name(target) is not None
-        ):
-            raise NoSuchTargetError("no such target directory: " + target_dir)
+        raise NoSuchTargetError("no such target directory: " + target_dir)
 
     if recursive:
         targets = [t[0] for t in os.walk(target_dir)]
