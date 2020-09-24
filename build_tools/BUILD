@@ -24,11 +24,23 @@ dbx_py_library(
     name = "bazel_utils",
     srcs = [
         "bazel_utils.py",
+        "npm_utils.py",
     ],
     python3_compatible = True,
     validate = "strict",
     deps = [
         "//pip/typing",
+    ],
+)
+
+dbx_py_pytest_test(
+    name = "npm_utils_tests",
+    srcs = [
+        "npm_utils_tests.py",
+    ],
+    python3_compatible = True,
+    deps = [
+        ":bazel_utils",
     ],
 )
 
