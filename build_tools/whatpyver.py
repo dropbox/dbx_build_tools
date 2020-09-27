@@ -54,6 +54,8 @@ RULE_TYPES = [
     "dbx_py_tf_pytest_test",
 ]
 
+RULE_TYPES_THAT_DEFAULT_PY3_ONLY = ["dbx_py_binary", "dbx_py_test"]
+
 # These don't have the python3_compatible attribute, so we just assume they
 # aren't python3_compatible
 RULE_TYPES_WITHOUT_PY3_SUPPORT = ["py_library", "py_binary"]
@@ -196,7 +198,10 @@ class PythonVersionCache(object):
         self._build_file_parsers[build_file] = bp
         for rule in bp.get_rules_by_types(RULE_TYPES):
             # NOTE: These defaults may change when build_tools/py/py.bzl changes.
-            py2 = rule.attr_map.get("python2_compatible", True)
+            py2 = rule.attr_map.get(
+                "python2_compatible",
+                rule.rule_type not in RULE_TYPES_THAT_DEFAULT_PY3_ONLY,
+            )
             py3 = rule.attr_map.get(
                 "python3_compatible",
                 rule.rule_type not in RULE_TYPES_WITHOUT_PY3_SUPPORT,
