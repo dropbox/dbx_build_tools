@@ -31,11 +31,12 @@ coverage --test_env=LCOV_MERGER=/bin/true
 $ cat > WORKSPACE
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
+
+# Real use cases should pin a commit and set the sha256.
 http_archive(
     name = "dbx_build_tools",
-    urls = ["https://github.com/dropbox/dbx_build_tools/archive/062b7ced7133a905f0db351ab8cd4e3c5733b30f.tar.gz"],
-    strip_prefix = "dbx_build_tools-062b7ced7133a905f0db351ab8cd4e3c5733b30f",
-    sha256 = "3d62fbdd7a528ef80bd4ee5b64a28bfd46d4a4a5db665742ef00a489c57c8aeb",
+    urls = ["https://github.com/dropbox/dbx_build_tools/archive/master.tar.gz"],
+    strip_prefix = "dbx_build_tools-master",
 )
 
 load('@dbx_build_tools//build_tools/bazel:external_workspace.bzl', 'drte_deps')
