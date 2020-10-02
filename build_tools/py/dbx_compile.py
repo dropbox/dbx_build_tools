@@ -5,8 +5,9 @@ import sys
 from build_tools.py import dbx_importer
 
 if __name__ == "__main__":
-    allow_failures = sys.argv[1] == "--allow-failures"
-    items = sys.argv[2:]
+    with open(sys.argv[1]) as fp:
+        allow_failures = fp.readline() == "--allow-failures\n"
+        items = fp.read().splitlines()
     assert len(items) % 3 == 0
     n = len(items) // 3
     worked = False

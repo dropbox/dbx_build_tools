@@ -263,6 +263,8 @@ def compile_pycs(ctx, srcs, python):
         new_pyc_files = [ctx.actions.declare_file(_pyc_path(src, python.build_tag), sibling = src) for src in srcs]
 
     lib_args = ctx.actions.args()
+    lib_args.use_param_file("%s", use_always = True)
+    lib_args.set_param_file_format("multiline")
     lib_args.add("--noallow-failures")
     lib_args.add_all(srcs)
     lib_args.add_all(srcs, map_each = _short_path)

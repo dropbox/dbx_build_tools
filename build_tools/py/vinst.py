@@ -5,6 +5,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 
 if sys.version_info[0] == 2:
@@ -132,31 +133,35 @@ def install(
         if install_name.endswith(".py"):
             to_compile.append(install_name)
     if pyc_compiler and to_compile:
-        args = [
-            pyc_compiler,
-            # Thirdparty .py files can contain all manner of brokenness.
-            "--allow-failures",
-        ]
-        for py in to_compile:
-            args.append(os.path.join(target, py))
-        for py in to_compile:
-            args.append(os.path.join(target_short_path, py))
-        for py in to_compile:
-            if pyc_build_tag:
-                dirname, basename = os.path.split(py)
-                args.append(
-                    os.path.join(
-                        target,
-                        dirname,
-                        "__pycache__",
-                        basename[:-2] + pyc_build_tag + ".pyc",
-                    )
-                )
-            else:
-                args.append(os.path.join(target, py + "dbxc"))
-        subprocess.check_call(
-            args, env={"PYTHONHASHSEED": "4", "DBX_PYTHON": pyc_python}
-        )
+        response_fd, response_file = tempfile.mkstemp()
+        try:
+            with os.fdopen(response_fd, "w", encoding="utf-8") as fp:
+                # Thirdparty .py files can contain all manner of brokenness.
+                fp.write("--allow-failures\n")
+                for py in to_compile:
+                    fp.write(os.path.join(target, py) + "\n")
+                for py in to_compile:
+                    fp.write(os.path.join(target_short_path, py) + "\n")
+                for py in to_compile:
+                    if pyc_build_tag:
+                        dirname, basename = os.path.split(py)
+                        fp.write(
+                            os.path.join(
+                                target,
+                                dirname,
+                                "__pycache__",
+                                basename[:-2] + pyc_build_tag + ".pyc",
+                            )
+                            + "\n"
+                        )
+                    else:
+                        fp.write(os.path.join(target, py + "dbxc") + "\n")
+            subprocess.check_call(
+                [pyc_compiler, response_file],
+                env={"PYTHONHASHSEED": "4", "DBX_PYTHON": pyc_python},
+            )
+        finally:
+            os.unlink(response_file)
 
 
 def main(args):

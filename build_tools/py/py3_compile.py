@@ -11,8 +11,9 @@ DOCSTRING_STRIP_EXCEPTIONS = [
 
 
 def main() -> None:
-    allow_failures = sys.argv[1] == "--allow-failures"
-    items = sys.argv[2:]
+    with open(sys.argv[1], encoding="utf-8") as fp:
+        allow_failures = fp.readline() == "--allow-failures\n"
+        items = fp.read().splitlines()
     assert len(items) % 3 == 0
     n = len(items) // 3
 
