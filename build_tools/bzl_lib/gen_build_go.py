@@ -1,8 +1,6 @@
-# mypy: allow-untyped-defs
-
 import os
 
-from typing import Dict, Iterable, List, Set, Text
+from typing import Dict, Iterable, List, Set
 
 from build_tools import bazel_utils, build_parser
 from build_tools.bzl_lib.cfg import BUILD_INPUT, GO_RULE_TYPES, WHITELISTED_GO_SRCS_PATHS
@@ -17,10 +15,8 @@ def srcs_allowed(path: str) -> bool:
 
 
 # Convert bazel targets into Go packages in the GOPATH.
-def targets2packages(bazel_targets):
-    # type: (Iterable[Text]) -> List[Text]
+def targets2packages(workspace_dir: str, bazel_targets: Iterable[str]) -> List[str]:
     go_packages = []
-    workspace_dir = bazel_utils.find_workspace()
     targets = bazel_utils.expand_bazel_target_dirs(
         workspace_dir, bazel_targets, require_build_file=False
     )
@@ -38,14 +34,15 @@ class GoBuildGenerator(Generator):
     def __init__(
         self, workspace_dir: str, generated_files: Dict[str, List[str]], cfg: Config
     ) -> None:
-        self.go_src_dir = os.path.join(workspace_dir, "go/src")
+        self.workspace_dir = workspace_dir
+        self.go_src_dir = os.path.join(self.workspace_dir, "go/src")
         self.generated_files = generated_files
         self.cfg = cfg
 
         self.visited_dirs: Set[str] = set()
 
     def regenerate(self, bazel_targets: Iterable[str]) -> None:
-        go_packages = targets2packages(bazel_targets)
+        go_packages = targets2packages(self.workspace_dir, bazel_targets)
         go_packages = [
             p
             for p in go_packages
