@@ -2,12 +2,22 @@
   "IsLabelArg": {
     "additional_deps": true,
     "additional_data": true,
-    "services": true
+    "services": true,
+    "edison_pages": true,
+    "additional_edison_pages": true,
+    "servicers": true,
+    "atlas_servicers": true,
+    "additional_servicers": true
   },
   "IsSortableListArg": {
     "additional_deps": true,
     "additional_data": true,
-    "services": true
+    "services": true,
+    "edison_pages": true,
+    "additional_edison_pages": true,
+    "servicers": true,
+    "atlas_servicers": true,
+    "additional_servicers": true
   },
   "SortableBlacklist": {
     "dbx_deprecated_metaserver_js_amd_bundle.srcs": true
