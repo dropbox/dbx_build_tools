@@ -1,14 +1,17 @@
 /*
-Copyright 2019 Google Inc. All Rights Reserved.
+Copyright 2019 Google LLC
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 package edit
@@ -124,7 +127,7 @@ type targetExpressionToBuildFilesTestCase struct {
 	buildFiles      []string
 }
 
-func runTestTargetExpressionToBuildFiles(t *testing.T, buildFileName string) {
+func setupTestTmpWorkspace(t *testing.T, buildFileName string) (tmp string) {
 	tmp, err := ioutil.TempDir("", "")
 	if err != nil {
 		t.Fatal(err)
@@ -136,7 +139,6 @@ func runTestTargetExpressionToBuildFiles(t *testing.T, buildFileName string) {
 		t.Fatal(err)
 	}
 
-	defer os.RemoveAll(tmp)
 	if err := os.MkdirAll(filepath.Join(tmp, "a", "b"), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -158,6 +160,12 @@ func runTestTargetExpressionToBuildFiles(t *testing.T, buildFileName string) {
 	if err := ioutil.WriteFile(filepath.Join(tmp, "a", "c", buildFileName), nil, 0755); err != nil {
 		t.Fatal(err)
 	}
+	return
+}
+
+func runTestTargetExpressionToBuildFiles(t *testing.T, buildFileName string) {
+	tmp := setupTestTmpWorkspace(t, buildFileName)
+	defer os.RemoveAll(tmp)
 
 	for _, tc := range []targetExpressionToBuildFilesTestCase{
 		{tmp, "//", []string{filepath.Join(tmp, buildFileName)}},
@@ -203,6 +211,48 @@ func runTestTargetExpressionToBuildFiles(t *testing.T, buildFileName string) {
 func TestTargetExpressionToBuildFiles(t *testing.T) {
 	for _, buildFileName := range BuildFileNames {
 		runTestTargetExpressionToBuildFiles(t, buildFileName)
+	}
+}
+
+func runTestAppendCommands(t *testing.T, buildFileName string) {
+	tmp := setupTestTmpWorkspace(t, buildFileName)
+	defer os.RemoveAll(tmp)
+
+	for _, tc := range []targetExpressionToBuildFilesTestCase{
+		{tmp, ".:__pkg__", []string{"./" + buildFileName}},
+		{tmp, "a" + ":__pkg__", []string{"a/" + buildFileName}},
+		{"", "a" + ":__pkg__", []string{"a/" + buildFileName}},
+	} {
+		if tc.rootDir == "" {
+			cwd, err := os.Getwd()
+			if err != nil {
+				t.Fatal(err)
+			}
+			// buildozer should be able to find the WORKSPACE file in the current wd
+			if err := os.Chdir(tmp); err != nil {
+				t.Fatal(err)
+			}
+			defer os.Chdir(cwd)
+		}
+
+		commandsByFile := make(map[string][]commandsForTarget)
+		opts := NewOpts()
+		opts.RootDir = tc.rootDir
+		appendCommands(opts, commandsByFile, tc.buildFiles)
+		if len(commandsByFile) != 1 {
+			t.Errorf("Expect one target after appendCommands")
+		}
+		for _, value := range commandsByFile {
+			if value[0].target != tc.target {
+				t.Errorf("appendCommands for buildfile %s yielded target %s, expected %s", tc.buildFiles, value[0].target, tc.target)
+			}
+		}
+	}
+}
+
+func TestAppendCommands(t *testing.T) {
+	for _, buildFileName := range BuildFileNames {
+		runTestAppendCommands(t, buildFileName)
 	}
 }
 

@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package warn
 
 import "testing"
@@ -337,6 +353,7 @@ func TestRedefinedVariable(t *testing.T) {
 	checkFindings(t, "redefined-variable", `
 x = "old_value"
 x = "new_value"
+x[1] = "new"
 cc_library(name = x)`,
 		[]string{":2: Variable \"x\" has already been defined."},
 		scopeEverywhere)
@@ -354,6 +371,44 @@ def bar():
   y = "f"
   y = "g"`,
 		[]string{},
+		scopeEverywhere)
+
+	checkFindings(t, "redefined-variable", `
+x = [1, 2, 3]
+y = [a for a in b]
+z = list()
+n = 43
+
+x += something()
+y += something()
+z += something()
+n += something()
+x -= something()`,
+		[]string{
+			":9: Variable \"n\" has already been defined.",
+			":10: Variable \"x\" has already been defined.",
+		},
+		scopeEverywhere)
+
+	checkFindings(t, "redefined-variable", `
+x = [1, 2, 3]
+y = [a for a in b]
+z = list()
+
+a = something()
+b = something()
+c = something()
+d = something()
+e = something()
+
+a += x
+b += y
+c += z
+d += [42]
+e += foo`,
+		[]string{
+			":15: Variable \"e\" has already been defined.",
+		},
 		scopeEverywhere)
 }
 

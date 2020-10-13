@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 // Warnings related to the control flow
 
 package warn
@@ -247,6 +263,7 @@ func redefinedVariableWarning(f *build.File) []*LinterFinding {
 	findings := []*LinterFinding{}
 	definedSymbols := make(map[string]bool)
 
+	types := detectTypes(f)
 	for _, s := range f.Stmt {
 		// look for all assignments in the scope
 		as, ok := s.(*build.AssignExpr)
@@ -257,14 +274,20 @@ func redefinedVariableWarning(f *build.File) []*LinterFinding {
 		if !ok {
 			continue
 		}
-		if definedSymbols[left.Name] {
-			findings = append(findings,
-				makeLinterFinding(as.LHS, fmt.Sprintf(`Variable %q has already been defined. 
-Redefining a global value is discouraged and will be forbidden in the future.
-Consider using a new variable instead.`, left.Name)))
+		if !definedSymbols[left.Name] {
+			definedSymbols[left.Name] = true
 			continue
 		}
-		definedSymbols[left.Name] = true
+
+		if as.Op == "+=" && (types[as.LHS] == List || types[as.RHS] == List) {
+			// Not a reassignment, just appending to a list
+			continue
+		}
+
+		findings = append(findings,
+			makeLinterFinding(as.LHS, fmt.Sprintf(`Variable %q has already been defined. 
+Redefining a global value is discouraged and will be forbidden in the future.
+Consider using a new variable instead.`, left.Name)))
 	}
 	return findings
 }

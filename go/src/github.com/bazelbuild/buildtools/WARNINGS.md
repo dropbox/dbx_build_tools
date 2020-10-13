@@ -48,6 +48,7 @@ Warning categories supported by buildifier's linter:
   * [`package-on-top`](#package-on-top)
   * [`positional-args`](#positional-args)
   * [`print`](#print)
+  * [`provider-params`](#provider-params)
   * [`redefined-variable`](#redefined-variable)
   * [`repository-name`](#repository-name)
   * [`return-value`](#return-value)
@@ -796,6 +797,44 @@ may never see the warning.
 
 --------------------------------------------------------------------------------
 
+## <a name="provider-params"></a>Calls to 'provider' should specify a list of fields and a documentation
+
+  * Category name: `provider-params`
+  * Automatic fix: no
+
+Calls to `provider` should specify a documentation string and a list of fields:
+
+```python
+ServerAddressInfo = provider(
+    "The address of an HTTP server. Fields are host (string) and port (int).",
+    fields = ["host", "port"])
+```
+
+Fields should also be documented when needed:
+
+```python
+ServerAddressInfo = provider(
+    "The address of an HTTP server.",
+    fields = {
+        "host": "string, e.g. 'example.com'",
+        "port": "int, a TCP port number",
+    })
+``
+
+Note that specifying a list of fields is a breaking change. It is an error if a
+call to the provider uses undeclared fields. If you cannot declare the list of
+fields, you may explicitly set it to None (and explain why in a comment).
+
+```python
+AllInfo = provider("This provider accepts any field.", fields = None)
+
+NoneInfo = provider("This provider cannot have fields.", fields = [])
+```
+
+See the [documentation for providers](https://docs.bazel.build/versions/master/skylark/lib/globals.html#provider).
+
+--------------------------------------------------------------------------------
+
 ## <a name="redefined-variable"></a>Variable has already been defined
 
   * Category name: `redefined-variable`
@@ -922,15 +961,20 @@ can potentially be empty.
 
 --------------------------------------------------------------------------------
 
-## <a name="unnamed-macro"></a>By convention the macro should have a keyword argument called "name".
+## <a name="unnamed-macro"></a>The macro should have a keyword argument called "name".
 
   * Category name: `unnamed-macro`
   * Automatic fix: no
 
-By convention all macro functions should have a keyword argument called "name".
+By convention all macro functions should have a keyword argument called `name`
+(even if they don't use it). This is important for tooling and automation.
 
 A macro is a function that calls a rule (either directly or indirectly by calling other
 macros).
+
+If this function is a helper function that's not supposed to be used outside of its file,
+please make it private (rename it so that the name starts with `_`), this will
+prevent loading the function from BUILD files and suppress the warning.
 
 --------------------------------------------------------------------------------
 

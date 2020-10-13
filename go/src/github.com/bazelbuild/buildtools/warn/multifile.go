@@ -1,8 +1,23 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package warn
 
 import (
 	"github.com/bazelbuild/buildtools/build"
-	"strings"
 )
 
 // FileReader is a class that can read an arbitrary Starlark file
@@ -59,24 +74,4 @@ func (fr *FileReader) GetFile(pkg, label string) *build.File {
 	}
 	fr.cache[filename] = file
 	return file
-}
-
-// ResolveLabel resolves a label to a .bzl file (which may be absolute or relative to the current package)
-// to a pair (package, label) for the .bzl file
-func ResolveLabel(currentPkg, label string) (pkg, newLabel string) {
-	switch {
-	case strings.HasPrefix(label, "//"):
-		// Absolute label path
-		label = label[2:]
-		if chunks := strings.SplitN(label, ":", 2); len(chunks) == 2 {
-			return chunks[0], chunks[1]
-		}
-		return "", label
-	case strings.HasPrefix(label, ":"):
-		// Relative label path
-		return currentPkg, label[1:]
-	default:
-		// External repositories are not supported
-		return "", ""
-	}
 }

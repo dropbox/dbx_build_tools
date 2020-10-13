@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package warn
 
 import "testing"
@@ -17,6 +33,9 @@ def not_macro(x):
   native.glob()
   native.existing_rule()
   native.existing_rules()
+  native.package_name()
+  native.repository_name()
+  native.exports_files()
   return my_rule
 
 def another_macro(x):
@@ -24,12 +43,12 @@ def another_macro(x):
   [native.cc_library() for i in x]
 `,
 		[]string{
-			`5: By convention "macro" should have a keyword argument called "name".
+			`5: The macro "macro" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "my_rule" on line 7.`,
-			`16: By convention "another_macro" should have a keyword argument called "name".
+			`19: The macro "another_macro" should have a keyword argument called "name".
 
-It is considered a macro because it calls a rule or another macro "native.cc_library" on line 18.`,
+It is considered a macro because it calls a rule or another macro "native.cc_library" on line 21.`,
 		},
 		scopeBzl)
 
@@ -61,7 +80,7 @@ def bad_macro():
     alias(x)
 `,
 		[]string{
-			`8: By convention "bad_macro" should have a keyword argument called "name".
+			`8: The macro "bad_macro" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "alias" on line 10.`,
 		},
@@ -83,16 +102,16 @@ def macro4():
   my_rule()
 `,
 		[]string{
-			`3: By convention "macro1" should have a keyword argument called "name".
+			`3: The macro "macro1" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "my_rule" on line 4.`,
-			`6: By convention "macro2" should have a keyword argument called "name".
+			`6: The macro "macro2" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "macro1" on line 7`,
-			`9: By convention "macro3" should have a keyword argument called "name".
+			`9: The macro "macro3" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "macro2" on line 10.`,
-			`12: By convention "macro4" should have a keyword argument called "name".
+			`12: The macro "macro4" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "my_rule" on line 13.`,
 		},
@@ -140,10 +159,10 @@ def bar():
   my_rule()
 `,
 		[]string{
-			`3: By convention "foo" should have a keyword argument called "name".
+			`3: The macro "foo" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "bar" on line 4.`,
-			`6: By convention "bar" should have a keyword argument called "name".
+			`6: The macro "bar" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "my_rule" on line 8.`,
 		},
@@ -194,15 +213,36 @@ def not_macro(x):
   f()
 `,
 		[]string{
-			`4: By convention "macro1" should have a keyword argument called "name".
+			`4: The macro "macro1" should have a keyword argument called "name".
 
-It is considered a macro because it calls a rule or another macro "abc" on line 5.`,
-			`7: By convention "macro2" should have a keyword argument called "name".
+It is considered a macro because it calls a rule or another macro "abc" on line 5.
 
-It is considered a macro because it calls a rule or another macro "baz" on line 8.`,
-			`10: By convention "macro3" should have a keyword argument called "name".
+By convention, every public macro needs a "name" argument (even if it doesn't use it).
+This is important for tooling and automation.
 
-It is considered a macro because it calls a rule or another macro "qux" on line 11.`,
+  * If this function is a helper function that's not supposed to be used outside of this file,
+    please make it private (e.g. rename it to "_macro1").
+  * Otherwise, add a "name" argument. If possible, use that name when calling other macros/rules.`,
+			`7: The macro "macro2" should have a keyword argument called "name".
+
+It is considered a macro because it calls a rule or another macro "baz" on line 8.
+
+By convention, every public macro needs a "name" argument (even if it doesn't use it).
+This is important for tooling and automation.
+
+  * If this function is a helper function that's not supposed to be used outside of this file,
+    please make it private (e.g. rename it to "_macro2").
+  * Otherwise, add a "name" argument. If possible, use that name when calling other macros/rules.`,
+			`10: The macro "macro3" should have a keyword argument called "name".
+
+It is considered a macro because it calls a rule or another macro "qux" on line 11.
+
+By convention, every public macro needs a "name" argument (even if it doesn't use it).
+This is important for tooling and automation.
+
+  * If this function is a helper function that's not supposed to be used outside of this file,
+    please make it private (e.g. rename it to "_macro3").
+  * Otherwise, add a "name" argument. If possible, use that name when calling other macros/rules.`,
 		},
 		scopeBzl)
 }
@@ -246,7 +286,7 @@ def macro():
   baz()
   quux()
 `, []string{
-		`4: By convention "macro" should have a keyword argument called "name".
+		`4: The macro "macro" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "quux" on line 7.`,
 	}, scopeBzl)
@@ -270,7 +310,7 @@ my_rule = rule()
 def macro():
   bar()
 `, []string{
-		`5: By convention "macro" should have a keyword argument called "name".
+		`5: The macro "macro" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "bar" on line 6.`,
 	}, scopeBzl)
@@ -309,16 +349,16 @@ def macro4():
 
 r = rule()
 `, []string{
-		`6: By convention "macro1" should have a keyword argument called "name".
+		`6: The macro "macro1" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "a" on line 7.`,
-		`9: By convention "macro2" should have a keyword argument called "name".
+		`9: The macro "macro2" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "native.cc_library" on line 11.`,
-		`13: By convention "macro3" should have a keyword argument called "name".
+		`13: The macro "macro3" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "a" on line 15.`,
-		`17: By convention "macro4" should have a keyword argument called "name".
+		`17: The macro "macro4" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "r" on line 19.`,
 	}, scopeBzl)
@@ -352,7 +392,7 @@ def macro1():
 def macro2(name):
   baz()
 `, []string{
-		`5: By convention "macro1" should have a keyword argument called "name".
+		`5: The macro "macro1" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "baz" on line 6.`,
 	}, scopeBzl)
@@ -369,7 +409,7 @@ def macro(x):
   _not_macro(x)
 `,
 		[]string{
-			`6: By convention "macro" should have a keyword argument called "name".
+			`6: The macro "macro" should have a keyword argument called "name".
 
 It is considered a macro because it calls a rule or another macro "_not_macro" on line 7.`,
 		},

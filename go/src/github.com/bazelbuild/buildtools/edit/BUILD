@@ -19,6 +19,7 @@ dbx_go_library(
         "//go/src/github.com/bazelbuild/buildtools/build",
         "//go/src/github.com/bazelbuild/buildtools/build_proto",
         "//go/src/github.com/bazelbuild/buildtools/file",
+        "//go/src/github.com/bazelbuild/buildtools/labels",
         "//go/src/github.com/bazelbuild/buildtools/lang",
         "//go/src/github.com/bazelbuild/buildtools/tables",
         "//go/src/github.com/bazelbuild/buildtools/wspace",

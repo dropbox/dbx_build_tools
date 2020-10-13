@@ -1,14 +1,17 @@
 /*
-Copyright 2016 Google Inc. All Rights Reserved.
+Copyright 2016 Google LLC
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 // Package edit provides high-level auxiliary functions for AST manipulation
@@ -18,14 +21,13 @@ package edit
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
-	"github.com/bazelbuild/buildtools/tables"
+	"github.com/bazelbuild/buildtools/labels"
 	"github.com/bazelbuild/buildtools/wspace"
 )
 
@@ -35,74 +37,6 @@ var (
 	// DeleteWithComments if true a list attribute will be be deleted in ListDelete, even if there is a comment attached to it
 	DeleteWithComments = true
 )
-
-// ParseLabel parses a Blaze label (eg. //devtools/buildozer:rule), and returns
-// the repo name ("" for the main repo), package (with leading slashes trimmed)
-// and rule name (e.g. ["", "devtools/buildozer", "rule"]).
-func ParseLabel(target string) (string, string, string) {
-	repo := ""
-	if strings.HasPrefix(target, "@") {
-		target = strings.TrimLeft(target, "@")
-		parts := strings.SplitN(target, "/", 2)
-		if len(parts) == 1 {
-			// "@foo" -> "foo", "", "foo" (ie @foo//:foo)
-			return target, "", target
-		}
-		repo = parts[0]
-		target = "/" + parts[1]
-	}
-	// TODO(bazel-team): check if the next line can now be deleted
-	target = strings.TrimRight(target, ":") // labels can end with ':'
-	parts := strings.SplitN(target, ":", 2)
-	parts[0] = strings.TrimPrefix(parts[0], "//")
-	if len(parts) == 1 {
-		if strings.HasPrefix(target, "//") || tables.StripLabelLeadingSlashes {
-			// "//absolute/pkg" -> "absolute/pkg", "pkg"
-			return repo, parts[0], path.Base(parts[0])
-		}
-		// "relative/label" -> "", "relative/label"
-		return repo, "", parts[0]
-	}
-	return repo, parts[0], parts[1]
-}
-
-// ShortenLabel rewrites labels to use the canonical form (the form
-// recommended by build-style).  This behavior can be disabled using the
-// --noshorten_labels flag for projects that consistently use long-form labels.
-// "//foo/bar:bar" => "//foo/bar", or ":bar" when possible.
-func ShortenLabel(label string, pkg string) string {
-	if !ShortenLabelsFlag {
-		return label
-	}
-	if !strings.Contains(label, "//") {
-		// It doesn't look like a long label, so we preserve it.
-		return label
-	}
-	repo, labelPkg, rule := ParseLabel(label)
-	if repo == "" && labelPkg == pkg { // local label
-		return ":" + rule
-	}
-	slash := strings.LastIndex(labelPkg, "/")
-	if (slash >= 0 && labelPkg[slash+1:] == rule) || labelPkg == rule {
-		if repo == "" {
-			return "//" + labelPkg
-		}
-		return "@" + repo + "//" + labelPkg
-	}
-	if strings.HasPrefix(label, "@") && repo == rule && labelPkg == "" {
-		return "@" + repo
-	}
-	return label
-}
-
-// LabelsEqual returns true if label1 and label2 are equal. The function
-// takes care of the optional ":" prefix and differences between long-form
-// labels and local labels.
-func LabelsEqual(label1, label2, pkg string) bool {
-	str1 := strings.TrimPrefix(ShortenLabel(label1, pkg), ":")
-	str2 := strings.TrimPrefix(ShortenLabel(label2, pkg), ":")
-	return str1 == str2
-}
 
 // isFile returns true if the path refers to a regular file after following
 // symlinks.
@@ -122,7 +56,10 @@ func isFile(path string) bool {
 // edit, the full package name, and the rule. It takes a workspace-rooted
 // directory to use.
 func InterpretLabelForWorkspaceLocation(root string, target string) (buildFile string, pkg string, rule string) {
-	repo, pkg, rule := ParseLabel(target)
+	label := labels.Parse(target)
+	repo := label.Repository
+	pkg = label.Package
+	rule = label.Target
 	rootDir, relativePath := wspace.FindWorkspaceRoot(root)
 	if repo != "" {
 		files, err := wspace.FindRepoBuildFiles(rootDir)
@@ -422,6 +359,38 @@ func AllSelects(e build.Expr) []*build.CallExpr {
 	return nil
 }
 
+// allListsFromSelects returns all ListExpr nodes from all select statements
+// in an expression
+func allListsFromSelects(e build.Expr) []*build.ListExpr {
+	var lists []*build.ListExpr
+
+	for _, s := range AllSelects(e) {
+		if len(s.List) != 1 {
+			return nil
+		}
+		dict, ok := s.List[0].(*build.DictExpr)
+		if !ok {
+			return nil
+		}
+		for _, kv := range dict.List {
+			list, ok := kv.Value.(*build.ListExpr)
+			if !ok {
+				continue
+			}
+			lists = append(lists, list)
+		}
+	}
+	return lists
+}
+
+// allListsIncludingSelects returns all the lists concatenated in an expression
+// including lists inside select statements.
+// For example, in: glob(["*.go"]) + [":rule"] + select({"foo": [":bar"]})
+// the function will return [[":rule", ":bar"]].
+func allListsIncludingSelects(e build.Expr) []*build.ListExpr {
+	return append(AllLists(e), allListsFromSelects(e)...)
+}
+
 // FirstList works in the same way as AllLists, except that it
 // returns only one list, or nil.
 func FirstList(e build.Expr) *build.ListExpr {
@@ -455,20 +424,31 @@ func AllStrings(e build.Expr) []*build.StringExpr {
 	return nil
 }
 
-// ListFind looks for a string in the list expression (which may be a
-// concatenation of lists). It returns the element if it is found. nil
-// otherwise.
-func ListFind(e build.Expr, item string, pkg string) *build.StringExpr {
-	item = ShortenLabel(item, pkg)
-	for _, li := range AllLists(e) {
-		for _, elem := range li.List {
+// listsFind looks for a string in list expressions
+func listsFind(lists []*build.ListExpr, item string, pkg string) *build.StringExpr {
+	for _, list := range lists {
+		for _, elem := range list.List {
 			str, ok := elem.(*build.StringExpr)
-			if ok && LabelsEqual(str.Value, item, pkg) {
+			if ok && labels.Equal(str.Value, item, pkg) {
 				return str
 			}
 		}
 	}
 	return nil
+}
+
+// ListFind looks for a string in the list expression (which may be a
+// concatenation of lists). It returns the element if it is found. nil
+// otherwise.
+func ListFind(e build.Expr, item string, pkg string) *build.StringExpr {
+	return listsFind(AllLists(e), item, pkg)
+}
+
+// listOrSelectFind looks for a string in the list expression (which may be a
+// concatenation of lists and select statements). It returns the element
+// if it is found. nil otherwise.
+func listOrSelectFind(e build.Expr, item string, pkg string) *build.StringExpr {
+	return listsFind(allListsIncludingSelects(e), item, pkg)
 }
 
 // hasComments returns whether the StringExpr literal has a comment attached to it.
@@ -522,12 +502,8 @@ func RemoveEmptySelectsAndConcatLists(e build.Expr) build.Expr {
 
 			if dict, ok := e.List[0].(*build.DictExpr); ok {
 				for _, keyVal := range dict.List {
-					if keyVal, ok := keyVal.(*build.KeyValueExpr); ok {
-						val, ok := keyVal.Value.(*build.ListExpr)
-						if !ok || len(val.List) > 0 {
-							return e
-						}
-					} else {
+					val, ok := keyVal.Value.(*build.ListExpr)
+					if !ok || len(val.List) > 0 {
 						return e
 					}
 				}
@@ -589,25 +565,19 @@ func SelectListsIntersection(sel *build.CallExpr, pkg string) (intersection []bu
 		return nil
 	}
 
-	if keyVal, ok := dict.List[0].(*build.KeyValueExpr); ok {
-		if val, ok := keyVal.Value.(*build.ListExpr); ok {
-			intersection = make([]build.Expr, len(val.List))
-			copy(intersection, val.List)
-		}
+	if val, ok := dict.List[0].Value.(*build.ListExpr); ok {
+		intersection = make([]build.Expr, len(val.List))
+		copy(intersection, val.List)
 	}
 
 	for _, keyVal := range dict.List[1:] {
-		if keyVal, ok := keyVal.(*build.KeyValueExpr); ok {
-			if val, ok := keyVal.Value.(*build.ListExpr); ok {
-				intersection = ComputeIntersection(intersection, val.List)
-				if len(intersection) == 0 {
-					return intersection
-				}
-			} else {
-				return nil
-			}
-		} else {
+		val, ok := keyVal.Value.(*build.ListExpr)
+		if !ok {
 			return nil
+		}
+		intersection = ComputeIntersection(intersection, val.List)
+		if len(intersection) == 0 {
+			return intersection
 		}
 	}
 
@@ -649,10 +619,8 @@ func SelectDelete(e build.Expr, item, pkg string, deleted **build.StringExpr) {
 
 		if dict, ok := sel.List[0].(*build.DictExpr); ok {
 			for _, keyVal := range dict.List {
-				if keyVal, ok := keyVal.(*build.KeyValueExpr); ok {
-					if val, ok := keyVal.Value.(*build.ListExpr); ok {
-						RemoveFromList(val, item, pkg, deleted)
-					}
+				if val, ok := keyVal.Value.(*build.ListExpr); ok {
+					RemoveFromList(val, item, pkg, deleted)
 				}
 			}
 		}
@@ -665,7 +633,7 @@ func RemoveFromList(li *build.ListExpr, item, pkg string, deleted **build.String
 	var all []build.Expr
 	for _, elem := range li.List {
 		if str, ok := elem.(*build.StringExpr); ok {
-			if LabelsEqual(str.Value, item, pkg) && (DeleteWithComments || !hasComments(str)) {
+			if labels.Equal(str.Value, item, pkg) && (DeleteWithComments || !hasComments(str)) {
 				if deleted != nil {
 					*deleted = str
 				}
@@ -685,7 +653,6 @@ func ListDelete(e build.Expr, item, pkg string) (deleted *build.StringExpr) {
 		item = unquoted
 	}
 	deleted = nil
-	item = ShortenLabel(item, pkg)
 	for _, li := range AllLists(e) {
 		RemoveFromList(li, item, pkg, &deleted)
 	}
@@ -711,11 +678,10 @@ func ListAttributeDelete(rule *build.Rule, attr, item, pkg string) *build.String
 // to indicate whether the replacement was successful.
 func ListReplace(e build.Expr, old, value, pkg string) bool {
 	replaced := false
-	old = ShortenLabel(old, pkg)
-	for _, li := range AllLists(e) {
+	for _, li := range allListsIncludingSelects(e) {
 		for k, elem := range li.List {
 			str, ok := elem.(*build.StringExpr)
-			if !ok || !LabelsEqual(str.Value, old, pkg) {
+			if !ok || !labels.Equal(str.Value, old, pkg) {
 				continue
 			}
 			li.List[k] = &build.StringExpr{Value: ShortenLabel(value, pkg), Comments: *elem.Comment()}
@@ -883,8 +849,7 @@ func MoveAllListAttributeValues(rule *build.Rule, oldAttr, newAttr, pkg string, 
 // DictionarySet looks for the key in the dictionary expression. If value is not nil,
 // it replaces the current value with it. In all cases, it returns the current value.
 func DictionarySet(dict *build.DictExpr, key string, value build.Expr) build.Expr {
-	for _, e := range dict.List {
-		kv, _ := e.(*build.KeyValueExpr)
+	for _, kv := range dict.List {
 		if k, ok := kv.Key.(*build.StringExpr); ok && k.Value == key {
 			if value != nil {
 				kv.Value = value
@@ -902,11 +867,7 @@ func DictionarySet(dict *build.DictExpr, key string, value build.Expr) build.Exp
 // DictionaryGet looks for the key in the dictionary expression, and returns the
 // current value. If it is unset, it returns nil.
 func DictionaryGet(dict *build.DictExpr, key string) build.Expr {
-	for _, e := range dict.List {
-		kv, ok := e.(*build.KeyValueExpr)
-		if !ok {
-			continue
-		}
+	for _, kv := range dict.List {
 		if k, ok := kv.Key.(*build.StringExpr); ok && k.Value == key {
 			return kv.Value
 		}
@@ -921,14 +882,13 @@ func DictionaryDelete(dict *build.DictExpr, key string) (deleted build.Expr) {
 		key = unquoted
 	}
 	deleted = nil
-	var all []build.Expr
-	for _, e := range dict.List {
-		kv, _ := e.(*build.KeyValueExpr)
+	var all []*build.KeyValueExpr
+	for _, kv := range dict.List {
 		if k, ok := kv.Key.(*build.StringExpr); ok {
 			if k.Value == key {
 				deleted = kv
 			} else {
-				all = append(all, e)
+				all = append(all, kv)
 			}
 		}
 	}
@@ -1155,4 +1115,30 @@ func ReplaceLoad(stmts []build.Expr, location string, from, to []string) []build
 
 	// 2. Insert new loads.
 	return InsertLoad(all, location, from, to)
+}
+
+// ParseLabel parses a Blaze label (eg. //devtools/buildozer:rule), and returns
+// the repo name ("" for the main repo), package (with leading slashes trimmed)
+// and rule name (e.g. ["", "devtools/buildozer", "rule"]).
+// Deprecated; use `labels.Parse` instead
+func ParseLabel(target string) (string, string, string) {
+	label := labels.Parse(target)
+	return label.Repository, label.Package, label.Target
+}
+
+// ShortenLabel rewrites labels to use the canonical form (the form
+// recommended by build-style).
+// Doesn't do anything if `--shorten_label=false` flag is provided.
+// Use `labels.Shorten` to shorten labels unconditionally.
+func ShortenLabel(label, pkg string) string {
+	if !ShortenLabelsFlag {
+		return label
+	}
+	return labels.Shorten(label, pkg)
+}
+
+// LabelsEqual returns true if label1 and label2 are equal.
+// Deprecated; use `labels.Equal` instead
+func LabelsEqual(label1, label2, pkg string) bool {
+	return labels.Equal(label1, label2, pkg)
 }

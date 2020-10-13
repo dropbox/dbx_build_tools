@@ -28,6 +28,7 @@ dbx_go_library(
         "//go/src/github.com/bazelbuild/buildtools/build",
         "//go/src/github.com/bazelbuild/buildtools/bzlenv",
         "//go/src/github.com/bazelbuild/buildtools/edit",
+        "//go/src/github.com/bazelbuild/buildtools/labels",
         "//go/src/github.com/bazelbuild/buildtools/tables",
     ],
 )

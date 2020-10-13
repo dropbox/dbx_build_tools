@@ -1,14 +1,17 @@
 /*
-Copyright 2016 Google Inc. All Rights Reserved.
+Copyright 2016 Google LLC
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 // Buildozer is a tool for programmatically editing BUILD files.
@@ -34,6 +37,8 @@ import (
 	apipb "github.com/bazelbuild/buildtools/api_proto"
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/bazelbuild/buildtools/file"
+	"github.com/bazelbuild/buildtools/labels"
+	"github.com/bazelbuild/buildtools/wspace"
 	"github.com/golang/protobuf/proto"
 )
 
@@ -117,7 +122,7 @@ func cmdComment(opts *Options, env CmdEnvironment) (*build.File, error) {
 		}
 	case 3: // Attach to a specific value in a list
 		if attr := env.Rule.Attr(env.Args[0]); attr != nil {
-			if expr := ListFind(attr, env.Args[1], env.Pkg); expr != nil {
+			if expr := listOrSelectFind(attr, env.Args[1], env.Pkg); expr != nil {
 				if fullLine {
 					expr.Comments.Before = comment
 				} else {
@@ -169,7 +174,7 @@ func cmdPrintComment(opts *Options, env CmdEnvironment) (*build.File, error) {
 			return nil, attrError()
 		}
 		value := env.Args[1]
-		expr := ListFind(attr, value, env.Pkg)
+		expr := listOrSelectFind(attr, value, env.Pkg)
 		if expr == nil {
 			return nil, fmt.Errorf("attribute \"%s\" has no value \"%s\"", env.Args[0], value)
 		}
@@ -318,7 +323,8 @@ func cmdPrint(opts *Options, env CmdEnvironment) (*build.File, error) {
 			fields[i] = &apipb.Output_Record_Field{Value: &apipb.Output_Record_Field_Text{env.Rule.Name()}}
 		} else if str == "label" {
 			if env.Rule.Name() != "" {
-				fields[i] = &apipb.Output_Record_Field{Value: &apipb.Output_Record_Field_Text{fmt.Sprintf("//%s:%s", env.Pkg, env.Rule.Name())}}
+				label := labels.Label{Package: env.Pkg, Target: env.Rule.Name()}
+				fields[i] = &apipb.Output_Record_Field{Value: &apipb.Output_Record_Field_Text{label.Format()}}
 			} else {
 				return nil, nil
 			}
@@ -375,6 +381,10 @@ func cmdRemove(opts *Options, env CmdEnvironment) (*build.File, error) {
 				fixed = true
 			}
 			ResolveAttr(env.Rule, key, env.Pkg)
+			// Remove the attribute if's an empty list
+			if listExpr, ok := env.Rule.Attr(key).(*build.ListExpr); ok && len(listExpr.List) == 0 {
+				env.Rule.DelAttr(key)
+			}
 		}
 		if fixed {
 			return env.File, nil
@@ -403,7 +413,7 @@ func cmdRemoveComment(opts *Options, env CmdEnvironment) (*build.File, error) {
 		}
 	case 2: // Remove comment attached to value
 		if attr := env.Rule.Attr(env.Args[0]); attr != nil {
-			if expr := ListFind(attr, env.Args[1], env.Pkg); expr != nil {
+			if expr := listOrSelectFind(attr, env.Args[1], env.Pkg); expr != nil {
 				expr.Comments.Before = nil
 				expr.Comments.Suffix = nil
 				expr.Comments.After = nil
@@ -430,7 +440,7 @@ func cmdReplace(opts *Options, env CmdEnvironment) (*build.File, error) {
 	for _, key := range attrKeysForPattern(env.Rule, env.Args[0]) {
 		attr := env.Rule.Attr(key)
 		if e, ok := attr.(*build.StringExpr); ok {
-			if LabelsEqual(e.Value, oldV, env.Pkg) {
+			if labels.Equal(e.Value, oldV, env.Pkg) {
 				env.Rule.SetAttr(key, getAttrValueExpr(key, []string{newV}, env))
 			}
 		} else {
@@ -517,7 +527,7 @@ func getStringValue(value string) string {
 	return value
 }
 
-// getStringExpr creates a StringExpr from an input argument, which can be either quoter or not,
+// getStringExpr creates a StringExpr from an input argument, which can be either quoted or not,
 // and shortens the label value if possible.
 func getStringExpr(value, pkg string) build.Expr {
 	if unquoted, triple, err := build.Unquote(value); err == nil {
@@ -708,6 +718,11 @@ var AllCommands = map[string]CommandInfo{
 	"dict_list_add":     {cmdDictListAdd, true, 3, -1, "<attr> <key> <value(s)>"},
 }
 
+var readonlyCommands = map[string]bool{
+	"print":         true,
+	"print_comment": true,
+}
+
 func expandTargets(f *build.File, rule string) ([]*build.Rule, error) {
 	if r := FindRuleByName(f, rule); r != nil {
 		return []*build.Rule{r}, nil
@@ -855,7 +870,7 @@ func getGlobalVariables(exprs []build.Expr) (vars map[string]*build.AssignExpr) 
 // parts of the tool that generate paths that we may want to examine
 // continue to assume that build files are all named "BUILD".
 
-// This var is exported so that users that want to override it
+// BuildFileNames is exported so that users that want to override it
 // in scripts are free to do so.
 var BuildFileNames = [...]string{"BUILD.bazel", "BUILD", "BUCK"}
 
@@ -901,6 +916,7 @@ func rewrite(opts *Options, commandsForFile commandsForFile) *rewriteResult {
 	if err != nil {
 		return &rewriteResult{file: name, errs: []error{err}}
 	}
+	f.WorkspaceRoot, f.Pkg, f.Label = wspace.SplitFilePath(name)
 
 	vars := map[string]*build.AssignExpr{}
 	if opts.EditVariables {
@@ -912,9 +928,13 @@ func rewrite(opts *Options, commandsForFile commandsForFile) *rewriteResult {
 		target := commands.target
 		commands := commands.commands
 		_, absPkg, rule := InterpretLabelForWorkspaceLocation(opts.RootDir, target)
-		_, pkg, _ := ParseLabel(target)
-		if pkg == stdinPackageName { // Special-case: This is already absolute
+		if label := labels.Parse(target); label.Package == stdinPackageName {
+			// Special-case: This is already absolute
 			absPkg = stdinPackageName
+		}
+		if strings.HasSuffix(absPkg, "...") {
+			// Special case: the provided target contains an ellipsis, use the file package
+			absPkg = f.Pkg
 		}
 
 		targets, err := expandTargets(f, rule)
@@ -997,7 +1017,15 @@ var EditFile = func(fi os.FileInfo, name string) error {
 // opts.Buildifier is useful to force consistency with other tools that call Buildifier.
 func runBuildifier(opts *Options, f *build.File) ([]byte, error) {
 	if opts.Buildifier == "" {
-		return build.Format(f), nil
+		// Current AST may be not entirely correct, e.g. it may contain Ident which
+		// value is a chunk of code, like "f(x)". The AST should be printed and
+		// re-read to parse such expressions correctly.
+		contents := build.Format(f)
+		newF, err := build.ParseBuild(f.Path, []byte(contents))
+		if err != nil {
+			return nil, err
+		}
+		return build.Format(newF), nil
 	}
 
 	cmd := exec.Command(opts.Buildifier, "--type=build")
@@ -1076,11 +1104,12 @@ func appendCommands(opts *Options, commandMap map[string][]commandsForTarget, ar
 		for _, buildFileName := range BuildFileNames {
 			if strings.HasSuffix(target, filepath.FromSlash("/"+buildFileName)) {
 				target = strings.TrimSuffix(target, filepath.FromSlash("/"+buildFileName)) + ":__pkg__"
+			} else if strings.HasSuffix(target, "/"+buildFileName) {
+				target = strings.TrimSuffix(target, "/"+buildFileName) + ":__pkg__"
 			}
 		}
 		var buildFiles []string
-		_, pkg, _ := ParseLabel(target)
-		if pkg == stdinPackageName {
+		if label := labels.Parse(target); label.Package == stdinPackageName {
 			buildFiles = []string{stdinPackageName}
 		} else {
 			buildFiles = targetExpressionToBuildFiles(opts.RootDir, target)
@@ -1179,6 +1208,10 @@ func Buildozer(opts *Options, args []string) int {
 	results := make(chan *rewriteResult, numFiles)
 	data := make(chan commandsForFile)
 
+	if opts.NumIO < 1 {
+		fmt.Fprintf(os.Stderr, "NumIO must be at least 1; got %d (are you using `NewOpts`?)\n", opts.NumIO)
+		return 1
+	}
 	for i := 0; i < opts.NumIO; i++ {
 		go func(results chan *rewriteResult, data chan commandsForFile) {
 			for commandsForFile := range data {
@@ -1225,7 +1258,22 @@ func Buildozer(opts *Options, args []string) int {
 	if hasErrors {
 		return 2
 	}
-	if !fileModified && !opts.Stdout {
+	if fileModified || opts.Stdout {
+		return 0
+	}
+	// The file is not modified, check if there were any non-readonly commands
+	nonReadonlyCommands := false
+	for _, commandsByTarget := range commandsByFile {
+		for _, commands := range commandsByTarget {
+			for _, command := range commands.commands {
+				if _, ok := readonlyCommands[command.tokens[0]]; !ok {
+					nonReadonlyCommands = true
+					break
+				}
+			}
+		}
+	}
+	if nonReadonlyCommands {
 		return 3
 	}
 	return 0

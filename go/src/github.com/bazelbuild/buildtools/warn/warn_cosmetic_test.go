@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package warn
 
 import "testing"
@@ -465,6 +481,9 @@ foo()
 # Implemented in skylark
 # Skylark
 bar() # SKYLARK
+
+# see https://docs.bazel.build/versions/master/skylark/lib/Label.html
+Label()
 `, `
 # Skyline
 foo()
@@ -473,11 +492,34 @@ foo()
 # Implemented in starlark
 # Starlark
 bar() # STARLARK
+
+# see https://docs.bazel.build/versions/master/skylark/lib/Label.html
+Label()
 `,
 		[]string{
 			`:3: "Skylark" is an outdated name of the language, please use "starlark" instead.`,
 			`:7: "Skylark" is an outdated name of the language, please use "starlark" instead.`,
 		},
+		scopeEverywhere)
+
+	checkFindingsAndFix(t, "skylark-comment", `
+"""
+Some docstring with skylark
+""" # buildifier: disable=skylark-docstring
+
+def f():
+  """Some docstring with skylark"""
+  # buildozer: disable=skylark-docstring
+`, `
+"""
+Some docstring with skylark
+""" # buildifier: disable=skylark-docstring
+
+def f():
+  """Some docstring with skylark"""
+  # buildozer: disable=skylark-docstring
+`,
+		[]string{},
 		scopeEverywhere)
 
 	checkFindingsAndFix(t, "skylark-docstring", `
@@ -486,15 +528,34 @@ bar() # STARLARK
 """
 This is a docstring describing a skylark file
 """
+
+def f():
+  """SKYLARK"""
+
+def l():
+  """
+  Returns https://docs.bazel.build/versions/master/skylark/lib/Label.html
+  """
+  return Label("skylark")
 `, `
 # Some file
 
 """
 This is a docstring describing a starlark file
-"""
+""" 
+
+def f():
+  """STARLARK"""
+
+def l():
+  """
+  Returns https://docs.bazel.build/versions/master/skylark/lib/Label.html
+  """
+  return Label("skylark")
 `,
 		[]string{
 			`:3: "Skylark" is an outdated name of the language, please use "starlark" instead.`,
+			`:8: "Skylark" is an outdated name of the language, please use "starlark" instead.`,
 		},
 		scopeEverywhere)
 }

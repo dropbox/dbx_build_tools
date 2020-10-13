@@ -17,5 +17,6 @@ dbx_go_binary(
         "//go/src/github.com/bazelbuild/buildtools/differ",
         "//go/src/github.com/bazelbuild/buildtools/tables",
         "//go/src/github.com/bazelbuild/buildtools/warn",
+        "//go/src/github.com/bazelbuild/buildtools/wspace",
     ],
 )

@@ -1,17 +1,17 @@
 /*
-Copyright 2016 Google Inc. All Rights Reserved.
+Copyright 2016 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
+    https://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 // Buildifier, a tool to parse and format BUILD files.
@@ -32,6 +32,7 @@ import (
 	"github.com/bazelbuild/buildtools/differ"
 	"github.com/bazelbuild/buildtools/tables"
 	"github.com/bazelbuild/buildtools/warn"
+	"github.com/bazelbuild/buildtools/wspace"
 )
 
 var buildVersion = "redacted"
@@ -329,7 +330,7 @@ func processFile(filename string, data []byte, inputType, lint string, warningsL
 	}
 
 	if absoluteFilename, err := filepath.Abs(displayFilename); err == nil {
-		f.WorkspaceRoot, f.Pkg, f.Label = utils.SplitFilePath(absoluteFilename)
+		f.WorkspaceRoot, f.Pkg, f.Label = wspace.SplitFilePath(absoluteFilename)
 	}
 
 	warnings := utils.Lint(f, lint, warningsList, *vflag)

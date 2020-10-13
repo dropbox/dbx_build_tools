@@ -1,14 +1,17 @@
 /*
-Copyright 2016 Google Inc. All Rights Reserved.
+Copyright 2016 Google LLC
+
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-    http://www.apache.org/licenses/LICENSE-2.0
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- See the License for the specific language governing permissions and
- limitations under the License.
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 // generateTables is a tool that generates a go file from the Build language proto file.
@@ -17,6 +20,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -26,6 +30,9 @@ import (
 	buildpb "github.com/bazelbuild/buildtools/build_proto"
 	"github.com/golang/protobuf/proto"
 )
+
+var inputPath = flag.String("input", "", "input file")
+var outputPath = flag.String("output", "", "output file")
 
 // bazelBuildLanguage reads a proto file and returns a BuildLanguage object.
 func bazelBuildLanguage(file string) (*buildpb.BuildLanguage, error) {
@@ -76,10 +83,11 @@ func generateTable(rules []*buildpb.RuleDefinition) map[string]buildpb.Attribute
 }
 
 func main() {
-	if len(os.Args) != 2 {
-		log.Fatal("Expected argument: proto file\n")
+	flag.Parse()
+	if *inputPath == "" {
+		log.Fatal("No input file specified")
 	}
-	lang, err := bazelBuildLanguage(os.Args[1])
+	lang, err := bazelBuildLanguage(*inputPath)
 	if err != nil {
 		log.Fatalf("%s\n", err)
 	}
@@ -92,8 +100,14 @@ func main() {
 	}
 	sort.Strings(keys)
 
+	f, err := os.Create(*outputPath)
+	if err != nil {
+		log.Fatalf("%s\n", err)
+	}
+	defer f.Close()
+
 	// print
-	fmt.Printf(`// Generated file, do not edit.
+	fmt.Fprintf(f, `// Generated file, do not edit.
 package lang
 
 import buildpb "github.com/bazelbuild/buildtools/build_proto"
@@ -101,7 +115,7 @@ import buildpb "github.com/bazelbuild/buildtools/build_proto"
 var TypeOf = map[string]buildpb.Attribute_Discriminator{
 `)
 	for _, attr := range keys {
-		fmt.Printf("	\"%s\":	buildpb.Attribute_%s,\n", attr, types[attr])
+		fmt.Fprintf(f, "	\"%s\":	buildpb.Attribute_%s,\n", attr, types[attr])
 	}
-	fmt.Printf("}\n")
+	fmt.Fprintf(f, "}\n")
 }

@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package warn
 
 import (
@@ -319,6 +335,9 @@ for y in "foobar":  # buildozer: disable=string-iteration
 cc_library(
    name = "foo",  # buildifier: disable=duplicated-name-1
 )
+
+# buildifier: disable=skylark-comment
+# some comment mentioning skylark
 `
 
 	f, err := build.ParseBzl("file.bzl", []byte(contents))
@@ -332,7 +351,7 @@ cc_library(
 		category string
 	}{
 		{
-			start:    4,
+			start:    3,
 			end:      5,
 			category: "depset-iteration",
 		},
@@ -347,7 +366,7 @@ cc_library(
 			category: "string-iteration",
 		},
 		{
-			start:    9,
+			start:    8,
 			end:      9,
 			category: "no-effect",
 		},
@@ -357,9 +376,14 @@ cc_library(
 			category: "duplicated-name-1",
 		},
 		{
-			start:    12,
+			start:    11,
 			end:      14,
 			category: "duplicated-name-2",
+		},
+		{
+			start:    16,
+			end:      17,
+			category: "skylark-comment",
 		},
 	}
 

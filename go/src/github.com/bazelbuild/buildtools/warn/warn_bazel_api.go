@@ -1,3 +1,19 @@
+/*
+Copyright 2020 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 // Warnings for incompatible changes in the Bazel API
 
 package warn
@@ -1006,5 +1022,45 @@ func keywordPositionalParametersWarning(f *build.File) []*LinterFinding {
 		findings = append(findings, callFindings...)
 	})
 
+	return findings
+}
+
+func providerParamsWarning(f *build.File) []*LinterFinding {
+	if f.Type != build.TypeBzl {
+		return nil
+	}
+
+	var findings []*LinterFinding
+	build.Walk(f, func(expr build.Expr, stack []build.Expr) {
+		call, ok := isFunctionCall(expr, "provider")
+		if !ok {
+			return
+		}
+
+		_, _, fields := getParam(call.List, "fields")
+		_, _, doc := getParam(call.List, "doc")
+		// doc can also be the first positional argument
+		hasPositional := false
+		if len(call.List) > 0 {
+			if _, ok := call.List[0].(*build.AssignExpr); !ok {
+				hasPositional = true
+			}
+		}
+		msg := ""
+		if fields == nil {
+			msg = "a list of fields"
+		}
+		if doc == nil && !hasPositional {
+			if msg != "" {
+				msg += " and "
+			}
+			msg += "a documentation"
+		}
+		if msg != "" {
+			findings = append(findings, makeLinterFinding(call,
+				`Calls to 'provider' should provide `+msg+`:\n`+
+					`  provider("description", fields = [...])`))
+		}
+	})
 	return findings
 }
