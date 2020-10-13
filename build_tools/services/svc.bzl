@@ -19,6 +19,7 @@ DbxServicePyBinaryExtension = provider(fields = [
     "main",
     "lib",
     "python",
+    "allow_missing",  # allow the service referenced by this extension to be missing
 ])
 
 DbxServiceDefinitionExtension = provider(fields = [
@@ -29,6 +30,7 @@ DbxServiceDefinitionExtension = provider(fields = [
     "services",  # mapping of all service definitions in this deps
     "health_checks",  # extra health checks for this service
     "args",  # extra arguments for this service
+    "allow_missing",  # allow the service referenced by this extension to be missing
 ])
 
 execute_runfiles_cmd_tmpl = '''
@@ -108,6 +110,8 @@ def _apply_service_extensions(ctx, services, extensions):
         if DbxServicePyBinaryExtension in ext:
             info = ext[DbxServicePyBinaryExtension]
             if info.service not in service_exe:
+                if info.allow_missing:
+                    continue
                 fail("Extension target service {} which is not in the dependency tree".format(info.service))
             if info.service not in py_binary_info:
                 # Make up the python3/python2 compatibility based on the selected python interpreter.
@@ -133,6 +137,8 @@ def _apply_service_extensions(ctx, services, extensions):
         if DbxServiceDefinitionExtension in ext:
             info = ext[DbxServiceDefinitionExtension]
             if info.service not in service_deps:
+                if info.allow_missing:
+                    continue
                 fail("Extension target service {} which is not in the dependency tree".format(info.service))
             service_deps[info.service] += info.deps
             service_exe_args[info.service].extend(info.args)
@@ -533,6 +539,7 @@ def service_extension_py_binary_impl(ctx):
                 lib = ctx.attr.lib,
                 service = ctx.attr.service.service_name,
                 python = ctx.attr.python,
+                allow_missing = ctx.attr.allow_missing,
             ),
             DefaultInfo(
                 runfiles = runfiles,
@@ -550,6 +557,7 @@ service_extension_py_binary_internal = rule(
         ),
         "service": attr.label(providers = ["service_name"], mandatory = True),
         "python": attr.string(default = cpython_27.build_tag, values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys()),
+        "allow_missing": attr.bool(default = False),
     },
 )
 
@@ -613,6 +621,7 @@ def service_extension_definition_impl(ctx):
                 args = ctx.attr.args,
                 version_file = "//" + version_file.short_path,
                 health_checks = health_checks,
+                allow_missing = ctx.attr.allow_missing,
             ),
             DefaultInfo(
                 runfiles = runfiles,
@@ -630,6 +639,7 @@ service_extension_definition_internal = rule(
         "deps": attr.label_list(providers = ["services", "root_services", "extensions"]),
         "data": attr.label_list(allow_files = True),
         "service": attr.label(providers = ["service_name"], mandatory = True),
+        "allow_missing": attr.bool(default = False),
     },
 )
 
