@@ -315,10 +315,10 @@ def _build_targets(
     # ask bazel where bazel-bin and bazel-genfiles are, instead of relying on
     # the symlinks, to support read-only workspaces
     pkg_dir_root = bazel_utils.check_output_silently(
-        [args.bazel_path] + bazel_args + ["info", "bazel-genfiles"]
+        [args.bazel_path] + bazel_args + ["info"] + mode_args + ["bazel-genfiles"]
     ).strip()
     out_dir_root = bazel_utils.check_output_silently(
-        [args.bazel_path] + bazel_args + ["info", "bazel-bin"]
+        [args.bazel_path] + bazel_args + ["info"] + mode_args + ["bazel-bin"]
     ).strip()
 
     pkg_dir = os.path.join(pkg_dir_root, pkg_target.package, pkg_target.name + "-tmp")
