@@ -3,7 +3,9 @@
 This would be within build_tools/bzl_lib/dbx/ but we need this logic when validating our targets for bzl gen, and the logic for that is in build_tools/bazel_utils.py
 """
 
-from typing import Optional, Text
+MYPY = False
+if MYPY:
+    from typing import Optional, Text
 
 
 def target_to_npm_name(target):
