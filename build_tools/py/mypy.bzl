@@ -301,7 +301,6 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         inputs = inputs,
         outputs = outs + [junit_xml_file],
         mnemonic = "mypyc" if use_mypyc else "mypy",
-        progress_message = "%s %s" % ("Compiling" if use_mypyc else "Type-checking", ctx.label),
         tools = [],
     )
 
