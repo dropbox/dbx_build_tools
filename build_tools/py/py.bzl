@@ -188,8 +188,10 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     cc_info = cc_common.merge_cc_infos(cc_infos = cc_infos)
     cc_compilation = cc_info.compilation_context
     cc_linking = cc_info.linking_context
+    linker_inputs = cc_linking.linker_inputs.to_list()
     inputs_trans.append(cc_compilation.headers)
-    inputs_trans.append(cc_linking.additional_inputs)
+    for li in linker_inputs:
+        inputs_direct.extend(li.additional_inputs)
     command_args.add_all(cc_compilation.includes, format_each = "--compile-flags=-I %s")
     command_args.add_all(
         cc_compilation.system_includes,
@@ -199,23 +201,21 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         cc_compilation.quote_includes,
         format_each = "--compile-flags=-iquote %s",
     )
-    l2ls = cc_linking.libraries_to_link
-    if hasattr(l2ls, "to_list"):
-        l2ls = l2ls.to_list()
     pic_libs = []
     dynamic_libs = []
-    for l2l in l2ls:
-        if l2l.pic_static_library or l2l.static_library:
-            pic_libs.append(l2l.pic_static_library or l2l.static_library)
-        elif l2l.dynamic_library and allow_dynamic_links(ctx):
-            # Skip versioned forms, they are only necessary for symlinks to resolve correctly.
-            if l2l.dynamic_library.basename.endswith(".dylib"):
-                stripped = l2l.dynamic_library.basename[:-len(".dylib")]
-                if "." in stripped and stripped[-1].isdigit():
+    for li in linker_inputs:
+        for l2l in li.libraries:
+            if l2l.pic_static_library or l2l.static_library:
+                pic_libs.append(l2l.pic_static_library or l2l.static_library)
+            elif l2l.dynamic_library and allow_dynamic_links(ctx):
+                # Skip versioned forms, they are only necessary for symlinks to resolve correctly.
+                if l2l.dynamic_library.basename.endswith(".dylib"):
+                    stripped = l2l.dynamic_library.basename[:-len(".dylib")]
+                    if "." in stripped and stripped[-1].isdigit():
+                        continue
+                elif ".so." in l2l.dynamic_library.basename:
                     continue
-            elif ".so." in l2l.dynamic_library.basename:
-                continue
-            dynamic_libs.append(l2l.dynamic_library)
+                dynamic_libs.append(l2l.dynamic_library)
 
     for rust_dep in rust_deps:
         if rust_dep.crate_type == "staticlib":
@@ -236,17 +236,18 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     for framework in frameworks:
         command_args.add_all(framework.framework_dirs, before_each = "--extra-framework")
         inputs_trans.append(framework.framework_files)
-    for link_flag in cc_linking.user_link_flags:
-        if link_flag == "-pthread":
-            # Python is going to add this anyway.
-            continue
+    for li in linker_inputs:
+        for link_flag in li.user_link_flags:
+            if link_flag == "-pthread":
+                # Python is going to add this anyway.
+                continue
 
-        # On Windows, specific link inputs are passed in as command arguments to
-        # link.exe and are not passed in as flags. We assume these to be Bazel-built
-        # inputs, and should be handled the same as libraries.
-        if not link_flag.startswith("-l") and not is_windows(ctx):
-            fail("only know how to handle -l linkopts, not '{}'".format(link_flag))
-        command_args.add(link_flag, format = "--extra-lib=%s")
+            # On Windows, specific link inputs are passed in as command arguments to
+            # link.exe and are not passed in as flags. We assume these to be Bazel-built
+            # inputs, and should be handled the same as libraries.
+            if not link_flag.startswith("-l") and not is_windows(ctx):
+                fail("only know how to handle -l linkopts, not '{}'".format(link_flag))
+            command_args.add(link_flag, format = "--extra-lib=%s")
 
     command_args.add_all(ctx.attr.extra_path, before_each = "--extra-path")
 

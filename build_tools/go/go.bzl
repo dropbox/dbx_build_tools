@@ -245,8 +245,8 @@ def go_binary_impl(ctx):
 
     link_args.add("-linkmode=external")
     link_args.add("-extld", cc_toolchain.compiler_executable)
-    l2ls = main_package.native_info.linking_context.libraries_to_link.to_list()
-    link_inputs_direct.extend([l2l.pic_static_library for l2l in l2ls])
+    linker_inputs = main_package.native_info.linking_context.linker_inputs.to_list()
+    link_inputs_direct.extend([l2l.pic_static_library for li in linker_inputs for l2l in li.libraries])
     features = []
     if getattr(ctx.attr, "standalone", False):
         features.append("fully_static_link")
@@ -258,7 +258,7 @@ def go_binary_impl(ctx):
     link_variables = cc_common.create_link_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
-        user_link_flags = _link_items_to_cmdline(l2ls),
+        user_link_flags = _link_items_to_cmdline(linker_inputs),
     )
     extldflags = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
@@ -345,13 +345,14 @@ _dbx_go_generate_test_main = rule(
 
 def _link_items_to_cmdline(link_items):
     res = []
-    for l2l in link_items:
-        whole_archive = l2l.alwayslink
-        if whole_archive:
-            res.append("-Wl,--whole-archive")
-        res.append(l2l.pic_static_library.path)
-        if whole_archive:
-            res.append("-Wl,--no-whole-archive")
+    for li in link_items:
+        for lib in li.libraries:
+            whole_archive = lib.alwayslink
+            if whole_archive:
+                res.append("-Wl,--whole-archive")
+            res.append(lib.pic_static_library.path)
+            if whole_archive:
+                res.append("-Wl,--no-whole-archive")
     return res
 
 # This function takes compiled package archive and produces a "packagefile" line suitable for the
@@ -478,7 +479,8 @@ def _compute_cgo_parameters(ctx, native_info):
     ]
     link_flags = []
     link_flags.extend(ctx.attr.cgo_linkerflags)
-    link_flags.extend(native_info.linking_context.user_link_flags)
+    for li in native_info.linking_context.linker_inputs.to_list():
+        link_flags.extend(li.user_link_flags)
     link_flags.extend(ctx.fragments.cpp.linkopts)
     preprocessor_defines = native_info.compilation_context.defines
 
