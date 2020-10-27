@@ -573,12 +573,6 @@ class PythonPathMapping(AbstractPythonPath):
 
     def _collect_local_targets(self, pkg, parsed):
         path_prefix = pkg[2:]
-        if self.python_path:
-            if path_prefix == self.python_path:
-                path_prefix = path_prefix[len(self.python_path) :]
-            elif path_prefix.startswith(self.python_path + "/"):
-                path_prefix = path_prefix[len(self.python_path) + 1 :]
-
         pkg_path = bazel_utils.normalize_relative_target_to_os_path(path_prefix)
 
         # NOTE: We purposely ignore dbx_py_binary targets, even through it's
@@ -593,6 +587,14 @@ class PythonPathMapping(AbstractPythonPath):
                 assert src.endswith(".py"), "Invalid python src %s in %s" % (src, pkg)
 
                 file_path = os.path.join(pkg_path, src)
+
+                # Clip the file_path relative to the python_path if applicable.
+                if self.python_path:
+                    if file_path == self.python_path:
+                        file_path = file_path[len(self.python_path) :]
+                    elif file_path.startswith(self.python_path + "/"):
+                        file_path = file_path[len(self.python_path) + 1 :]
+
                 module_path = PythonPathMapping.convert_from_file_path_to_module(
                     file_path
                 )
