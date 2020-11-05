@@ -5,7 +5,8 @@
     "services": true,
     "additional_edison_pages": true,
     "atlas_servicers": true,
-    "additional_servicers": true
+    "additional_servicers": true,
+    "additional_visibility": true
   },
   "IsSortableListArg": {
     "additional_deps": true,
@@ -13,7 +14,8 @@
     "services": true,
     "additional_edison_pages": true,
     "atlas_servicers": true,
-    "additional_servicers": true
+    "additional_servicers": true,
+    "additional_visibility": true
   },
   "SortableBlacklist": {
     "dbx_deprecated_metaserver_js_amd_bundle.srcs": true
