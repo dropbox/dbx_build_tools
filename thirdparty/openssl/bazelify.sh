@@ -25,7 +25,7 @@ echo -e "OPENSSLCONF_H = \"\"\"$(grep ^# include/openssl/opensslconf.h)\"\"\"\n"
 echo -e "BN_CONF_H = \"\"\"$(grep ^# include/crypto/bn_conf.h)\"\"\"\n" >> "$mydir/BUILD.openssl"
 echo -e "DSO_CONF_H = \"\"\"$(grep ^# include/crypto/dso_conf.h)\"\"\"\n" >> "$mydir/BUILD.openssl"
 echo -e "APPS_PROGS_H = \"\"\"$(< apps/progs.h)\"\"\"\n" >> "$mydir/BUILD.openssl"
-perl -l -Mconfigdata "$mydir/extract_srcs.pl" >> "$mydir/BUILD.openssl"
+perl -I. -l -Mconfigdata "$mydir/extract_srcs.pl" >> "$mydir/BUILD.openssl"
 echo "# END GENERATED CODE\n" >> "$mydir/BUILD.openssl"
 cat "$mydir/BUILD.openssl.tail" >> "$mydir/BUILD.openssl"
 popd
