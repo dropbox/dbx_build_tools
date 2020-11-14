@@ -83,7 +83,7 @@ var linkerMp = map[string]struct {
 		Deps: []string{"@rdkafka//:rdkafka"},
 	},
 	"rocksdb": {
-		Deps: []string{"@rocksdb//:rocksdb"},
+		Deps: []string{"@rocksdb//:rocksdb_with_jemalloc"},
 	},
 	"rust_ffi_acl_lib_static": {
 		Deps: []string{"//rust/filesystem/ffi_acl:acl_lib_static"},
