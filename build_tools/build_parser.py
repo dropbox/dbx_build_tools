@@ -12,7 +12,7 @@ if MYPY:
 
 
 def normalize_path(p):
-    # type: (str) -> str
+    # type: (Text) -> Text
     """Convenience function to convert all path separators to forward slashes."""
     return p.replace(os.path.sep, "/")
 
@@ -148,7 +148,7 @@ def maybe_expand_attribute(attr_val):
 
 
 def get_select_aware_attribute_repr(attr_val):
-    # type: (Any) -> str
+    # type: (Any) -> Text
     """Returns a string representation of an attribute value
     that respects potential `select()`s."""
     # If an attribute value has a Select, it must be in a list.
@@ -175,6 +175,7 @@ def get_select_aware_attribute_repr(attr_val):
 
 class Rule(object):
     def __init__(self, rule_type, attr_map):
+        # type: (Text, Dict[Text, Any]) -> None
         self.rule_type = rule_type
         self.attr_map = attr_map
 
@@ -183,7 +184,7 @@ class Select(object):
     """Represents a `select()` call in Starlark."""
 
     def __init__(self, select_map):
-        # type: (Dict[str, Any]) -> None
+        # type: (Dict[Text, Any]) -> None
         self.select_map = select_map
         self.expanded = None  # type: Optional[List[Any]]
 
@@ -226,7 +227,7 @@ class BuildParser(object):
             """
 
             def __init__(mi_self, name):
-                # type: (str) -> None
+                # type: (Text) -> None
                 mi_self.name = name
 
             def __call__(mi_self, *args, **kargs):
@@ -237,7 +238,7 @@ class BuildParser(object):
                 )
 
             def __getattribute__(mi_self, key):
-                # type: (str) -> MissingItem
+                # type: (Text) -> MissingItem
                 """Handles the case where the item is a struct."""
                 return MissingItem(
                     "{}.{}".format(object.__getattribute__(mi_self, "name"), key)
