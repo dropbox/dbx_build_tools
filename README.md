@@ -7,7 +7,7 @@ We also have Go rules. Our `BUILD` file generator supports generating rules enti
 
 We also include the tooling to generate a custom build and runtime environment. This isolates the build environment from system tools to make remote caching and execution more reliable. It also isolates your binaries outputs from the host system, making major OS upgrades much simpler.
 
-# Lighting tour
+# Lightning tour
 ## Install Bazel
 Follow the [installation instructions](https://docs.bazel.build/versions/master/install.html) making sure Bazel is on your path.
 
