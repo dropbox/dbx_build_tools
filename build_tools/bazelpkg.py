@@ -23,8 +23,23 @@ from build_tools import bazel_utils, build_parser
 
 # Return current revision in the workspace repo.
 def get_workspace_repo_revision(args):
-    git_cmd = [args.git_path, "rev-parse", "HEAD"]
-    return subprocess.check_output(git_cmd).strip()
+    git_cmd = [args.git_path, "rev-parse", "--short", "HEAD"]
+    rev = subprocess.check_output(git_cmd).strip().decode("utf-8")
+
+    # Reminder to only deploy .deb files generated off of master
+    has_been_pushed = (
+        subprocess.call(
+            [args.git_path, "merge-base", "--is-ancestor", "HEAD", "origin/master"]
+        )
+        == 0
+    )
+    if not has_been_pushed:
+        print(
+            "\033[91mWARN\033[0m: %s has not been pushed to master. It's bad practice to deploy this .deb - only use for testing"
+            % rev
+        )
+
+    return rev
 
 
 def sha256_file(path):
@@ -397,6 +412,7 @@ def dbx_pkg_deb(
         file_map=file_map,
     )
 
+    version = version.format(repo_revision=get_workspace_repo_revision(args))
     out_dir = os.path.dirname(out_file)
     out_file = os.path.join(out_dir, "%s_%s_amd64.deb" % (package, version))
     if os.path.exists(out_file):
