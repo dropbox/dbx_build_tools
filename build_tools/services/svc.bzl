@@ -33,6 +33,8 @@ DbxServiceDefinitionExtension = provider(fields = [
     "allow_missing",  # allow the service referenced by this extension to be missing
 ])
 
+DbxServiceExtensionArgsProvider = provider(fields = ["args"])
+
 execute_runfiles_cmd_tmpl = '''
 exec $RUNFILES/{service_launcher} {launcher_args} --svc.service-defs=$RUNFILES/{service_definitions} --svc.service-defs-version-file=$RUNFILES/{service_defs_version_file} {extra_args} "$@"
 '''
@@ -611,6 +613,10 @@ def service_extension_definition_impl(ctx):
             http_health_check = struct(url = ctx.attr.http_health_check),
         )]
 
+    args = list(ctx.attr.args)
+    for args_provider in ctx.attr.args_providers:
+        args.extend(args_provider[DbxServiceExtensionArgsProvider].args)
+
     return struct(
         providers = [
             DbxServiceDefinitionExtension(
@@ -618,7 +624,7 @@ def service_extension_definition_impl(ctx):
                 deps = dependents,
                 extensions = depset(transitive = transitive_extensions),
                 services = services,
-                args = ctx.attr.args,
+                args = args,
                 version_file = "//" + version_file.short_path,
                 health_checks = health_checks,
                 allow_missing = ctx.attr.allow_missing,
@@ -636,6 +642,7 @@ service_extension_definition_internal = rule(
         "verify_cmds": attr.string_list(),
         "http_health_check": attr.string(),
         "args": attr.string_list(),
+        "args_providers": attr.label_list(providers = [DbxServiceExtensionArgsProvider]),
         "deps": attr.label_list(providers = ["services", "root_services", "extensions"]),
         "data": attr.label_list(allow_files = True),
         "service": attr.label(providers = ["service_name"], mandatory = True),
