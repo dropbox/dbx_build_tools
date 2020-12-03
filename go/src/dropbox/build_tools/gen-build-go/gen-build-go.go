@@ -53,7 +53,7 @@ var linkerMp = map[string]struct {
 		Deps: []string{"@libbpf//:bpf"},
 	},
 	"brotli_ffi": {
-		Deps: []string{"//rust/vendor/brotli-ffi:go_brotli_dep_lib"},
+		Deps: []string{"//rust/vendor/brotli-ffi-1.1.1:go_brotli_dep_lib"},
 	},
 	"bz2": {
 		Deps: []string{"@org_bzip_bzip2//:bz2"},
