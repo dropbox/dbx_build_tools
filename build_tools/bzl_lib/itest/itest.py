@@ -1,4 +1,7 @@
 # mypy: allow-untyped-defs
+"""
+To test changes locally, prepend BZL_DONT_USE_SQPKG = 1 to your bzl command since it's is bundled in bzl (likely)
+"""
 
 from __future__ import print_function
 
@@ -8,6 +11,8 @@ import os
 import pipes
 import subprocess
 import sys
+
+from typing import List, Text, Tuple
 
 from build_tools import bazel_utils
 from build_tools.bzl_lib import exec_wrapper, metrics
@@ -289,10 +294,17 @@ def get_container_name_for_target(target):
 
 
 def _get_all_containers(docker_path):
-    return [x[0] for x in _get_all_containers_targets(docker_path)]
+    # type: (Text) -> List[Text]
+    return [
+        x[0]
+        for x in _get_all_containers_targets(
+            docker_path, POSSIBLE_CONTAINER_NAME_PREFIXES
+        )
+    ]
 
 
-def _get_all_containers_targets(docker_path):
+def _get_all_containers_targets(docker_path, pattern):
+    # type: (Text, Tuple[Text, ...]) -> List[Tuple[Text, ...]]
     """
     Retrieve (container_name, target) tuples.
     """
@@ -307,7 +319,7 @@ def _get_all_containers_targets(docker_path):
     for line in (
         subprocess.check_output(args, universal_newlines=True).strip().split("\n")
     ):
-        if line.startswith(POSSIBLE_CONTAINER_NAME_PREFIXES):
+        if line.startswith(pattern):
             fields = line.split()
             if len(fields) == 2:
                 containers_targets.append(tuple(fields))
@@ -496,7 +508,6 @@ exec {test} "$@"
         docker_image = os.path.join(args.docker_registry, DEFAULT_IMAGE)
 
     init_cmd_args = [runfiles.data_path("@dbx_build_tools//build_tools/bzl_lib/itest/bzl-itest-init")]
-
     # Set a fail-safe limit for an itest container to keep it from detonating the whole
     # machine.  RSS limits are a funny thing in docker. Most likely the oom-killer will
     # start killing things inside the container rendering it unstable.
@@ -570,7 +581,10 @@ exec {test} "$@"
     docker_run_args += ["-v", "{}:{}:rw".format(host_data_dir, IN_CONTAINER_DATA_DIR)]
     docker_run_args += ["-v", "{}:{}:rw".format(HOST_HOME_DIR, IN_CONTAINER_HOME_DIR)]
     docker_run_args += ["-v", "{}:{}:ro".format(bashrc_file_src, "/etc/bash.bashrc")]
-
+    docker_run_args += [
+        "-v",
+        "{}:{}:rw".format("/var/run/docker.sock", "/var/run/docker.sock"),
+    ]
     docker_run_args += [docker_image]
     docker_run_args += init_cmd_args
 
@@ -739,7 +753,12 @@ def cmd_itest_exec(args, bazel_args, mode_args):
 
 
 def cmd_itest_reload_current(args, bazel_args, mode_args):
-    targets = [x[1] for x in _get_all_containers_targets(args.docker_path)]
+    targets = [
+        x[1]
+        for x in _get_all_containers_targets(
+            args.docker_path, POSSIBLE_CONTAINER_NAME_PREFIXES
+        )
+    ]
     if len(targets) > 1:
         sys.exit(
             """Found multiple running `bzl itest`.
@@ -846,10 +865,14 @@ fi
 def cmd_itest_stop(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
     itest_target = _get_itest_target(args.bazel_path, args.target)
-    container_name = get_container_name_for_target(itest_target.name)
+    container_names = _get_all_containers_targets(
+        args.docker_path, get_container_name_for_target(itest_target.name)
+    )
     _verify_args(args, itest_target, container_should_be_running=True)
-
-    exec_wrapper.execv(args.docker_path, [args.docker_path, "rm", "-f", container_name])
+    exec_wrapper.execv(
+        args.docker_path,
+        [args.docker_path, "rm", "-f"] + [x[0] for x in container_names],
+    )
 
 
 def cmd_itest_stop_all(args, bazel_args, mode_args):
