@@ -492,7 +492,7 @@ def cmd_pkg(args, bazel_args, mode_args):
             bp.parse_file(os.path.join(workspace_dir, target.build_file))
             rule = bp.get_rule(target.name)
         except (IOError, KeyError) as e:
-            sys.exit("No such target: " + target_str + " " + str(e))
+            sys.exit("No such target: " + target_str + " " + repr(e))
 
         run_rule(args, bazel_args, mode_args, target, rule)
 
