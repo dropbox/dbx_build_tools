@@ -16,6 +16,7 @@ from build_tools.bzl_lib.itest import bash_history
 from dropbox import runfiles
 
 HOST_DATA_DIR_PREFIX = os.path.expanduser("~/bzl/itest/per-container")
+HOST_CURRENT_DIR = os.path.expanduser("~/bzl/itest/current")
 HOST_HOME_DIR = os.path.expanduser("~/bzl/itest/root")
 IN_CONTAINER_DATA_DIR = "/bzl/itest/per-container"
 IN_CONTAINER_HOME_DIR = "/bzl/itest/root"
@@ -417,6 +418,9 @@ def cmd_itest_run(args, bazel_args, mode_args):
     if args.persist_tmpdir:
         tmpdir_name = "persistent_test_tmpdir"
     host_data_dir = os.path.join(HOST_DATA_DIR_PREFIX, container_name)
+    if os.path.exists(HOST_CURRENT_DIR):
+        os.unlink(HOST_CURRENT_DIR)
+    os.symlink(host_data_dir, HOST_CURRENT_DIR)
     host_tmpdir = os.path.join(host_data_dir, tmpdir_name)
     for dirname in [host_tmpdir, HOST_HOME_DIR]:
         if not os.path.exists(dirname):
