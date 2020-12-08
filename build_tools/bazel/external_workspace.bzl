@@ -18,7 +18,7 @@ DEFAULT_EXTERNAL_URLS = {
     "net_zlib": ["http://zlib.net/zlib-1.2.11.tar.gz"],
     "org_bzip_bzip2": ["https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"],
     "org_gnu_ncurses": ["https://invisible-mirror.net/archives/ncurses/ncurses-6.2.tar.gz"],
-    "org_gnu_readline": ["https://ftp.gnu.org/gnu/readline/readline-8.0.tar.gz"],
+    "org_gnu_readline": ["https://ftp.gnu.org/gnu/readline/readline-8.1.tar.gz"],
     "org_openssl": ["https://www.openssl.org/source/openssl-1.1.1i.tar.gz"],
     "org_sourceware_libffi": ["https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz"],
     "org_sqlite": ["https://sqlite.org/2020/sqlite-amalgamation-3340000.zip"],
@@ -95,9 +95,9 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "org_gnu_readline",
         urls = urls["org_gnu_readline"],
-        sha256 = "e339f51971478d369f8a053a330a190781acb9864cf4c541060f12078948e461",
+        sha256 = "f8ceb4ee131e3232226a17f51b164afc46cd0b9e6cef344be87c65962cb82b02",
         build_file = filename_from_label("//thirdparty/readline:BUILD.readline"),
-        strip_prefix = "readline-8.0",
+        strip_prefix = "readline-8.1",
     )
 
     http_archive(
