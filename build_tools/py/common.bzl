@@ -100,7 +100,7 @@ import os
 try:
     fd = os.open('/proc/self/comm', os.O_WRONLY)
     try:
-         os.write(fd, {proc_title})
+         os.write(fd, b{proc_title})
     finally:
          os.close(fd)
 except Exception:
