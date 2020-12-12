@@ -430,7 +430,7 @@ def cmd_itest_run(args, bazel_args, mode_args):
     if args.persist_tmpdir:
         tmpdir_name = "persistent_test_tmpdir"
     host_data_dir = os.path.join(HOST_DATA_DIR_PREFIX, container_name)
-    if os.path.exists(HOST_CURRENT_DIR):
+    if os.path.lexists(HOST_CURRENT_DIR):
         os.unlink(HOST_CURRENT_DIR)
     os.symlink(host_data_dir, HOST_CURRENT_DIR)
     host_tmpdir = os.path.join(host_data_dir, tmpdir_name)
