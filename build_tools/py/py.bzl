@@ -529,7 +529,7 @@ def _build_sdist_tar(ctx):
             required_files.append(inf)
     ctx.actions.write(
         output = manifest_file,
-        content = manifest_struct.to_json(),
+        content = json.encode(manifest_struct),
     )
 
     sdist_args.add("--output", sdist_tar)

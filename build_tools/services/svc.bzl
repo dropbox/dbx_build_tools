@@ -90,7 +90,7 @@ def _create_version_file(ctx, inputs, output):
 
 def _to_proto(services):
     if services:
-        return struct(services = list(services)).to_proto()
+        return proto.encode_text(struct(services = list(services)))
 
 def _extension_sort_key(ext):
     return ext.label
