@@ -34,6 +34,7 @@ dbx_py_library(
     validate = "strict",
     deps = [
         ":build_merge_lib",
+        ":cache",
         ":cfg",
         ":metrics",
         ":parse_py_imports_lib",
@@ -101,6 +102,18 @@ dbx_py_library(
     validate = "strict",
     deps = [
         "//build_tools/go:env",
+        "//pip/typing",
+    ],
+)
+
+dbx_py_library(
+    name = "cache",
+    srcs = ["cache.py"],
+    python2_compatible = False,
+    validate = "strict",
+    deps = [
+        ":cfg",
+        "//build_tools:build_parser_lib",
         "//pip/typing",
     ],
 )

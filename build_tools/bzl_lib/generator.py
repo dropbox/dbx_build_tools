@@ -24,7 +24,7 @@ class Config:
     use_magic_mirror: bool
 
     # Path to the bazel tool. Should not be necessary in any reasonable case; generators
-    # should be built with any required dependnecy already, and they exist to create BUILD files,
+    # should be built with any required dependency already, and they exist to create BUILD files,
     # so they shouldn't be assuming a correct or complete BUILD graph when they run.
     bazel_path: str
 
