@@ -561,7 +561,7 @@ func main() {
 		fmt.Sprintf("%d", constantTimestampInt),
 	}
 	if *blockSizeKb != 0 {
-		args = append(args, "-b", fmt.Sprintf("%d", blockSizeKb))
+		args = append(args, "-b", fmt.Sprintf("%dK", *blockSizeKb))
 	}
 
 	cmd := exec.Command(runfiles.MustDataPath("@dbx_build_tools//build_tools/chronic"), args...)
