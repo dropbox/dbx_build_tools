@@ -55,11 +55,13 @@ filegroup(
 py_binary(
     name = "dbx_importer",
     srcs = [":dbx_importer_lib"],
+    python_version = "PY2",
 )
 
 py_library(
     name = "dbx_importer_lib",
     srcs = ["dbx_importer.py"],
+    srcs_version = "PY2ONLY",
 )
 
 dbx_internal_bootstrap_py_binary(
