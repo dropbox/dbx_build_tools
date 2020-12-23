@@ -4,17 +4,12 @@ import argparse
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import zipfile
 
-if sys.version_info[0] == 2:
-    from ConfigParser import RawConfigParser
-    from StringIO import StringIO
-else:
-    from configparser import RawConfigParser
-    from io import StringIO
-
+from configparser import RawConfigParser
+from io import StringIO
+from typing import List
 
 SCRIPT = """
 import sys
@@ -28,14 +23,14 @@ class ConsoleScriptMissingError(Exception):
     pass
 
 
-def short_name(filename):
+def short_name(filename: str) -> str:
     parts = filename.split("/")
     if parts[0].endswith(".data") and parts[1] in ("purelib", "platlib"):
         filename = "/".join(parts[2:])
     return filename
 
 
-def should_include_file(filename, excludes):
+def should_include_file(filename: str, excludes: List[str]):
     # If you change this function all pip rules need to be regenerated
     if " " in filename:
         return False
@@ -57,7 +52,7 @@ def should_include_file(filename, excludes):
         return True
 
 
-def get_console_scripts(wheel):
+def get_console_scripts(wheel: zipfile.ZipFile):
     for name in wheel.namelist():
         if name.endswith("dist-info/entry_points.txt"):
             config = RawConfigParser()
@@ -71,7 +66,7 @@ def get_console_scripts(wheel):
     return {}
 
 
-def create_script_from_entrypoint(wheel, script, out_path):
+def create_script_from_entrypoint(wheel: zipfile.ZipFile, script: str, out_path: str):
     console_scripts = get_console_scripts(wheel)
     try:
         entry = console_scripts[script]
@@ -85,14 +80,14 @@ def create_script_from_entrypoint(wheel, script, out_path):
         out.write(SCRIPT.format(mod=mod_name, func=func_name))
 
 
-def extract_script(wheel, script, out_path):
+def extract_script(wheel: zipfile.ZipFile, script: str, out_path: str):
     for name in wheel.namelist():
         if name.endswith("/scripts/" + script):
             with open(out_path, "wb") as out:
                 shutil.copyfileobj(wheel.open(name), out)
 
 
-def create_script(wheel, script, out_path):
+def create_script(wheel: zipfile.ZipFile, script: str, out_path: str):
     try:
         create_script_from_entrypoint(wheel, script, out_path)
     except ConsoleScriptMissingError:
@@ -100,14 +95,14 @@ def create_script(wheel, script, out_path):
 
 
 def install(
-    wheel,
-    target,
-    target_short_path,
-    excludes,
-    namespace_pkgs,
-    pyc_compiler,
-    pyc_build_tag,
-    pyc_python,
+    wheel: zipfile.ZipFile,
+    target: str,
+    target_short_path: str,
+    excludes: List[str],
+    namespace_pkgs: List[str],
+    pyc_compiler: str,
+    pyc_build_tag: str,
+    pyc_python: str,
 ):
     to_compile = []
     namespace_pkg_inits = {
@@ -164,7 +159,7 @@ def install(
             os.unlink(response_file)
 
 
-def main(args):
+def main(args: argparse.Namespace) -> None:
     with zipfile.ZipFile(args.wheel) as wheel:
         if args.cmd == "install":
             install(
@@ -211,4 +206,4 @@ if __name__ == "__main__":
     script_parser.add_argument("script", help="script to create")
     script_parser.add_argument("out", help="where to put the script")
 
-    sys.exit(main(parser.parse_args()))
+    main(parser.parse_args())
