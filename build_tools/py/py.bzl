@@ -641,6 +641,8 @@ def dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = None)
         if build_tag not in ctx.attr.pip_main.pip_main:
             fail("{} not built for {}".format(ctx.attr.pip_main.label, build_tag))
         main = ctx.attr.pip_main.pip_main[build_tag]
+        if main == None:
+            fail("Must specify pip_main in {}".format(ctx.attr.pip_main.label))
     else:
         fail('dbx_py_binary requires one of "main" or "pip_main" attributes')
 

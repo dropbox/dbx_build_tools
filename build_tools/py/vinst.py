@@ -20,7 +20,15 @@ sys.exit({mod}.{func}())
 
 
 class ConsoleScriptMissingError(Exception):
-    pass
+    def __init__(self, script: str, console_scripts: List[str]) -> None:
+        self.script = script
+        self.console_scripts = console_scripts
+
+    def __str__(self) -> str:
+        return "Could not find requested console script %r. Found %r" % (
+            self.script,
+            self.console_scripts,
+        )
 
 
 def short_name(filename: str) -> str:
@@ -71,9 +79,7 @@ def create_script_from_entrypoint(wheel: zipfile.ZipFile, script: str, out_path:
     try:
         entry = console_scripts[script]
     except KeyError:
-        raise ConsoleScriptMissingError(
-            "Could not find a console script for %r" % script
-        )
+        raise ConsoleScriptMissingError(script, list(console_scripts.keys()))
     entry = get_console_scripts(wheel)[script]
     mod_name, func_name = entry.split(":")
     with open(out_path, "w") as out:
@@ -85,13 +91,21 @@ def extract_script(wheel: zipfile.ZipFile, script: str, out_path: str):
         if name.endswith("/scripts/" + script):
             with open(out_path, "wb") as out:
                 shutil.copyfileobj(wheel.open(name), out)
+            return True
+    return False
 
 
 def create_script(wheel: zipfile.ZipFile, script: str, out_path: str):
     try:
+        # Try the entry_points = {"console_scripts:: ...} syntax
         create_script_from_entrypoint(wheel, script, out_path)
-    except ConsoleScriptMissingError:
-        extract_script(wheel, script, out_path)
+    except ConsoleScriptMissingError as e:
+        # Try the scripts = [...] syntax
+        if not extract_script(wheel, script, out_path):
+            e.console_scripts.extend(
+                n for n in wheel.namelist() if n.endswith("/scripts/")
+            )
+            raise
 
 
 def install(
