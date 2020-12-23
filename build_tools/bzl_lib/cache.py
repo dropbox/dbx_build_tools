@@ -1,6 +1,6 @@
 import os
 
-from typing import Dict, Set, Tuple
+from typing import Dict, Optional, Set, Tuple
 
 from build_tools import build_parser
 from build_tools.bzl_lib.cfg import ALT_BUILD, BUILD_INPUT, DEFAULT_BUILD
@@ -12,15 +12,17 @@ class ParsedBuildFileCache(object):
     def __init__(self, workspace_dir: str):
         self.workspace_dir = os.path.realpath(workspace_dir) + os.path.sep
 
-        # (real or symlink) dir path -> parsed entry
-        self.parsed_builds: Dict[str, build_parser.BuildParser] = {}
-        self.parsed_bzls: Dict[str, build_parser.BuildParser] = {}
+        # (real or symlink) dir path -> (real_build_file, parsed entry)
+        self.parsed_builds: Dict[str, Tuple[str, build_parser.BuildParser]] = {}
+        self.parsed_bzls: Dict[str, Tuple[str, build_parser.BuildParser]] = {}
 
         # dir paths without BUILD(.bzl)
         self.empty_build_dirs: Set[str] = set()
         self.empty_bzl_dirs: Set[str] = set()
 
-    def get_build(self, directory: str) -> Tuple[str, build_parser.BuildParser]:
+    def get_build(
+        self, directory: str
+    ) -> Tuple[str, Optional[build_parser.BuildParser]]:
         if directory in self.parsed_builds:
             return self.parsed_builds[directory]
 
@@ -52,7 +54,7 @@ class ParsedBuildFileCache(object):
 
         return real_build_file, entry
 
-    def get_bzl(self, directory: str) -> Tuple[str, build_parser.BuildParser]:
+    def get_bzl(self, directory: str) -> Tuple[str, Optional[build_parser.BuildParser]]:
         if not directory.endswith(os.path.sep):
             directory += os.path.sep
 
@@ -85,7 +87,9 @@ class ParsedBuildFileCache(object):
 
         return real_bzl_file, entry
 
-    def get_bzl_or_build(self, directory: str) -> Tuple[str, build_parser.BuildParser]:
+    def get_bzl_or_build(
+        self, directory: str
+    ) -> Tuple[str, Optional[build_parser.BuildParser]]:
         filename, parsed = self.get_bzl(directory)
         if filename:
             return filename, parsed

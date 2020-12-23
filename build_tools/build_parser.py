@@ -8,7 +8,7 @@ import os.path
 
 MYPY = False
 if MYPY:
-    from typing import Any, Dict, List, Optional, Text
+    from typing import Any, Dict, List, Optional, Sequence, Text
 
 
 def normalize_path(p):
@@ -294,7 +294,7 @@ class BuildParser(object):
         raise KeyError("no rule with name", name)
 
     def get_rules_by_types(self, type_names):
-        # type: (List[str]) -> List[Rule]
+        # type: (Sequence[str]) -> List[Rule]
         rules = []
         for rule_type, args, kargs in self.clauses:
             if rule_type in type_names:
