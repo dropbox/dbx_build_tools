@@ -186,7 +186,6 @@ func (m *PythonPkgMap) writeImports(
 
 		l("from %s import (", path)
 		push()
-		push()
 
 		for _, name := range names {
 			entry := m.imports[path][name]
@@ -197,8 +196,7 @@ func (m *PythonPkgMap) writeImports(
 			}
 		}
 
+		pop()
 		l(")")
-		pop()
-		pop()
 	}
 }
