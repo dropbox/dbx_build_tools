@@ -283,7 +283,11 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         description = ctx.label.package + ":" + dist_name
     else:
         inputs_direct.extend(ctx.files.srcs)
-        version_spec = "{}=={}".format(ctx.label.name, ctx.attr.pip_version)
+        if ctx.attr.pip_version.startswith("git+"):
+            print("pip git+ version is being used for %s. This should only be used during local testing. It should not be checked in." % (ctx.label,))
+            version_spec = ctx.attr.pip_version
+        else:
+            version_spec = "{}=={}".format(ctx.label.name, ctx.attr.pip_version)
         command_args.add(version_spec)
         description = version_spec
 

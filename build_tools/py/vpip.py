@@ -656,6 +656,21 @@ def main():
         )
 
     for name in ARGS.package_names:
+        if name.startswith("git+"):
+            print(
+                "pip git+ version is being used for %s. This should only be used during local testing, since it bypasses magic mirror. It should not be checked in."
+                % (name,)
+            )
+
+            # Add git to PATH so pip can access it
+            external_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
+            git_path = os.path.join(external_path, "com_git_scm_git")
+            assert os.path.exists(os.path.join(git_path, "git")), "Must add @com_git_scm_git//:executables as bazel dep to vpip"
+            os.environ["PATH"] += ":" + git_path
+            # Need this because the pip environment doesn't have the ca-certificates
+            os.environ["GIT_SSL_NO_VERIFY"] = "1"
+            continue
+
         parts = name.split("==")
         if len(parts) != 2 or not parts[1]:
             sys.exit(
