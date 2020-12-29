@@ -10,8 +10,14 @@ dbx_go_library(
         "go17.go",
         "go19.go",
     ],
+    # This package was replaced by package context in the standard library in Go 1.7.
     visibility = [
-        "//go/src:__subpackages__",
+        "//go/src/github.com:__subpackages__",
+        "//go/src/go.etcd.io:__subpackages__",
+        "//go/src/golang.org:__subpackages__",
+        "//go/src/google.golang.org:__subpackages__",
+        "//go/src/gopkg.in:__subpackages__",
+        "//go/src/vitess.io:__subpackages__",
     ],
     deps = [
     ],
