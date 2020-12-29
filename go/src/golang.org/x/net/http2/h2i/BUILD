@@ -12,8 +12,8 @@ dbx_go_binary(
         "//visibility:public",
     ],
     deps = [
-        "//go/src/golang.org/x/crypto/ssh/terminal",
         "//go/src/golang.org/x/net/http2",
         "//go/src/golang.org/x/net/http2/hpack",
+        "//go/src/golang.org/x/term",
     ],
 )

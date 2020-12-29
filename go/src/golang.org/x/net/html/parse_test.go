@@ -66,6 +66,19 @@ func readParseTest(r *bufio.Reader) (*testAttrs, error) {
 		}
 	}
 
+	// Skip the new-errors list.
+	if string(line) == "#new-errors\n" {
+		for {
+			line, err = r.ReadSlice('\n')
+			if err != nil {
+				return nil, err
+			}
+			if line[0] == '#' {
+				break
+			}
+		}
+	}
+
 	if ls := string(line); strings.HasPrefix(ls, "#script-") {
 		switch {
 		case strings.HasSuffix(ls, "-on\n"):
@@ -272,14 +285,14 @@ func TestParserWithoutScripting(t *testing.T) {
 |   <head>
 |     <noscript>
 |   <body>
-|     "<img src='https://golang.org/doc/gopher/frontpage.png' />"
+|     <img>
+|       src="https://golang.org/doc/gopher/frontpage.png"
 |     <p>
 |       <img>
 |         src="https://golang.org/doc/gopher/doc.png"
 `
-	err := testParseCase(text, want, "", ParseOptionEnableScripting(false))
 
-	if err != nil {
+	if err := testParseCase(text, want, "", ParseOptionEnableScripting(false)); err != nil {
 		t.Errorf("test with scripting is disabled, %q, %s", text, err)
 	}
 }
@@ -418,8 +431,10 @@ var renderTestBlacklist = map[string]bool{
 	`<script><!--<script </s`:                      true,
 	// Reconstructing the active formatting elements results in a <plaintext>
 	// element that contains an <a> element.
-	`<!doctype html><p><a><plaintext>b`:         true,
-	`<table><math><select><mi><select></table>`: true,
+	`<!doctype html><p><a><plaintext>b`:                       true,
+	`<table><math><select><mi><select></table>`:               true,
+	`<!doctype html><table><colgroup><plaintext></plaintext>`: true,
+	`<!doctype html><svg><plaintext>a</plaintext>b`:           true,
 }
 
 func TestNodeConsistency(t *testing.T) {
@@ -429,8 +444,7 @@ func TestNodeConsistency(t *testing.T) {
 		DataAtom: atom.Frameset,
 		Data:     "table",
 	}
-	_, err := ParseFragment(strings.NewReader("<p>hello</p>"), inconsistentNode)
-	if err == nil {
+	if _, err := ParseFragment(strings.NewReader("<p>hello</p>"), inconsistentNode); err == nil {
 		t.Errorf("got nil error, want non-nil")
 	}
 }

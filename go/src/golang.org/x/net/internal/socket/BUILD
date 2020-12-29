@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "cmsghdr.go",
         "cmsghdr_linux_64bit.go",
+        "cmsghdr_unix.go",
         "error_unix.go",
         "iovec_64bit.go",
         "mmsghdr_unix.go",
