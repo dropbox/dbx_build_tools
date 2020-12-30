@@ -10,7 +10,8 @@ dbx_go_library(
         "go17.go",
         "go19.go",
     ],
-    # This package was replaced by package context in the standard library in Go 1.7.
+    # This package was replaced by package context in the standard library in Go 1.7. It should not
+    # be used from dropbox/ or godropbox/.
     visibility = [
         "//go/src/github.com:__subpackages__",
         "//go/src/go.etcd.io:__subpackages__",
