@@ -43,6 +43,7 @@ RULE_TYPES = [
     "dbx_slow_metaserver_test",
     "dbx_metaserver_test",
     "dbx_internal_bootstrap_py_binary",
+    "dbx_py_selenium_test",
     # Atlas targets
     "dbx_atlas_http_test",
     "dbx_atlas_metaserver_http_test",
@@ -208,7 +209,8 @@ class PythonVersionCache(object):
                     rule.rule_type not in RULE_TYPES_THAT_DEFAULT_PY3_ONLY,
                 )
                 or rule.attr_map.get("python_version", "PY3") == "PY2"
-                or rule.attr_map.get("srcs_version", "PY3") in ("PY2", "PY2ONLY", "PY2AND3")
+                or rule.attr_map.get("srcs_version", "PY3")
+                in ("PY2", "PY2ONLY", "PY2AND3")
             )
 
             py3 = (
