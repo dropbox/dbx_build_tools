@@ -7,5 +7,5 @@ build --modify_execution_info=TestRunner=+block-network
 # dummy lcov.
 coverage --test_env=LCOV_MERGER=/bin/true
 
-build:changes --remote_http_cache=http://10.0.3.1:8000
+build:changes --remote_cache=http://10.0.3.1:8000
 build:changes --define svc.version-file=0
