@@ -25,6 +25,7 @@ DbxServicePyBinaryExtension = provider(fields = [
 DbxServiceDefinitionExtension = provider(fields = [
     "service",  # service this extension is targeting
     "deps",  # additional dependency to bring in to this service
+    "data",  # additional data to bring in to this service
     "version_file",  # additional version_file for this service
     "extensions",  # extensions provided transitively by the deps
     "services",  # mapping of all service definitions in this deps
@@ -99,6 +100,7 @@ def _apply_service_extensions(ctx, services, extensions):
     service_exe = dict()
     service_exe_args = dict()
     service_deps = dict()
+    service_data = dict()
     service_health_checks = dict()
     for service in services:
         service_version_files[service.service_name] = [service.version_file]
@@ -106,6 +108,8 @@ def _apply_service_extensions(ctx, services, extensions):
         service_exe_args[service.service_name] = list(service.launch_cmd.args)
         service_deps[service.service_name] = list(service.dependencies)
         service_health_checks[service.service_name] = list(service.health_checks)
+
+    all_runfiles = ctx.runfiles()
 
     py_binary_info = dict()
     for ext in extensions.to_list():
@@ -147,7 +151,9 @@ def _apply_service_extensions(ctx, services, extensions):
             service_version_files[info.service].append(info.version_file)
             service_health_checks[info.service].extend(info.health_checks)
 
-    all_runfiles = ctx.runfiles()
+            for target in info.data:
+                all_runfiles = all_runfiles.merge(target[DefaultInfo].default_runfiles)
+
     hidden_output_transitive = []
 
     for service in py_binary_info:
@@ -622,6 +628,7 @@ def service_extension_definition_impl(ctx):
             DbxServiceDefinitionExtension(
                 service = ctx.attr.service.service_name,
                 deps = dependents,
+                data = ctx.attr.data,
                 extensions = depset(transitive = transitive_extensions),
                 services = services,
                 args = args,
