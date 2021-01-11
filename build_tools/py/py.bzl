@@ -3,6 +3,7 @@ load(
     "@bazel_tools//tools/build_defs/cc:action_names.bzl",
     "CPP_COMPILE_ACTION_NAME",
     "CPP_LINK_DYNAMIC_LIBRARY_ACTION_NAME",
+    "CPP_LINK_STATIC_LIBRARY_ACTION_NAME",
     "C_COMPILE_ACTION_NAME",
 )
 load("//build_tools/bazel:runfiles.bzl", "runfiles_attrs")
@@ -69,9 +70,17 @@ ROOT_PLACEHOLDER = "____root____"
 
 def _add_vpip_compiler_args(ctx, cc_toolchain, copts, conly, args):
     # Set the compiler to the crosstool compilation driver.
-    args.add(cc_toolchain.compiler_executable, format = "--compiler-executable=%s")
-    args.add(cc_toolchain.ar_executable, format = "--archiver=%s")
     feature_configuration = cc_common.configure_features(ctx = ctx, cc_toolchain = cc_toolchain)
+    c_compiler = cc_common.get_tool_for_action(
+        feature_configuration = feature_configuration,
+        action_name = C_COMPILE_ACTION_NAME if conly else CPP_COMPILE_ACTION_NAME,
+    )
+    archiver = cc_common.get_tool_for_action(
+        feature_configuration = feature_configuration,
+        action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
+    )
+    args.add(c_compiler, format = "--compiler-executable=%s")
+    args.add(archiver, format = "--archiver=%s")
 
     # Add base compiler flags from the crosstool. These contain the correct
     # include paths and other side-wide settings like -fstack-protector. These
