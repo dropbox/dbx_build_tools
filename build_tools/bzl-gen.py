@@ -12,6 +12,7 @@ import functools
 import os
 import subprocess
 import sys
+import traceback
 
 from typing import Callable, List, Sequence
 
@@ -62,9 +63,9 @@ def main():
             raise
         sys.exit("ERROR: " + str(e))
     except subprocess.CalledProcessError as e:
-        print(e, file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
         if e.output:
-            print(e.output, file=sys.stderr)
+            print(e.output.decode("utf-8"), file=sys.stderr)
         if os.environ.get("BZL_DEBUG"):
             raise
         sys.exit(e.returncode)
