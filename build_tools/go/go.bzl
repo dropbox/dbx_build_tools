@@ -253,7 +253,8 @@ def go_binary_impl(ctx):
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
-        requested_features = features,
+        requested_features = ctx.features + features,
+        unsupported_features = ctx.disabled_features,
     )
     link_variables = cc_common.create_link_variables(
         feature_configuration = feature_configuration,
@@ -471,7 +472,12 @@ def _instrument_for_coverage(ctx, go_toolchain, srcs):
 def _compute_cgo_parameters(ctx, native_info):
     "Compute parameters for packages with CGO that are independent of the Go version."
     cc_toolchain = find_cpp_toolchain(ctx)
-    feature_configuration = cc_common.configure_features(ctx = ctx, cc_toolchain = cc_toolchain)
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
     compiler_inputs_direct = []
     compiler_inputs_trans = [
         cc_toolchain.all_files,
