@@ -328,7 +328,12 @@ def _build_mypyc_ext_module(
         private_hdrs = [],
         compilation_contexts = []):
     cc_toolchain = find_cpp_toolchain(ctx)
-    feature_configuration = cc_common.configure_features(ctx = ctx, cc_toolchain = cc_toolchain)
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features,
+    )
 
     so_name = "%s.cpython-38-x86_64-linux-gnu.so" % group_name
     so_file = ctx.actions.declare_file(so_name)
