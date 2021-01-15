@@ -823,7 +823,7 @@ def dbx_py_pypi_piplib(
     if provides == None:
         # If no explicit 'provides' attribute is specified, default to using the target name itself.
         if hidden_provides == None:
-            provides = [name]
+            provides = [name.replace("-", "_")]
         else:
             provides = []
 
@@ -857,7 +857,7 @@ def dbx_py_local_piplib(
     if provides == None:
         # If no explicit 'provides' attribute is specified, default to using the target name itself.
         if hidden_provides == None:
-            provides = [name]
+            provides = [name.replace("-", "_")]
         else:
             provides = []
 
