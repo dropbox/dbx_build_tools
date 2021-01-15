@@ -260,7 +260,10 @@ def build_pip_archive(workdir):
         external_dir, "io_pypa_wheel_whl", "file", "wheel-0.34.2-py2.py3-none-any.whl"
     )
 
-    install_env = {"PYTHONPATH": pip_wheel}
+    install_env = {
+        "PYTHONPATH": pip_wheel,  # force use of `pip` for self-install
+        "PYTHONNOUSERSITE": "1",  # prevent local site from interfering
+    }
 
     if ARGS.msvc_toolchain:
         # If we do not set the SYSTEMROOT, Python fails to get
