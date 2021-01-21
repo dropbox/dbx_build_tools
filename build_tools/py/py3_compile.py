@@ -52,6 +52,7 @@ def main() -> None:
                             or "paste" in src_path
                             or "weberror" in src_path
                             or "notebook" in src_path
+                            or "jupyter_server" in src_path
                         ):
                             new_docstring = " "
                         elif "scipy" in src_path:
