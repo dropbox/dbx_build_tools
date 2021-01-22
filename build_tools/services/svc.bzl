@@ -472,7 +472,7 @@ service_group_internal = rule(
     executable = True,
 )
 
-def services_bin_impl(ctx):
+def _services_bin_impl(ctx):
     services = {}
     transitive_extensions = []
     for svc_def in ctx.attr.services:
@@ -528,7 +528,7 @@ _services_bin_attrs.update(runfiles_attrs)
 _services_bin_attrs.update(_service_common_attrs)
 
 services_internal_test = rule(
-    implementation = services_bin_impl,
+    implementation = _services_bin_impl,
     attrs = _services_bin_attrs,
     test = True,
     toolchains = ALL_TOOLCHAIN_NAMES,
