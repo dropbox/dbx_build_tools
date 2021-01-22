@@ -14,7 +14,7 @@ def run_cmd(cmd, use_go_env=False, verbose=False, cwd=None):
 
     env_args = ["%s=%s" % x for x in sorted(env.items())]
     if verbose:
-        print("exec:", " ".join(env_args + cmd), file=sys.stderr)
+        print("exec:", " ".join(env_args + cmd), cwd, file=sys.stderr)
     try:
         output = subprocess.check_output(cmd, env=env, encoding="ascii", cwd=cwd)
     except subprocess.CalledProcessError:
