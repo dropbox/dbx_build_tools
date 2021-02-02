@@ -208,7 +208,8 @@ class PythonVersionCache(object):
                     rule.rule_type not in RULE_TYPES_THAT_DEFAULT_PY3_ONLY,
                 )
                 or rule.attr_map.get("python_version", "PY3") == "PY2"
-                or rule.attr_map.get("srcs_version", "PY3") in ("PY2", "PY2ONLY", "PY2AND3")
+                or rule.attr_map.get("srcs_version", "PY3")
+                in ("PY2", "PY2ONLY", "PY2AND3")
             )
 
             py3 = (
@@ -220,10 +221,15 @@ class PythonVersionCache(object):
                 rule.attr_map.get("srcs", [])
             ):
                 src = os.path.join(dir, src)
+                # Explicitly add __init__.py files, since those are typically not included
+                # in BUILD files, but mypy relies on them for module existence, particularly
+                # when follow_imports=skip in the mypy.ini
                 if py2:
                     self._py2_files.add(src)
+                    self._py2_files.add(os.path.join(dir, "__init__.py"))
                 if py3:
                     self._py3_files.add(src)
+                    self._py3_files.add(os.path.join(dir, "__init__.py"))
 
     def get_flags(self, file):
         # type: (str) -> Tuple[bool, bool]
