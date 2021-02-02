@@ -209,7 +209,6 @@ cat <<'END_OF_FILE' > $@
 #define HAVE_FUTIMENS 1
 #define HAVE_GETOPT_H 1
 #define HAVE_GETOPT_LONG 1
-#define HAVE_IMMINTRIN_H 1
 #define HAVE_INTTYPES_H 1
 #define HAVE_LIMITS_H 1
 #define HAVE_MBRTOWC 1
