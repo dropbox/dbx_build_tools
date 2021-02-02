@@ -13,6 +13,7 @@ dbx_py_library(
     srcs = [
         "atomic.py",
     ],
+    python2_compatible = True,
     python3_compatible = True,
     validate = "strict",
     deps = [
@@ -26,6 +27,7 @@ dbx_py_library(
         "bazel_utils.py",
         "npm_utils.py",
     ],
+    python2_compatible = True,
     python3_compatible = True,
     validate = "strict",
     deps = [
@@ -47,6 +49,7 @@ dbx_py_pytest_test(
 dbx_py_library(
     name = "bazelpkg",
     srcs = ["bazelpkg.py"],
+    python2_compatible = True,
     python3_compatible = True,
     validate = "strict",
     deps = [
@@ -108,6 +111,7 @@ dbx_py_library(
     srcs = ["whatpyver.py"],
     # This must not have further dependencies.
     autogen_deps = False,
+    python2_compatible = True,
     validate = "strict",
     deps = [":build_parser_lib"],
 )
