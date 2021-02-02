@@ -56,9 +56,10 @@ RULE_TYPES = [
 
 RULE_TYPES_THAT_DEFAULT_PY3_ONLY = [
     "dbx_py_binary",
+    "dbx_py_library",
     "dbx_py_test",
-    "py_library",
     "py_binary",
+    "py_library",
 ]
 
 

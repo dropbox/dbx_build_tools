@@ -890,7 +890,7 @@ dbx_py_library_attrs = {
     "srcs": attr.label_list(allow_files = py_file_types),
     "stub_srcs": attr.label_list(allow_files = pyi_file_types),  # For mypy
     "pythonpath": attr.string(),
-    "python2_compatible": attr.bool(default = True),
+    "python2_compatible": attr.bool(default = False),
     "python3_compatible": attr.bool(default = True),
     "validate": attr.string(default = "strict", mandatory = False, values = ["strict", "warn", "ignore", "allow-unused"]),
     # This is available for a few odd cases like tensorflow and opencv which use
