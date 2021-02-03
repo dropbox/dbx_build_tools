@@ -49,6 +49,7 @@ RULE_TYPES = [
     "dbx_slow_atlas_metaserver_http_test",
     "dbx_atlas_slow_and_expensive_testutil_library",
     "dbx_atlas_servicers_py_library",
+    "dbx_atlas_atf_py_library",
     # Tensorflow targets
     "dbx_py_tf_binary",
     "dbx_py_tf_pytest_test",
