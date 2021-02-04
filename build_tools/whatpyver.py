@@ -199,7 +199,13 @@ class PythonVersionCache(object):
                 t1 = time.time()
                 print("Parsing took %.1f msec" % ((t1 - t0) * 1000))
         self._build_file_parsers[build_file] = bp
-        for rule in bp.get_rules_by_types(RULE_TYPES):
+        rules = bp.get_rules_by_types(RULE_TYPES)
+        if not any(rule.attr_map.get("srcs") for rule in rules):
+            # If the BUILD file is empty or lacks srcs, it trivially supports py2/py3
+            # this helps support intermediate directories w/ only __init__
+            self._py2_files.add(os.path.join(dir, "__init__.py"))
+            self._py3_files.add(os.path.join(dir, "__init__.py"))
+        for rule in rules:
             # NOTE: These defaults may change when build_tools/py/py.bzl changes.
             # python2_compatible is used by dbx_py_binary
             # python_version is used by py_binary
