@@ -26,6 +26,7 @@ import marshal
 import os
 import pkgutil
 import sys
+import warnings
 
 DBX_MAGIC = b"dbx" + imp.get_magic()
 
@@ -142,6 +143,12 @@ class DBXLoader(pkgutil.ImpLoader):
             # dbx_py_binary required dependencies as small as possible.
             if co is not None:
                 mod.__file__ = os.path.join(os.environ["RUNFILES"], co.co_filename)
+                # Silence the cryptography deprecation warning. This seems to be the only
+                # place to reliably silence it.
+                warnings.filterwarnings(
+                    "ignore",
+                    message="Python 2 is no longer supported by the Python core team",
+                )
                 exec(co, mod.__dict__)
             else:
                 mod.__file__ = filename
