@@ -43,6 +43,7 @@ RULE_TYPES = [
     "dbx_slow_metaserver_test",
     "dbx_metaserver_test",
     "dbx_internal_bootstrap_py_binary",
+    "dbx_py_selenium_test",
     # Atlas targets
     "dbx_atlas_http_test",
     "dbx_atlas_metaserver_http_test",
