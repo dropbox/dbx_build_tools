@@ -160,6 +160,15 @@ def install():
 
 
 DOCSTRING_STRIP_EXCEPTIONS = [
+    "capirca",
+    "statsmodel",
+    # scikit-image relies on docstrings to be present
+    # https://github.com/scikit-image/scikit-image/blob/master/skimage/measure/_regionprops.py#L977
+    "scikit-image",
+    # seaborn relies on docstrings internally
+    # https://github.com/mwaskom/seaborn/blob/master/seaborn/_docstrings.py
+    "seaborn",
+    "stone",
 ]
 
 
