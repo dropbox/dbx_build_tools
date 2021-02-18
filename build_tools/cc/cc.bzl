@@ -1,3 +1,5 @@
+load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
+
 def prefer_pic_library_impl(ctx):
     # When -c opt is specified, cc_library rules produce both .a and .pic.a
     # outputs. We want the .pic.a file, but cc.libs gives us the .a file.
@@ -16,3 +18,10 @@ prefer_pic_library = rule(
         "library": attr.label(),
     },
 )
+
+def dbx_cc_test(name, tags = [], quarantine = None, **kwargs):
+    native.cc_test(
+        name = name,
+        tags = tags + process_quarantine_attr(quarantine),
+        **kwargs
+    )
