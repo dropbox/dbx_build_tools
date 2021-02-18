@@ -61,6 +61,9 @@ var linkerMp = map[string]struct {
 	"crypto": {
 		Deps: []string{"@org_openssl//:ssl"},
 	},
+	"flatbuffers": {
+		Deps: []string{"@com_github_google_flatbuffers//:flatbuffers"},
+	},
 	"jemalloc": {
 		Deps: []string{"@jemalloc//:jemalloc"},
 	},
