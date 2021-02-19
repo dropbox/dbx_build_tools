@@ -15,10 +15,12 @@ if [[ "$ver" = "2.7" ]]; then
     repo=org_python_cpython_27
     version=2.7.18-dbx6
     abitag=2.7
+    pgo_task=(-W -x test_multiprocessing_forkserver test_sysconfig test_subprocess)
 elif [[ "$ver" = "3.8" ]]; then
     repo=org_python_cpython_38
     version=3.8.8-dbx1
     abitag=3.8
+    pgo_task=("--pgo")
 fi
 
 drte_version="$2"
@@ -48,7 +50,7 @@ mkdir "build-temp/lib/python$ver/lib-dynload"
 
 # Run the test suite. We set TZDIR because some tests rely on certain
 # information in the Olson database.
-(cd build-temp; TZDIR=/usr/share/zoneinfo ./python -m test.regrtest -W -x test_multiprocessing_forkserver test_sysconfig test_subprocess)
+(cd build-temp; TZDIR=/usr/share/zoneinfo ./python -m test.regrtest "${pgo_task[@]}")
 
 # Build with final stamps and PGO. We used to be happy users of Bazel's
 # --fdo_optimize option until upstream removed GCC FDO support without public
