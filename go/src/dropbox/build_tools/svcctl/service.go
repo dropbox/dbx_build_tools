@@ -206,8 +206,6 @@ func (svc *serviceDef) getLogsPath() string {
 }
 
 func (svc *serviceDef) createLogger(writer io.Writer, flag int) *log.Logger {
-	// TODO(anupc/naphat): This should probably go into a separate logfile dedicated to the service
-	// startup system.
 	return log.New(writer, fmt.Sprintf("[%s] ", svc.name),
 		log.Lmicroseconds|flag)
 }

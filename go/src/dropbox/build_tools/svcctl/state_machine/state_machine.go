@@ -7,7 +7,7 @@ import (
 )
 
 // a threadsafe representation of a state in a state machine
-// TODO(naphat) this does not give us the safety normally associated with
+// this does not give us the safety normally associated with
 // a state machine, like ensuring valid transitions. That will require
 // refactoring daemon vs. task services, since they have different transition
 // diagrams.
