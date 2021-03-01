@@ -95,18 +95,3 @@ class ParsedBuildFileCache(object):
             return filename, parsed
 
         return self.get_build(directory)
-
-
-_CACHE_BY_WORKSPACE: Dict[str, ParsedBuildFileCache] = {}
-
-
-def get_build_file_cache(workspace_dir: str) -> ParsedBuildFileCache:
-    if workspace_dir not in _CACHE_BY_WORKSPACE:
-        _CACHE_BY_WORKSPACE[workspace_dir] = ParsedBuildFileCache(workspace_dir)
-
-    return _CACHE_BY_WORKSPACE[workspace_dir]
-
-
-def clear_build_file_cache(workspace_dir: str) -> None:
-    if workspace_dir in _CACHE_BY_WORKSPACE:
-        _CACHE_BY_WORKSPACE.pop(workspace_dir)
