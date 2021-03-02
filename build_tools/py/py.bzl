@@ -276,7 +276,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     for build_dep in ctx.attr.setup_requires:
         versions = build_dep[DbxPyVersionCompatibility]
         if ctx.attr.python2_compatible and not versions.python2_compatible:
-            fail("%s is not compatible with Python 2." % (build_dep.label,))
+            fail("%s is not compatible with Python 2; perhaps this indicates that this target need not be python 2 compatible." % (build_dep.label,))
         if ctx.attr.python3_compatible and not versions.python3_compatible:
             fail("%s is not compatible with Python 3." % (build_dep.label,))
         build_dep_wheels.extend(
