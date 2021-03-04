@@ -13,7 +13,7 @@ fi
 ver="$1"
 if [[ "$ver" = "2.7" ]]; then
     repo=org_python_cpython_27
-    version=2.7.18-dbx6
+    version=2.7.18-dbx7
     abitag=2.7
     pgo_task=(-W -x test_multiprocessing_forkserver test_sysconfig test_subprocess)
 elif [[ "$ver" = "3.8" ]]; then
