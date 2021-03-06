@@ -7,7 +7,7 @@ import os.path
 from typing import Dict, Iterable, List, Optional, Set, Text
 
 from build_tools import bazel_utils, build_parser
-from build_tools.bzl_lib.cache import ParsedBuildFileCache
+from build_tools.bzl_lib.cache import get_build_file_cache
 from build_tools.bzl_lib.cfg import (
     BUILD_INPUT,
     DEFAULT_BUILD,
@@ -780,7 +780,7 @@ class PyBuildGenerator(Generator):
         # traversed
         self.visited_non_bzl_targets: Set[str] = set()
 
-        self.parsed_cache = ParsedBuildFileCache(workspace_dir)
+        self.parsed_cache = get_build_file_cache(workspace_dir)
 
         self.python_path_mappings = PythonPathMappingCache(
             workspace_dir, self.parsed_cache
