@@ -429,6 +429,19 @@ def _dbx_mypy_aspect_impl(target, ctx):
             fail("Expected rule kind services_internal_test, got %s" % rule.kind)
 
         # Special case for tests that specify services=...
+        # This happens when user specifies a services_internal_test inside a dbx_mypy_test,
+        # e.g.
+        #
+        # dbx_py_pytest_test(
+        #     name = "foo_test",
+        #     services = [...],
+        # )
+        #
+        # dbx_mypy_test(
+        #     name = "foo_test_mypy_test",
+        #     # The actual python binary is :foo_test_bin, but this is invisible to users
+        #     deps = [":foo_test"],
+        # )
         return _dbx_mypy_common_code(
             None,
             ctx,
