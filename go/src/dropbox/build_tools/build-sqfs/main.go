@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -556,7 +557,7 @@ func main() {
 		"-no-fragments",
 		"-no-duplicates",
 		"-processors",
-		"16",
+		fmt.Sprintf("%d", runtime.NumCPU()),
 		"-fstime",
 		fmt.Sprintf("%d", constantTimestampInt),
 	}
