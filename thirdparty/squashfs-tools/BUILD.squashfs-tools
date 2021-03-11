@@ -13,6 +13,8 @@ cc_binary(
         "squashfs-tools/gzip_wrapper.h",
         "squashfs-tools/info.c",
         "squashfs-tools/info.h",
+        "squashfs-tools/lz4_wrapper.c",
+        "squashfs-tools/lz4_wrapper.h",
         "squashfs-tools/mksquashfs.c",
         "squashfs-tools/mksquashfs.h",
         "squashfs-tools/process_fragments.c",
@@ -34,6 +36,8 @@ cc_binary(
         "squashfs-tools/swap.c",
         "squashfs-tools/xattr.c",
         "squashfs-tools/xattr.h",
+        "squashfs-tools/zstd_wrapper.c",
+        "squashfs-tools/zstd_wrapper.h",
     ],
     copts = [
         "-D_FILE_OFFSET_BITS=64",
@@ -42,14 +46,20 @@ cc_binary(
         "-DCOMP_DEFAULT=\\\"gzip\\\"",
         "-DXATTR_SUPPORT",
         "-DXATTR_DEFAULT",
-        "-DGZIP_SUPPORT",
         "-DREPRODUCIBLE_DEFAULT",
+        "-DGZIP_SUPPORT",
+        "-DLZ4_SUPPORT",
+        "-DZSTD_SUPPORT",
     ],
     linkopts = [
         "-pthread",
     ],
     visibility = ["//visibility:public"],
-    deps = ["@net_zlib//:zlib"],
+    deps = [
+        "@lz4",
+        "@net_zlib//:zlib",
+        "@zstd",
+    ],
 )
 
 cc_binary(
@@ -61,6 +71,8 @@ cc_binary(
         "squashfs-tools/fnmatch_compat.h",
         "squashfs-tools/gzip_wrapper.c",
         "squashfs-tools/gzip_wrapper.h",
+        "squashfs-tools/lz4_wrapper.c",
+        "squashfs-tools/lz4_wrapper.h",
         "squashfs-tools/read_xattrs.c",
         "squashfs-tools/squashfs_compat.h",
         "squashfs-tools/squashfs_fs.h",
@@ -78,6 +90,8 @@ cc_binary(
         "squashfs-tools/unsquashfs_info.h",
         "squashfs-tools/unsquashfs_xattr.c",
         "squashfs-tools/xattr.h",
+        "squashfs-tools/zstd_wrapper.c",
+        "squashfs-tools/zstd_wrapper.h",
     ],
     copts = [
         "-D_FILE_OFFSET_BITS=64",
@@ -88,10 +102,16 @@ cc_binary(
         "-DXATTR_DEFAULT",
         "-DREPRODUCIBLE_DEFAULT",
         "-DGZIP_SUPPORT",
+        "-DLZ4_SUPPORT",
+        "-DZSTD_SUPPORT",
     ],
     linkopts = [
         "-pthread",
     ],
     visibility = ["//visibility:public"],
-    deps = ["@net_zlib//:zlib"],
+    deps = [
+        "@lz4",
+        "@net_zlib//:zlib",
+        "@zstd",
+    ],
 )
