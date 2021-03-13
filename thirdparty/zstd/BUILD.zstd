@@ -1,0 +1,35 @@
+cc_library(
+    name = "zstd",
+    srcs = glob([
+        "lib/common/*.c",
+        "lib/common/*.h",
+        "lib/compress/*.c",
+        "lib/compress/*.h",
+        "lib/deprecated/*.c",
+        "lib/deprecated/*.h",
+        "lib/decompress/*.c",
+        "lib/decompress/*.h",
+        "lib/dictBuilder/*.c",
+        "lib/dictBuilder/*.h",
+        "lib/legacy/*.h",
+    ]) + [
+        "lib/legacy/zstd_v05.c",
+        "lib/legacy/zstd_v06.c",
+        "lib/legacy/zstd_v07.c",
+    ],
+    hdrs = [
+        "lib/common/zstd_errors.h",
+        "lib/zstd.h",
+    ],
+    copts = [
+        "-I",
+        "external/zstd/lib/legacy",
+        "-DXXH_NAMESPACE=ZSTD_",
+        "-DZSTD_LEGACY_SUPPORT=5",
+    ],
+    includes = [
+        "lib",
+        "lib/common",
+    ],
+    visibility = ["//visibility:public"],
+)

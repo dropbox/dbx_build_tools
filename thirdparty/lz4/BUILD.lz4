@@ -1,0 +1,21 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "lz4",
+    srcs = glob([
+        "lib/*.c",
+        "lib/*.h",
+    ]),
+    hdrs = [
+        "lib/lz4.h",
+        "lib/lz4frame.h",
+        "lib/lz4hc.h",
+    ],
+    copts = [
+        "-DXXH_NAMESPACE=LZ4_",
+    ],
+    strip_include_prefix = "lib",
+    textual_hdrs = [
+        "lib/lz4.c",
+    ],
+)

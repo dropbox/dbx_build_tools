@@ -15,6 +15,7 @@ DEFAULT_EXTERNAL_URLS = {
     "io_pypa_pip_whl": ["https://files.pythonhosted.org/packages/54/0c/d01aa759fdc501a58f431eb594a17495f15b88da142ce14b5845662c13f3/pip-20.0.2-py2.py3-none-any.whl"],
     "io_pypa_setuptools_whl": ["https://files.pythonhosted.org/packages/f9/d3/955738b20d3832dfa3cd3d9b07e29a8162edb480bf988332f5e6e48ca444/setuptools-44.0.0-py2.py3-none-any.whl"],
     "io_pypa_wheel_whl": ["https://files.pythonhosted.org/packages/8c/23/848298cccf8e40f5bbb59009b32848a4c38f4e7f3364297ab3c3e2e2cd14/wheel-0.34.2-py2.py3-none-any.whl"],
+    "lz4": ["https://github.com/lz4/lz4/archive/r131.tar.gz"],
     "net_zlib": ["http://zlib.net/zlib-1.2.11.tar.gz"],
     "org_bzip_bzip2": ["https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"],
     "org_gnu_ncurses": ["https://invisible-mirror.net/archives/ncurses/ncurses-6.2.tar.gz"],
@@ -26,6 +27,7 @@ DEFAULT_EXTERNAL_URLS = {
     "rules_pkg": ["https://github.com/bazelbuild/rules_pkg/releases/download/0.2.6-1/rules_pkg-0.2.6.tar.gz"],
     "six_archive": ["https://pypi.python.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"],
     "ducible": ["https://github.com/jasonwhite/ducible/releases/download/v1.2.2/ducible-windows-Win32-Release.zip"],
+    "zstd": ["https://github.com/facebook/zstd/releases/download/v1.4.4/zstd-1.4.4.tar.gz"],
 }
 
 def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
@@ -154,6 +156,22 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
         sha256 = "e0b1c0345fe4338b936e17da8e1bd88366cd210e576834546977f040c12a8f68",
         strip_prefix = "sqlite-amalgamation-3340100",
         build_file = filename_from_label("//thirdparty/sqlite:BUILD.sqlite"),
+    )
+
+    http_archive(
+        name = "lz4",
+        urls = urls["lz4"],
+        sha256 = "9d4d00614d6b9dec3114b33d1224b6262b99ace24434c53487a0c8fd0b18cfed",
+        strip_prefix = "lz4-r131",
+        build_file = filename_from_label("//thirdparty/lz4:BUILD.lz4"),
+    )
+
+    http_archive(
+        name = "zstd",
+        urls = urls["zstd"],
+        sha256 = "59ef70ebb757ffe74a7b3fe9c305e2ba3350021a918d168a046c6300aeea9315",
+        strip_prefix = "zstd-1.4.4",
+        build_file = filename_from_label("//thirdparty/zstd:BUILD.zstd"),
     )
 
 def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
