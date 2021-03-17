@@ -514,6 +514,8 @@ func main() {
 	symlink := flag.String("symlink", "", "symlink file")
 	scratch := flag.String("scratch-dir", "/tmp/sqfs_pkg", "path to write temporary sqfs files")
 	blockSizeKb := flag.Int("block-size-kb", 0, "sqfs block size (in KB)")
+	compressionAlgo := flag.String("compression-algo", "", "compression algorithm")
+	compressionLevel := flag.Int("compression-level", 0, "compression level")
 	flag.Parse()
 	if *verbose {
 		start := time.Now()
@@ -563,6 +565,12 @@ func main() {
 	}
 	if *blockSizeKb != 0 {
 		args = append(args, "-b", fmt.Sprintf("%dK", *blockSizeKb))
+	}
+	if *compressionAlgo != "" {
+		args = append(args, "-comp", *compressionAlgo)
+	}
+	if *compressionLevel != 0 {
+		args = append(args, "-Xcompression-level", fmt.Sprintf("%d", *compressionLevel))
 	}
 
 	cmd := exec.Command(runfiles.MustDataPath("@dbx_build_tools//build_tools/chronic"), args...)

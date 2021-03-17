@@ -3,12 +3,35 @@
 
 package(default_visibility = ["//visibility:public"])
 
+load("//build_tools/bazel:pkg.bzl", "dbx_pkg_sqfs")
+load("//build_tools/py:py.bzl", "dbx_py_pytest_test")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 # Tell bzl gen to create //dropbox/magic_mirror/configs/git-repos-build_tools-bazel.yaml.
 AUTOGEN_MAGIC_MIRROR_REPO_CONFIG_FROM = [
     "external_workspace.bzl",
 ]
+
+dbx_py_pytest_test(
+    name = "sqfs_tests",
+    srcs = [
+        "sqfs_tests.py",
+    ],
+    data = [
+        ":test_sqfs_gzip_1.sqfs",
+        ":test_sqfs_lz4.sqfs",
+        "@com_github_plougher_squashfs_tools//:unsquashfs",
+    ],
+    python2_compatible = False,
+    python3_compatible = True,
+    visibility = ["//visibility:private"],
+    deps = [
+        "//dropbox:runfiles",
+        "//pip/pytest",
+        "//pip/six",
+        "//pip/typing",
+    ],
+)
 
 bzl_library(
     name = "bazel_bzl",
@@ -17,6 +40,32 @@ bzl_library(
     ]),
     deps = [
         "//build_tools/windows:windows_bzl",
+    ],
+)
+
+dbx_pkg_sqfs(
+    name = "test_sqfs_gzip_1.sqfs",
+    testonly = True,
+    compression_algo = "gzip",
+    compression_level = 1,
+    data = [
+        "runfiles.tmpl",
+    ],
+    release_tests = [
+        "//build_tools/bazel/...",
+    ],
+)
+
+dbx_pkg_sqfs(
+    name = "test_sqfs_lz4.sqfs",
+    testonly = True,
+    block_size_kb = 16,
+    compression_algo = "lz4",
+    data = [
+        "runfiles.tmpl",
+    ],
+    release_tests = [
+        "//build_tools/bazel/...",
     ],
 )
 

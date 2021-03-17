@@ -262,6 +262,12 @@ def pkg_sqfs_impl(ctx):
     if ctx.attr.block_size_kb:
         args.add("--block-size-kb", str(ctx.attr.block_size_kb))
 
+    if ctx.attr.compression_algo:
+        args.add("--compression-algo", ctx.attr.compression_algo)
+
+    if ctx.attr.compression_level:
+        args.add("--compression-level", str(ctx.attr.compression_level))
+
     ctx.actions.run(
         outputs = [ctx.outputs.executable],
         inputs = depset(transitive = [files], direct = extra_input_files),
@@ -291,6 +297,16 @@ _dbx_pkg_sqfs = rule(
         ),
         "block_size_kb": attr.int(),
         "capability_map": attr.string_dict(),
+        "compression_algo": attr.string(
+            # TODO(rbtz): switch to zstd after u20 upgrade.
+            default = "gzip",
+            values = ["gzip", "lz4"],
+            doc = "Compression algorithm.  Zstd is supported starting from v4.13+.",
+        ),
+        "compression_level": attr.int(
+            doc = "Compression level.  Higher values give better compression ratios " +
+                  "but increase sqfs package creation times.",
+        ),
         "symlink_map": attr.string_dict(
             allow_empty = True,
             default = {},
