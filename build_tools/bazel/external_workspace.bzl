@@ -27,7 +27,7 @@ DEFAULT_EXTERNAL_URLS = {
     "rules_pkg": ["https://github.com/bazelbuild/rules_pkg/releases/download/0.2.6-1/rules_pkg-0.2.6.tar.gz"],
     "six_archive": ["https://pypi.python.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"],
     "ducible": ["https://github.com/jasonwhite/ducible/releases/download/v1.2.2/ducible-windows-Win32-Release.zip"],
-    "zstd": ["https://github.com/facebook/zstd/releases/download/v1.4.4/zstd-1.4.4.tar.gz"],
+    "zstd": ["https://github.com/facebook/zstd/releases/download/v1.4.9/zstd-1.4.9.tar.gz"],
 }
 
 def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
@@ -169,8 +169,8 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "zstd",
         urls = urls["zstd"],
-        sha256 = "59ef70ebb757ffe74a7b3fe9c305e2ba3350021a918d168a046c6300aeea9315",
-        strip_prefix = "zstd-1.4.4",
+        sha256 = "29ac74e19ea28659017361976240c4b5c5c24db3b89338731a6feb97c038d293",
+        strip_prefix = "zstd-1.4.9",
         build_file = filename_from_label("//thirdparty/zstd:BUILD.zstd"),
     )
 
