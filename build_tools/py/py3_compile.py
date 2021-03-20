@@ -6,7 +6,14 @@ import importlib.util
 import os
 import sys
 
-DOCSTRING_STRIP_EXCEPTIONS = ["capirca", "seaborn", "statsmodel", "stone", "tensorflow"]
+DOCSTRING_STRIP_EXCEPTIONS = [
+    "capirca",
+    "seaborn",
+    "statsmodel",
+    "stone",
+    "tensorflow",
+    "transformers",
+]
 
 
 def main() -> None:
