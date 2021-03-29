@@ -690,6 +690,15 @@ def dbx_services_test(
         **kwargs
     )
 
+def _select_deps(deps):
+    if type(deps) == "list":
+        return select({
+            str(Label("//build_tools:disable-service-deps")): [],
+            "//conditions:default": deps,
+        })
+    # bazel doesn't support nested selects
+    return deps
+
 def dbx_service_daemon(
         name,
         owner,
@@ -720,7 +729,7 @@ def dbx_service_daemon(
         exe_env = exe_env,
         exe_args = args,
         data = data + [exe],
-        deps = deps,
+        deps = _select_deps(deps),
         http_health_check = http_health_check,
         verify_cmds = verify_cmds,
         testonly = True,
@@ -772,7 +781,7 @@ def dbx_service_task(
         exe_env = exe_env,
         exe_args = args,
         data = data + [exe],
-        deps = deps,
+        deps = _select_deps(deps),
         testonly = True,
         verbose = verbose,
         type = SERVICE_TYPE_TASK,

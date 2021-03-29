@@ -163,6 +163,13 @@ config_setting(
     },
 )
 
+config_setting(
+    name = "disable-service-deps",
+    values = {
+        "define": "dbx_service_deps=disabled",
+    },
+)
+
 # Used internally by Changes to not create a version file. This is so that tests are remote-cachable
 # Do not set this by hand
 config_setting(
