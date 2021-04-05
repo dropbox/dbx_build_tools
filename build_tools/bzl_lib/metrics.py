@@ -3,6 +3,7 @@ Metrics library for bzl.
 This will log timing metrics to multiple locations, including stderr and (later) logpusher
 """
 import contextlib
+import json
 import os
 import sys
 import time
@@ -10,6 +11,10 @@ import urllib.request
 
 from collections import defaultdict, namedtuple
 from typing import Any, Callable, DefaultDict, Dict, Iterator, List, Optional, Set
+
+# This is where bazel-cache-agent exposes cache stats as a json blob, port number should be in sync
+# with what's configured in go/src/dropbox/devtools/bazel-cache-agent/run-bazel-cache-agent.sh
+CACHE_METRICS_URL = "http://localhost:4567/debug/vars"
 
 
 class StatsError(Exception):
@@ -28,6 +33,7 @@ class Stats(object):
         self.error_type = None  # type: Optional[str]
         self.error_text = None  # type: Optional[str]
         self.reported = False
+        self.cache_metrics_before = {}  # type: Dict[str, Any]
 
 
 _stats = Stats()
@@ -239,6 +245,14 @@ def report_metrics():
         logpusher_data["metrics"][key] = value
     for (key, value) in _stats.cumulative_rates.items():
         logpusher_data["metrics"][key] = value
+
+    cache_metrics_after = get_cache_metrics()
+    logpusher_data["metrics"]["cache_hits"] = cache_metrics_after.get(
+        "cache-hits", 0
+    ) - _stats.cache_metrics_before.get("cache-hits", 0)
+    logpusher_data["metrics"]["cache_misses"] = cache_metrics_after.get(
+        "cache-misses", 0
+    ) - _stats.cache_metrics_before.get("cache-misses", 0)
     if _write_metrics is not None:
         _write_metrics("bzl", logpusher_data)
 
@@ -252,10 +266,35 @@ def set_write_metrics(write_metrics):
     _write_metrics = write_metrics
 
 
+def get_cache_metrics():
+    # type: () -> Dict[str, int]
+    # Example metrics:
+    # > yshao@yshao-dbx:~$ curl http://localhost:4567/debug/vars
+    # {
+    #     "cache-hits": 1953374,
+    #     "cache-http-get": 235304,
+    #     "cache-http-get-errors": 0,
+    #     "cache-http-head": 0,
+    #     "cache-http-head-errors": 0,
+    #     "cache-http-put": 0,
+    #     "cache-http-put-errors": 0,
+    #     "cache-http-unexpected-response-codes": 0,
+    #     "cache-misses": 9137
+    # }
+    cache_stats_dict = {}
+    try:
+        cache_stats_body = urllib.request.urlopen(CACHE_METRICS_URL, timeout=1)
+        cache_stats_dict = json.loads(cache_stats_body.read())
+    except Exception:
+        return {}
+    return cache_stats_dict
+
+
 @contextlib.contextmanager
 def main_metrics_scope():
     # type: () -> Iterator[None]
     create_and_register_timer("total_duration_ms").start()
+    _stats.cache_metrics_before = get_cache_metrics()
     try:
         yield
     except SystemExit as e:
