@@ -103,6 +103,9 @@ var linkerMp = map[string]struct {
 	"rust_ffi_namespace_view_lib": {
 		Deps: []string{"//rust/dropbox/namespace_view_ffi:namespace_view_ffi_lib"},
 	},
+	"rust_ffi_osd2_disk_tracker": {
+		Deps: []string{"//rust/mp/osd2/osd2_ffi:osd2_ffi_cc_lib"},
+	},
 	"snappy": {
 		Deps: []string{"@snappy//:snappy"},
 	},
