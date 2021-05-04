@@ -46,6 +46,7 @@ RULE_TYPES = [
     "dbx_py_selenium_test",
     # Atlas targets
     "dbx_atlas_http_test",
+    "dbx_atlas_blockserver_http_test",
     "dbx_atlas_metaserver_http_test",
     "dbx_slow_atlas_metaserver_http_test",
     "dbx_atlas_slow_and_expensive_testutil_library",
@@ -59,6 +60,7 @@ RULE_TYPES = [
 RULE_TYPES_THAT_DEFAULT_PY3_ONLY = [
     "dbx_py_binary",
     "dbx_py_library",
+    "dbx_atlas_blockserver_http_test",
     "dbx_atlas_servicers_py_library",
     "dbx_atlas_slow_and_expensive_testutil_library",
     "dbx_atlas_atf_py_library",
