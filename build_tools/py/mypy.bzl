@@ -67,10 +67,11 @@ def _get_stub_roots(stub_srcs):
     Helper to add extra roots for stub files in typeshed.
 
     Paths are of the form:
-      <prefix>/{stdlib,third_party}/<version>/<path>
+      <prefix>/<path>
+      <prefix>/.../stdlib/<path>
+      <prefix>/... /@python2/<path>
     where:
-      <prefix> is external/org_python_typeshed
-      <version> can be 2, 3, 2and3, 2.7, 3.3, 3.4 etc.
+      <prefix> is mypy-stubs or thirdparty/typeshed
       <path> is the actual filename we care about, e.g. sys.pyi
     """
     roots = []
@@ -79,9 +80,8 @@ def _get_stub_roots(stub_srcs):
         prefix = []
         for part in parts:
             prefix.append(part)
-            if part and part[0].isdigit():
+            if part == "@python2" or part == "stdlib":
                 roots.append("/".join(prefix))
-                break
     return roots
 
 def _get_trans_roots(target, srcs, stub_srcs, deps, mypy_provider, ctx):
@@ -156,6 +156,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
     stub_paths = {stub.path: None for stub in stub_srcs}  # Used as a set
     srcs = [src for src in srcs if src.path + "i" not in stub_paths] + stub_srcs
 
+    # Get transitive dependencies
     trans_srcs = _get_trans_field(srcs, deps, "srcs", mypy_provider)
     if not trans_srcs:
         return [_null_result(mypy_provider)]
@@ -268,6 +269,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         ctx.attr._sqlalchemy_plugin.files,
         ctx.attr._py3safe_plugin.files,
         ctx.attr._mypy_ini.files,
+        ctx.attr._versions.files,
     ])
     args = ctx.actions.args()
     args.use_param_file("@%s", use_always = True)
@@ -291,6 +293,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
     args.add("--no-error-summary")
     args.add("--incremental")
     args.add("--junit-xml", junit_xml_file)
+    args.add("--custom-typeshed-dir", "thirdparty/typeshed")
     args.add("--cache-map")
     args.add_all(trans_cache_map)
     args.add("--")
@@ -398,6 +401,10 @@ _dbx_mypy_common_attrs = {
     ),
     "_mypy_ini": attr.label(
         default = Label("//:mypy.ini"),
+        allow_files = True,
+    ),
+    "_versions": attr.label(
+        default = Label("//thirdparty/typeshed:stdlib/VERSIONS"),
         allow_files = True,
     ),
     # TODO: Move list of plugins to a separate target
