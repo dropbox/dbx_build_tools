@@ -819,6 +819,7 @@ def dbx_py_pypi_piplib(
         import_test_tags = None,
         python2_compatible = True,
         python3_compatible = True,
+        quarantine = {},
         **kwargs):
     if provides == None:
         # If no explicit 'provides' attribute is specified, default to using the target name itself.
@@ -844,6 +845,7 @@ def dbx_py_pypi_piplib(
         python2_compatible = python2_compatible,
         python3_compatible = python3_compatible,
         tags = import_test_tags,
+        quarantine = quarantine,
     )
 
 def dbx_py_local_piplib(
@@ -853,6 +855,7 @@ def dbx_py_local_piplib(
         import_test_tags = None,
         python2_compatible = True,
         python3_compatible = True,
+        quarantine = {},
         **kwargs):
     if provides == None:
         # If no explicit 'provides' attribute is specified, default to using the target name itself.
@@ -878,6 +881,7 @@ def dbx_py_local_piplib(
         python2_compatible = python2_compatible,
         python3_compatible = python3_compatible,
         tags = import_test_tags,
+        quarantine = quarantine,
     )
 
 def dbx_py_piplib_alias(name, provides = None, **kwargs):
