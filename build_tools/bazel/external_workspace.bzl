@@ -11,7 +11,6 @@ DEFAULT_EXTERNAL_URLS = {
     "com_github_plougher_squashfs_tools": ["https://github.com/plougher/squashfs-tools/archive/4.4.tar.gz"],
     "cpython_27": ["https://www.python.org/ftp/python/2.7.17/Python-2.7.17.tar.xz"],
     "cpython_38": ["https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz"],
-    "go_1_12_17_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.12.17.linux-amd64.tar.gz"],
     "go_1_16_4_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.16.4.linux-amd64.tar.gz"],
     "io_pypa_pip_whl": ["https://files.pythonhosted.org/packages/54/0c/d01aa759fdc501a58f431eb594a17495f15b88da142ce14b5845662c13f3/pip-20.0.2-py2.py3-none-any.whl"],
     "io_pypa_setuptools_whl": ["https://files.pythonhosted.org/packages/f9/d3/955738b20d3832dfa3cd3d9b07e29a8162edb480bf988332f5e6e48ca444/setuptools-44.0.0-py2.py3-none-any.whl"],
@@ -32,12 +31,6 @@ DEFAULT_EXTERNAL_URLS = {
 }
 
 def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
-    http_archive(
-        name = "go_1_12_17_linux_amd64_tar_gz",
-        urls = urls["go_1_12_17_linux_amd64_tar_gz"],
-        sha256 = "a53dd476129d496047487bfd53d021dd17e0c96895865a0e7d0469ce3db8c8d2",
-        build_file = filename_from_label("//build_tools/go:BUILD.go-dist"),
-    )
 
     http_archive(
         name = "go_1_16_4_linux_amd64_tar_gz",

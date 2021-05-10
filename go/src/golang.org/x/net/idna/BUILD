@@ -8,7 +8,7 @@ dbx_go_library(
     srcs = [
         "idna10.0.0.go",
         "punycode.go",
-        "tables10.0.0.go",
+        "tables13.0.0.go",
         "trie.go",
         "trieval.go",
     ],

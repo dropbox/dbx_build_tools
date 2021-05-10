@@ -20,35 +20,6 @@ dbx_py_library(
 )
 
 go_toolchain(
-    name = "go1.12",
-    asm = "@go_1_12_17_linux_amd64_tar_gz//:asm",
-    asm_inputs = "@go_1_12_17_linux_amd64_tar_gz//:asm-inputs",
-    cgo = "@go_1_12_17_linux_amd64_tar_gz//:cgo",
-    compile = "@go_1_12_17_linux_amd64_tar_gz//:compile",
-    cover = "@go_1_12_17_linux_amd64_tar_gz//:cover",
-    include_dir = "external/go_1_12_17_linux_amd64_tar_gz/go/pkg/include",
-    link = "@go_1_12_17_linux_amd64_tar_gz//:link",
-    pack = "@go_1_12_17_linux_amd64_tar_gz//:pack",
-    stdlib = "@go_1_12_17_linux_amd64_tar_gz//:stdlib",
-    stdlib_race = "@go_1_12_17_linux_amd64_tar_gz//:stdlib-race",
-    taglist = [
-        "go1.1",
-        "go1.2",
-        "go1.3",
-        "go1.4",
-        "go1.5",
-        "go1.6",
-        "go1.7",
-        "go1.8",
-        "go1.9",
-        "go1.10",
-        "go1.11",
-        "go1.12",
-    ],
-    version = "1.12",
-)
-
-go_toolchain(
     name = "go1.16",
     asm = "@go_1_16_4_linux_amd64_tar_gz//:asm",
     asm_inputs = "@go_1_16_4_linux_amd64_tar_gz//:asm-inputs",

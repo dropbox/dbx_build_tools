@@ -79,12 +79,11 @@ go_toolchain = rule(
     },
 )
 
-SUPPORTED_GO_VERSIONS = ["1.12", "1.16"]
-DEFAULT_GO_VERSION = "1.12"
-DEFAULT_GO_LIBRARY_VERSIONS = ["1.12", "1.16"]
-DEFAULT_GO_TEST_VERSIONS = ["1.12"]
+SUPPORTED_GO_VERSIONS = ["1.16"]
+DEFAULT_GO_VERSION = "1.16"
+DEFAULT_GO_LIBRARY_VERSIONS = ["1.16"]
+DEFAULT_GO_TEST_VERSIONS = ["1.16"]
 SUPPORTED_GO_TOOLCHAINS = [
-    Label("//build_tools/go:go1.12"),
     Label("//build_tools/go:go1.16"),
 ]
 
@@ -198,7 +197,7 @@ def go_binary_impl(ctx):
     go_version = ctx.attr.go_version
 
     if test_wrapper == None and go_version in VERSION_BINARY_WHITELIST and str(ctx.label) not in VERSION_BINARY_WHITELIST[go_version]:
-        fail("'%s' binary is not whitelisted for Go %s. Please use Go 1.12 instead" % (str(ctx.label), go_version))
+        fail("'%s' binary is not whitelisted for Go %s. Please use Go 1.16 instead" % (str(ctx.label), go_version))
 
     go_toolchain = _get_toolchain(ctx, go_version)
     cc_toolchain = find_cpp_toolchain(ctx)

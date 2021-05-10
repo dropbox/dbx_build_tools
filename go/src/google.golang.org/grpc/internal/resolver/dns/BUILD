@@ -7,6 +7,7 @@ dbx_go_library(
     name = "dns",
     srcs = [
         "dns_resolver.go",
+        "go113.go",
     ],
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
