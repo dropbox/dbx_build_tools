@@ -246,6 +246,8 @@ func main() {
 		"Test binary name to be used in junit output")
 	flags.BoolVar(&gracefulStop, "svc.graceful-stop", false,
 		"When shutting down services, try to do a quick but graceful stop. Not recommended by default as it will slow down test times, but can be useful when e.g. integrating with asan as it needs time to dump goroutines on exit.")
+	failTestOnCrashSvcsStr := flags.String("svc.fail-test-on-crash-services", "",
+		"Comma-separated list of services to ensure they are healthy after the test completed")
 
 	startTime := time.Now()
 	// the flags library doesn't have a good way to ignore unknown args and return them
@@ -277,6 +279,10 @@ func main() {
 		}
 	}
 	_ = flags.Parse(svcInitArgs)
+	failTestOnCrashServices := strings.Split(*failTestOnCrashSvcsStr, ",")
+	for i, service := range failTestOnCrashServices {
+		failTestOnCrashServices[i] = strings.TrimSpace(service)
+	}
 
 	if len(testArgs) == 0 && !servicesOnly {
 		log.Fatalf("When no arguments are passed in, --svc.services-only must be explicitly passed.")
@@ -527,6 +533,30 @@ func main() {
 		}
 		log.Printf("Test duration: %s\n", testDuration)
 		log.Printf("Test resource utilization: User: %v System: %v", testCmd.ProcessState.UserTime(), testCmd.ProcessState.SystemTime())
+		log.Printf("Checking services health before cleaning up.")
+		statuses, err := getServiceStatusAndDiagnostics()
+		if err != nil {
+			log.Printf("Failed to get service status: %s", err)
+		} else {
+			failedServices := make(map[string]struct{})
+			for _, status := range statuses {
+				if status.failed {
+					failedServices[status.name] = struct{}{}
+				}
+			}
+			if len(failedServices) > 0 {
+				log.Printf("Unhealthy services: %s", failedServices)
+				for _, service := range failTestOnCrashServices {
+					if _, failed := failedServices[service]; failed {
+						log.Printf("Service %s is configured to fail tests when it is unhealthy. "+
+							"Marking the test failed.", service)
+						testFailed = true
+						os.Exit(1)
+					}
+				}
+			}
+		}
+
 		performCleanups(cleanups, insideBazelTest)
 		log.Printf("Cleanup complete\n")
 		if actualXMLOutputFile := os.Getenv("XML_OUTPUT_FILE"); actualXMLOutputFile != "" {

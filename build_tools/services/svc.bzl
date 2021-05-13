@@ -32,6 +32,7 @@ DbxServiceDefinitionExtension = provider(fields = [
     "health_checks",  # extra health checks for this service
     "args",  # extra arguments for this service
     "allow_missing",  # allow the service referenced by this extension to be missing
+    "fail_test_on_crash",  # if true, the fail test if the service is unhealthy when the test ends
 ])
 
 DbxServiceExtensionArgsProvider = provider(fields = ["args"])
@@ -330,6 +331,7 @@ def service_impl(ctx):
         verbose = ctx.attr.verbose,
         owner = ctx.attr.owner,
         version_file = label + ".version",
+        fail_test_on_crash = ctx.attr.fail_test_on_crash,
     )
 
     services[label] = service
@@ -391,6 +393,7 @@ _service_internal_attrs = {
     "http_health_check": attr.string(),
     "verbose": attr.bool(default = False),
     "type": attr.int(values = [SERVICE_TYPE_DAEMON, SERVICE_TYPE_TASK]),
+    "fail_test_on_crash": attr.bool(default = False),
 }
 _service_internal_attrs.update(runfiles_attrs)
 _service_internal_attrs.update(_service_common_attrs)
@@ -475,14 +478,22 @@ service_group_internal = rule(
 def _services_bin_impl(ctx):
     services = {}
     transitive_extensions = []
+    fail_test_on_crash_services = {}  # a map from service target labels to service struct.
     for svc_def in ctx.attr.services:
         services.update(svc_def.services)
         transitive_extensions.append(svc_def.extensions)
+        for label, service in svc_def.services.items():
+            if service.fail_test_on_crash:
+                fail_test_on_crash_services[label] = service
 
     test_target = ctx.label.package + "/" + ctx.label.name
     launcher_args = []
     if not ctx.attr.start_services:
         launcher_args.append("--svc.create-only")
+    if fail_test_on_crash_services:
+        launcher_args.append(
+            "--svc.fail-test-on-crash-services=" + (",".join(fail_test_on_crash_services.keys())),
+        )
 
     extra_args = []
     if ctx.attr.bin:
@@ -696,6 +707,7 @@ def _select_deps(deps):
             str(Label("//build_tools:disable-service-deps")): [],
             "//conditions:default": deps,
         })
+
     # bazel doesn't support nested selects
     return deps
 
@@ -714,6 +726,7 @@ def dbx_service_daemon(
         quarantine = {},
         verbose = False,
         idempotent = True,
+        fail_test_on_crash = False,
         **kwargs):
     if not verbose:
         verbose = select(_svc_verbose_choices)
@@ -738,6 +751,7 @@ def dbx_service_daemon(
         owner = owner,
         create_version_file = select(_svc_create_version_file_choices),
         visibility = visibility,
+        fail_test_on_crash = fail_test_on_crash,
         **kwargs
     )
 
