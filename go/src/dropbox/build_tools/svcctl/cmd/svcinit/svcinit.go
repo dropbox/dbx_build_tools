@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/gogo/protobuf/proto"
-	"golang.org/x/xerrors"
 
 	"dropbox/build_tools/junit"
 	"dropbox/build_tools/svcctl"
@@ -44,7 +43,7 @@ func performCleanups(cleanups []func() error, insideBazelTest bool) {
 func copyFile(dst, src string) error {
 	content, err := ioutil.ReadFile(src)
 	if err != nil {
-		return xerrors.Errorf("can't open file for reading: %w", err)
+		return fmt.Errorf("can't open file for reading: %w", err)
 	}
 	return ioutil.WriteFile(dst, content, 0644)
 }
@@ -175,7 +174,7 @@ func overwriteJunitForServicesWithRaces(XMLOutputFile string, services []service
 			totalDuration:  totalDuration,
 		}
 		if err := overwriteJunitForServices(nil, XMLOutputFile, ti); err != nil {
-			return xerrors.Errorf("overwriting junit for services: %w", err)
+			return fmt.Errorf("overwriting junit for services: %w", err)
 		}
 	}
 	return nil
@@ -191,7 +190,7 @@ func overwriteJunitForServices(src io.ReadSeeker, XMLOutputFile string, ti testI
 	destFile, destErr := os.Create(XMLOutputFile) // creates if file doesn't exist
 	if destErr != nil {
 		log.Printf("Error trying to create XML output file: %s", destErr)
-		return xerrors.Errorf("create XML output file: %w", destErr)
+		return fmt.Errorf("create XML output file: %w", destErr)
 	}
 
 	var testcases []junit.JUnitTestCase
@@ -211,7 +210,7 @@ func overwriteJunitForServices(src io.ReadSeeker, XMLOutputFile string, ti testI
 	overWriteErr := junit.OverwriteXMLDuration(src, ti.totalDuration, ti.target, testcases, destFile)
 	if overWriteErr != nil {
 		log.Printf("Error trying to write XML output: %s", overWriteErr)
-		return xerrors.Errorf("write XML output: %w", overWriteErr)
+		return fmt.Errorf("write XML output: %w", overWriteErr)
 	}
 
 	return nil
@@ -499,7 +498,7 @@ func main() {
 			}
 			if overWriteErr := overwriteJunitForServices(src, actualXMLOutputFile, ti); overWriteErr != nil {
 				log.Printf("Error overwriting junit XML file: %s", overWriteErr)
-				return xerrors.Errorf("overwrite junit XML file: %w", overWriteErr)
+				return fmt.Errorf("overwrite junit XML file: %w", overWriteErr)
 			}
 
 			return nil

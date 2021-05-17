@@ -20,7 +20,6 @@ dbx_go_binary(
         "//go/src/dropbox/proto/build_tools/svclib",
         "//go/src/dropbox/runfiles",
         "//go/src/github.com/gogo/protobuf/proto",
-        "//go/src/golang.org/x/xerrors",
     ],
 )
 
@@ -39,6 +38,5 @@ dbx_go_test(
         "//go/src/dropbox/runfiles",
         "//go/src/github.com/gogo/protobuf/proto",
         "//go/src/github.com/stretchr/testify/require",
-        "//go/src/golang.org/x/xerrors",
     ],
 )

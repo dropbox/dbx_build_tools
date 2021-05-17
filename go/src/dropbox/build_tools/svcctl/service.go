@@ -19,8 +19,6 @@ import (
 	"syscall"
 	"time"
 
-	"golang.org/x/xerrors"
-
 	"dropbox/build_tools/logwriter"
 	"dropbox/build_tools/svcctl/proc"
 	"dropbox/build_tools/svcctl/state_machine"
@@ -159,7 +157,7 @@ func NewService(svc *svclib_proto.Service, services map[string]*serviceDef, verb
 	for _, runfilesPath := range svc.VersionFiles {
 		fullPath, err := runfiles.DataPath(runfilesPath)
 		if err != nil {
-			return nil, xerrors.Errorf("unable to resolve runfiles path %s: %w", runfilesPath, err)
+			return nil, fmt.Errorf("unable to resolve runfiles path %s: %w", runfilesPath, err)
 		}
 		svcDef.versionFiles = append(svcDef.versionFiles, fullPath)
 	}
@@ -215,12 +213,12 @@ func (svc *serviceDef) readVersionFiles() ([]byte, error) {
 	for _, versionFile := range svc.versionFiles {
 		f, err := os.Open(versionFile)
 		if err != nil {
-			return nil, xerrors.Errorf("unable to open %s: %w", versionFile, err)
+			return nil, fmt.Errorf("unable to open %s: %w", versionFile, err)
 		}
 		_, copyErr := io.Copy(hasher, f)
 		f.Close()
 		if copyErr != nil {
-			return nil, xerrors.Errorf("unable to read %s: %w", versionFile, err)
+			return nil, fmt.Errorf("unable to read %s: %w", versionFile, err)
 		}
 	}
 	return hasher.Sum(nil), nil

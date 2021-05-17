@@ -25,7 +25,6 @@ dbx_go_library(
         "//go/src/dropbox/runfiles",
         "//go/src/github.com/gogo/protobuf/proto",
         "//go/src/golang.org/x/sync/errgroup",
-        "//go/src/golang.org/x/xerrors",
     ],
 )
 
@@ -54,6 +53,5 @@ dbx_go_test(
         "//go/src/github.com/gogo/protobuf/proto",
         "//go/src/github.com/stretchr/testify/require",
         "//go/src/golang.org/x/sync/errgroup",
-        "//go/src/golang.org/x/xerrors",
     ],
 )

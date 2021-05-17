@@ -13,7 +13,6 @@ dbx_go_library(
         "//go/src/dropbox:__subpackages__",
     ],
     deps = [
-        "//go/src/golang.org/x/xerrors",
     ],
 )
 
@@ -25,7 +24,6 @@ dbx_go_test(
         "stat_test.go",
     ],
     deps = [
-        "//go/src/golang.org/x/xerrors",
         "//go/src/gopkg.in/check.v1",
     ],
 )

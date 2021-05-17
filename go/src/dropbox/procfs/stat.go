@@ -5,6 +5,7 @@ package procfs
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,8 +14,6 @@ import (
 	"sync"
 	"syscall"
 	"time"
-
-	"golang.org/x/xerrors"
 )
 
 // Incomplete interpretation of the /proc/pid/stat file.
@@ -77,7 +76,7 @@ func readAllProcStats() ([]*ProcStat, error) {
 				// Under certain circumstances, the error returned for the
 				// underlying read is ESRCH. It seems mostly likely to be a
 				// race inside the procfs.
-				if xerrors.Is(err, syscall.ESRCH) {
+				if errors.Is(err, syscall.ESRCH) {
 					continue
 				}
 				// If there is some random error, skip for now.

@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -53,13 +51,13 @@ func (process *Pcmd) collectSanitizerErrors() error {
 	}()
 	fis, err := ioutil.ReadDir(process.sanitizerLogsDir)
 	if err != nil {
-		return xerrors.Errorf("reading sanitizer logs directory: %w", err)
+		return fmt.Errorf("reading sanitizer logs directory: %w", err)
 	}
 	for _, fi := range fis {
 		path := filepath.Join(process.sanitizerLogsDir, fi.Name())
 		b, err := ioutil.ReadFile(path)
 		if err != nil {
-			return xerrors.Errorf("reading sanitizer log file: %w", err)
+			return fmt.Errorf("reading sanitizer log file: %w", err)
 		}
 		process.sanitizerErrors = append(process.sanitizerErrors, string(b))
 	}
@@ -83,7 +81,7 @@ func (process *Pcmd) updateSanitizerEnv() error {
 
 	tmpDir, err := ioutil.TempDir(os.Getenv("TEST_TMPDIR"), "sanitizer-")
 	if err != nil {
-		return xerrors.Errorf("creating temp dir for sanitizers: %w", err)
+		return fmt.Errorf("creating temp dir for sanitizers: %w", err)
 	}
 	process.sanitizerLogsDir = tmpDir
 	racePrefix := filepath.Join(process.sanitizerLogsDir, "race_log")
