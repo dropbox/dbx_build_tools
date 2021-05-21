@@ -93,6 +93,8 @@ type serviceDef struct {
 	verbose      bool
 	version      atomic.Value
 	versionFiles []string
+	// waitCh is closed on process exit
+	waitCh chan struct{}
 
 	// health checks
 	HttpHealthChecks []*svclib_proto.HttpHealthCheck
@@ -366,6 +368,8 @@ func (svc *serviceDef) waitTillHealthyAndMark() {
 		}
 		go func() {
 			exitErr := process.Wait()
+			svc.appendSanitizerErrors()
+			close(svc.waitCh)
 			svc.lock.Lock()
 			defer svc.lock.Unlock()
 			switch svc.StateMachine.GetState() {
@@ -373,6 +377,7 @@ func (svc *serviceDef) waitTillHealthyAndMark() {
 				svc.logger.Printf("Daemon unexpectedly stopped: %s", exitErr)
 				svc.StateMachine.SetState(svclib_proto.StatusResp_ERROR)
 			}
+
 		}()
 		waitForHealthChecks.Wait()
 		svc.markStarted()
@@ -383,14 +388,17 @@ func (svc *serviceDef) waitTillHealthyAndMark() {
 		svc.logger.Printf("Daemon healthy: wall-time:%v cpu-time:%v", FmtDuration(svc.startDuration), FmtDuration(cpuTime))
 	case svclib_proto.Service_TASK:
 		exitErr := process.Wait()
+		svc.appendSanitizerErrors()
+		close(svc.waitCh)
+
 		if exitErr != nil {
 			svc.lock.Lock()
+			defer svc.lock.Unlock()
 			switch svc.StateMachine.GetState() {
 			case svclib_proto.StatusResp_STARTING, svclib_proto.StatusResp_STARTED:
 				svc.logger.Printf("Task exited with an error: %s", exitErr)
 				svc.StateMachine.SetState(svclib_proto.StatusResp_ERROR)
 			}
-			svc.lock.Unlock()
 		} else {
 			svc.markStarted()
 			svc.logger.Printf("Task completed: wall-time:%v cpu-time:%v", FmtDuration(svc.startDuration),
@@ -439,6 +447,7 @@ func (svc *serviceDef) Start() error {
 		}
 
 		svc.startTime = time.Now()
+		svc.waitCh = make(chan struct{})
 
 		logFile, logFileErr := svc.openLogFile()
 		if logFileErr != nil {
@@ -479,7 +488,7 @@ func (svc *serviceDef) Start() error {
 			// close the log file when the process exits.
 			// NOTE: process is not exec.Cmd, but our own wrapper, which is why
 			// it's ok to call Wait() multiple times.
-			_ = process.Wait()
+			<-svc.waitCh
 			_ = logFile.Close()
 		}()
 		go func() {
@@ -521,6 +530,16 @@ func forceSignalProcessTree(pids []int, sig syscall.Signal) error {
 	return lastErr
 }
 
+// exited() returns true when process is finished
+func (svc *serviceDef) exited() bool {
+	select {
+	case <-svc.waitCh:
+		return true
+	default:
+		return false
+	}
+}
+
 // Stop a service using the following sequence of steps:
 // - Send specified signal to process group which launched the service
 // - If process didn't die in 250ms, send SIGKILL to every child process and their descendents (according to procfs) every 250ms till the process dies.
@@ -557,9 +576,8 @@ func (svc *serviceDef) stop(sig syscall.Signal) error {
 			}
 
 			if killErr != nil {
-				if svc.Process.Exited() {
+				if svc.exited() {
 					// we failed to send signal because the process already exited
-					svc.appendSanitizerErrors()
 					svc.Process = nil
 					svc.StateMachine.SetState(svclib_proto.StatusResp_STOPPED)
 					svc.stopDuration = time.Since(svc.stopTime)
@@ -568,17 +586,6 @@ func (svc *serviceDef) stop(sig syscall.Signal) error {
 				svc.stopDuration = time.Since(svc.stopTime)
 				return killErr
 			}
-
-			waitChan := make(chan struct{}, 0)
-
-			// this function can exit before the goroutine is done, so a data race is possible
-			process := svc.Process
-			go func() {
-				// ignore the error, since we already log unexpected errors in waitTillHealthyAndMark()
-				// this function only needs to check that the process has stopped.
-				_ = process.Wait()
-				close(waitChan)
-			}()
 
 			// TODO(anupc): Loop limits?
 			stopped := false
@@ -589,15 +596,14 @@ func (svc *serviceDef) stop(sig syscall.Signal) error {
 						svc.logger.Println("Process not dead yet - issuing SIGKILL to entire tree")
 					}
 					if killErr := forceSignalProcessTree(allPidsToForceKill, syscall.SIGKILL); killErr != nil {
-						if svc.Process.Exited() {
+						if svc.exited() {
 							stopped = true
 						}
 					}
-				case <-waitChan:
+				case <-svc.waitCh:
 					stopped = true
 				}
 			}
-			svc.appendSanitizerErrors()
 			svc.Process = nil
 			svc.StateMachine.SetState(svclib_proto.StatusResp_STOPPED)
 			svc.stopDuration = time.Since(svc.stopTime)
