@@ -12,6 +12,7 @@ from dropbox.runfiles import data_path
     [
         ("gzip", 131072, 1, "test_sqfs_gzip_1.sqfs"),
         ("lz4", 16384, None, "test_sqfs_lz4.sqfs"),
+        ("zstd", 4096, 2, "test_sqfs_zstd_2.sqfs"),
     ],
 )
 def test_sqfs_compression(

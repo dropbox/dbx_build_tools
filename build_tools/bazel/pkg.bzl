@@ -300,7 +300,7 @@ _dbx_pkg_sqfs = rule(
         "compression_algo": attr.string(
             # TODO(rbtz): switch to zstd after u20 upgrade.
             default = "gzip",
-            values = ["gzip", "lz4"],
+            values = ["gzip", "lz4", "zstd"],
             doc = "Compression algorithm.  Zstd is supported starting from v4.13+.",
         ),
         "compression_level": attr.int(
