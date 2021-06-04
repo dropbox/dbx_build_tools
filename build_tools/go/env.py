@@ -28,7 +28,7 @@ def make_go_env(ensure_goroot=True):
     }
 
     bazel_ws_root = "bazel-" + os.path.basename(ws)
-    GOROOT = os.path.join(ws, bazel_ws_root, "external/go_1_16_5_linux_amd64_tar_gz/go")
+    GOROOT = os.path.join(ws, bazel_ws_root, "external/go_1_16_4_linux_amd64_tar_gz/go")
     if ensure_goroot and not os.path.isdir(GOROOT):
         _ensure_goroot_exists(GOROOT)
 
