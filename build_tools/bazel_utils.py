@@ -1,5 +1,3 @@
-# mypy: allow-untyped-defs
-
 from __future__ import print_function
 
 import os
@@ -47,7 +45,7 @@ class BazelTarget(object):
 
 class BazelRule(object):
     def __init__(self, target, kind, output_targets):
-        # type: (Text, Text, List[Any]) -> None
+        # type: (str, str, List[Any]) -> None
         self.target = target
         self.kind = kind
         self.output_targets = output_targets
@@ -340,7 +338,7 @@ def outputs_for_label(
 
 
 def outputs_for_labels(bazel_bin_path, targets, bazel_args=None, bazel_query_args=None):
-    # type: (str, Iterable[str], Optional[Sequence[str]], Optional[Sequence[str]]) -> Dict[Text, List[Text]]
+    # type: (str, Iterable[str], Optional[Sequence[str]], Optional[Sequence[str]]) -> Dict[str, List[Text]]
     # Some targets aren't named for their rule, which is a shame. This
     # is slow, but fortunately rare. Some targets don't actually have an
     # explict output, which is also unfortunate.
@@ -368,12 +366,13 @@ def outputs_for_labels(bazel_bin_path, targets, bazel_args=None, bazel_query_arg
 
 
 def _rules_from_xml_doc(xml_doc):
+    # type: (Any) -> List[Any]
     rules = xml_doc.getElementsByTagName("rule")
     return [BazelRule.from_xml_node(node) for node in rules]
 
 
 def _outputs_for_rules(rules):
-    # type: (List[BazelRule]) -> Dict[Text, List[Text]]
+    # type: (List[BazelRule]) -> Dict[str, List[Text]]
     outputs = {}
     for rule in rules:
         target_outputs = _outputs_for_rule(rule)
@@ -430,7 +429,7 @@ def _rule_has_runfiles(rule):
 
 
 def executable_for_label(target):
-    # type: (Text) -> Text
+    # type: (str) -> Text
     if "//" in target:
         remote, target = target.split("//")
         remote = remote.lstrip("@")
@@ -472,14 +471,14 @@ def build_file_for_target(target):
 
 
 def normalize_os_path_to_target(path):
-    # type: (Text) -> Any
+    # type: (str) -> str
     """A simple helper function that converts OS-specific path separators
     to the forward slash "/" as is used in Bazel targets."""
     return path.replace(os.path.sep, "/")
 
 
 def normalize_relative_target_to_os_path(target):
-    # type: (Text) -> Any
+    # type: (str) -> str
     """A simple helper function that converts Bazel targets into paths
     with the appropriate OS-specific file separator (e.g. for use with os.path).
 
@@ -490,7 +489,7 @@ def normalize_relative_target_to_os_path(target):
 
 
 def normalize_relative_target_to_absolute(package, target):
-    # type: (Text, Text) -> Text
+    # type: (str, str) -> str
     """
     Given a target pattern that may be relative to a package (for example, ':my_lib' or 'tests/...') and an absolute package,
     return an absolute version of the target pattern.
