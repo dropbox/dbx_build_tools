@@ -1,37 +1,13 @@
-// Go support for Protocol Buffers - Google's data interchange format
-//
 // Copyright 2015 The Go Authors.  All rights reserved.
-// https://github.com/golang/protobuf
-//
-// Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions are
-// met:
-//
-//     * Redistributions of source code must retain the above copyright
-// notice, this list of conditions and the following disclaimer.
-//     * Redistributions in binary form must reproduce the above
-// copyright notice, this list of conditions and the following disclaimer
-// in the documentation and/or other materials provided with the
-// distribution.
-//     * Neither the name of Google Inc. nor the names of its
-// contributors may be used to endorse or promote products derived from
-// this software without specific prior written permission.
-//
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-// "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-// LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-// A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-// OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-// LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
 
-// Package grpc outputs gRPC service descriptions in Go code.
-// It runs as a plugin for the Go protocol buffer compiler plugin.
-// It is linked in to protoc-gen-go.
+// Package grpc is deprecated.
+//
+// This package is excluded from the Go protocol buffer compatibility guarantee
+// and may be deleted at some point in the future.
+//
+// Deprecated: Do not use.
 package grpc
 
 import (
@@ -47,7 +23,7 @@ import (
 // It is incremented whenever an incompatibility between the generated code and
 // the grpc package is introduced; the generated code references
 // a constant, grpc.SupportPackageIsVersionN (where N is generatedCodeVersion).
-const generatedCodeVersion = 4
+const generatedCodeVersion = 6
 
 // Paths for packages used by code generated in this file,
 // relative to the import_prefix of the generator.Generator.
@@ -112,7 +88,7 @@ func (g *grpc) Generate(file *generator.FileDescriptor) {
 
 	g.P("// Reference imports to suppress errors if they are not otherwise used.")
 	g.P("var _ ", contextPkg, ".Context")
-	g.P("var _ ", grpcPkg, ".ClientConn")
+	g.P("var _ ", grpcPkg, ".ClientConnInterface")
 	g.P()
 
 	// Assert version compatibility.
@@ -166,6 +142,10 @@ func (g *grpc) generateService(file *generator.FileDescriptor, service *pb.Servi
 	g.P("type ", servName, "Client interface {")
 	for i, method := range service.Method {
 		g.gen.PrintComments(fmt.Sprintf("%s,2,%d", path, i)) // 2 means method in a service.
+		if method.GetOptions().GetDeprecated() {
+			g.P("//")
+			g.P(deprecationComment)
+		}
 		g.P(g.generateClientSignature(servName, method))
 	}
 	g.P("}")
@@ -173,7 +153,7 @@ func (g *grpc) generateService(file *generator.FileDescriptor, service *pb.Servi
 
 	// Client structure.
 	g.P("type ", unexport(servName), "Client struct {")
-	g.P("cc *", grpcPkg, ".ClientConn")
+	g.P("cc ", grpcPkg, ".ClientConnInterface")
 	g.P("}")
 	g.P()
 
@@ -181,7 +161,7 @@ func (g *grpc) generateService(file *generator.FileDescriptor, service *pb.Servi
 	if deprecated {
 		g.P(deprecationComment)
 	}
-	g.P("func New", servName, "Client (cc *", grpcPkg, ".ClientConn) ", servName, "Client {")
+	g.P("func New", servName, "Client (cc ", grpcPkg, ".ClientConnInterface) ", servName, "Client {")
 	g.P("return &", unexport(servName), "Client{cc}")
 	g.P("}")
 	g.P()
@@ -213,12 +193,16 @@ func (g *grpc) generateService(file *generator.FileDescriptor, service *pb.Servi
 	g.P("type ", serverType, " interface {")
 	for i, method := range service.Method {
 		g.gen.PrintComments(fmt.Sprintf("%s,2,%d", path, i)) // 2 means method in a service.
+		if method.GetOptions().GetDeprecated() {
+			g.P("//")
+			g.P(deprecationComment)
+		}
 		g.P(g.generateServerSignature(servName, method))
 	}
 	g.P("}")
 	g.P()
 
-	// Server Unimplemented struct for forward compatability.
+	// Server Unimplemented struct for forward compatibility.
 	if deprecated {
 		g.P(deprecationComment)
 	}

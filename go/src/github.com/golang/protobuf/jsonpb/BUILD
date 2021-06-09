@@ -6,13 +6,19 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "jsonpb",
     srcs = [
-        "jsonpb.go",
+        "decode.go",
+        "encode.go",
+        "json.go",
     ],
     visibility = [
         "//go/src:__subpackages__",
     ],
     deps = [
         "//go/src/github.com/golang/protobuf/proto",
-        "//go/src/github.com/golang/protobuf/ptypes/struct",
+        "//go/src/google.golang.org/protobuf/encoding/protojson",
+        "//go/src/google.golang.org/protobuf/proto",
+        "//go/src/google.golang.org/protobuf/reflect/protoreflect",
+        "//go/src/google.golang.org/protobuf/reflect/protoregistry",
+        "//go/src/google.golang.org/protobuf/runtime/protoimpl",
     ],
 )
