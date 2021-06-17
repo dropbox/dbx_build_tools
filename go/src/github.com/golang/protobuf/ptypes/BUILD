@@ -19,7 +19,5 @@ dbx_go_library(
         "//go/src/github.com/golang/protobuf/ptypes/any",
         "//go/src/github.com/golang/protobuf/ptypes/duration",
         "//go/src/github.com/golang/protobuf/ptypes/timestamp",
-        "//go/src/google.golang.org/protobuf/reflect/protoreflect",
-        "//go/src/google.golang.org/protobuf/reflect/protoregistry",
     ],
 )

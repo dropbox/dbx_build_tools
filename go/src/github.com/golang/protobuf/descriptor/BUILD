@@ -14,8 +14,5 @@ dbx_go_library(
     deps = [
         "//go/src/github.com/golang/protobuf/proto",
         "//go/src/github.com/golang/protobuf/protoc-gen-go/descriptor",
-        "//go/src/google.golang.org/protobuf/reflect/protodesc",
-        "//go/src/google.golang.org/protobuf/reflect/protoreflect",
-        "//go/src/google.golang.org/protobuf/runtime/protoimpl",
     ],
 )
