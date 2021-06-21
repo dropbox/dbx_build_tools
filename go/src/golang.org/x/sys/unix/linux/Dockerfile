@@ -1,4 +1,7 @@
-FROM ubuntu:19.04
+FROM ubuntu:20.04
+
+# Disable interactive prompts on package installation
+ENV DEBIAN_FRONTEND noninteractive
 
 # Dependencies to get the git sources and go binaries
 RUN apt-get update && apt-get install -y  --no-install-recommends \
@@ -12,15 +15,15 @@ RUN apt-get update && apt-get install -y  --no-install-recommends \
 # Get the git sources. If not cached, this takes O(5 minutes).
 WORKDIR /git
 RUN git config --global advice.detachedHead false
-# Linux Kernel: Released 25 Nov 2019
-RUN git clone --branch v5.4 --depth 1 https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux
-# GNU C library: Released 02 Aug 2019 (we should try to get a secure way to clone this)
-RUN git clone --branch release/2.30/master --depth 1 git://sourceware.org/git/glibc.git
+# Linux Kernel: Released 25 Apr 2021
+RUN git clone --branch v5.12 --depth 1 https://kernel.googlesource.com/pub/scm/linux/kernel/git/torvalds/linux
+# GNU C library: Released 01 Feb 2021 (we should try to get a secure way to clone this)
+RUN git clone --branch release/2.33/master --depth 1 git://sourceware.org/git/glibc.git
 
 # Get Go
-ENV GOLANG_VERSION 1.13.4
+ENV GOLANG_VERSION 1.17beta1
 ENV GOLANG_DOWNLOAD_URL https://golang.org/dl/go$GOLANG_VERSION.linux-amd64.tar.gz
-ENV GOLANG_DOWNLOAD_SHA256 692d17071736f74be04a72a06dab9cac1cd759377bd85316e52b2227604c004c
+ENV GOLANG_DOWNLOAD_SHA256 a479681705b65971f9db079bfce53c4393bfa241d952eb09de88fb40677d3c4c
 
 RUN curl -fsSL "$GOLANG_DOWNLOAD_URL" -o golang.tar.gz \
     && echo "$GOLANG_DOWNLOAD_SHA256  golang.tar.gz" | sha256sum -c - \
@@ -42,8 +45,8 @@ RUN apt-get update && apt-get install -y \
         gcc-aarch64-linux-gnu       gcc-arm-linux-gnueabi     \
         gcc-mips-linux-gnu          gcc-mips64-linux-gnuabi64 \
         gcc-mips64el-linux-gnuabi64 gcc-mipsel-linux-gnu      \
-        gcc-powerpc64-linux-gnu     gcc-powerpc64le-linux-gnu \
-	gcc-riscv64-linux-gnu                                 \
+        gcc-powerpc-linux-gnu       gcc-powerpc64-linux-gnu   \
+        gcc-powerpc64le-linux-gnu   gcc-riscv64-linux-gnu     \
         gcc-s390x-linux-gnu         gcc-sparc64-linux-gnu     \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*

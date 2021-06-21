@@ -5,8 +5,12 @@
 package windows_test
 
 import (
+	"bytes"
+	"debug/pe"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,6 +18,7 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
@@ -401,6 +406,221 @@ func TestGetPreferredUILanguages(t *testing.T) {
 		lang, err = f(windows.MUI_LANGUAGE_NAME)
 		if err != nil {
 			t.Errorf(`failed to call %v(MUI_LANGUAGE_NAME): %v`, fName, err)
+		}
+	}
+}
+
+func TestProcessWorkingSetSizeEx(t *testing.T) {
+	// Grab a handle to the current process
+	hProcess := windows.CurrentProcess()
+
+	// Allocate memory to store the result of the query
+	var minimumWorkingSetSize, maximumWorkingSetSize uintptr
+
+	// Make the system-call
+	var flag uint32
+	windows.GetProcessWorkingSetSizeEx(hProcess, &minimumWorkingSetSize, &maximumWorkingSetSize, &flag)
+
+	// Set the new limits to the current ones
+	if err := windows.SetProcessWorkingSetSizeEx(hProcess, minimumWorkingSetSize, maximumWorkingSetSize, flag); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestJobObjectInfo(t *testing.T) {
+	jo, err := windows.CreateJobObject(nil, nil)
+	if err != nil {
+		t.Fatalf("CreateJobObject failed: %v", err)
+	}
+	defer windows.CloseHandle(jo)
+
+	var info windows.JOBOBJECT_EXTENDED_LIMIT_INFORMATION
+
+	err = windows.QueryInformationJobObject(jo, windows.JobObjectExtendedLimitInformation,
+		uintptr(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info)), nil)
+	if err != nil {
+		t.Fatalf("QueryInformationJobObject failed: %v", err)
+	}
+
+	const wantMemLimit = 4 * 1024
+
+	info.BasicLimitInformation.LimitFlags |= windows.JOB_OBJECT_LIMIT_PROCESS_MEMORY
+	info.ProcessMemoryLimit = wantMemLimit
+	_, err = windows.SetInformationJobObject(jo, windows.JobObjectExtendedLimitInformation,
+		uintptr(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info)))
+	if err != nil {
+		t.Fatalf("SetInformationJobObject failed: %v", err)
+	}
+
+	err = windows.QueryInformationJobObject(jo, windows.JobObjectExtendedLimitInformation,
+		uintptr(unsafe.Pointer(&info)), uint32(unsafe.Sizeof(info)), nil)
+	if err != nil {
+		t.Fatalf("QueryInformationJobObject failed: %v", err)
+	}
+
+	if have := info.ProcessMemoryLimit; wantMemLimit != have {
+		t.Errorf("ProcessMemoryLimit is wrong: want %v have %v", wantMemLimit, have)
+	}
+}
+
+func TestIsWow64Process2(t *testing.T) {
+	var processMachine, nativeMachine uint16
+	err := windows.IsWow64Process2(windows.CurrentProcess(), &processMachine, &nativeMachine)
+	if errors.Is(err, windows.ERROR_PROC_NOT_FOUND) {
+		maj, min, build := windows.RtlGetNtVersionNumbers()
+		if maj < 10 || (maj == 10 && min == 0 && build < 17763) {
+			t.Skip("not available on older versions of Windows")
+			return
+		}
+	}
+	if err != nil {
+		t.Fatalf("IsWow64Process2 failed: %v", err)
+	}
+	if processMachine == pe.IMAGE_FILE_MACHINE_UNKNOWN {
+		processMachine = nativeMachine
+	}
+	switch {
+	case processMachine == pe.IMAGE_FILE_MACHINE_AMD64 && runtime.GOARCH == "amd64":
+	case processMachine == pe.IMAGE_FILE_MACHINE_I386 && runtime.GOARCH == "386":
+	case processMachine == pe.IMAGE_FILE_MACHINE_ARMNT && runtime.GOARCH == "arm":
+	case processMachine == pe.IMAGE_FILE_MACHINE_ARM64 && runtime.GOARCH == "arm64":
+	default:
+		t.Errorf("IsWow64Process2 is wrong: want %v have %v", runtime.GOARCH, processMachine)
+	}
+}
+
+func TestNTStatusString(t *testing.T) {
+	want := "The name limit for the local computer network adapter card was exceeded."
+	got := windows.STATUS_TOO_MANY_NAMES.Error()
+	if want != got {
+		t.Errorf("NTStatus.Error did not return an expected error string - want %q; got %q", want, got)
+	}
+}
+
+func TestNTStatusConversion(t *testing.T) {
+	want := windows.ERROR_TOO_MANY_NAMES
+	got := windows.STATUS_TOO_MANY_NAMES.Errno()
+	if want != got {
+		t.Errorf("NTStatus.Errno = %q (0x%x); want %q (0x%x)", got.Error(), got, want.Error(), want)
+	}
+}
+
+func TestPEBFilePath(t *testing.T) {
+	peb := windows.RtlGetCurrentPeb()
+	if peb == nil || peb.Ldr == nil {
+		t.Error("unable to retrieve PEB with valid Ldr")
+	}
+	var entry *windows.LDR_DATA_TABLE_ENTRY
+	for cur := peb.Ldr.InMemoryOrderModuleList.Flink; cur != &peb.Ldr.InMemoryOrderModuleList; cur = cur.Flink {
+		e := (*windows.LDR_DATA_TABLE_ENTRY)(unsafe.Pointer(uintptr(unsafe.Pointer(cur)) - unsafe.Offsetof(windows.LDR_DATA_TABLE_ENTRY{}.InMemoryOrderLinks)))
+		if e.DllBase == peb.ImageBaseAddress {
+			entry = e
+			break
+		}
+	}
+	if entry == nil {
+		t.Error("unable to find Ldr entry for current process")
+	}
+	osPath, err := os.Executable()
+	if err != nil {
+		t.Errorf("unable to get path to current executable: %v", err)
+	}
+	pebPath := entry.FullDllName.String()
+	if osPath != pebPath {
+		t.Errorf("peb.Ldr.{entry}.FullDllName = %#q; want %#q", pebPath, osPath)
+	}
+	paramPath := peb.ProcessParameters.ImagePathName.String()
+	if osPath != paramPath {
+		t.Errorf("peb.ProcessParameters.ImagePathName.{entry}.ImagePathName = %#q; want %#q", paramPath, osPath)
+	}
+	osCwd, err := os.Getwd()
+	if err != nil {
+		t.Errorf("unable to get working directory: %v", err)
+	}
+	osCwd = filepath.Clean(osCwd)
+	paramCwd := filepath.Clean(peb.ProcessParameters.CurrentDirectory.DosPath.String())
+	if paramCwd != osCwd {
+		t.Errorf("peb.ProcessParameters.CurrentDirectory.DosPath = %#q; want %#q", paramCwd, osCwd)
+	}
+}
+
+func TestResourceExtraction(t *testing.T) {
+	system32, err := windows.GetSystemDirectory()
+	if err != nil {
+		t.Errorf("unable to find system32 directory: %v", err)
+	}
+	cmd, err := windows.LoadLibrary(filepath.Join(system32, "cmd.exe"))
+	if err != nil {
+		t.Errorf("unable to load cmd.exe: %v", err)
+	}
+	defer windows.FreeLibrary(cmd)
+	rsrc, err := windows.FindResource(cmd, windows.CREATEPROCESS_MANIFEST_RESOURCE_ID, windows.RT_MANIFEST)
+	if err != nil {
+		t.Errorf("unable to find cmd.exe manifest resource: %v", err)
+	}
+	manifest, err := windows.LoadResourceData(cmd, rsrc)
+	if err != nil {
+		t.Errorf("unable to load cmd.exe manifest resource data: %v", err)
+	}
+	if !bytes.Contains(manifest, []byte("</assembly>")) {
+		t.Errorf("did not find </assembly> in manifest")
+	}
+}
+
+func TestCommandLineRecomposition(t *testing.T) {
+	const (
+		maxCharsPerArg  = 35
+		maxArgsPerTrial = 80
+		doubleQuoteProb = 4
+		singleQuoteProb = 1
+		backSlashProb   = 3
+		spaceProb       = 1
+		trials          = 1000
+	)
+	randString := func(l int) []rune {
+		s := make([]rune, l)
+		for i := range s {
+			s[i] = rand.Int31()
+		}
+		return s
+	}
+	mungeString := func(s []rune, char rune, timesInTen int) {
+		if timesInTen < rand.Intn(10)+1 || len(s) == 0 {
+			return
+		}
+		s[rand.Intn(len(s))] = char
+	}
+	argStorage := make([]string, maxArgsPerTrial+1)
+	for i := 0; i < trials; i++ {
+		args := argStorage[:rand.Intn(maxArgsPerTrial)+2]
+		args[0] = "valid-filename-for-arg0"
+		for j := 1; j < len(args); j++ {
+			arg := randString(rand.Intn(maxCharsPerArg + 1))
+			mungeString(arg, '"', doubleQuoteProb)
+			mungeString(arg, '\'', singleQuoteProb)
+			mungeString(arg, '\\', backSlashProb)
+			mungeString(arg, ' ', spaceProb)
+			args[j] = string(arg)
+		}
+		commandLine := windows.ComposeCommandLine(args)
+		decomposedArgs, err := windows.DecomposeCommandLine(commandLine)
+		if err != nil {
+			t.Errorf("Unable to decompose %#q made from %v: %v", commandLine, args, err)
+			continue
+		}
+		if len(decomposedArgs) != len(args) {
+			t.Errorf("Incorrect decomposition length from %v to %#q to %v", args, commandLine, decomposedArgs)
+			continue
+		}
+		badMatches := make([]int, 0, len(args))
+		for i := range args {
+			if args[i] != decomposedArgs[i] {
+				badMatches = append(badMatches, i)
+			}
+		}
+		if len(badMatches) != 0 {
+			t.Errorf("Incorrect decomposition at indices %v from %v to %#q to %v", badMatches, args, commandLine, decomposedArgs)
+			continue
 		}
 	}
 }

@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build ignore
 // +build ignore
 
 /*
@@ -26,6 +27,7 @@ package unix
 #include <mach/mach.h>
 #include <mach/message.h>
 #include <sys/event.h>
+#include <sys/kern_control.h>
 #include <sys/mman.h>
 #include <sys/mount.h>
 #include <sys/param.h>
@@ -35,8 +37,10 @@ package unix
 #include <sys/signal.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
+#include <sys/sysctl.h>
 #include <sys/time.h>
 #include <sys/types.h>
+#include <sys/ucred.h>
 #include <sys/uio.h>
 #include <sys/un.h>
 #include <sys/utsname.h>
@@ -125,6 +129,12 @@ type Fsid C.struct_fsid
 
 type Dirent C.struct_dirent
 
+// File system limits
+
+const (
+	PathMax = C.PATH_MAX
+)
+
 // Sockets
 
 type RawSockaddrInet4 C.struct_sockaddr_in
@@ -139,13 +149,19 @@ type RawSockaddr C.struct_sockaddr
 
 type RawSockaddrAny C.struct_sockaddr_any
 
+type RawSockaddrCtl C.struct_sockaddr_ctl
+
 type _Socklen C.socklen_t
+
+type Xucred C.struct_xucred
 
 type Linger C.struct_linger
 
 type Iovec C.struct_iovec
 
 type IPMreq C.struct_ip_mreq
+
+type IPMreqn C.struct_ip_mreqn
 
 type IPv6Mreq C.struct_ipv6_mreq
 
@@ -167,8 +183,12 @@ const (
 	SizeofSockaddrAny      = C.sizeof_struct_sockaddr_any
 	SizeofSockaddrUnix     = C.sizeof_struct_sockaddr_un
 	SizeofSockaddrDatalink = C.sizeof_struct_sockaddr_dl
+	SizeofSockaddrCtl      = C.sizeof_struct_sockaddr_ctl
+	SizeofXucred           = C.sizeof_struct_xucred
 	SizeofLinger           = C.sizeof_struct_linger
+	SizeofIovec            = C.sizeof_struct_iovec
 	SizeofIPMreq           = C.sizeof_struct_ip_mreq
+	SizeofIPMreqn          = C.sizeof_struct_ip_mreqn
 	SizeofIPv6Mreq         = C.sizeof_struct_ipv6_mreq
 	SizeofMsghdr           = C.sizeof_struct_msghdr
 	SizeofCmsghdr          = C.sizeof_struct_cmsghdr
@@ -281,3 +301,25 @@ type Utsname C.struct_utsname
 const SizeofClockinfo = C.sizeof_struct_clockinfo
 
 type Clockinfo C.struct_clockinfo
+
+// ctl_info
+
+type CtlInfo C.struct_ctl_info
+
+// KinfoProc
+
+const SizeofKinfoProc = C.sizeof_struct_kinfo_proc
+
+type Eproc C.struct_eproc
+
+type ExternProc C.struct_extern_proc
+
+type Itimerval C.struct_itimerval
+
+type KinfoProc C.struct_kinfo_proc
+
+type Vmspace C.struct_vmspace
+
+type Pcred C.struct__pcred
+
+type Ucred C.struct__ucred

@@ -17,6 +17,7 @@ dbx_go_library(
         "fcntl.go",
         "fdset.go",
         "ioctl.go",
+        "ioctl_linux.go",
         "pagesize_unix.go",
         "race0.go",
         "readdirent_getdents.go",
@@ -32,10 +33,13 @@ dbx_go_library(
         "syscall_unix.go",
         "syscall_unix_gc.go",
         "timestruct.go",
+        "zerrors_linux.go",
         "zerrors_linux_amd64.go",
         "zptrace_x86_linux.go",
+        "zsyscall_linux.go",
         "zsyscall_linux_amd64.go",
         "zsysnum_linux_amd64.go",
+        "ztypes_linux.go",
         "ztypes_linux_amd64.go",
     ],
     cgo_srcs = [
@@ -45,5 +49,6 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
+        "//go/src/golang.org/x/sys/internal/unsafeheader",
     ],
 )
