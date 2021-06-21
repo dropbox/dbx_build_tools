@@ -22,7 +22,7 @@ DEFAULT_EXTERNAL_URLS = {
     "org_gnu_readline": ["https://ftp.gnu.org/gnu/readline/readline-8.1.tar.gz"],
     "org_openssl": ["https://www.openssl.org/source/openssl-1.1.1k.tar.gz"],
     "org_sourceware_libffi": ["https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz"],
-    "org_sqlite": ["https://sqlite.org/2021/sqlite-amalgamation-3350500.zip"],
+    "org_sqlite": ["https://sqlite.org/2021/sqlite-amalgamation-3360000.zip"],
     "org_tukaani": ["https://downloads.sourceforge.net/project/lzmautils/xz-5.2.5.tar.xz"],
     "rules_pkg": ["https://github.com/bazelbuild/rules_pkg/releases/download/0.2.6-1/rules_pkg-0.2.6.tar.gz"],
     "six_archive": ["https://pypi.python.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"],
@@ -154,8 +154,8 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "org_sqlite",
         urls = urls["org_sqlite"],
-        sha256 = "b49409ef123e193e719e2536f9b795482a69e61a9cc728933739b9024f035061",
-        strip_prefix = "sqlite-amalgamation-3350500",
+        sha256 = "999826fe4c871f18919fdb8ed7ec9dd8217180854dd1fe21eea96aed36186729",
+        strip_prefix = "sqlite-amalgamation-3360000",
         build_file = filename_from_label("//thirdparty/sqlite:BUILD.sqlite"),
     )
 
