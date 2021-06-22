@@ -12,7 +12,8 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
-        "//go/src/github.com/golang/protobuf/proto",
-        "//go/src/github.com/golang/protobuf/protoc-gen-go/descriptor",
+        "//go/src/google.golang.org/protobuf/reflect/protoreflect",
+        "//go/src/google.golang.org/protobuf/runtime/protoimpl",
+        "//go/src/google.golang.org/protobuf/types/pluginpb",
     ],
 )
