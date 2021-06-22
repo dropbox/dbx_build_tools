@@ -288,7 +288,7 @@ func foreachLine(in []byte, fn func(line []byte)) {
 var commentPrefix = []byte(`<span class="comment">// `)
 
 // linkedField determines whether the given line starts with an
-// identifer in the provided ids map (mapping from identifier to the
+// identifier in the provided ids map (mapping from identifier to the
 // same identifier). The line can start with either an identifier or
 // an identifier in a comment. If one matches, it returns the
 // identifier that matched. Otherwise it returns the empty string.
@@ -312,9 +312,7 @@ func linkedField(line []byte, ids map[string]string) string {
 	//
 	// TODO: do this better, so it works for all
 	// comments, including unconventional ones.
-	if bytes.HasPrefix(line, commentPrefix) {
-		line = line[len(commentPrefix):]
-	}
+	line = bytes.TrimPrefix(line, commentPrefix)
 	id := scanIdentifier(line)
 	if len(id) == 0 {
 		// No leading identifier. Avoid map lookup for
@@ -353,26 +351,6 @@ func comment_htmlFunc(comment string) string {
 	//           to be emphasized by ToHTML.
 	doc.ToHTML(&buf, comment, nil) // does html-escaping
 	return buf.String()
-}
-
-// punchCardWidth is the number of columns of fixed-width
-// characters to assume when wrapping text.  Very few people
-// use terminals or cards smaller than 80 characters, so 80 it is.
-// We do not try to sniff the environment or the tty to adapt to
-// the situation; instead, by using a constant we make sure that
-// godoc always produces the same output regardless of context,
-// a consistency that is lost otherwise.  For example, if we sniffed
-// the environment or tty, then http://golang.org/pkg/math/?m=text
-// would depend on the width of the terminal where godoc started,
-// which is clearly bogus.  More generally, the Unix tools that behave
-// differently when writing to a tty than when writing to a file have
-// a history of causing confusion (compare `ls` and `ls | cat`), and we
-// want to avoid that mistake here.
-const punchCardWidth = 80
-
-func containsOnlySpace(buf []byte) bool {
-	isNotSpace := func(r rune) bool { return !unicode.IsSpace(r) }
-	return bytes.IndexFunc(buf, isNotSpace) == -1
 }
 
 // sanitizeFunc sanitizes the argument src by replacing newlines with
@@ -420,9 +398,8 @@ func sanitizeFunc(src string) string {
 }
 
 type PageInfo struct {
-	Dirname  string // directory containing the package
-	Err      error  // error or nil
-	GoogleCN bool   // page is being served from golang.google.cn
+	Dirname string // directory containing the package
+	Err     error  // error or nil
 
 	Mode PageInfoMode // display metadata from query string
 
@@ -636,8 +613,7 @@ func (p *Presentation) example_htmlFunc(info *PageInfo, funcName string) string 
 
 		err := p.ExampleHTML.Execute(&buf, struct {
 			Name, Doc, Code, Play, Output string
-			GoogleCN                      bool
-		}{eg.Name, eg.Doc, code, play, out, info.GoogleCN})
+		}{eg.Name, eg.Doc, code, play, out})
 		if err != nil {
 			log.Print(err)
 		}
@@ -901,7 +877,7 @@ func (p *Presentation) writeNode(w io.Writer, pageInfo *PageInfo, fset *token.Fi
 		log.Print(err)
 	}
 
-	// Add comments to struct fields saying which Go version introducd them.
+	// Add comments to struct fields saying which Go version introduced them.
 	if structName != "" {
 		fieldSince := apiInfo.fieldSince[structName]
 		typeSince := apiInfo.typeSince[structName]

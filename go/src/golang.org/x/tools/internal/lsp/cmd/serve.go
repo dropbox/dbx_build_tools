@@ -6,29 +6,37 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
 	"log"
-	"net"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
+	"golang.org/x/tools/internal/fakenet"
 	"golang.org/x/tools/internal/jsonrpc2"
-	"golang.org/x/tools/internal/lsp"
+	"golang.org/x/tools/internal/lsp/cache"
+	"golang.org/x/tools/internal/lsp/debug"
+	"golang.org/x/tools/internal/lsp/lsprpc"
+	"golang.org/x/tools/internal/lsp/protocol"
 	"golang.org/x/tools/internal/tool"
+	errors "golang.org/x/xerrors"
 )
 
 // Serve is a struct that exposes the configurable parts of the LSP server as
 // flags, in the right form for tool.Main to consume.
 type Serve struct {
-	Logfile string `flag:"logfile" help:"filename to log to. if value is \"auto\", then logging to a default output file is enabled"`
-	Mode    string `flag:"mode" help:"no effect"`
-	Port    int    `flag:"port" help:"port on which to run gopls for debugging purposes"`
-	Address string `flag:"listen" help:"address on which to listen for remote connections"`
+	Logfile     string        `flag:"logfile" help:"filename to log to. if value is \"auto\", then logging to a default output file is enabled"`
+	Mode        string        `flag:"mode" help:"no effect"`
+	Port        int           `flag:"port" help:"port on which to run gopls for debugging purposes"`
+	Address     string        `flag:"listen" help:"address on which to listen for remote connections. If prefixed by 'unix;', the subsequent address is assumed to be a unix domain socket. Otherwise, TCP is used."`
+	IdleTimeout time.Duration `flag:"listen.timeout" help:"when used with -listen, shut down the server when there are no connected clients for this duration"`
+	Trace       bool          `flag:"rpc.trace" help:"print the full rpc trace in lsp inspector format"`
+	Debug       string        `flag:"debug" help:"serve debug information on the supplied address"`
+
+	RemoteListenTimeout time.Duration `flag:"remote.listen.timeout" help:"when used with -remote=auto, the -listen.timeout value used to start the daemon"`
+	RemoteDebug         string        `flag:"remote.debug" help:"when used with -remote=auto, the -debug value used to start the daemon"`
+	RemoteLogfile       string        `flag:"remote.logfile" help:"when used with -remote=auto, the -logfile value used to start the daemon"`
 
 	app *Application
 }
@@ -54,97 +62,52 @@ func (s *Serve) Run(ctx context.Context, args ...string) error {
 	if len(args) > 0 {
 		return tool.CommandLineErrorf("server does not take arguments, got %v", args)
 	}
-	out := os.Stderr
-	if s.Logfile != "" {
-		filename := s.Logfile
-		if filename == "auto" {
-			filename = filepath.Join(os.TempDir(), fmt.Sprintf("gopls-%d.log", os.Getpid()))
-		}
-		f, err := os.Create(filename)
+
+	di := debug.GetInstance(ctx)
+	isDaemon := s.Address != "" || s.Port != 0
+	if di != nil {
+		closeLog, err := di.SetLogFile(s.Logfile, isDaemon)
 		if err != nil {
-			return fmt.Errorf("Unable to create log file: %v", err)
+			return err
 		}
-		defer f.Close()
-		log.SetOutput(io.MultiWriter(os.Stderr, f))
-		out = f
+		defer closeLog()
+		di.ServerAddress = s.Address
+		di.MonitorMemory(ctx)
+		di.Serve(ctx, s.Debug)
 	}
+	var ss jsonrpc2.StreamServer
 	if s.app.Remote != "" {
-		return s.forward()
+		network, addr := lsprpc.ParseAddr(s.app.Remote)
+		ss = lsprpc.NewForwarder(network, addr,
+			lsprpc.RemoteDebugAddress(s.RemoteDebug),
+			lsprpc.RemoteListenTimeout(s.RemoteListenTimeout),
+			lsprpc.RemoteLogfile(s.RemoteLogfile),
+		)
+	} else {
+		ss = lsprpc.NewStreamServer(cache.New(s.app.options), isDaemon)
 	}
-	logger := func(direction jsonrpc2.Direction, id *jsonrpc2.ID, elapsed time.Duration, method string, payload *json.RawMessage, err *jsonrpc2.Error) {
-		const eol = "\r\n\r\n\r\n"
-		if err != nil {
-			fmt.Fprintf(out, "[Error - %v] %s %s%s %v%s", time.Now().Format("3:04:05 PM"),
-				direction, method, id, err, eol)
-			return
-		}
-		outx := new(strings.Builder)
-		fmt.Fprintf(outx, "[Trace - %v] ", time.Now().Format("3:04:05 PM"))
-		switch direction {
-		case jsonrpc2.Send:
-			fmt.Fprint(outx, "Received ")
-		case jsonrpc2.Receive:
-			fmt.Fprint(outx, "Sending ")
-		}
-		switch {
-		case id == nil:
-			fmt.Fprint(outx, "notification ")
-		case elapsed >= 0:
-			fmt.Fprint(outx, "response ")
-		default:
-			fmt.Fprint(outx, "request ")
-		}
-		fmt.Fprintf(outx, "'%s", method)
-		switch {
-		case id == nil:
-			// do nothing
-		case id.Name != "":
-			fmt.Fprintf(outx, " - (%s)", id.Name)
-		default:
-			fmt.Fprintf(outx, " - (%d)", id.Number)
-		}
-		fmt.Fprint(outx, "'")
-		if elapsed >= 0 {
-			msec := int(elapsed.Round(time.Millisecond) / time.Millisecond)
-			fmt.Fprintf(outx, " in %dms", msec)
-		}
-		params := "null"
-		if payload != nil {
-			params = string(*payload)
-		}
-		if params == "null" {
-			params = "{}"
-		}
-		fmt.Fprintf(outx, ".\r\nParams: %s%s", params, eol)
-		fmt.Fprintf(out, "%s", outx.String())
-	}
-	// For debugging purposes only.
+
+	var network, addr string
 	if s.Address != "" {
-		return lsp.RunServerOnAddress(ctx, s.Address, logger)
+		network, addr = lsprpc.ParseAddr(s.Address)
 	}
 	if s.Port != 0 {
-		return lsp.RunServerOnPort(ctx, s.Port, logger)
+		network = "tcp"
+		addr = fmt.Sprintf(":%v", s.Port)
 	}
-	stream := jsonrpc2.NewHeaderStream(os.Stdin, os.Stdout)
-	return lsp.RunServer(ctx, stream, logger)
-}
-
-func (s *Serve) forward() error {
-	conn, err := net.Dial("tcp", s.app.Remote)
-	if err != nil {
-		return err
+	if addr != "" {
+		log.Printf("Gopls daemon: listening on %s network, address %s...", network, addr)
+		defer log.Printf("Gopls daemon: exiting")
+		return jsonrpc2.ListenAndServe(ctx, network, addr, ss, s.IdleTimeout)
 	}
-	errc := make(chan error)
-
-	go func(conn net.Conn) {
-		_, err := io.Copy(conn, os.Stdin)
-		errc <- err
-	}(conn)
-
-	go func(conn net.Conn) {
-		_, err := io.Copy(os.Stdout, conn)
-		errc <- err
-	}(conn)
-
-	return <-errc
+	stream := jsonrpc2.NewHeaderStream(fakenet.NewConn("stdio", os.Stdin, os.Stdout))
+	if s.Trace && di != nil {
+		stream = protocol.LoggingStream(stream, di.LogWriter)
+	}
+	conn := jsonrpc2.NewConn(stream)
+	err := ss.ServeStream(ctx, conn)
+	if errors.Is(err, io.EOF) {
+		return nil
+	}
+	return err
 }

@@ -6,19 +6,29 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "protocol",
     srcs = [
-        "client.go",
+        "codeactionkind.go",
+        "context.go",
         "doc.go",
-        "printers.go",
+        "enums.go",
+        "log.go",
         "protocol.go",
-        "server.go",
         "span.go",
+        "tsclient.go",
         "tsprotocol.go",
+        "tsserver.go",
     ],
     visibility = [
         "//go/src/golang.org/x/tools:__subpackages__",
     ],
     deps = [
+        "//go/src/golang.org/x/tools/internal/event",
+        "//go/src/golang.org/x/tools/internal/event/core",
+        "//go/src/golang.org/x/tools/internal/event/export",
+        "//go/src/golang.org/x/tools/internal/event/label",
         "//go/src/golang.org/x/tools/internal/jsonrpc2",
+        "//go/src/golang.org/x/tools/internal/jsonrpc2_v2",
         "//go/src/golang.org/x/tools/internal/span",
+        "//go/src/golang.org/x/tools/internal/xcontext",
+        "//go/src/golang.org/x/xerrors",
     ],
 )

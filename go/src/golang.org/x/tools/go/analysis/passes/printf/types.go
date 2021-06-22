@@ -1,3 +1,7 @@
+// Copyright 2018 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
 package printf
 
 import (
@@ -37,6 +41,12 @@ func matchArgTypeInternal(pass *analysis.Pass, t printfArgType, typ types.Type, 
 			return true // probably a type check problem
 		}
 	}
+
+	// %w accepts only errors.
+	if t == argError {
+		return types.ConvertibleTo(typ, errorType)
+	}
+
 	// If the type implements fmt.Formatter, we have nothing to check.
 	if isFormatter(typ) {
 		return true
@@ -228,7 +238,7 @@ func matchStructArgType(pass *analysis.Pass, t printfArgType, typ *types.Struct,
 			return false
 		}
 		if t&argString != 0 && !typf.Exported() && isConvertibleToString(pass, typf.Type()) {
-			// Issue #17798: unexported Stringer or error cannot be properly fomatted.
+			// Issue #17798: unexported Stringer or error cannot be properly formatted.
 			return false
 		}
 	}

@@ -7,6 +7,7 @@ dbx_go_library(
     name = "analysis",
     srcs = [
         "analysis.go",
+        "diagnostic.go",
         "doc.go",
         "validate.go",
     ],
@@ -14,5 +15,6 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
+        "//go/src/golang.org/x/tools/internal/analysisinternal",
     ],
 )

@@ -26,6 +26,7 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
+        "//go/src/golang.org/x/sys/execabs",
         "//go/src/golang.org/x/tools/container/intsets",
         "//go/src/golang.org/x/tools/go/callgraph",
         "//go/src/golang.org/x/tools/go/ssa",

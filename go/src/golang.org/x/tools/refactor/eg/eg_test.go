@@ -4,6 +4,7 @@
 
 // No testdata on Android.
 
+//go:build !android
 // +build !android
 
 package eg_test
@@ -15,6 +16,7 @@ import (
 	"go/parser"
 	"go/token"
 	"go/types"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +25,7 @@ import (
 	"testing"
 
 	"golang.org/x/tools/go/loader"
+	"golang.org/x/tools/internal/testenv"
 	"golang.org/x/tools/refactor/eg"
 )
 
@@ -38,6 +41,8 @@ var (
 )
 
 func Test(t *testing.T) {
+	testenv.NeedsTool(t, "go")
+
 	switch runtime.GOOS {
 	case "windows":
 		t.Skipf("skipping test on %q (no /usr/bin/diff)", runtime.GOOS)
@@ -132,7 +137,11 @@ func Test(t *testing.T) {
 			continue
 		}
 
-		got := filename + "t"       // foo.got
+		gotf, err := ioutil.TempFile("", filepath.Base(filename)+"t")
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := gotf.Name()          // foo.got
 		golden := filename + "lden" // foo.golden
 
 		// Write actual output to foo.got.

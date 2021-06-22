@@ -4,6 +4,7 @@
 
 // No testdata on Android.
 
+//go:build !android
 // +build !android
 
 package loader_test
@@ -13,6 +14,7 @@ import (
 	"go/build"
 	"go/constant"
 	"go/types"
+	"os"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -23,7 +25,13 @@ import (
 
 	"golang.org/x/tools/go/buildutil"
 	"golang.org/x/tools/go/loader"
+	"golang.org/x/tools/internal/testenv"
 )
+
+func TestMain(m *testing.M) {
+	testenv.ExitIfSmallMachine()
+	os.Exit(m.Run())
+}
 
 // TestFromArgs checks that conf.FromArgs populates conf correctly.
 // It does no I/O.
@@ -638,8 +646,11 @@ func TestErrorReporting(t *testing.T) {
 	for pkg, info := range prog.AllPackages {
 		switch pkg.Path() {
 		case "a":
-			if !hasError(info.Errors, "cannot convert false") {
-				t.Errorf("a.Errors = %v, want bool conversion (type) error", info.Errors)
+			// The match below is unfortunately vague, because in go1.16 the error
+			// message in go/types changed from "cannot convert ..." to "cannot use
+			// ... as ... in assignment".
+			if !hasError(info.Errors, "cannot") {
+				t.Errorf("a.Errors = %v, want bool assignment (type) error", info.Errors)
 			}
 			if !hasError(info.Errors, "could not import c") {
 				t.Errorf("a.Errors = %v, want import (loader) error", info.Errors)
@@ -652,7 +663,7 @@ func TestErrorReporting(t *testing.T) {
 	}
 
 	// Check errors reported via error handler.
-	if !hasError(allErrors, "cannot convert false") ||
+	if !hasError(allErrors, "cannot") ||
 		!hasError(allErrors, "rune literal not terminated") ||
 		!hasError(allErrors, "could not import c") {
 		t.Errorf("allErrors = %v, want syntax, type and loader errors", allErrors)

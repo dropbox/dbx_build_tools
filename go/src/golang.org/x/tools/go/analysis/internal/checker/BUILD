@@ -15,5 +15,7 @@ dbx_go_library(
         "//go/src/golang.org/x/tools/go/analysis",
         "//go/src/golang.org/x/tools/go/analysis/internal/analysisflags",
         "//go/src/golang.org/x/tools/go/packages",
+        "//go/src/golang.org/x/tools/internal/analysisinternal",
+        "//go/src/golang.org/x/tools/internal/span",
     ],
 )

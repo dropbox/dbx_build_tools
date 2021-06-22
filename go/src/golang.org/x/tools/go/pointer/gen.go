@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	tEface     = types.NewInterface(nil, nil).Complete()
+	tEface     = types.NewInterfaceType(nil, nil).Complete()
 	tInvalid   = types.Typ[types.Invalid]
 	tUnsafePtr = types.Typ[types.UnsafePointer]
 )
@@ -503,8 +503,7 @@ func (a *analysis) genAppend(instr *ssa.Call, cgn *cgnode) {
 	y := instr.Call.Args[1]
 	tArray := sliceToArray(instr.Call.Args[0].Type())
 
-	var w nodeid
-	w = a.nextNode()
+	w := a.nextNode()
 	a.addNodes(tArray, "append")
 	a.endObject(w, cgn, instr)
 
@@ -512,7 +511,7 @@ func (a *analysis) genAppend(instr *ssa.Call, cgn *cgnode) {
 	a.addressOf(instr.Type(), a.valueNode(z), w) //  z = &w
 }
 
-// genBuiltinCall generates contraints for a call to a built-in.
+// genBuiltinCall generates constraints for a call to a built-in.
 func (a *analysis) genBuiltinCall(instr ssa.CallInstruction, cgn *cgnode) {
 	call := instr.Common()
 	switch call.Value.(*ssa.Builtin).Name() {

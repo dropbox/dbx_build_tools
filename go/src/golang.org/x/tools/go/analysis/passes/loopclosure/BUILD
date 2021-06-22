@@ -15,5 +15,6 @@ dbx_go_library(
         "//go/src/golang.org/x/tools/go/analysis",
         "//go/src/golang.org/x/tools/go/analysis/passes/inspect",
         "//go/src/golang.org/x/tools/go/ast/inspector",
+        "//go/src/golang.org/x/tools/go/types/typeutil",
     ],
 )

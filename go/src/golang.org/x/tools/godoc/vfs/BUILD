@@ -7,6 +7,7 @@ dbx_go_library(
     name = "vfs",
     srcs = [
         "emptyvfs.go",
+        "fs.go",
         "namespace.go",
         "os.go",
         "vfs.go",

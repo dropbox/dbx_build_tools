@@ -15,5 +15,10 @@ dbx_go_library(
         "//go/src/golang.org/x/tools/go/analysis",
         "//go/src/golang.org/x/tools/go/analysis/internal/checker",
         "//go/src/golang.org/x/tools/go/packages",
+        "//go/src/golang.org/x/tools/internal/lsp/diff",
+        "//go/src/golang.org/x/tools/internal/lsp/diff/myers",
+        "//go/src/golang.org/x/tools/internal/span",
+        "//go/src/golang.org/x/tools/internal/testenv",
+        "//go/src/golang.org/x/tools/txtar",
     ],
 )

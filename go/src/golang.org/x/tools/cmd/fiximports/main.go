@@ -58,7 +58,7 @@
 // The -baddomains flag is a list of domain names that should always be
 // considered non-canonical.  You can use this if you wish to make sure
 // that you no longer have any dependencies on packages from that
-// domain, even those that do not yet provide a canical import path
+// domain, even those that do not yet provide a canonical import path
 // comment.  For example, the default value of -baddomains includes the
 // moribund code hosting site code.google.com, so fiximports will report
 // an error for each import of a package from this domain remaining
@@ -79,11 +79,11 @@ import (
 	"go/format"
 	"go/parser"
 	"go/token"
+	exec "golang.org/x/sys/execabs"
 	"io"
 	"io/ioutil"
 	"log"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
@@ -114,7 +114,7 @@ The package... arguments specify a list of packages
 in the style of the go tool; see "go help packages".
 Hint: use "all" or "..." to match the entire workspace.
 
-For details, see http://godoc.org/golang.org/x/tools/cmd/fiximports.
+For details, see https://pkg.go.dev/golang.org/x/tools/cmd/fiximports
 
 Flags:
   -n:	       dry run: show changes, but don't apply them
@@ -126,7 +126,7 @@ func main() {
 	flag.Parse()
 
 	if len(flag.Args()) == 0 {
-		fmt.Fprintf(stderr, usage)
+		fmt.Fprint(stderr, usage)
 		os.Exit(1)
 	}
 	if !fiximports(flag.Args()...) {
@@ -205,7 +205,7 @@ func fiximports(packages ...string) bool {
 				strings.Contains(msg, "expects import") {
 				// don't show the very errors we're trying to fix
 			} else {
-				fmt.Fprintln(stderr, msg)
+				fmt.Fprintln(stderr, p.Error)
 			}
 		}
 
@@ -266,7 +266,7 @@ func fiximports(packages ...string) bool {
 
 					// TODO(adonovan): should we make an HTTP request to
 					// see if there's an HTTP redirect, a "go-import" meta tag,
-					// or an import comment in the the latest revision?
+					// or an import comment in the latest revision?
 					// It would duplicate a lot of logic from "go get".
 				}
 				break
@@ -465,6 +465,13 @@ type packageError struct {
 	ImportStack []string // shortest path from package named on command line to this one
 	Pos         string   // position of error
 	Err         string   // the error itself
+}
+
+func (e packageError) Error() string {
+	if e.Pos != "" {
+		return e.Pos + ": " + e.Err
+	}
+	return e.Err
 }
 
 // list runs 'go list' with the specified arguments and returns the

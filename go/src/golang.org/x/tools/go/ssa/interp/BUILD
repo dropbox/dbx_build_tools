@@ -7,7 +7,6 @@ dbx_go_library(
     name = "interp",
     srcs = [
         "external.go",
-        "external_unix.go",
         "interp.go",
         "map.go",
         "ops.go",

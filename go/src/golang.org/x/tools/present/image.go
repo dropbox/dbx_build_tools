@@ -14,16 +14,21 @@ func init() {
 }
 
 type Image struct {
+	Cmd    string // original command from present source
 	URL    string
 	Width  int
 	Height int
 }
 
+func (i Image) PresentCmd() string   { return i.Cmd }
 func (i Image) TemplateName() string { return "image" }
 
 func parseImage(ctx *Context, fileName string, lineno int, text string) (Elem, error) {
 	args := strings.Fields(text)
-	img := Image{URL: args[1]}
+	if len(args) < 2 {
+		return nil, fmt.Errorf("incorrect image invocation: %q", text)
+	}
+	img := Image{Cmd: text, URL: args[1]}
 	a, err := parseArgs(fileName, lineno, args[2:])
 	if err != nil {
 		return nil, err

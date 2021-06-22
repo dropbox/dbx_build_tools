@@ -22,5 +22,9 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
+        "//go/src/github.com/yuin/goldmark",
+        "//go/src/github.com/yuin/goldmark/ast",
+        "//go/src/github.com/yuin/goldmark/renderer/html",
+        "//go/src/github.com/yuin/goldmark/text",
     ],
 )

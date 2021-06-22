@@ -16,6 +16,7 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
+        "//go/src/golang.org/x/sys/execabs",
         "//go/src/golang.org/x/tools/go/ast/astutil",
         "//go/src/golang.org/x/tools/go/buildutil",
         "//go/src/golang.org/x/tools/go/loader",

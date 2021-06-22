@@ -6,19 +6,13 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "imports",
     srcs = [
-        "fix.go",
-        "imports.go",
-        "mod.go",
-        "sortimports.go",
-        "zstdlib.go",
+        "forward.go",
     ],
     visibility = [
         "//go/src:__subpackages__",
     ],
     deps = [
-        "//go/src/golang.org/x/tools/go/ast/astutil",
-        "//go/src/golang.org/x/tools/go/packages",
-        "//go/src/golang.org/x/tools/internal/gopathwalk",
-        "//go/src/golang.org/x/tools/internal/module",
+        "//go/src/golang.org/x/tools/internal/gocommand",
+        "//go/src/golang.org/x/tools/internal/imports",
     ],
 )

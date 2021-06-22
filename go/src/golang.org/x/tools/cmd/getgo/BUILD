@@ -17,5 +17,6 @@ dbx_go_binary(
         "//visibility:public",
     ],
     deps = [
+        "//go/src/golang.org/x/sys/execabs",
     ],
 )

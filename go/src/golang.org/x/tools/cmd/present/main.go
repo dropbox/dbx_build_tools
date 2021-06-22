@@ -1,4 +1,4 @@
-// Copyright 2013 The Go Authors.  All rights reserved.
+// Copyright 2013 The Go Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
@@ -77,6 +77,11 @@ func main() {
 
 	origin := &url.URL{Scheme: "http"}
 	if *originHost != "" {
+		if strings.HasPrefix(*originHost, "https://") {
+			*originHost = strings.TrimPrefix(*originHost, "https://")
+			origin.Scheme = "https"
+		}
+		*originHost = strings.TrimPrefix(*originHost, "http://")
 		origin.Host = net.JoinHostPort(*originHost, port)
 	} else if ln.Addr().(*net.TCPAddr).IP.IsUnspecified() {
 		name, _ := os.Hostname()

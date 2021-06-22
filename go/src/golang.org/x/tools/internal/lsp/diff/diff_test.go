@@ -2,56 +2,79 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package diff
+package diff_test
 
 import (
-	"reflect"
+	"fmt"
 	"testing"
+
+	"golang.org/x/tools/internal/lsp/diff"
+	"golang.org/x/tools/internal/lsp/diff/difftest"
+	"golang.org/x/tools/internal/span"
 )
 
-func TestDiff(t *testing.T) {
-	for _, tt := range []struct {
-		a, b       []string
-		lines      []*Op
-		operations []*Op
-	}{
-		{
-			a: []string{"A", "B", "C", "A", "B", "B", "A"},
-			b: []string{"C", "B", "A", "B", "A", "C"},
-			operations: []*Op{
-				&Op{Kind: Delete, I1: 0, I2: 1, J1: 0, J2: 0},
-				&Op{Kind: Delete, I1: 1, I2: 2, J1: 0, J2: 0},
-				&Op{Kind: Insert, Content: "B", I1: 3, I2: 3, J1: 1, J2: 2},
-				&Op{Kind: Delete, I1: 5, I2: 6, J1: 4, J2: 4},
-				&Op{Kind: Insert, Content: "C", I1: 7, I2: 7, J1: 5, J2: 6},
-			},
-		},
-		{
-			a: []string{"A", "B"},
-			b: []string{"A", "C", ""},
-			operations: []*Op{
-				&Op{Kind: Delete, I1: 1, I2: 2, J1: 1, J2: 1},
-				&Op{Kind: Insert, Content: "C", I1: 2, I2: 2, J1: 1, J2: 2},
-				&Op{Kind: Insert, Content: "", I1: 2, I2: 2, J1: 2, J2: 3},
-			},
-		},
-	} {
-		ops := Operations(tt.a, tt.b)
-		if len(ops) != len(tt.operations) {
-			t.Fatalf("expected %v operations, got %v", len(tt.operations), len(ops))
-		}
-		for i, got := range ops {
-			want := tt.operations[i]
-			if !reflect.DeepEqual(want, got) {
-				t.Errorf("expected %v, got %v", want, got)
+func TestApplyEdits(t *testing.T) {
+	for _, tc := range difftest.TestCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Helper()
+			if got := diff.ApplyEdits(tc.In, tc.Edits); got != tc.Out {
+				t.Errorf("ApplyEdits edits got %q, want %q", got, tc.Out)
 			}
-		}
-		b := ApplyEdits(tt.a, tt.operations)
-		for i, want := range tt.b {
-			got := b[i]
-			if got != want {
-				t.Errorf("expected %v got %v", want, got)
+			if tc.LineEdits != nil {
+				if got := diff.ApplyEdits(tc.In, tc.LineEdits); got != tc.Out {
+					t.Errorf("ApplyEdits lineEdits got %q, want %q", got, tc.Out)
+				}
 			}
+		})
+	}
+}
+
+func TestLineEdits(t *testing.T) {
+	for _, tc := range difftest.TestCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Helper()
+			// if line edits not specified, it is the same as edits
+			edits := tc.LineEdits
+			if edits == nil {
+				edits = tc.Edits
+			}
+			if got := diff.LineEdits(tc.In, tc.Edits); diffEdits(got, edits) {
+				t.Errorf("LineEdits got %q, want %q", got, edits)
+			}
+		})
+	}
+}
+
+func TestUnified(t *testing.T) {
+	for _, tc := range difftest.TestCases {
+		t.Run(tc.Name, func(t *testing.T) {
+			t.Helper()
+			unified := fmt.Sprint(diff.ToUnified(difftest.FileA, difftest.FileB, tc.In, tc.Edits))
+			if unified != tc.Unified {
+				t.Errorf("edits got diff:\n%v\nexpected:\n%v", unified, tc.Unified)
+			}
+			if tc.LineEdits != nil {
+				unified := fmt.Sprint(diff.ToUnified(difftest.FileA, difftest.FileB, tc.In, tc.LineEdits))
+				if unified != tc.Unified {
+					t.Errorf("lineEdits got diff:\n%v\nexpected:\n%v", unified, tc.Unified)
+				}
+			}
+		})
+	}
+}
+
+func diffEdits(got, want []diff.TextEdit) bool {
+	if len(got) != len(want) {
+		return true
+	}
+	for i, w := range want {
+		g := got[i]
+		if span.Compare(w.Span, g.Span) != 0 {
+			return true
+		}
+		if w.NewText != g.NewText {
+			return true
 		}
 	}
+	return false
 }

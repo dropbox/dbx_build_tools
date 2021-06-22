@@ -12,8 +12,8 @@ if (isParentWindow) {
   window.onbeforeunload = function() {
     localStorage.clear();
     if (notesWindow) notesWindow.close();
-  }
-};
+  };
+}
 
 function toggleNotesWindow() {
   if (!isParentWindow) return;
@@ -24,23 +24,25 @@ function toggleNotesWindow() {
   }
 
   initNotes();
-};
+}
+
+// Create an unique key for the local storage so we don't mix the
+// destSlide of different presentations. For golang.org/issue/24688.
+function destSlideKey() {
+  var key = '';
+  if (notesWindow) {
+    var slides = notesWindow.document.getElementById('presenter-slides');
+    key = slides.src.split('#')[0];
+  } else {
+    key = window.location.href.split('#')[0];
+  }
+  return 'destSlide:' + key;
+}
 
 function initNotes() {
   notesWindow = window.open('', '', 'width=1000,height=700');
   var w = notesWindow;
   var slidesUrl = window.location.href;
-
-  var curSlide = parseInt(localStorage.getItem('destSlide'), 10);
-  var formattedNotes = '';
-  var section = sections[curSlide - 1];
-  // curSlide is 0 when initialized from the first page of slides.
-  // Check if section is valid before retrieving Notes.
-  if (section) {
-    formattedNotes = formatNotes(section.Notes);
-  } else if (curSlide == 0) {
-    formattedNotes = formatNotes(titleNotes);
-  }
 
   // Hack to apply css. Requires existing html on notesWindow.
   w.document.write("<div style='display:none;'></div>");
@@ -51,6 +53,18 @@ function initNotes() {
   slides.id = 'presenter-slides';
   slides.src = slidesUrl;
   w.document.body.appendChild(slides);
+
+  var curSlide = parseInt(localStorage.getItem(destSlideKey()), 10);
+  var formattedNotes = '';
+  var section = sections[curSlide - 1];
+  // curSlide is 0 when initialized from the first page of slides.
+  // Check if section is valid before retrieving Notes.
+  if (section) {
+    formattedNotes = formatNotes(section.Notes);
+  } else if (curSlide == 0) {
+    formattedNotes = formatNotes(titleNotes);
+  }
+
   // setTimeout needed for Firefox
   setTimeout(function() {
     slides.focus();
@@ -77,7 +91,7 @@ function initNotes() {
   // Add listener on notesWindow to update notes when triggered from
   // parent window
   w.addEventListener('storage', updateNotes, false);
-};
+}
 
 function formatNotes(notes) {
   var formattedNotes = '';
@@ -87,13 +101,13 @@ function formatNotes(notes) {
     }
   }
   return formattedNotes;
-};
+}
 
 function updateNotes() {
   // When triggered from parent window, notesWindow is null
   // The storage event listener on notesWindow will update notes
   if (!notesWindow) return;
-  var destSlide = parseInt(localStorage.getItem('destSlide'), 10);
+  var destSlide = parseInt(localStorage.getItem(destSlideKey()), 10);
   var section = sections[destSlide - 1];
   var el = notesWindow.document.getElementById('presenter-notes');
 
@@ -103,59 +117,59 @@ function updateNotes() {
     el.innerHTML = formatNotes(section.Notes);
   } else if (destSlide == 0) {
     el.innerHTML = formatNotes(titleNotes);
-  }  else {
+  } else {
     el.innerHTML = '';
   }
-};
+}
 
 /* Playground syncing */
 
 // When presenter notes are enabled, playground click handlers are
 // stored here to sync click events on the correct playground
-var playgroundHandlers = {onRun: [], onKill: [], onClose: []};
+var playgroundHandlers = { onRun: [], onKill: [], onClose: [] };
 
 function updatePlay(e) {
-	var i = localStorage.getItem('play-index');
+  var i = localStorage.getItem('play-index');
 
-	switch (e.key) {
-		case 'play-index':
-			return;
-		case 'play-action':
-			// Sync 'run', 'kill', 'close' actions
-			var action = localStorage.getItem('play-action');
-			playgroundHandlers[action][i](e);
-			return;
-		case 'play-code':
-			// Sync code editing
-			var play = document.querySelectorAll('div.playground')[i];
-			play.innerHTML = localStorage.getItem('play-code');
-			return;
-		case 'output-style':
-			// Sync resizing of playground output
-			var out = document.querySelectorAll('.output')[i];
-			out.style = localStorage.getItem('output-style');
-			return;
-	}
-};
+  switch (e.key) {
+    case 'play-index':
+      return;
+    case 'play-action':
+      // Sync 'run', 'kill', 'close' actions
+      var action = localStorage.getItem('play-action');
+      playgroundHandlers[action][i](e);
+      return;
+    case 'play-code':
+      // Sync code editing
+      var play = document.querySelectorAll('div.playground')[i];
+      play.innerHTML = localStorage.getItem('play-code');
+      return;
+    case 'output-style':
+      // Sync resizing of playground output
+      var out = document.querySelectorAll('.output')[i];
+      out.style = localStorage.getItem('output-style');
+      return;
+  }
+}
 
 // Reset 'run', 'kill', 'close' storage items when synced
 // so that successive actions can be synced correctly
 function updatePlayStorage(action, index, e) {
-	localStorage.setItem('play-index', index);
+  localStorage.setItem('play-index', index);
 
-	if (localStorage.getItem('play-action') === action) {
-		// We're the receiving window, and the message has been received
-		localStorage.removeItem('play-action');
-	} else {
-		// We're the triggering window, send the message
-		localStorage.setItem('play-action', action);
-	}
+  if (localStorage.getItem('play-action') === action) {
+    // We're the receiving window, and the message has been received
+    localStorage.removeItem('play-action');
+  } else {
+    // We're the triggering window, send the message
+    localStorage.setItem('play-action', action);
+  }
 
-	if (action === 'onRun') {
-		if (localStorage.getItem('play-shiftKey') === 'true') {
-			localStorage.removeItem('play-shiftKey');
-		} else if (e.shiftKey) {
-			localStorage.setItem('play-shiftKey', e.shiftKey);
-		}
-	}
-};
+  if (action === 'onRun') {
+    if (localStorage.getItem('play-shiftKey') === 'true') {
+      localStorage.removeItem('play-shiftKey');
+    } else if (e.shiftKey) {
+      localStorage.setItem('play-shiftKey', e.shiftKey);
+    }
+  }
+}

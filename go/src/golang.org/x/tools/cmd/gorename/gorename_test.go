@@ -14,9 +14,9 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-)
 
-var haveCGO bool
+	"golang.org/x/tools/internal/testenv"
+)
 
 type test struct {
 	offset, from, to string // specify the arguments
@@ -29,9 +29,8 @@ type test struct {
 
 // Test that renaming that would modify cgo files will produce an error and not modify the file.
 func TestGeneratedFiles(t *testing.T) {
-	if !haveCGO {
-		t.Skipf("skipping test: no cgo")
-	}
+	testenv.NeedsTool(t, "go")
+	testenv.NeedsTool(t, "cgo")
 
 	tmp, bin, cleanup := buildGorename(t)
 	defer cleanup()

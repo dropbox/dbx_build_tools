@@ -22,9 +22,11 @@ import (
 	"golang.org/x/tools/go/analysis/passes/internal/analysisutil"
 )
 
+const Doc = "report mismatches between assembly files and Go declarations"
+
 var Analyzer = &analysis.Analyzer{
 	Name: "asmdecl",
-	Doc:  "report mismatches between assembly files and Go declarations",
+	Doc:  Doc,
 	Run:  run,
 }
 
@@ -79,13 +81,13 @@ var (
 	asmArchArm      = asmArch{name: "arm", bigEndian: false, stack: "R13", lr: true}
 	asmArchArm64    = asmArch{name: "arm64", bigEndian: false, stack: "RSP", lr: true}
 	asmArchAmd64    = asmArch{name: "amd64", bigEndian: false, stack: "SP", lr: false}
-	asmArchAmd64p32 = asmArch{name: "amd64p32", bigEndian: false, stack: "SP", lr: false}
 	asmArchMips     = asmArch{name: "mips", bigEndian: true, stack: "R29", lr: true}
 	asmArchMipsLE   = asmArch{name: "mipsle", bigEndian: false, stack: "R29", lr: true}
 	asmArchMips64   = asmArch{name: "mips64", bigEndian: true, stack: "R29", lr: true}
 	asmArchMips64LE = asmArch{name: "mips64le", bigEndian: false, stack: "R29", lr: true}
 	asmArchPpc64    = asmArch{name: "ppc64", bigEndian: true, stack: "R1", lr: true}
 	asmArchPpc64LE  = asmArch{name: "ppc64le", bigEndian: false, stack: "R1", lr: true}
+	asmArchRISCV64  = asmArch{name: "riscv64", bigEndian: false, stack: "SP", lr: true}
 	asmArchS390X    = asmArch{name: "s390x", bigEndian: true, stack: "R15", lr: true}
 	asmArchWasm     = asmArch{name: "wasm", bigEndian: false, stack: "SP", lr: false}
 
@@ -94,13 +96,13 @@ var (
 		&asmArchArm,
 		&asmArchArm64,
 		&asmArchAmd64,
-		&asmArchAmd64p32,
 		&asmArchMips,
 		&asmArchMipsLE,
 		&asmArchMips64,
 		&asmArchMips64LE,
 		&asmArchPpc64,
 		&asmArchPpc64LE,
+		&asmArchRISCV64,
 		&asmArchS390X,
 		&asmArchWasm,
 	}
@@ -130,11 +132,12 @@ var (
 	asmPlusBuild = re(`//\s+\+build\s+([^\n]+)`)
 	asmTEXT      = re(`\bTEXT\b(.*)·([^\(]+)\(SB\)(?:\s*,\s*([0-9A-Z|+()]+))?(?:\s*,\s*\$(-?[0-9]+)(?:-([0-9]+))?)?`)
 	asmDATA      = re(`\b(DATA|GLOBL)\b`)
-	asmNamedFP   = re(`([a-zA-Z0-9_\xFF-\x{10FFFF}]+)(?:\+([0-9]+))\(FP\)`)
+	asmNamedFP   = re(`\$?([a-zA-Z0-9_\xFF-\x{10FFFF}]+)(?:\+([0-9]+))\(FP\)`)
 	asmUnnamedFP = re(`[^+\-0-9](([0-9]+)\(FP\))`)
 	asmSP        = re(`[^+\-0-9](([0-9]+)\(([A-Z0-9]+)\))`)
 	asmOpcode    = re(`^\s*(?:[A-Z0-9a-z_]+:)?\s*([A-Z]+)\s*([^,]*)(?:,\s*(.*))?`)
 	ppc64Suff    = re(`([BHWD])(ZU|Z|U|BR)?$`)
+	abiSuff      = re(`^(.+)<ABI.+>$`)
 )
 
 func run(pass *analysis.Pass) (interface{}, error) {
@@ -184,6 +187,7 @@ Files:
 			fnName             string
 			localSize, argSize int
 			wroteSP            bool
+			noframe            bool
 			haveRetArg         bool
 			retLine            []int
 		)
@@ -196,6 +200,13 @@ Files:
 				}
 			}
 			retLine = nil
+		}
+		trimABI := func(fnName string) string {
+			m := abiSuff.FindStringSubmatch(fnName)
+			if m != nil {
+				return m[1]
+			}
+			return fnName
 		}
 		for lineno, line := range lines {
 			lineno++
@@ -231,6 +242,11 @@ Files:
 				}
 			}
 
+			// Ignore comments and commented-out code.
+			if i := strings.Index(line, "//"); i >= 0 {
+				line = line[:i]
+			}
+
 			if m := asmTEXT.FindStringSubmatch(line); m != nil {
 				flushRet()
 				if arch == "" {
@@ -254,12 +270,14 @@ Files:
 					// identifiers to represent the directory separator.
 					pkgPath = strings.Replace(pkgPath, "∕", "/", -1)
 					if pkgPath != pass.Pkg.Path() {
-						log.Printf("%s:%d: [%s] cannot check cross-package assembly function: %s is in package %s", fname, lineno, arch, fnName, pkgPath)
+						// log.Printf("%s:%d: [%s] cannot check cross-package assembly function: %s is in package %s", fname, lineno, arch, fnName, pkgPath)
 						fn = nil
 						fnName = ""
 						continue
 					}
 				}
+				// Trim off optional ABI selector.
+				fnName := trimABI(fnName)
 				flag := m[3]
 				fn = knownFunc[fnName][arch]
 				if fn != nil {
@@ -275,7 +293,8 @@ Files:
 					localSize += archDef.intSize
 				}
 				argSize, _ = strconv.Atoi(m[5])
-				if fn == nil && !strings.Contains(fnName, "<>") {
+				noframe = strings.Contains(flag, "NOFRAME")
+				if fn == nil && !strings.Contains(fnName, "<>") && !noframe {
 					badf("function %s missing Go declaration", fnName)
 				}
 				wroteSP = false
@@ -289,7 +308,8 @@ Files:
 				continue
 			}
 
-			if strings.Contains(line, "RET") {
+			if strings.Contains(line, "RET") && !strings.Contains(line, "(SB)") {
+				// RET f(SB) is a tail call. It is okay to not write the results.
 				retLine = append(retLine, lineno)
 			}
 
@@ -305,13 +325,18 @@ Files:
 				continue
 			}
 
-			if strings.Contains(line, ", "+archDef.stack) || strings.Contains(line, ",\t"+archDef.stack) {
+			if strings.Contains(line, ", "+archDef.stack) || strings.Contains(line, ",\t"+archDef.stack) || strings.Contains(line, "NOP "+archDef.stack) || strings.Contains(line, "NOP\t"+archDef.stack) {
 				wroteSP = true
 				continue
 			}
 
+			if arch == "wasm" && strings.Contains(line, "CallImport") {
+				// CallImport is a call out to magic that can write the result.
+				haveRetArg = true
+			}
+
 			for _, m := range asmSP.FindAllStringSubmatch(line, -1) {
-				if m[3] != archDef.stack || wroteSP {
+				if m[3] != archDef.stack || wroteSP || noframe {
 					continue
 				}
 				off := 0
@@ -371,7 +396,7 @@ Files:
 					}
 					continue
 				}
-				asmCheckVar(badf, fn, line, m[0], off, v)
+				asmCheckVar(badf, fn, line, m[0], off, v, archDef)
 			}
 		}
 		flushRet()
@@ -589,7 +614,7 @@ func asmParseDecl(pass *analysis.Pass, decl *ast.FuncDecl) map[string]*asmFunc {
 }
 
 // asmCheckVar checks a single variable reference.
-func asmCheckVar(badf func(string, ...interface{}), fn *asmFunc, line, expr string, off int, v *asmVar) {
+func asmCheckVar(badf func(string, ...interface{}), fn *asmFunc, line, expr string, off int, v *asmVar, archDef *asmArch) {
 	m := asmOpcode.FindStringSubmatch(line)
 	if m == nil {
 		if !strings.HasPrefix(strings.TrimSpace(line), "//") {
@@ -597,6 +622,8 @@ func asmCheckVar(badf func(string, ...interface{}), fn *asmFunc, line, expr stri
 		}
 		return
 	}
+
+	addr := strings.HasPrefix(expr, "$")
 
 	// Determine operand sizes from instruction.
 	// Typically the suffix suffices, but there are exceptions.
@@ -617,10 +644,10 @@ func asmCheckVar(badf func(string, ...interface{}), fn *asmFunc, line, expr stri
 	// They just take the address of it.
 	case "386.LEAL":
 		dst = 4
+		addr = true
 	case "amd64.LEAQ":
 		dst = 8
-	case "amd64p32.LEAL":
-		dst = 4
+		addr = true
 	default:
 		switch fn.arch.name {
 		case "386", "amd64":
@@ -647,6 +674,10 @@ func asmCheckVar(badf func(string, ...interface{}), fn *asmFunc, line, expr stri
 			if strings.HasSuffix(op, "SS") {
 				// MOVSS, SQRTSS, etc
 				src = 4
+				break
+			}
+			if op == "MOVO" || op == "MOVOU" {
+				src = 16
 				break
 			}
 			if strings.HasPrefix(op, "SET") {
@@ -724,6 +755,16 @@ func asmCheckVar(badf func(string, ...interface{}), fn *asmFunc, line, expr stri
 		vk = v.inner[0].kind
 		vs = v.inner[0].size
 		vt = v.inner[0].typ
+	case asmComplex:
+		// Allow a single instruction to load both parts of a complex.
+		if int(kind) == vs {
+			kind = asmComplex
+		}
+	}
+	if addr {
+		vk = asmKind(archDef.ptrSize)
+		vs = archDef.ptrSize
+		vt = "address"
 	}
 
 	if off != v.off {

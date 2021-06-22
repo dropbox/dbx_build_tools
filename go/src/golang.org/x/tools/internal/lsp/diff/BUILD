@@ -7,10 +7,12 @@ dbx_go_library(
     name = "diff",
     srcs = [
         "diff.go",
+        "unified.go",
     ],
     visibility = [
         "//go/src/golang.org/x/tools:__subpackages__",
     ],
     deps = [
+        "//go/src/golang.org/x/tools/internal/span",
     ],
 )

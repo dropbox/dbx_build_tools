@@ -6,8 +6,11 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "jsonrpc2",
     srcs = [
+        "conn.go",
+        "handler.go",
         "jsonrpc2.go",
-        "log.go",
+        "messages.go",
+        "serve.go",
         "stream.go",
         "wire.go",
     ],
@@ -15,5 +18,9 @@ dbx_go_library(
         "//go/src/golang.org/x/tools:__subpackages__",
     ],
     deps = [
+        "//go/src/golang.org/x/tools/internal/event",
+        "//go/src/golang.org/x/tools/internal/event/label",
+        "//go/src/golang.org/x/tools/internal/lsp/debug/tag",
+        "//go/src/golang.org/x/xerrors",
     ],
 )

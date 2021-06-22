@@ -13,5 +13,6 @@ dbx_go_library(
         "//go/src/golang.org/x/tools/go:__subpackages__",
     ],
     deps = [
+        "//go/src/golang.org/x/sys/execabs",
     ],
 )

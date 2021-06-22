@@ -18,5 +18,11 @@ dbx_go_library(
     deps = [
         "//go/src/golang.org/x/tools/go/expect",
         "//go/src/golang.org/x/tools/go/packages",
+        "//go/src/golang.org/x/tools/internal/gocommand",
+        "//go/src/golang.org/x/tools/internal/packagesinternal",
+        "//go/src/golang.org/x/tools/internal/proxydir",
+        "//go/src/golang.org/x/tools/internal/span",
+        "//go/src/golang.org/x/tools/internal/testenv",
+        "//go/src/golang.org/x/xerrors",
     ],
 )

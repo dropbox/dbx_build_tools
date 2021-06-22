@@ -12,6 +12,6 @@ dbx_go_binary(
         "//visibility:public",
     ],
     deps = [
-        "//go/src/golang.org/x/tools/go/loader",
+        "//go/src/golang.org/x/tools/go/packages",
     ],
 )

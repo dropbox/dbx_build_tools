@@ -1,3 +1,8 @@
+// Copyright 2018 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+//go:build go1.12
 // +build go1.12
 
 package multichecker_test
@@ -12,6 +17,7 @@ import (
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/multichecker"
 	"golang.org/x/tools/go/analysis/passes/findcall"
+	"golang.org/x/tools/internal/testenv"
 )
 
 func main() {
@@ -45,6 +51,8 @@ func TestExitCode(t *testing.T) {
 		main()
 		panic("unreachable")
 	}
+
+	testenv.NeedsTool(t, "go")
 
 	for _, test := range []struct {
 		args []string

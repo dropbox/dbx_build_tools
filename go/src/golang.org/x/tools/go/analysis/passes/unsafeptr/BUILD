@@ -14,6 +14,7 @@ dbx_go_library(
     deps = [
         "//go/src/golang.org/x/tools/go/analysis",
         "//go/src/golang.org/x/tools/go/analysis/passes/inspect",
+        "//go/src/golang.org/x/tools/go/analysis/passes/internal/analysisutil",
         "//go/src/golang.org/x/tools/go/ast/inspector",
     ],
 )

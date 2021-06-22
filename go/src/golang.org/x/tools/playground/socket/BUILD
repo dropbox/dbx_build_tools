@@ -13,5 +13,7 @@ dbx_go_library(
     ],
     deps = [
         "//go/src/golang.org/x/net/websocket",
+        "//go/src/golang.org/x/sys/execabs",
+        "//go/src/golang.org/x/tools/txtar",
     ],
 )

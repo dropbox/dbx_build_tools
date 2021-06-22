@@ -9,12 +9,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
+	"net"
 	"path"
 	"reflect"
 	"testing"
 
+	"golang.org/x/tools/internal/event/export/eventtest"
 	"golang.org/x/tools/internal/jsonrpc2"
+	"golang.org/x/tools/internal/stack/stacktest"
 )
 
 var logRPC = flag.Bool("logrpc", false, "Enable jsonrpc2 communication logging")
@@ -58,106 +60,89 @@ func (test *callTest) verifyResults(t *testing.T, results interface{}) {
 	}
 }
 
-func TestPlainCall(t *testing.T) {
-	ctx := context.Background()
-	a, b := prepare(ctx, t, false)
-	for _, test := range callTests {
-		results := test.newResults()
-		if err := a.Call(ctx, test.method, test.params, results); err != nil {
-			t.Fatalf("%v:Call failed: %v", test.method, err)
+func TestCall(t *testing.T) {
+	stacktest.NoLeak(t)
+	ctx := eventtest.NewContext(context.Background(), t)
+	for _, headers := range []bool{false, true} {
+		name := "Plain"
+		if headers {
+			name = "Headers"
 		}
-		test.verifyResults(t, results)
-		if err := b.Call(ctx, test.method, test.params, results); err != nil {
-			t.Fatalf("%v:Call failed: %v", test.method, err)
-		}
-		test.verifyResults(t, results)
-	}
-}
-
-func TestHeaderCall(t *testing.T) {
-	ctx := context.Background()
-	a, b := prepare(ctx, t, true)
-	for _, test := range callTests {
-		results := test.newResults()
-		if err := a.Call(ctx, test.method, test.params, results); err != nil {
-			t.Fatalf("%v:Call failed: %v", test.method, err)
-		}
-		test.verifyResults(t, results)
-		if err := b.Call(ctx, test.method, test.params, results); err != nil {
-			t.Fatalf("%v:Call failed: %v", test.method, err)
-		}
-		test.verifyResults(t, results)
-	}
-}
-
-func prepare(ctx context.Context, t *testing.T, withHeaders bool) (*testHandler, *testHandler) {
-	a := &testHandler{t: t}
-	b := &testHandler{t: t}
-	a.reader, b.writer = io.Pipe()
-	b.reader, a.writer = io.Pipe()
-	for _, h := range []*testHandler{a, b} {
-		h := h
-		if withHeaders {
-			h.stream = jsonrpc2.NewHeaderStream(h.reader, h.writer)
-		} else {
-			h.stream = jsonrpc2.NewStream(h.reader, h.writer)
-		}
-		args := []interface{}{jsonrpc2.Handler(handle)}
-		if *logRPC {
-			args = append(args, jsonrpc2.Log)
-		}
-		h.Conn = jsonrpc2.NewConn(ctx, h.stream, args...)
-		go func() {
-			defer func() {
-				h.reader.Close()
-				h.writer.Close()
-			}()
-			if err := h.Conn.Wait(ctx); err != nil {
-				t.Fatalf("Stream failed: %v", err)
+		t.Run(name, func(t *testing.T) {
+			ctx := eventtest.NewContext(ctx, t)
+			a, b, done := prepare(ctx, t, headers)
+			defer done()
+			for _, test := range callTests {
+				t.Run(test.method, func(t *testing.T) {
+					ctx := eventtest.NewContext(ctx, t)
+					results := test.newResults()
+					if _, err := a.Call(ctx, test.method, test.params, results); err != nil {
+						t.Fatalf("%v:Call failed: %v", test.method, err)
+					}
+					test.verifyResults(t, results)
+					if _, err := b.Call(ctx, test.method, test.params, results); err != nil {
+						t.Fatalf("%v:Call failed: %v", test.method, err)
+					}
+					test.verifyResults(t, results)
+				})
 			}
-		}()
+		})
 	}
-	return a, b
 }
 
-type testHandler struct {
-	t      *testing.T
-	reader *io.PipeReader
-	writer *io.PipeWriter
-	stream jsonrpc2.Stream
-	*jsonrpc2.Conn
+func prepare(ctx context.Context, t *testing.T, withHeaders bool) (jsonrpc2.Conn, jsonrpc2.Conn, func()) {
+	// make a wait group that can be used to wait for the system to shut down
+	aPipe, bPipe := net.Pipe()
+	a := run(ctx, withHeaders, aPipe)
+	b := run(ctx, withHeaders, bPipe)
+	return a, b, func() {
+		a.Close()
+		b.Close()
+		<-a.Done()
+		<-b.Done()
+	}
 }
 
-func handle(ctx context.Context, c *jsonrpc2.Conn, r *jsonrpc2.Request) {
-	switch r.Method {
-	case "no_args":
-		if r.Params != nil {
-			c.Reply(ctx, r, nil, jsonrpc2.NewErrorf(jsonrpc2.CodeInvalidParams, "Expected no params"))
-			return
+func run(ctx context.Context, withHeaders bool, nc net.Conn) jsonrpc2.Conn {
+	var stream jsonrpc2.Stream
+	if withHeaders {
+		stream = jsonrpc2.NewHeaderStream(nc)
+	} else {
+		stream = jsonrpc2.NewRawStream(nc)
+	}
+	conn := jsonrpc2.NewConn(stream)
+	conn.Go(ctx, testHandler(*logRPC))
+	return conn
+}
+
+func testHandler(log bool) jsonrpc2.Handler {
+	return func(ctx context.Context, reply jsonrpc2.Replier, req jsonrpc2.Request) error {
+		switch req.Method() {
+		case "no_args":
+			if len(req.Params()) > 0 {
+				return reply(ctx, nil, fmt.Errorf("%w: expected no params", jsonrpc2.ErrInvalidParams))
+			}
+			return reply(ctx, true, nil)
+		case "one_string":
+			var v string
+			if err := json.Unmarshal(req.Params(), &v); err != nil {
+				return reply(ctx, nil, fmt.Errorf("%w: %s", jsonrpc2.ErrParse, err))
+			}
+			return reply(ctx, "got:"+v, nil)
+		case "one_number":
+			var v int
+			if err := json.Unmarshal(req.Params(), &v); err != nil {
+				return reply(ctx, nil, fmt.Errorf("%w: %s", jsonrpc2.ErrParse, err))
+			}
+			return reply(ctx, fmt.Sprintf("got:%d", v), nil)
+		case "join":
+			var v []string
+			if err := json.Unmarshal(req.Params(), &v); err != nil {
+				return reply(ctx, nil, fmt.Errorf("%w: %s", jsonrpc2.ErrParse, err))
+			}
+			return reply(ctx, path.Join(v...), nil)
+		default:
+			return jsonrpc2.MethodNotFound(ctx, reply, req)
 		}
-		c.Reply(ctx, r, true, nil)
-	case "one_string":
-		var v string
-		if err := json.Unmarshal(*r.Params, &v); err != nil {
-			c.Reply(ctx, r, nil, jsonrpc2.NewErrorf(jsonrpc2.CodeParseError, "%v", err.Error()))
-			return
-		}
-		c.Reply(ctx, r, "got:"+v, nil)
-	case "one_number":
-		var v int
-		if err := json.Unmarshal(*r.Params, &v); err != nil {
-			c.Reply(ctx, r, nil, jsonrpc2.NewErrorf(jsonrpc2.CodeParseError, "%v", err.Error()))
-			return
-		}
-		c.Reply(ctx, r, fmt.Sprintf("got:%d", v), nil)
-	case "join":
-		var v []string
-		if err := json.Unmarshal(*r.Params, &v); err != nil {
-			c.Reply(ctx, r, nil, jsonrpc2.NewErrorf(jsonrpc2.CodeParseError, "%v", err.Error()))
-			return
-		}
-		c.Reply(ctx, r, path.Join(v...), nil)
-	default:
-		c.Reply(ctx, r, nil, jsonrpc2.NewErrorf(jsonrpc2.CodeMethodNotFound, "method %q not found", r.Method))
 	}
 }

@@ -6,7 +6,6 @@ load("//build_tools/go:go.bzl", "dbx_go_binary")
 dbx_go_binary(
     name = "splitdwarf",
     srcs = [
-        "doc.go",
         "splitdwarf.go",
     ],
     visibility = [

@@ -10,11 +10,13 @@ import (
 	"go/token"
 	"go/types"
 	"os"
+	"reflect"
 	"testing"
 
 	"golang.org/x/tools/go/analysis/analysistest"
 	"golang.org/x/tools/go/analysis/internal/facts"
 	"golang.org/x/tools/go/packages"
+	"golang.org/x/tools/internal/testenv"
 )
 
 type myFact struct {
@@ -87,7 +89,7 @@ func TestEncodeDecode(t *testing.T) {
 		}},
 	} {
 		// load package
-		pkg, err := load(dir, test.path)
+		pkg, err := load(t, dir, test.path)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -154,12 +156,13 @@ func find(p *types.Package, expr string) types.Object {
 	return nil
 }
 
-func load(dir string, path string) (*types.Package, error) {
+func load(t *testing.T, dir string, path string) (*types.Package, error) {
 	cfg := &packages.Config{
 		Mode: packages.LoadSyntax,
 		Dir:  dir,
 		Env:  append(os.Environ(), "GOPATH="+dir, "GO111MODULE=off", "GOPROXY=off"),
 	}
+	testenv.NeedsGoPackagesEnv(t, cfg.Env)
 	pkgs, err := packages.Load(cfg, path)
 	if err != nil {
 		return nil, err
@@ -171,4 +174,53 @@ func load(dir string, path string) (*types.Package, error) {
 		return nil, fmt.Errorf("no package matched %s", path)
 	}
 	return pkgs[0].Types, nil
+}
+
+type otherFact struct {
+	S string
+}
+
+func (f *otherFact) String() string { return fmt.Sprintf("otherFact(%s)", f.S) }
+func (f *otherFact) AFact()         {}
+
+func TestFactFilter(t *testing.T) {
+	files := map[string]string{
+		"a/a.go": `package a; type A int`,
+	}
+	dir, cleanup, err := analysistest.WriteFiles(files)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer cleanup()
+
+	pkg, err := load(t, dir, "a")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	obj := pkg.Scope().Lookup("A")
+	s, err := facts.Decode(pkg, func(string) ([]byte, error) { return nil, nil })
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.ExportObjectFact(obj, &myFact{"good object fact"})
+	s.ExportPackageFact(&myFact{"good package fact"})
+	s.ExportObjectFact(obj, &otherFact{"bad object fact"})
+	s.ExportPackageFact(&otherFact{"bad package fact"})
+
+	filter := map[reflect.Type]bool{
+		reflect.TypeOf(&myFact{}): true,
+	}
+
+	pkgFacts := s.AllPackageFacts(filter)
+	wantPkgFacts := `[{package a ("a") myFact(good package fact)}]`
+	if got := fmt.Sprintf("%v", pkgFacts); got != wantPkgFacts {
+		t.Errorf("AllPackageFacts: got %v, want %v", got, wantPkgFacts)
+	}
+
+	objFacts := s.AllObjectFacts(filter)
+	wantObjFacts := "[{type a.A int myFact(good object fact)}]"
+	if got := fmt.Sprintf("%v", objFacts); got != wantObjFacts {
+		t.Errorf("AllObjectFacts: got %v, want %v", got, wantObjFacts)
+	}
 }

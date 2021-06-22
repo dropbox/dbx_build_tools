@@ -33,6 +33,8 @@ type UnexportedEncodingTagTest struct {
 	y int `xml:"yy"`  // want "struct field y has xml tag but is not exported"
 	z int
 	A int `json:"aa" xml:"bb"`
+	b int `json:"-"`
+	C int `json:"-"`
 }
 
 type unexp struct{}
@@ -62,20 +64,18 @@ type AnonymousJSONField3 struct {
 
 type DuplicateJSONFields struct {
 	JSON              int `json:"a"`
-	DuplicateJSON     int `json:"a"` // want "struct field DuplicateJSON repeats json tag .a. also at a.go:64"
+	DuplicateJSON     int `json:"a"` // want "struct field DuplicateJSON repeats json tag .a. also at a.go:66"
 	IgnoredJSON       int `json:"-"`
 	OtherIgnoredJSON  int `json:"-"`
 	OmitJSON          int `json:",omitempty"`
 	OtherOmitJSON     int `json:",omitempty"`
-	DuplicateOmitJSON int `json:"a,omitempty"` // want "struct field DuplicateOmitJSON repeats json tag .a. also at a.go:64"
+	DuplicateOmitJSON int `json:"a,omitempty"` // want "struct field DuplicateOmitJSON repeats json tag .a. also at a.go:66"
 	NonJSON           int `foo:"a"`
 	DuplicateNonJSON  int `foo:"a"`
 	Embedded          struct {
 		DuplicateJSON int `json:"a"` // OK because it's not in the same struct type
 	}
-	AnonymousJSON `json:"a"` // want "struct field AnonymousJSON repeats json tag .a. also at a.go:64"
-
-	AnonymousJSONField // want "struct field DuplicateAnonJSON repeats json tag .a. also at a.go:64"
+	AnonymousJSON `json:"a"` // want "struct field AnonymousJSON repeats json tag .a. also at a.go:66"
 
 	XML              int `xml:"a"`
 	DuplicateXML     int `xml:"a"` // want "struct field DuplicateXML repeats xml tag .a. also at a.go:80"
@@ -124,10 +124,17 @@ type UnexpectedSpacetest struct {
 	Q int `foo:" doesn't care "`
 }
 
+// Nested fiels can be shadowed by fields further up. For example,
+// ShadowingAnonJSON replaces the json:"a" field in AnonymousJSONField.
+// However, if the two conflicting fields appear at the same level like in
+// DuplicateWithAnotherPackage, we should error.
+
+type ShadowingJsonFieldName struct {
+	AnonymousJSONField
+	ShadowingAnonJSON int `json:"a"`
+}
+
 type DuplicateWithAnotherPackage struct {
 	b.AnonymousJSONField
-
-	// The "also at" position is in a different package and directory. Use
-	// "b.b" instead of "b/b" to match the relative path on Windows easily.
-	DuplicateJSON int `json:"a"` // want "struct field DuplicateJSON repeats json tag .a. also at b.b.go:8"
+	AnonymousJSONField2 // want "struct field DuplicateAnonJSON repeats json tag .a. also at b.b.go:8"
 }

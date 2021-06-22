@@ -56,6 +56,13 @@
 // where t is the lower-cased name of the first type listed. It can be overridden
 // with the -output flag.
 //
+// The -linecomment flag tells stringer to generate the text of any line comment, trimmed
+// of leading spaces, instead of the constant name. For instance, if the constants above had a
+// Pill prefix, one could write
+//
+//	PillAspirin // Aspirin
+//
+// to suppress it in the output.
 package main // import "golang.org/x/tools/cmd/stringer"
 
 import (
@@ -91,7 +98,7 @@ func Usage() {
 	fmt.Fprintf(os.Stderr, "\tstringer [flags] -type T [directory]\n")
 	fmt.Fprintf(os.Stderr, "\tstringer [flags] -type T files... # Must be a single package\n")
 	fmt.Fprintf(os.Stderr, "For more information, see:\n")
-	fmt.Fprintf(os.Stderr, "\thttp://godoc.org/golang.org/x/tools/cmd/stringer\n")
+	fmt.Fprintf(os.Stderr, "\thttps://pkg.go.dev/golang.org/x/tools/cmd/stringer\n")
 	fmt.Fprintf(os.Stderr, "Flags:\n")
 	flag.PrintDefaults()
 }
@@ -603,7 +610,12 @@ func (g *Generator) buildMultipleRuns(runs [][]Value, typeName string) {
 			g.Printf("\t\treturn _%s_name_%d\n", typeName, i)
 			continue
 		}
-		g.Printf("\tcase %s <= i && i <= %s:\n", &values[0], &values[len(values)-1])
+		if values[0].value == 0 && !values[0].signed {
+			// For an unsigned lower bound of 0, "0 <= i" would be redundant.
+			g.Printf("\tcase i <= %s:\n", &values[len(values)-1])
+		} else {
+			g.Printf("\tcase %s <= i && i <= %s:\n", &values[0], &values[len(values)-1])
+		}
 		if values[0].value != 0 {
 			g.Printf("\t\ti -= %s\n", &values[0])
 		}
