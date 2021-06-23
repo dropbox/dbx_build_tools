@@ -272,6 +272,13 @@ def main():
         default=0,
         help="more verbose output (may be repeated)",
     )
+    ap.add_argument(
+        "--ignore-errors",
+        "--ignore-errors",
+        action="store_true",
+        default=False,
+        help="Ignore errors about missing BUILD files. (Corresponding py files will appear as incompatible with all versions)",
+    )
     ap.add_argument("files", nargs="+", help="file names (must be Python files)")
 
     args = ap.parse_args(sys.argv[1:])
@@ -299,7 +306,7 @@ def main():
                     file=sys.stderr,
                 )
                 errors = True
-    if errors:
+    if errors and not args.ignore_errors:
         return 2
 
     pvc.parse_build_files()
