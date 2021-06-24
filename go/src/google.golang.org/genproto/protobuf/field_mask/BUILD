@@ -6,12 +6,12 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "field_mask",
     srcs = [
-        "field_mask.pb.go",
+        "field_mask.go",
     ],
     visibility = [
         "//go/src:__subpackages__",
     ],
     deps = [
-        "//go/src/github.com/golang/protobuf/proto",
+        "//go/src/google.golang.org/protobuf/types/known/fieldmaskpb",
     ],
 )
