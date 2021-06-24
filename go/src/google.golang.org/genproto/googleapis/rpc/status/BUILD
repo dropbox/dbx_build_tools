@@ -13,8 +13,6 @@ dbx_go_library(
     ],
     deps = [
         "//go/src/github.com/golang/protobuf/proto",
-        "//go/src/google.golang.org/protobuf/reflect/protoreflect",
-        "//go/src/google.golang.org/protobuf/runtime/protoimpl",
-        "//go/src/google.golang.org/protobuf/types/known/anypb",
+        "//go/src/github.com/golang/protobuf/ptypes/any",
     ],
 )

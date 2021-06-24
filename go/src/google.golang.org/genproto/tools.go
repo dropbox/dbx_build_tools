@@ -25,6 +25,8 @@ package genproto
 
 import (
 	_ "github.com/golang/protobuf/protoc-gen-go"
+	_ "golang.org/x/exp/cmd/apidiff"
 	_ "golang.org/x/lint/golint"
 	_ "golang.org/x/tools/cmd/goimports"
+	_ "honnef.co/go/tools/cmd/staticcheck"
 )
