@@ -149,16 +149,8 @@ def _go_package(ctx):
     package = ctx.label.package.replace("go/src/", "")
     if getattr(ctx.attr, "package", None) == "main":
         package = ctx.attr.package
-    if hasattr(ctx.attr, "module_major_version"):
-        module_major_version = ctx.attr.module_major_version
-        if module_major_version:
-            # Append the module version onto the package.
-            module_name = ctx.attr.module_name
-            if not module_name:
-                fail("module_major_version %s was specified, but module_name was not" % module_major_version)
-            if module_name not in package:
-                fail("Specified module_name %s is not a substring of package %s. Is this a typo?" % (module_name, package))
-            package = package.replace(module_name, module_name + "/" + module_major_version, 1)
+    if hasattr(ctx.attr, "module_name") and ctx.attr.module_name:
+        package = ctx.attr.module_name
     return package
 
 def _use_go_race(ctx):

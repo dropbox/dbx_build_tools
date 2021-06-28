@@ -13,5 +13,8 @@ dbx_go_binary(
     ],
     deps = [
         "//go/src/github.com/bazelbuild/buildtools/build",
+        "//go/src/github.com/bazelbuild/buildtools/wspace",
+        "//go/src/golang.org/x/mod/modfile",
+        "//go/src/golang.org/x/mod/module",
     ],
 )
