@@ -888,7 +888,9 @@ class PyBuildGenerator(Generator):
             is_py3_compat = rule.attr_map.get("python3_compatible", True)
             assert (
                 is_py2_compat or is_py3_compat
-            ), "Python target must be either python-2 or python-3 compatible"
+            ), "Python target must be either python-2 or python-3 compatible (package {})".format(
+                pkg
+            )
 
             unknown_imports, unknown_froms = None, None
             if autogen_deps:
