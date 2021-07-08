@@ -24,15 +24,19 @@ import (
 	"flag"
 	"time"
 
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/alts"
 	"google.golang.org/grpc/grpclog"
+
+	testgrpc "google.golang.org/grpc/interop/grpc_testing"
 	testpb "google.golang.org/grpc/interop/grpc_testing"
 )
 
 var (
 	hsAddr     = flag.String("alts_handshaker_service_address", "", "ALTS handshaker gRPC service address")
 	serverAddr = flag.String("server_address", ":8080", "The port on which the server is listening")
+
+	logger = grpclog.Component("interop")
 )
 
 func main() {
@@ -46,18 +50,18 @@ func main() {
 	// Block until the server is ready.
 	conn, err := grpc.Dial(*serverAddr, grpc.WithTransportCredentials(altsTC), grpc.WithBlock())
 	if err != nil {
-		grpclog.Fatalf("gRPC Client: failed to dial the server at %v: %v", *serverAddr, err)
+		logger.Fatalf("gRPC Client: failed to dial the server at %v: %v", *serverAddr, err)
 	}
 	defer conn.Close()
-	grpcClient := testpb.NewTestServiceClient(conn)
+	grpcClient := testgrpc.NewTestServiceClient(conn)
 
 	// Call the EmptyCall API.
 	ctx := context.Background()
 	request := &testpb.Empty{}
 	if _, err := grpcClient.EmptyCall(ctx, request); err != nil {
-		grpclog.Fatalf("grpc Client: EmptyCall(_, %v) failed: %v", request, err)
+		logger.Fatalf("grpc Client: EmptyCall(_, %v) failed: %v", request, err)
 	}
-	grpclog.Info("grpc Client: empty call succeeded")
+	logger.Info("grpc Client: empty call succeeded")
 
 	// This sleep prevents the connection from being abruptly disconnected
 	// when running this binary (along with grpc_server) on GCP dev cluster.

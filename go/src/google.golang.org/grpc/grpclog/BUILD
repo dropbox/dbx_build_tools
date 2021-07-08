@@ -6,6 +6,7 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "grpclog",
     srcs = [
+        "component.go",
         "grpclog.go",
         "logger.go",
         "loggerv2.go",
@@ -14,5 +15,6 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
+        "//go/src/google.golang.org/grpc/internal/grpclog",
     ],
 )

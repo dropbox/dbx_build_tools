@@ -7,6 +7,7 @@ dbx_go_library(
     name = "health",
     srcs = [
         "client.go",
+        "logging.go",
         "server.go",
     ],
     visibility = [

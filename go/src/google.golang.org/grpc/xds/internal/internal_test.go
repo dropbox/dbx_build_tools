@@ -1,3 +1,5 @@
+// +build go1.12
+
 /*
  *
  * Copyright 2019 gRPC authors.
@@ -25,9 +27,18 @@ import (
 
 	corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	"github.com/google/go-cmp/cmp"
+	"google.golang.org/grpc/internal/grpctest"
 )
 
 const ignorePrefix = "XXX_"
+
+type s struct {
+	grpctest.Tester
+}
+
+func Test(t *testing.T) {
+	grpctest.RunSubTests(t, s{})
+}
 
 func ignore(name string) bool {
 	if !unicode.IsUpper([]rune(name)[0]) {
@@ -38,9 +49,9 @@ func ignore(name string) bool {
 
 // A reflection based test to make sure internal.Locality contains all the
 // fields (expect for XXX_) from the proto message.
-func TestLocalityMatchProtoMessage(t *testing.T) {
+func (s) TestLocalityMatchProtoMessage(t *testing.T) {
 	want1 := make(map[string]string)
-	for ty, i := reflect.TypeOf(Locality{}), 0; i < ty.NumField(); i++ {
+	for ty, i := reflect.TypeOf(LocalityID{}), 0; i < ty.NumField(); i++ {
 		f := ty.Field(i)
 		if ignore(f.Name) {
 			continue
@@ -57,7 +68,52 @@ func TestLocalityMatchProtoMessage(t *testing.T) {
 		want2[f.Name] = f.Type.Name()
 	}
 
-	if !reflect.DeepEqual(want1, want2) {
-		t.Fatalf("internal type and proto message have different fields:\n%+v", cmp.Diff(want1, want2))
+	if diff := cmp.Diff(want1, want2); diff != "" {
+		t.Fatalf("internal type and proto message have different fields: (-got +want):\n%+v", diff)
+	}
+}
+
+func TestLocalityToAndFromJSON(t *testing.T) {
+	tests := []struct {
+		name       string
+		localityID LocalityID
+		str        string
+		wantErr    bool
+	}{
+		{
+			name:       "3 fields",
+			localityID: LocalityID{Region: "r:r", Zone: "z#z", SubZone: "s^s"},
+			str:        `{"region":"r:r","zone":"z#z","subZone":"s^s"}`,
+		},
+		{
+			name:       "2 fields",
+			localityID: LocalityID{Region: "r:r", Zone: "z#z"},
+			str:        `{"region":"r:r","zone":"z#z"}`,
+		},
+		{
+			name:       "1 field",
+			localityID: LocalityID{Region: "r:r"},
+			str:        `{"region":"r:r"}`,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotStr, err := tt.localityID.ToString()
+			if err != nil {
+				t.Errorf("failed to marshal LocalityID: %#v", tt.localityID)
+			}
+			if gotStr != tt.str {
+				t.Errorf("%#v.String() = %q, want %q", tt.localityID, gotStr, tt.str)
+			}
+
+			gotID, err := LocalityIDFromString(tt.str)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("LocalityIDFromString(%q) error = %v, wantErr %v", tt.str, err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(gotID, tt.localityID); diff != "" {
+				t.Errorf("LocalityIDFromString() got = %v, want %v, diff: %s", gotID, tt.localityID, diff)
+			}
+		})
 	}
 }

@@ -22,14 +22,90 @@ import (
 	"context"
 	"crypto/tls"
 	"net"
-	"reflect"
 	"strings"
 	"testing"
+	"time"
 
+	"google.golang.org/grpc/internal/grpctest"
 	"google.golang.org/grpc/testdata"
 )
 
-func TestTLSOverrideServerName(t *testing.T) {
+const defaultTestTimeout = 10 * time.Second
+
+type s struct {
+	grpctest.Tester
+}
+
+func Test(t *testing.T) {
+	grpctest.RunSubTests(t, s{})
+}
+
+// A struct that implements AuthInfo interface but does not implement GetCommonAuthInfo() method.
+type testAuthInfoNoGetCommonAuthInfoMethod struct{}
+
+func (ta testAuthInfoNoGetCommonAuthInfoMethod) AuthType() string {
+	return "testAuthInfoNoGetCommonAuthInfoMethod"
+}
+
+// A struct that implements AuthInfo interface and implements CommonAuthInfo() method.
+type testAuthInfo struct {
+	CommonAuthInfo
+}
+
+func (ta testAuthInfo) AuthType() string {
+	return "testAuthInfo"
+}
+
+func (s) TestCheckSecurityLevel(t *testing.T) {
+	testCases := []struct {
+		authLevel SecurityLevel
+		testLevel SecurityLevel
+		want      bool
+	}{
+		{
+			authLevel: PrivacyAndIntegrity,
+			testLevel: PrivacyAndIntegrity,
+			want:      true,
+		},
+		{
+			authLevel: IntegrityOnly,
+			testLevel: PrivacyAndIntegrity,
+			want:      false,
+		},
+		{
+			authLevel: IntegrityOnly,
+			testLevel: NoSecurity,
+			want:      true,
+		},
+		{
+			authLevel: InvalidSecurityLevel,
+			testLevel: IntegrityOnly,
+			want:      true,
+		},
+		{
+			authLevel: InvalidSecurityLevel,
+			testLevel: PrivacyAndIntegrity,
+			want:      true,
+		},
+	}
+	for _, tc := range testCases {
+		err := CheckSecurityLevel(testAuthInfo{CommonAuthInfo: CommonAuthInfo{SecurityLevel: tc.authLevel}}, tc.testLevel)
+		if tc.want && (err != nil) {
+			t.Fatalf("CheckSeurityLevel(%s, %s) returned failure but want success", tc.authLevel.String(), tc.testLevel.String())
+		} else if !tc.want && (err == nil) {
+			t.Fatalf("CheckSeurityLevel(%s, %s) returned success but want failure", tc.authLevel.String(), tc.testLevel.String())
+
+		}
+	}
+}
+
+func (s) TestCheckSecurityLevelNoGetCommonAuthInfoMethod(t *testing.T) {
+	if err := CheckSecurityLevel(testAuthInfoNoGetCommonAuthInfoMethod{}, PrivacyAndIntegrity); err != nil {
+		t.Fatalf("CheckSeurityLevel() returned failure but want success")
+	}
+}
+
+func (s) TestTLSOverrideServerName(t *testing.T) {
 	expectedServerName := "server.name"
 	c := NewTLS(nil)
 	c.OverrideServerName(expectedServerName)
@@ -38,7 +114,7 @@ func TestTLSOverrideServerName(t *testing.T) {
 	}
 }
 
-func TestTLSClone(t *testing.T) {
+func (s) TestTLSClone(t *testing.T) {
 	expectedServerName := "server.name"
 	c := NewTLS(nil)
 	c.OverrideServerName(expectedServerName)
@@ -55,7 +131,7 @@ func TestTLSClone(t *testing.T) {
 
 type serverHandshake func(net.Conn) (AuthInfo, error)
 
-func TestClientHandshakeReturnsAuthInfo(t *testing.T) {
+func (s) TestClientHandshakeReturnsAuthInfo(t *testing.T) {
 	tcs := []struct {
 		name    string
 		address string
@@ -93,7 +169,7 @@ func TestClientHandshakeReturnsAuthInfo(t *testing.T) {
 	}
 }
 
-func TestServerHandshakeReturnsAuthInfo(t *testing.T) {
+func (s) TestServerHandshakeReturnsAuthInfo(t *testing.T) {
 	done := make(chan AuthInfo, 1)
 	lis := launchServer(t, gRPCServerHandshake, done)
 	defer lis.Close()
@@ -108,7 +184,7 @@ func TestServerHandshakeReturnsAuthInfo(t *testing.T) {
 	}
 }
 
-func TestServerAndClientHandshake(t *testing.T) {
+func (s) TestServerAndClientHandshake(t *testing.T) {
 	done := make(chan AuthInfo, 1)
 	lis := launchServer(t, gRPCServerHandshake, done)
 	defer lis.Close()
@@ -193,7 +269,7 @@ func clientHandle(t *testing.T, hs func(net.Conn, string) (AuthInfo, error), lis
 
 // Server handshake implementation in gRPC.
 func gRPCServerHandshake(conn net.Conn) (AuthInfo, error) {
-	serverTLS, err := NewServerTLSFromFile(testdata.Path("server1.pem"), testdata.Path("server1.key"))
+	serverTLS, err := NewServerTLSFromFile(testdata.Path("x509/server1_cert.pem"), testdata.Path("x509/server1_key.pem"))
 	if err != nil {
 		return nil, err
 	}
@@ -207,7 +283,9 @@ func gRPCServerHandshake(conn net.Conn) (AuthInfo, error) {
 // Client handshake implementation in gRPC.
 func gRPCClientHandshake(conn net.Conn, lisAddr string) (AuthInfo, error) {
 	clientTLS := NewTLS(&tls.Config{InsecureSkipVerify: true})
-	_, authInfo, err := clientTLS.ClientHandshake(context.Background(), lisAddr, conn)
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	_, authInfo, err := clientTLS.ClientHandshake(ctx, lisAddr, conn)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +293,7 @@ func gRPCClientHandshake(conn net.Conn, lisAddr string) (AuthInfo, error) {
 }
 
 func tlsServerHandshake(conn net.Conn) (AuthInfo, error) {
-	cert, err := tls.LoadX509KeyPair(testdata.Path("server1.pem"), testdata.Path("server1.key"))
+	cert, err := tls.LoadX509KeyPair(testdata.Path("x509/server1_cert.pem"), testdata.Path("x509/server1_key.pem"))
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +303,7 @@ func tlsServerHandshake(conn net.Conn) (AuthInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	return TLSInfo{State: serverConn.ConnectionState()}, nil
+	return TLSInfo{State: serverConn.ConnectionState(), CommonAuthInfo: CommonAuthInfo{SecurityLevel: PrivacyAndIntegrity}}, nil
 }
 
 func tlsClientHandshake(conn net.Conn, _ string) (AuthInfo, error) {
@@ -234,41 +312,5 @@ func tlsClientHandshake(conn net.Conn, _ string) (AuthInfo, error) {
 	if err := clientConn.Handshake(); err != nil {
 		return nil, err
 	}
-	return TLSInfo{State: clientConn.ConnectionState()}, nil
-}
-
-func TestAppendH2ToNextProtos(t *testing.T) {
-	tests := []struct {
-		name string
-		ps   []string
-		want []string
-	}{
-		{
-			name: "empty",
-			ps:   nil,
-			want: []string{"h2"},
-		},
-		{
-			name: "only h2",
-			ps:   []string{"h2"},
-			want: []string{"h2"},
-		},
-		{
-			name: "with h2",
-			ps:   []string{"alpn", "h2"},
-			want: []string{"alpn", "h2"},
-		},
-		{
-			name: "no h2",
-			ps:   []string{"alpn"},
-			want: []string{"alpn", "h2"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := appendH2ToNextProtos(tt.ps); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("appendH2ToNextProtos() = %v, want %v", got, tt.want)
-			}
-		})
-	}
+	return TLSInfo{State: clientConn.ConnectionState(), CommonAuthInfo: CommonAuthInfo{SecurityLevel: PrivacyAndIntegrity}}, nil
 }

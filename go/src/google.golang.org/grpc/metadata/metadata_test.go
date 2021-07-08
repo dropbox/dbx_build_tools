@@ -23,9 +23,22 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
+	"time"
+
+	"google.golang.org/grpc/internal/grpctest"
 )
 
-func TestPairsMD(t *testing.T) {
+const defaultTestTimeout = 10 * time.Second
+
+type s struct {
+	grpctest.Tester
+}
+
+func Test(t *testing.T) {
+	grpctest.RunSubTests(t, s{})
+}
+
+func (s) TestPairsMD(t *testing.T) {
 	for _, test := range []struct {
 		// input
 		kv []string
@@ -42,7 +55,7 @@ func TestPairsMD(t *testing.T) {
 	}
 }
 
-func TestCopy(t *testing.T) {
+func (s) TestCopy(t *testing.T) {
 	const key, val = "key", "val"
 	orig := Pairs(key, val)
 	cpy := orig.Copy()
@@ -55,7 +68,7 @@ func TestCopy(t *testing.T) {
 	}
 }
 
-func TestJoin(t *testing.T) {
+func (s) TestJoin(t *testing.T) {
 	for _, test := range []struct {
 		mds  []MD
 		want MD
@@ -72,7 +85,7 @@ func TestJoin(t *testing.T) {
 	}
 }
 
-func TestGet(t *testing.T) {
+func (s) TestGet(t *testing.T) {
 	for _, test := range []struct {
 		md       MD
 		key      string
@@ -89,7 +102,7 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestSet(t *testing.T) {
+func (s) TestSet(t *testing.T) {
 	for _, test := range []struct {
 		md      MD
 		setKey  string
@@ -122,7 +135,7 @@ func TestSet(t *testing.T) {
 	}
 }
 
-func TestAppend(t *testing.T) {
+func (s) TestAppend(t *testing.T) {
 	for _, test := range []struct {
 		md         MD
 		appendKey  string
@@ -156,9 +169,11 @@ func TestAppend(t *testing.T) {
 	}
 }
 
-func TestAppendToOutgoingContext(t *testing.T) {
+func (s) TestAppendToOutgoingContext(t *testing.T) {
 	// Pre-existing metadata
-	ctx := NewOutgoingContext(context.Background(), Pairs("k1", "v1", "k2", "v2"))
+	tCtx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	ctx := NewOutgoingContext(tCtx, Pairs("k1", "v1", "k2", "v2"))
 	ctx = AppendToOutgoingContext(ctx, "k1", "v3")
 	ctx = AppendToOutgoingContext(ctx, "k1", "v4")
 	md, ok := FromOutgoingContext(ctx)
@@ -171,7 +186,7 @@ func TestAppendToOutgoingContext(t *testing.T) {
 	}
 
 	// No existing metadata
-	ctx = AppendToOutgoingContext(context.Background(), "k1", "v1")
+	ctx = AppendToOutgoingContext(tCtx, "k1", "v1")
 	md, ok = FromOutgoingContext(ctx)
 	if !ok {
 		t.Errorf("Expected MD to exist in ctx, but got none")
@@ -182,8 +197,9 @@ func TestAppendToOutgoingContext(t *testing.T) {
 	}
 }
 
-func TestAppendToOutgoingContext_Repeated(t *testing.T) {
-	ctx := context.Background()
+func (s) TestAppendToOutgoingContext_Repeated(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
 
 	for i := 0; i < 100; i = i + 2 {
 		ctx1 := AppendToOutgoingContext(ctx, "k", strconv.Itoa(i))
@@ -200,10 +216,12 @@ func TestAppendToOutgoingContext_Repeated(t *testing.T) {
 	}
 }
 
-func TestAppendToOutgoingContext_FromKVSlice(t *testing.T) {
+func (s) TestAppendToOutgoingContext_FromKVSlice(t *testing.T) {
 	const k, v = "a", "b"
 	kv := []string{k, v}
-	ctx := AppendToOutgoingContext(context.Background(), kv...)
+	tCtx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	ctx := AppendToOutgoingContext(tCtx, kv...)
 	md, _ := FromOutgoingContext(ctx)
 	if md[k][0] != v {
 		t.Fatalf("md[%q] = %q; want %q", k, md[k], v)
@@ -220,7 +238,8 @@ func Benchmark_AddingMetadata_ContextManipulationApproach(b *testing.B) {
 	// TODO: Add in N=1-100 tests once Go1.6 support is removed.
 	const num = 10
 	for n := 0; n < b.N; n++ {
-		ctx := context.Background()
+		ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+		defer cancel()
 		for i := 0; i < num; i++ {
 			md, _ := FromOutgoingContext(ctx)
 			NewOutgoingContext(ctx, Join(Pairs("k1", "v1", "k2", "v2"), md))
@@ -231,8 +250,9 @@ func Benchmark_AddingMetadata_ContextManipulationApproach(b *testing.B) {
 // Newer/faster approach to adding metadata to context
 func BenchmarkAppendToOutgoingContext(b *testing.B) {
 	const num = 10
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
 	for n := 0; n < b.N; n++ {
-		ctx := context.Background()
 		for i := 0; i < num; i++ {
 			ctx = AppendToOutgoingContext(ctx, "k1", "v1", "k2", "v2")
 		}
@@ -240,7 +260,8 @@ func BenchmarkAppendToOutgoingContext(b *testing.B) {
 }
 
 func BenchmarkFromOutgoingContext(b *testing.B) {
-	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
 	ctx = NewOutgoingContext(ctx, MD{"k3": {"v3", "v4"}})
 	ctx = AppendToOutgoingContext(ctx, "k1", "v1", "k2", "v2")
 

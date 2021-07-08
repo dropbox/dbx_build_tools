@@ -13,7 +13,9 @@ dbx_go_library(
     ],
     deps = [
         "//go/src/github.com/golang/protobuf/proto",
-        "//go/src/github.com/golang/protobuf/ptypes/duration",
-        "//go/src/github.com/golang/protobuf/ptypes/timestamp",
+        "//go/src/google.golang.org/protobuf/reflect/protoreflect",
+        "//go/src/google.golang.org/protobuf/runtime/protoimpl",
+        "//go/src/google.golang.org/protobuf/types/known/durationpb",
+        "//go/src/google.golang.org/protobuf/types/known/timestamppb",
     ],
 )

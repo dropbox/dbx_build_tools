@@ -7,6 +7,7 @@ dbx_go_library(
     name = "channelz",
     srcs = [
         "funcs.go",
+        "logging.go",
         "types.go",
         "types_linux.go",
         "util_linux.go",

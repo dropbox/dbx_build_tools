@@ -1,6 +1,8 @@
+// +build go1.12
+
 /*
  *
- * Copyright 2019 gRPC authors.
+ * Copyright 2020 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,521 +21,955 @@
 package client
 
 import (
-	"errors"
-	"fmt"
-	"reflect"
+	"regexp"
 	"testing"
-	"time"
 
-	xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	"github.com/golang/protobuf/proto"
+	v2xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	v2corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	v3clusterpb "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	v3tlspb "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
+	v3matcherpb "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	anypb "github.com/golang/protobuf/ptypes/any"
-	"google.golang.org/grpc/xds/internal/client/fakexds"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/grpc/internal/testutils"
+	xdsinternal "google.golang.org/grpc/internal/xds"
+	"google.golang.org/grpc/internal/xds/env"
+	"google.golang.org/grpc/xds/internal/version"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 const (
-	clusterName1 = "foo-cluster"
-	clusterName2 = "bar-cluster"
-	serviceName1 = "foo-service"
-	serviceName2 = "bar-service"
+	clusterName = "clusterName"
+	serviceName = "service"
 )
 
-func (v2c *v2Client) cloneCDSCacheForTesting() map[string]CDSUpdate {
-	v2c.mu.Lock()
-	defer v2c.mu.Unlock()
+var emptyUpdate = ClusterUpdate{ServiceName: "", EnableLRS: false}
 
-	cloneCache := make(map[string]CDSUpdate)
-	for k, v := range v2c.cdsCache {
-		cloneCache[k] = v
-	}
-	return cloneCache
-}
-
-func TestValidateCluster(t *testing.T) {
-	emptyUpdate := CDSUpdate{ServiceName: "", EnableLRS: false}
+func (s) TestValidateCluster_Failure(t *testing.T) {
 	tests := []struct {
 		name       string
-		cluster    *xdspb.Cluster
-		wantUpdate CDSUpdate
+		cluster    *v3clusterpb.Cluster
+		wantUpdate ClusterUpdate
 		wantErr    bool
 	}{
 		{
-			name: "non-eds-cluster-type",
-			cluster: &xdspb.Cluster{
-				ClusterDiscoveryType: &xdspb.Cluster_Type{Type: xdspb.Cluster_STATIC},
-				EdsClusterConfig: &xdspb.Cluster_EdsClusterConfig{
-					EdsConfig: &corepb.ConfigSource{
-						ConfigSourceSpecifier: &corepb.ConfigSource_Ads{
-							Ads: &corepb.AggregatedConfigSource{},
+			name: "non-supported-cluster-type-static",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_STATIC},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
 						},
 					},
 				},
-				LbPolicy: xdspb.Cluster_LEAST_REQUEST,
+				LbPolicy: v3clusterpb.Cluster_LEAST_REQUEST,
+			},
+			wantUpdate: emptyUpdate,
+			wantErr:    true,
+		},
+		{
+			name: "non-supported-cluster-type-original-dst",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_ORIGINAL_DST},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+				},
+				LbPolicy: v3clusterpb.Cluster_LEAST_REQUEST,
 			},
 			wantUpdate: emptyUpdate,
 			wantErr:    true,
 		},
 		{
 			name: "no-eds-config",
-			cluster: &xdspb.Cluster{
-				ClusterDiscoveryType: &xdspb.Cluster_Type{Type: xdspb.Cluster_EDS},
-				LbPolicy:             xdspb.Cluster_ROUND_ROBIN,
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				LbPolicy:             v3clusterpb.Cluster_ROUND_ROBIN,
 			},
 			wantUpdate: emptyUpdate,
 			wantErr:    true,
 		},
 		{
 			name: "no-ads-config-source",
-			cluster: &xdspb.Cluster{
-				ClusterDiscoveryType: &xdspb.Cluster_Type{Type: xdspb.Cluster_EDS},
-				EdsClusterConfig:     &xdspb.Cluster_EdsClusterConfig{},
-				LbPolicy:             xdspb.Cluster_ROUND_ROBIN,
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig:     &v3clusterpb.Cluster_EdsClusterConfig{},
+				LbPolicy:             v3clusterpb.Cluster_ROUND_ROBIN,
 			},
 			wantUpdate: emptyUpdate,
 			wantErr:    true,
 		},
 		{
 			name: "non-round-robin-lb-policy",
-			cluster: &xdspb.Cluster{
-				ClusterDiscoveryType: &xdspb.Cluster_Type{Type: xdspb.Cluster_EDS},
-				EdsClusterConfig: &xdspb.Cluster_EdsClusterConfig{
-					EdsConfig: &corepb.ConfigSource{
-						ConfigSourceSpecifier: &corepb.ConfigSource_Ads{
-							Ads: &corepb.AggregatedConfigSource{},
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
 						},
 					},
 				},
-				LbPolicy: xdspb.Cluster_LEAST_REQUEST,
+				LbPolicy: v3clusterpb.Cluster_LEAST_REQUEST,
 			},
 			wantUpdate: emptyUpdate,
 			wantErr:    true,
 		},
+	}
+
+	oldAggregateAndDNSSupportEnv := env.AggregateAndDNSSupportEnv
+	env.AggregateAndDNSSupportEnv = true
+	defer func() { env.AggregateAndDNSSupportEnv = oldAggregateAndDNSSupportEnv }()
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if update, err := validateClusterAndConstructClusterUpdate(test.cluster); err == nil {
+				t.Errorf("validateClusterAndConstructClusterUpdate(%+v) = %v, wanted error", test.cluster, update)
+			}
+		})
+	}
+}
+
+func (s) TestValidateCluster_Success(t *testing.T) {
+	tests := []struct {
+		name       string
+		cluster    *v3clusterpb.Cluster
+		wantUpdate ClusterUpdate
+	}{
+		{
+			name: "happy-case-logical-dns",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_LOGICAL_DNS},
+				LbPolicy:             v3clusterpb.Cluster_ROUND_ROBIN,
+			},
+			wantUpdate: ClusterUpdate{ServiceName: "", EnableLRS: false, ClusterType: ClusterTypeLogicalDNS},
+		},
+		{
+			name: "happy-case-aggregate-v3",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_ClusterType{
+					ClusterType: &v3clusterpb.Cluster_CustomClusterType{Name: "envoy.clusters.aggregate"},
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+			},
+			wantUpdate: ClusterUpdate{ServiceName: "", EnableLRS: false, ClusterType: ClusterTypeAggregate},
+		},
 		{
 			name: "happy-case-no-service-name-no-lrs",
-			cluster: &xdspb.Cluster{
-				ClusterDiscoveryType: &xdspb.Cluster_Type{Type: xdspb.Cluster_EDS},
-				EdsClusterConfig: &xdspb.Cluster_EdsClusterConfig{
-					EdsConfig: &corepb.ConfigSource{
-						ConfigSourceSpecifier: &corepb.ConfigSource_Ads{
-							Ads: &corepb.AggregatedConfigSource{},
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
 						},
 					},
 				},
-				LbPolicy: xdspb.Cluster_ROUND_ROBIN,
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
 			},
 			wantUpdate: emptyUpdate,
 		},
 		{
 			name: "happy-case-no-lrs",
-			cluster: &xdspb.Cluster{
-				ClusterDiscoveryType: &xdspb.Cluster_Type{Type: xdspb.Cluster_EDS},
-				EdsClusterConfig: &xdspb.Cluster_EdsClusterConfig{
-					EdsConfig: &corepb.ConfigSource{
-						ConfigSourceSpecifier: &corepb.ConfigSource_Ads{
-							Ads: &corepb.AggregatedConfigSource{},
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
 						},
 					},
-					ServiceName: serviceName1,
+					ServiceName: serviceName,
 				},
-				LbPolicy: xdspb.Cluster_ROUND_ROBIN,
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
 			},
-			wantUpdate: CDSUpdate{ServiceName: serviceName1, EnableLRS: false},
+			wantUpdate: ClusterUpdate{ServiceName: serviceName, EnableLRS: false},
 		},
 		{
-			name:       "happiest-case",
-			cluster:    goodCluster1,
-			wantUpdate: CDSUpdate{ServiceName: serviceName1, EnableLRS: true},
+			name: "happiest-case",
+			cluster: &v3clusterpb.Cluster{
+				Name:                 clusterName,
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				LrsServer: &v3corepb.ConfigSource{
+					ConfigSourceSpecifier: &v3corepb.ConfigSource_Self{
+						Self: &v3corepb.SelfConfigSource{},
+					},
+				},
+			},
+			wantUpdate: ClusterUpdate{ServiceName: serviceName, EnableLRS: true},
+		},
+		{
+			name: "happiest-case-with-circuitbreakers",
+			cluster: &v3clusterpb.Cluster{
+				Name:                 clusterName,
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				CircuitBreakers: &v3clusterpb.CircuitBreakers{
+					Thresholds: []*v3clusterpb.CircuitBreakers_Thresholds{
+						{
+							Priority:    v3corepb.RoutingPriority_DEFAULT,
+							MaxRequests: wrapperspb.UInt32(512),
+						},
+						{
+							Priority:    v3corepb.RoutingPriority_HIGH,
+							MaxRequests: nil,
+						},
+					},
+				},
+				LrsServer: &v3corepb.ConfigSource{
+					ConfigSourceSpecifier: &v3corepb.ConfigSource_Self{
+						Self: &v3corepb.SelfConfigSource{},
+					},
+				},
+			},
+			wantUpdate: ClusterUpdate{ServiceName: serviceName, EnableLRS: true, MaxRequests: func() *uint32 { i := uint32(512); return &i }()},
 		},
 	}
 
+	origCircuitBreakingSupport := env.CircuitBreakingSupport
+	env.CircuitBreakingSupport = true
+	defer func() { env.CircuitBreakingSupport = origCircuitBreakingSupport }()
+	oldAggregateAndDNSSupportEnv := env.AggregateAndDNSSupportEnv
+	env.AggregateAndDNSSupportEnv = true
+	defer func() { env.AggregateAndDNSSupportEnv = oldAggregateAndDNSSupportEnv }()
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			gotUpdate, gotErr := validateCluster(test.cluster)
-			if (gotErr != nil) != test.wantErr {
-				t.Errorf("validateCluster(%+v) returned error: %v, wantErr: %v", test.cluster, gotErr, test.wantErr)
+			update, err := validateClusterAndConstructClusterUpdate(test.cluster)
+			if err != nil {
+				t.Errorf("validateClusterAndConstructClusterUpdate(%+v) failed: %v", test.cluster, err)
 			}
-			if !reflect.DeepEqual(gotUpdate, test.wantUpdate) {
-				t.Errorf("validateCluster(%+v) = %v, want: %v", test.cluster, gotUpdate, test.wantUpdate)
+			if !cmp.Equal(update, test.wantUpdate, cmpopts.EquateEmpty()) {
+				t.Errorf("validateClusterAndConstructClusterUpdate(%+v) = %v, want: %v", test.cluster, update, test.wantUpdate)
 			}
 		})
 	}
 }
 
-// TestCDSHandleResponse starts a fake xDS server, makes a ClientConn to it,
-// and creates a v2Client using it. Then, it registers a CDS watcher and tests
-// different CDS responses.
-func TestCDSHandleResponse(t *testing.T) {
-	fakeServer, sCleanup := fakexds.StartServer(t)
-	client, cCleanup := fakeServer.GetClientConn(t)
-	defer func() {
-		cCleanup()
-		sCleanup()
-	}()
-	v2c := newV2Client(client, goodNodeProto, func(int) time.Duration { return 0 })
-	defer v2c.close()
+func (s) TestValidateClusterWithSecurityConfig_EnvVarOff(t *testing.T) {
+	// Turn off the env var protection for client-side security.
+	origClientSideSecurityEnvVar := env.ClientSideSecuritySupport
+	env.ClientSideSecuritySupport = false
+	defer func() { env.ClientSideSecuritySupport = origClientSideSecurityEnvVar }()
+
+	cluster := &v3clusterpb.Cluster{
+		ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+		EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+			EdsConfig: &v3corepb.ConfigSource{
+				ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+					Ads: &v3corepb.AggregatedConfigSource{},
+				},
+			},
+			ServiceName: serviceName,
+		},
+		LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+		TransportSocket: &v3corepb.TransportSocket{
+			Name: "envoy.transport_sockets.tls",
+			ConfigType: &v3corepb.TransportSocket_TypedConfig{
+				TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+					CommonTlsContext: &v3tlspb.CommonTlsContext{
+						ValidationContextType: &v3tlspb.CommonTlsContext_ValidationContextCertificateProviderInstance{
+							ValidationContextCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+								InstanceName:    "rootInstance",
+								CertificateName: "rootCert",
+							},
+						},
+					},
+				}),
+			},
+		},
+	}
+	wantUpdate := ClusterUpdate{
+		ServiceName: serviceName,
+		EnableLRS:   false,
+	}
+	gotUpdate, err := validateClusterAndConstructClusterUpdate(cluster)
+	if err != nil {
+		t.Errorf("validateClusterAndConstructClusterUpdate() failed: %v", err)
+	}
+	if diff := cmp.Diff(wantUpdate, gotUpdate); diff != "" {
+		t.Errorf("validateClusterAndConstructClusterUpdate() returned unexpected diff (-want, got):\n%s", diff)
+	}
+}
+
+func (s) TestValidateClusterWithSecurityConfig(t *testing.T) {
+	// Turn on the env var protection for client-side security.
+	origClientSideSecurityEnvVar := env.ClientSideSecuritySupport
+	env.ClientSideSecuritySupport = true
+	defer func() { env.ClientSideSecuritySupport = origClientSideSecurityEnvVar }()
+
+	const (
+		identityPluginInstance = "identityPluginInstance"
+		identityCertName       = "identityCert"
+		rootPluginInstance     = "rootPluginInstance"
+		rootCertName           = "rootCert"
+		serviceName            = "service"
+		sanExact               = "san-exact"
+		sanPrefix              = "san-prefix"
+		sanSuffix              = "san-suffix"
+		sanRegexBad            = "??"
+		sanRegexGood           = "san?regex?"
+		sanContains            = "san-contains"
+	)
+	var sanRE = regexp.MustCompile(sanRegexGood)
 
 	tests := []struct {
-		name          string
-		cdsResponse   *xdspb.DiscoveryResponse
-		wantErr       bool
-		wantUpdate    *CDSUpdate
-		wantUpdateErr bool
+		name       string
+		cluster    *v3clusterpb.Cluster
+		wantUpdate ClusterUpdate
+		wantErr    bool
 	}{
-		// Badly marshaled CDS response.
 		{
-			name:          "badly-marshaled-response",
-			cdsResponse:   badlyMarshaledCDSResponse,
-			wantErr:       true,
-			wantUpdate:    nil,
-			wantUpdateErr: false,
+			name: "transport-socket-unsupported-name",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					Name: "unsupported-foo",
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: &anypb.Any{
+							TypeUrl: version.V3UpstreamTLSContextURL,
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
-		// Response does not contain Cluster proto.
 		{
-			name:          "no-cluster-proto-in-response",
-			cdsResponse:   badResourceTypeInLDSResponse,
-			wantErr:       true,
-			wantUpdate:    nil,
-			wantUpdateErr: false,
+			name: "transport-socket-unsupported-typeURL",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: &anypb.Any{
+							TypeUrl: version.V3HTTPConnManagerURL,
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
-		// Response contains no clusters.
 		{
-			name:          "no-cluster",
-			cdsResponse:   &xdspb.DiscoveryResponse{},
-			wantErr:       false,
-			wantUpdate:    &CDSUpdate{},
-			wantUpdateErr: true,
+			name: "transport-socket-unsupported-type",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: &anypb.Any{
+							TypeUrl: version.V3UpstreamTLSContextURL,
+							Value:   []byte{1, 2, 3, 4},
+						},
+					},
+				},
+			},
+			wantErr: true,
 		},
-		// Response contains one good cluster we are not interested in.
 		{
-			name:          "one-uninteresting-cluster",
-			cdsResponse:   goodCDSResponse2,
-			wantErr:       false,
-			wantUpdate:    &CDSUpdate{},
-			wantUpdateErr: true,
+			name: "transport-socket-unsupported-validation-context",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+							CommonTlsContext: &v3tlspb.CommonTlsContext{
+								ValidationContextType: &v3tlspb.CommonTlsContext_ValidationContextSdsSecretConfig{
+									ValidationContextSdsSecretConfig: &v3tlspb.SdsSecretConfig{
+										Name: "foo-sds-secret",
+									},
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantErr: true,
 		},
-		// Response contains one cluster and it is good.
 		{
-			name:          "one-good-cluster",
-			cdsResponse:   goodCDSResponse1,
-			wantErr:       false,
-			wantUpdate:    &CDSUpdate{ServiceName: serviceName1, EnableLRS: true},
-			wantUpdateErr: false,
+			name: "transport-socket-without-validation-context",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+							CommonTlsContext: &v3tlspb.CommonTlsContext{},
+						}),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty-prefix-in-matching-SAN",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+							CommonTlsContext: &v3tlspb.CommonTlsContext{
+								ValidationContextType: &v3tlspb.CommonTlsContext_CombinedValidationContext{
+									CombinedValidationContext: &v3tlspb.CommonTlsContext_CombinedCertificateValidationContext{
+										DefaultValidationContext: &v3tlspb.CertificateValidationContext{
+											MatchSubjectAltNames: []*v3matcherpb.StringMatcher{
+												{MatchPattern: &v3matcherpb.StringMatcher_Prefix{Prefix: ""}},
+											},
+										},
+										ValidationContextCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+											InstanceName:    rootPluginInstance,
+											CertificateName: rootCertName,
+										},
+									},
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty-suffix-in-matching-SAN",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+							CommonTlsContext: &v3tlspb.CommonTlsContext{
+								ValidationContextType: &v3tlspb.CommonTlsContext_CombinedValidationContext{
+									CombinedValidationContext: &v3tlspb.CommonTlsContext_CombinedCertificateValidationContext{
+										DefaultValidationContext: &v3tlspb.CertificateValidationContext{
+											MatchSubjectAltNames: []*v3matcherpb.StringMatcher{
+												{MatchPattern: &v3matcherpb.StringMatcher_Suffix{Suffix: ""}},
+											},
+										},
+										ValidationContextCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+											InstanceName:    rootPluginInstance,
+											CertificateName: rootCertName,
+										},
+									},
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty-contains-in-matching-SAN",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+							CommonTlsContext: &v3tlspb.CommonTlsContext{
+								ValidationContextType: &v3tlspb.CommonTlsContext_CombinedValidationContext{
+									CombinedValidationContext: &v3tlspb.CommonTlsContext_CombinedCertificateValidationContext{
+										DefaultValidationContext: &v3tlspb.CertificateValidationContext{
+											MatchSubjectAltNames: []*v3matcherpb.StringMatcher{
+												{MatchPattern: &v3matcherpb.StringMatcher_Contains{Contains: ""}},
+											},
+										},
+										ValidationContextCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+											InstanceName:    rootPluginInstance,
+											CertificateName: rootCertName,
+										},
+									},
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid-regex-in-matching-SAN",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+							CommonTlsContext: &v3tlspb.CommonTlsContext{
+								ValidationContextType: &v3tlspb.CommonTlsContext_CombinedValidationContext{
+									CombinedValidationContext: &v3tlspb.CommonTlsContext_CombinedCertificateValidationContext{
+										DefaultValidationContext: &v3tlspb.CertificateValidationContext{
+											MatchSubjectAltNames: []*v3matcherpb.StringMatcher{
+												{MatchPattern: &v3matcherpb.StringMatcher_SafeRegex{SafeRegex: &v3matcherpb.RegexMatcher{Regex: sanRegexBad}}},
+											},
+										},
+										ValidationContextCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+											InstanceName:    rootPluginInstance,
+											CertificateName: rootCertName,
+										},
+									},
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "happy-case-with-no-identity-certs",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					Name: "envoy.transport_sockets.tls",
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+							CommonTlsContext: &v3tlspb.CommonTlsContext{
+								ValidationContextType: &v3tlspb.CommonTlsContext_ValidationContextCertificateProviderInstance{
+									ValidationContextCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+										InstanceName:    rootPluginInstance,
+										CertificateName: rootCertName,
+									},
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantUpdate: ClusterUpdate{
+				ServiceName: serviceName,
+				EnableLRS:   false,
+				SecurityCfg: &SecurityConfig{
+					RootInstanceName: rootPluginInstance,
+					RootCertName:     rootCertName,
+				},
+			},
+		},
+		{
+			name: "happy-case-with-validation-context-provider-instance",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					Name: "envoy.transport_sockets.tls",
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+							CommonTlsContext: &v3tlspb.CommonTlsContext{
+								TlsCertificateCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+									InstanceName:    identityPluginInstance,
+									CertificateName: identityCertName,
+								},
+								ValidationContextType: &v3tlspb.CommonTlsContext_ValidationContextCertificateProviderInstance{
+									ValidationContextCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+										InstanceName:    rootPluginInstance,
+										CertificateName: rootCertName,
+									},
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantUpdate: ClusterUpdate{
+				ServiceName: serviceName,
+				EnableLRS:   false,
+				SecurityCfg: &SecurityConfig{
+					RootInstanceName:     rootPluginInstance,
+					RootCertName:         rootCertName,
+					IdentityInstanceName: identityPluginInstance,
+					IdentityCertName:     identityCertName,
+				},
+			},
+		},
+		{
+			name: "happy-case-with-combined-validation-context",
+			cluster: &v3clusterpb.Cluster{
+				ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+				EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+					EdsConfig: &v3corepb.ConfigSource{
+						ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+							Ads: &v3corepb.AggregatedConfigSource{},
+						},
+					},
+					ServiceName: serviceName,
+				},
+				LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+				TransportSocket: &v3corepb.TransportSocket{
+					Name: "envoy.transport_sockets.tls",
+					ConfigType: &v3corepb.TransportSocket_TypedConfig{
+						TypedConfig: testutils.MarshalAny(&v3tlspb.UpstreamTlsContext{
+							CommonTlsContext: &v3tlspb.CommonTlsContext{
+								TlsCertificateCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+									InstanceName:    identityPluginInstance,
+									CertificateName: identityCertName,
+								},
+								ValidationContextType: &v3tlspb.CommonTlsContext_CombinedValidationContext{
+									CombinedValidationContext: &v3tlspb.CommonTlsContext_CombinedCertificateValidationContext{
+										DefaultValidationContext: &v3tlspb.CertificateValidationContext{
+											MatchSubjectAltNames: []*v3matcherpb.StringMatcher{
+												{
+													MatchPattern: &v3matcherpb.StringMatcher_Exact{Exact: sanExact},
+													IgnoreCase:   true,
+												},
+												{MatchPattern: &v3matcherpb.StringMatcher_Prefix{Prefix: sanPrefix}},
+												{MatchPattern: &v3matcherpb.StringMatcher_Suffix{Suffix: sanSuffix}},
+												{MatchPattern: &v3matcherpb.StringMatcher_SafeRegex{SafeRegex: &v3matcherpb.RegexMatcher{Regex: sanRegexGood}}},
+												{MatchPattern: &v3matcherpb.StringMatcher_Contains{Contains: sanContains}},
+											},
+										},
+										ValidationContextCertificateProviderInstance: &v3tlspb.CommonTlsContext_CertificateProviderInstance{
+											InstanceName:    rootPluginInstance,
+											CertificateName: rootCertName,
+										},
+									},
+								},
+							},
+						}),
+					},
+				},
+			},
+			wantUpdate: ClusterUpdate{
+				ServiceName: serviceName,
+				EnableLRS:   false,
+				SecurityCfg: &SecurityConfig{
+					RootInstanceName:     rootPluginInstance,
+					RootCertName:         rootCertName,
+					IdentityInstanceName: identityPluginInstance,
+					IdentityCertName:     identityCertName,
+					SubjectAltNameMatchers: []xdsinternal.StringMatcher{
+						xdsinternal.StringMatcherForTesting(newStringP(sanExact), nil, nil, nil, nil, true),
+						xdsinternal.StringMatcherForTesting(nil, newStringP(sanPrefix), nil, nil, nil, false),
+						xdsinternal.StringMatcherForTesting(nil, nil, newStringP(sanSuffix), nil, nil, false),
+						xdsinternal.StringMatcherForTesting(nil, nil, nil, nil, sanRE, false),
+						xdsinternal.StringMatcherForTesting(nil, nil, nil, newStringP(sanContains), nil, false),
+					},
+				},
+			},
 		},
 	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			gotUpdateCh := make(chan CDSUpdate, 1)
-			gotUpdateErrCh := make(chan error, 1)
-
-			// Register a watcher, to trigger the v2Client to send an CDS request.
-			cancelWatch := v2c.watchCDS(clusterName1, func(u CDSUpdate, err error) {
-				t.Logf("in v2c.watchCDS callback, CDSUpdate: %+v, err: %v", u, err)
-				gotUpdateCh <- u
-				gotUpdateErrCh <- err
-			})
-
-			// Wait till the request makes it to the fakeServer. This ensures that
-			// the watch request has been processed by the v2Client.
-			<-fakeServer.RequestChan
-
-			// Directly push the response through a call to handleLDSResponse,
-			// thereby bypassing the fakeServer.
-			if err := v2c.handleCDSResponse(test.cdsResponse); (err != nil) != test.wantErr {
-				t.Fatalf("v2c.handleCDSResponse() returned err: %v, wantErr: %v", err, test.wantErr)
+			update, err := validateClusterAndConstructClusterUpdate(test.cluster)
+			if (err != nil) != test.wantErr {
+				t.Errorf("validateClusterAndConstructClusterUpdate() returned err %v wantErr %v)", err, test.wantErr)
 			}
-
-			// If the test needs the callback to be invoked, verify the update and
-			// error pushed to the callback.
-			if test.wantUpdate != nil {
-				timer := time.NewTimer(defaultTestTimeout)
-				select {
-				case <-timer.C:
-					t.Fatal("Timeout when expecting CDS update")
-				case gotUpdate := <-gotUpdateCh:
-					timer.Stop()
-					if !reflect.DeepEqual(gotUpdate, *test.wantUpdate) {
-						t.Fatalf("got CDS update : %+v, want %+v", gotUpdate, test.wantUpdate)
-					}
-				}
-				// Since the callback that we registered pushes to both channels at
-				// the same time, this channel read should return immediately.
-				gotUpdateErr := <-gotUpdateErrCh
-				if (gotUpdateErr != nil) != test.wantUpdateErr {
-					t.Fatalf("got CDS update error {%v}, wantErr: %v", gotUpdateErr, test.wantUpdateErr)
-				}
+			if diff := cmp.Diff(test.wantUpdate, update, cmpopts.EquateEmpty(), cmp.AllowUnexported(regexp.Regexp{})); diff != "" {
+				t.Errorf("validateClusterAndConstructClusterUpdate() returned unexpected diff (-want, +got):\n%s", diff)
 			}
-			cancelWatch()
 		})
 	}
 }
 
-// TestCDSHandleResponseWithoutWatch tests the case where the v2Client receives
-// a CDS response without a registered watcher.
-func TestCDSHandleResponseWithoutWatch(t *testing.T) {
-	fakeServer, sCleanup := fakexds.StartServer(t)
-	client, cCleanup := fakeServer.GetClientConn(t)
-	defer func() {
-		cCleanup()
-		sCleanup()
-	}()
-	v2c := newV2Client(client, goodNodeProto, func(int) time.Duration { return 0 })
-	defer v2c.close()
+func (s) TestUnmarshalCluster(t *testing.T) {
+	const (
+		v2ClusterName = "v2clusterName"
+		v3ClusterName = "v3clusterName"
+		v2Service     = "v2Service"
+		v3Service     = "v2Service"
+	)
+	var (
+		v2ClusterAny = testutils.MarshalAny(&v2xdspb.Cluster{
+			Name:                 v2ClusterName,
+			ClusterDiscoveryType: &v2xdspb.Cluster_Type{Type: v2xdspb.Cluster_EDS},
+			EdsClusterConfig: &v2xdspb.Cluster_EdsClusterConfig{
+				EdsConfig: &v2corepb.ConfigSource{
+					ConfigSourceSpecifier: &v2corepb.ConfigSource_Ads{
+						Ads: &v2corepb.AggregatedConfigSource{},
+					},
+				},
+				ServiceName: v2Service,
+			},
+			LbPolicy: v2xdspb.Cluster_ROUND_ROBIN,
+			LrsServer: &v2corepb.ConfigSource{
+				ConfigSourceSpecifier: &v2corepb.ConfigSource_Self{
+					Self: &v2corepb.SelfConfigSource{},
+				},
+			},
+		})
 
-	if v2c.handleCDSResponse(goodCDSResponse1) == nil {
-		t.Fatal("v2c.handleCDSResponse() succeeded, should have failed")
+		v3ClusterAny = testutils.MarshalAny(&v3clusterpb.Cluster{
+			Name:                 v3ClusterName,
+			ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_EDS},
+			EdsClusterConfig: &v3clusterpb.Cluster_EdsClusterConfig{
+				EdsConfig: &v3corepb.ConfigSource{
+					ConfigSourceSpecifier: &v3corepb.ConfigSource_Ads{
+						Ads: &v3corepb.AggregatedConfigSource{},
+					},
+				},
+				ServiceName: v3Service,
+			},
+			LbPolicy: v3clusterpb.Cluster_ROUND_ROBIN,
+			LrsServer: &v3corepb.ConfigSource{
+				ConfigSourceSpecifier: &v3corepb.ConfigSource_Self{
+					Self: &v3corepb.SelfConfigSource{},
+				},
+			},
+		})
+	)
+	const testVersion = "test-version-cds"
+
+	tests := []struct {
+		name       string
+		resources  []*anypb.Any
+		wantUpdate map[string]ClusterUpdate
+		wantMD     UpdateMetadata
+		wantErr    bool
+	}{
+		{
+			name:      "non-cluster resource type",
+			resources: []*anypb.Any{{TypeUrl: version.V3HTTPConnManagerURL}},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusNACKed,
+				Version: testVersion,
+				ErrState: &UpdateErrorMetadata{
+					Version: testVersion,
+					Err:     errPlaceHolder,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "badly marshaled cluster resource",
+			resources: []*anypb.Any{
+				{
+					TypeUrl: version.V3ClusterURL,
+					Value:   []byte{1, 2, 3, 4},
+				},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusNACKed,
+				Version: testVersion,
+				ErrState: &UpdateErrorMetadata{
+					Version: testVersion,
+					Err:     errPlaceHolder,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "bad cluster resource",
+			resources: []*anypb.Any{
+				testutils.MarshalAny(&v3clusterpb.Cluster{
+					Name:                 "test",
+					ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_STATIC},
+				}),
+			},
+			wantUpdate: map[string]ClusterUpdate{"test": {}},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusNACKed,
+				Version: testVersion,
+				ErrState: &UpdateErrorMetadata{
+					Version: testVersion,
+					Err:     errPlaceHolder,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:      "v2 cluster",
+			resources: []*anypb.Any{v2ClusterAny},
+			wantUpdate: map[string]ClusterUpdate{
+				v2ClusterName: {
+					ServiceName: v2Service, EnableLRS: true,
+					Raw: v2ClusterAny,
+				},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusACKed,
+				Version: testVersion,
+			},
+		},
+		{
+			name:      "v3 cluster",
+			resources: []*anypb.Any{v3ClusterAny},
+			wantUpdate: map[string]ClusterUpdate{
+				v3ClusterName: {
+					ServiceName: v3Service, EnableLRS: true,
+					Raw: v3ClusterAny,
+				},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusACKed,
+				Version: testVersion,
+			},
+		},
+		{
+			name:      "multiple clusters",
+			resources: []*anypb.Any{v2ClusterAny, v3ClusterAny},
+			wantUpdate: map[string]ClusterUpdate{
+				v2ClusterName: {
+					ServiceName: v2Service, EnableLRS: true,
+					Raw: v2ClusterAny,
+				},
+				v3ClusterName: {
+					ServiceName: v3Service, EnableLRS: true,
+					Raw: v3ClusterAny,
+				},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusACKed,
+				Version: testVersion,
+			},
+		},
+		{
+			// To test that unmarshal keeps processing on errors.
+			name: "good and bad clusters",
+			resources: []*anypb.Any{
+				v2ClusterAny,
+				// bad cluster resource
+				testutils.MarshalAny(&v3clusterpb.Cluster{
+					Name:                 "bad",
+					ClusterDiscoveryType: &v3clusterpb.Cluster_Type{Type: v3clusterpb.Cluster_STATIC},
+				}),
+				v3ClusterAny,
+			},
+			wantUpdate: map[string]ClusterUpdate{
+				v2ClusterName: {
+					ServiceName: v2Service, EnableLRS: true,
+					Raw: v2ClusterAny,
+				},
+				v3ClusterName: {
+					ServiceName: v3Service, EnableLRS: true,
+					Raw: v3ClusterAny,
+				},
+				"bad": {},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusNACKed,
+				Version: testVersion,
+				ErrState: &UpdateErrorMetadata{
+					Version: testVersion,
+					Err:     errPlaceHolder,
+				},
+			},
+			wantErr: true,
+		},
 	}
-}
-
-// cdsTestOp contains all data related to one particular test operation. Not
-// all fields make sense for all tests.
-type cdsTestOp struct {
-	// target is the resource name to watch for.
-	target string
-	// responseToSend is the xDS response sent to the client
-	responseToSend *fakexds.Response
-	// wantOpErr specfies whether the main operation should return an error.
-	wantOpErr bool
-	// wantCDSCache is the expected rdsCache at the end of an operation.
-	wantCDSCache map[string]CDSUpdate
-	// wantWatchCallback specifies if the watch callback should be invoked.
-	wantWatchCallback bool
-}
-
-// testCDSCaching is a helper function which starts a fake xDS server, makes a
-// ClientConn to it, creates a v2Client using it.  It then reads a bunch of
-// test operations to be performed from cdsTestOps and returns error, if any,
-// on the provided error channel. This is executed in a separate goroutine.
-func testCDSCaching(t *testing.T, cdsTestOps []cdsTestOp, errCh chan error) {
-	t.Helper()
-
-	fakeServer, sCleanup := fakexds.StartServer(t)
-	client, cCleanup := fakeServer.GetClientConn(t)
-	defer func() {
-		cCleanup()
-		sCleanup()
-	}()
-	v2c := newV2Client(client, goodNodeProto, func(int) time.Duration { return 0 })
-	defer v2c.close()
-	t.Log("Started xds v2Client...")
-
-	callbackCh := make(chan struct{}, 1)
-	for _, cdsTestOp := range cdsTestOps {
-		// Register a watcher if required, and use a channel to signal the
-		// successful invocation of the callback.
-		if cdsTestOp.target != "" {
-			v2c.watchCDS(cdsTestOp.target, func(u CDSUpdate, err error) {
-				t.Logf("Received callback with CDSUpdate {%+v} and error {%v}", u, err)
-				callbackCh <- struct{}{}
-			})
-			t.Logf("Registered a watcher for CDS target: %v...", cdsTestOp.target)
-
-			// Wait till the request makes it to the fakeServer. This ensures that
-			// the watch request has been processed by the v2Client.
-			<-fakeServer.RequestChan
-			t.Log("FakeServer received request...")
-		}
-
-		// Directly push the response through a call to handleCDSResponse,
-		// thereby bypassing the fakeServer.
-		if cdsTestOp.responseToSend != nil {
-			if err := v2c.handleCDSResponse(cdsTestOp.responseToSend.Resp); (err != nil) != cdsTestOp.wantOpErr {
-				errCh <- fmt.Errorf("v2c.handleCDSResponse() returned err: %v", err)
-				return
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			update, md, err := UnmarshalCluster(testVersion, test.resources, nil)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("UnmarshalCluster(), got err: %v, wantErr: %v", err, test.wantErr)
 			}
-		}
-
-		// If the test needs the callback to be invoked, just verify that
-		// it was invoked. Since we verify the contents of the cache, it's
-		// ok not to verify the contents of the callback.
-		if cdsTestOp.wantWatchCallback {
-			<-callbackCh
-		}
-
-		if !reflect.DeepEqual(v2c.cloneCDSCacheForTesting(), cdsTestOp.wantCDSCache) {
-			errCh <- fmt.Errorf("gotCDSCache: %v, wantCDSCache: %v", v2c.rdsCache, cdsTestOp.wantCDSCache)
-			return
-		}
-	}
-	t.Log("Completed all test ops successfully...")
-	errCh <- nil
-}
-
-// TestCDSCaching tests some end-to-end CDS flows using a fake xDS server, and
-// verifies the CDS data cached at the v2Client.
-func TestCDSCaching(t *testing.T) {
-	errCh := make(chan error, 1)
-	ops := []cdsTestOp{
-		// Add an CDS watch for a cluster name (clusterName1), which returns one
-		// matching resource in the response.
-		{
-			target:         clusterName1,
-			responseToSend: &fakexds.Response{Resp: goodCDSResponse1},
-			wantCDSCache: map[string]CDSUpdate{
-				clusterName1: {serviceName1, true},
-			},
-			wantWatchCallback: true,
-		},
-		// Push an CDS response which contains a new resource (apart from the
-		// one received in the previous response). This should be cached.
-		{
-			responseToSend: &fakexds.Response{Resp: cdsResponseWithMultipleResources},
-			wantCDSCache: map[string]CDSUpdate{
-				clusterName1: {serviceName1, true},
-				clusterName2: {serviceName2, false},
-			},
-			wantWatchCallback: true,
-		},
-		// Switch the watch target to clusterName2, which was already cached.  No
-		// response is received from the server (as expected), but we want the
-		// callback to be invoked with the new serviceName.
-		{
-			target: clusterName2,
-			wantCDSCache: map[string]CDSUpdate{
-				clusterName1: {serviceName1, true},
-				clusterName2: {serviceName2, false},
-			},
-			wantWatchCallback: true,
-		},
-		// Push an empty CDS response. This should clear the cache.
-		{
-			responseToSend:    &fakexds.Response{Resp: &xdspb.DiscoveryResponse{TypeUrl: cdsURL}},
-			wantOpErr:         false,
-			wantCDSCache:      map[string]CDSUpdate{},
-			wantWatchCallback: true,
-		},
-	}
-	go testCDSCaching(t, ops, errCh)
-
-	timer := time.NewTimer(defaultTestTimeout)
-	select {
-	case <-timer.C:
-		t.Fatal("Timeout when expecting CDS update")
-	case err := <-errCh:
-		timer.Stop()
-		if err != nil {
-			t.Fatal(err)
-		}
+			if diff := cmp.Diff(update, test.wantUpdate, cmpOpts); diff != "" {
+				t.Errorf("got unexpected update, diff (-got +want): %v", diff)
+			}
+			if diff := cmp.Diff(md, test.wantMD, cmpOptsIgnoreDetails); diff != "" {
+				t.Errorf("got unexpected metadata, diff (-got +want): %v", diff)
+			}
+		})
 	}
 }
-
-// TestCDSWatchExpiryTimer tests the case where the client does not receive an
-// CDS response for the request that it sends out. We want the watch callback
-// to be invoked with an error once the watchExpiryTimer fires.
-func TestCDSWatchExpiryTimer(t *testing.T) {
-	oldWatchExpiryTimeout := defaultWatchExpiryTimeout
-	defaultWatchExpiryTimeout = 1 * time.Second
-	defer func() {
-		defaultWatchExpiryTimeout = oldWatchExpiryTimeout
-	}()
-
-	fakeServer, sCleanup := fakexds.StartServer(t)
-	client, cCleanup := fakeServer.GetClientConn(t)
-	defer func() {
-		cCleanup()
-		sCleanup()
-	}()
-	v2c := newV2Client(client, goodNodeProto, func(int) time.Duration { return 0 })
-	defer v2c.close()
-	t.Log("Started xds v2Client...")
-
-	cdsCallbackCh := make(chan error, 1)
-	v2c.watchCDS(clusterName1, func(u CDSUpdate, err error) {
-		t.Logf("Received callback with CDSUpdate {%+v} and error {%v}", u, err)
-		if u.ServiceName != "" {
-			cdsCallbackCh <- fmt.Errorf("received serviceName %v in cdsCallback, wanted empty string", u.ServiceName)
-		}
-		if err == nil {
-			cdsCallbackCh <- errors.New("received nil error in cdsCallback")
-		}
-		cdsCallbackCh <- nil
-	})
-	<-fakeServer.RequestChan
-
-	timer := time.NewTimer(2 * time.Second)
-	select {
-	case <-timer.C:
-		t.Fatalf("Timeout expired when expecting CDS update")
-	case err := <-cdsCallbackCh:
-		timer.Stop()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
-var (
-	badlyMarshaledCDSResponse = &xdspb.DiscoveryResponse{
-		Resources: []*anypb.Any{
-			{
-				TypeUrl: cdsURL,
-				Value:   []byte{1, 2, 3, 4},
-			},
-		},
-		TypeUrl: cdsURL,
-	}
-	goodCluster1 = &xdspb.Cluster{
-		Name:                 clusterName1,
-		ClusterDiscoveryType: &xdspb.Cluster_Type{Type: xdspb.Cluster_EDS},
-		EdsClusterConfig: &xdspb.Cluster_EdsClusterConfig{
-			EdsConfig: &corepb.ConfigSource{
-				ConfigSourceSpecifier: &corepb.ConfigSource_Ads{
-					Ads: &corepb.AggregatedConfigSource{},
-				},
-			},
-			ServiceName: serviceName1,
-		},
-		LbPolicy: xdspb.Cluster_ROUND_ROBIN,
-		LrsServer: &corepb.ConfigSource{
-			ConfigSourceSpecifier: &corepb.ConfigSource_Self{
-				Self: &corepb.SelfConfigSource{},
-			},
-		},
-	}
-	marshaledCluster1, _ = proto.Marshal(goodCluster1)
-	goodCluster2         = &xdspb.Cluster{
-		Name:                 clusterName2,
-		ClusterDiscoveryType: &xdspb.Cluster_Type{Type: xdspb.Cluster_EDS},
-		EdsClusterConfig: &xdspb.Cluster_EdsClusterConfig{
-			EdsConfig: &corepb.ConfigSource{
-				ConfigSourceSpecifier: &corepb.ConfigSource_Ads{
-					Ads: &corepb.AggregatedConfigSource{},
-				},
-			},
-			ServiceName: serviceName2,
-		},
-		LbPolicy: xdspb.Cluster_ROUND_ROBIN,
-	}
-	marshaledCluster2, _ = proto.Marshal(goodCluster2)
-	goodCDSResponse1     = &xdspb.DiscoveryResponse{
-		Resources: []*anypb.Any{
-			{
-				TypeUrl: cdsURL,
-				Value:   marshaledCluster1,
-			},
-		},
-		TypeUrl: cdsURL,
-	}
-	goodCDSResponse2 = &xdspb.DiscoveryResponse{
-		Resources: []*anypb.Any{
-			{
-				TypeUrl: cdsURL,
-				Value:   marshaledCluster2,
-			},
-		},
-		TypeUrl: cdsURL,
-	}
-	cdsResponseWithMultipleResources = &xdspb.DiscoveryResponse{
-		Resources: []*anypb.Any{
-			{
-				TypeUrl: cdsURL,
-				Value:   marshaledCluster1,
-			},
-			{
-				TypeUrl: cdsURL,
-				Value:   marshaledCluster2,
-			},
-		},
-		TypeUrl: cdsURL,
-	}
-)

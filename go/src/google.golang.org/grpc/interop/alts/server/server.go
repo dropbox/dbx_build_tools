@@ -25,12 +25,13 @@ import (
 	"net"
 	"strings"
 
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/alts"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/interop"
-	testpb "google.golang.org/grpc/interop/grpc_testing"
 	"google.golang.org/grpc/tap"
+
+	testgrpc "google.golang.org/grpc/interop/grpc_testing"
 )
 
 const (
@@ -40,6 +41,8 @@ const (
 var (
 	hsAddr     = flag.String("alts_handshaker_service_address", "", "ALTS handshaker gRPC service address")
 	serverAddr = flag.String("server_address", ":8080", "The address on which the server is listening. Only two types of addresses are supported, 'host:port' and 'unix:/path'.")
+
+	logger = grpclog.Component("interop")
 )
 
 func main() {
@@ -54,7 +57,7 @@ func main() {
 	}
 	lis, err := net.Listen(network, address)
 	if err != nil {
-		grpclog.Fatalf("gRPC Server: failed to start the server at %v: %v", address, err)
+		logger.Fatalf("gRPC Server: failed to start the server at %v: %v", address, err)
 	}
 	opts := alts.DefaultServerOptions()
 	if *hsAddr != "" {
@@ -62,7 +65,7 @@ func main() {
 	}
 	altsTC := alts.NewServerCreds(opts)
 	grpcServer := grpc.NewServer(grpc.Creds(altsTC), grpc.InTapHandle(authz))
-	testpb.RegisterTestServiceServer(grpcServer, interop.NewTestServer())
+	testgrpc.RegisterTestServiceServer(grpcServer, interop.NewTestServer())
 	grpcServer.Serve(lis)
 }
 
@@ -74,12 +77,12 @@ func authz(ctx context.Context, info *tap.Info) (context.Context, error) {
 		return nil, err
 	}
 	// Access all alts.AuthInfo data:
-	grpclog.Infof("authInfo.ApplicationProtocol() = %v", authInfo.ApplicationProtocol())
-	grpclog.Infof("authInfo.RecordProtocol() = %v", authInfo.RecordProtocol())
-	grpclog.Infof("authInfo.SecurityLevel() = %v", authInfo.SecurityLevel())
-	grpclog.Infof("authInfo.PeerServiceAccount() = %v", authInfo.PeerServiceAccount())
-	grpclog.Infof("authInfo.LocalServiceAccount() = %v", authInfo.LocalServiceAccount())
-	grpclog.Infof("authInfo.PeerRPCVersions() = %v", authInfo.PeerRPCVersions())
-	grpclog.Infof("info.FullMethodName = %v", info.FullMethodName)
+	logger.Infof("authInfo.ApplicationProtocol() = %v", authInfo.ApplicationProtocol())
+	logger.Infof("authInfo.RecordProtocol() = %v", authInfo.RecordProtocol())
+	logger.Infof("authInfo.SecurityLevel() = %v", authInfo.SecurityLevel())
+	logger.Infof("authInfo.PeerServiceAccount() = %v", authInfo.PeerServiceAccount())
+	logger.Infof("authInfo.LocalServiceAccount() = %v", authInfo.LocalServiceAccount())
+	logger.Infof("authInfo.PeerRPCVersions() = %v", authInfo.PeerRPCVersions())
+	logger.Infof("info.FullMethodName = %v", info.FullMethodName)
 	return ctx, nil
 }

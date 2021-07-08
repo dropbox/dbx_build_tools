@@ -13,6 +13,7 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
+        "//go/src/google.golang.org/grpc/attributes",
         "//go/src/google.golang.org/grpc/balancer",
         "//go/src/google.golang.org/grpc/connectivity",
         "//go/src/google.golang.org/grpc/grpclog",

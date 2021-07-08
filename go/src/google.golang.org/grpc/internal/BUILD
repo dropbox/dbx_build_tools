@@ -7,11 +7,15 @@ dbx_go_library(
     name = "internal",
     srcs = [
         "internal.go",
+        "xds_handshake_cluster.go",
     ],
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],
     deps = [
+        "//go/src/google.golang.org/grpc/attributes",
         "//go/src/google.golang.org/grpc/connectivity",
+        "//go/src/google.golang.org/grpc/resolver",
+        "//go/src/google.golang.org/grpc/serviceconfig",
     ],
 )

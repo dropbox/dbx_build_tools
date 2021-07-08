@@ -14,13 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- *
- * Client used to test http2 error edge cases like GOAWAYs and RST_STREAMs
- *
- * Documentation:
- *	 https://github.com/grpc/grpc/blob/master/doc/negative-http2-interop-test-descriptions.md
  */
 
+// Binary http2 is used to test http2 error edge cases like GOAWAYs and
+// RST_STREAMs
+//
+// Documentation:
+// https://github.com/grpc/grpc/blob/master/doc/negative-http2-interop-test-descriptions.md
 package main
 
 import (
@@ -35,8 +35,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/interop"
-	testpb "google.golang.org/grpc/interop/grpc_testing"
 	"google.golang.org/grpc/status"
+
+	testgrpc "google.golang.org/grpc/interop/grpc_testing"
+	testpb "google.golang.org/grpc/interop/grpc_testing"
 )
 
 var (
@@ -52,6 +54,8 @@ var (
         max_streams : server will ensure that the max_concurrent_streams limit is upheld;`)
 	largeReqSize  = 271828
 	largeRespSize = 314159
+
+	logger = grpclog.Component("interop")
 )
 
 func largeSimpleRequest() *testpb.SimpleRequest {
@@ -64,7 +68,7 @@ func largeSimpleRequest() *testpb.SimpleRequest {
 }
 
 // sends two unary calls. The server asserts that the calls use different connections.
-func goaway(tc testpb.TestServiceClient) {
+func goaway(tc testgrpc.TestServiceClient) {
 	interop.DoLargeUnaryCall(tc)
 	// sleep to ensure that the client has time to recv the GOAWAY.
 	// TODO(ncteisen): make this less hacky.
@@ -72,45 +76,45 @@ func goaway(tc testpb.TestServiceClient) {
 	interop.DoLargeUnaryCall(tc)
 }
 
-func rstAfterHeader(tc testpb.TestServiceClient) {
+func rstAfterHeader(tc testgrpc.TestServiceClient) {
 	req := largeSimpleRequest()
 	reply, err := tc.UnaryCall(context.Background(), req)
 	if reply != nil {
-		grpclog.Fatalf("Client received reply despite server sending rst stream after header")
+		logger.Fatalf("Client received reply despite server sending rst stream after header")
 	}
 	if status.Code(err) != codes.Internal {
-		grpclog.Fatalf("%v.UnaryCall() = _, %v, want _, %v", tc, status.Code(err), codes.Internal)
+		logger.Fatalf("%v.UnaryCall() = _, %v, want _, %v", tc, status.Code(err), codes.Internal)
 	}
 }
 
-func rstDuringData(tc testpb.TestServiceClient) {
+func rstDuringData(tc testgrpc.TestServiceClient) {
 	req := largeSimpleRequest()
 	reply, err := tc.UnaryCall(context.Background(), req)
 	if reply != nil {
-		grpclog.Fatalf("Client received reply despite server sending rst stream during data")
+		logger.Fatalf("Client received reply despite server sending rst stream during data")
 	}
 	if status.Code(err) != codes.Unknown {
-		grpclog.Fatalf("%v.UnaryCall() = _, %v, want _, %v", tc, status.Code(err), codes.Unknown)
+		logger.Fatalf("%v.UnaryCall() = _, %v, want _, %v", tc, status.Code(err), codes.Unknown)
 	}
 }
 
-func rstAfterData(tc testpb.TestServiceClient) {
+func rstAfterData(tc testgrpc.TestServiceClient) {
 	req := largeSimpleRequest()
 	reply, err := tc.UnaryCall(context.Background(), req)
 	if reply != nil {
-		grpclog.Fatalf("Client received reply despite server sending rst stream after data")
+		logger.Fatalf("Client received reply despite server sending rst stream after data")
 	}
 	if status.Code(err) != codes.Internal {
-		grpclog.Fatalf("%v.UnaryCall() = _, %v, want _, %v", tc, status.Code(err), codes.Internal)
+		logger.Fatalf("%v.UnaryCall() = _, %v, want _, %v", tc, status.Code(err), codes.Internal)
 	}
 }
 
-func ping(tc testpb.TestServiceClient) {
+func ping(tc testgrpc.TestServiceClient) {
 	// The server will assert that every ping it sends was ACK-ed by the client.
 	interop.DoLargeUnaryCall(tc)
 }
 
-func maxStreams(tc testpb.TestServiceClient) {
+func maxStreams(tc testgrpc.TestServiceClient) {
 	interop.DoLargeUnaryCall(tc)
 	var wg sync.WaitGroup
 	for i := 0; i < 15; i++ {
@@ -130,30 +134,30 @@ func main() {
 	opts = append(opts, grpc.WithInsecure())
 	conn, err := grpc.Dial(serverAddr, opts...)
 	if err != nil {
-		grpclog.Fatalf("Fail to dial: %v", err)
+		logger.Fatalf("Fail to dial: %v", err)
 	}
 	defer conn.Close()
-	tc := testpb.NewTestServiceClient(conn)
+	tc := testgrpc.NewTestServiceClient(conn)
 	switch *testCase {
 	case "goaway":
 		goaway(tc)
-		grpclog.Infoln("goaway done")
+		logger.Infoln("goaway done")
 	case "rst_after_header":
 		rstAfterHeader(tc)
-		grpclog.Infoln("rst_after_header done")
+		logger.Infoln("rst_after_header done")
 	case "rst_during_data":
 		rstDuringData(tc)
-		grpclog.Infoln("rst_during_data done")
+		logger.Infoln("rst_during_data done")
 	case "rst_after_data":
 		rstAfterData(tc)
-		grpclog.Infoln("rst_after_data done")
+		logger.Infoln("rst_after_data done")
 	case "ping":
 		ping(tc)
-		grpclog.Infoln("ping done")
+		logger.Infoln("ping done")
 	case "max_streams":
 		maxStreams(tc)
-		grpclog.Infoln("max_streams done")
+		logger.Infoln("max_streams done")
 	default:
-		grpclog.Fatal("Unsupported test case: ", *testCase)
+		logger.Fatal("Unsupported test case: ", *testCase)
 	}
 }

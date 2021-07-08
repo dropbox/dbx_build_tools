@@ -210,7 +210,8 @@ func (s) TestStateTransitions_ReadyToConnecting(t *testing.T) {
 	}
 	defer lis.Close()
 
-	sawReady := make(chan struct{})
+	sawReady := make(chan struct{}, 1)
+	defer close(sawReady)
 
 	// Launch the server.
 	go func() {
@@ -250,7 +251,7 @@ func (s) TestStateTransitions_ReadyToConnecting(t *testing.T) {
 			t.Fatalf("timed out waiting for state %d (%v) in flow %v", i, want[i], want)
 		case seen := <-stateNotifications:
 			if seen == connectivity.Ready {
-				close(sawReady)
+				sawReady <- struct{}{}
 			}
 			if seen != want[i] {
 				t.Fatalf("expected to see %v at position %d in flow %v, got %v", want[i], i, want, seen)
@@ -320,7 +321,7 @@ func (s) TestStateTransitions_TriesAllAddrsBeforeTransientFailure(t *testing.T) 
 		{Addr: lis1.Addr().String()},
 		{Addr: lis2.Addr().String()},
 	}})
-	client, err := DialContext(ctx, "this-gets-overwritten", WithInsecure(), WithBalancerName(stateRecordingBalancerName), withResolverBuilder(rb))
+	client, err := DialContext(ctx, "whatever:///this-gets-overwritten", WithInsecure(), WithBalancerName(stateRecordingBalancerName), WithResolvers(rb))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -378,7 +379,8 @@ func (s) TestStateTransitions_MultipleAddrsEntersReady(t *testing.T) {
 	defer lis2.Close()
 
 	server1Done := make(chan struct{})
-	sawReady := make(chan struct{})
+	sawReady := make(chan struct{}, 1)
+	defer close(sawReady)
 
 	// Launch server 1.
 	go func() {
@@ -400,12 +402,6 @@ func (s) TestStateTransitions_MultipleAddrsEntersReady(t *testing.T) {
 
 		conn.Close()
 
-		_, err = lis1.Accept()
-		if err != nil {
-			t.Error(err)
-			return
-		}
-
 		close(server1Done)
 	}()
 
@@ -414,7 +410,7 @@ func (s) TestStateTransitions_MultipleAddrsEntersReady(t *testing.T) {
 		{Addr: lis1.Addr().String()},
 		{Addr: lis2.Addr().String()},
 	}})
-	client, err := DialContext(ctx, "this-gets-overwritten", WithInsecure(), WithBalancerName(stateRecordingBalancerName), withResolverBuilder(rb))
+	client, err := DialContext(ctx, "whatever:///this-gets-overwritten", WithInsecure(), WithBalancerName(stateRecordingBalancerName), WithResolvers(rb))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -430,7 +426,7 @@ func (s) TestStateTransitions_MultipleAddrsEntersReady(t *testing.T) {
 			t.Fatalf("timed out waiting for state %d (%v) in flow %v", i, want[i], want)
 		case seen := <-stateNotifications:
 			if seen == connectivity.Ready {
-				close(sawReady)
+				sawReady <- struct{}{}
 			}
 			if seen != want[i] {
 				t.Fatalf("expected to see %v at position %d in flow %v, got %v", want[i], i, want, seen)
@@ -449,9 +445,9 @@ type stateRecordingBalancer struct {
 	balancer.Balancer
 }
 
-func (b *stateRecordingBalancer) HandleSubConnStateChange(sc balancer.SubConn, s connectivity.State) {
-	b.notifier <- s
-	b.Balancer.HandleSubConnStateChange(sc, s)
+func (b *stateRecordingBalancer) UpdateSubConnState(sc balancer.SubConn, s balancer.SubConnState) {
+	b.notifier <- s.ConnectivityState
+	b.Balancer.UpdateSubConnState(sc, s)
 }
 
 func (b *stateRecordingBalancer) ResetNotifier(r chan<- connectivity.State) {

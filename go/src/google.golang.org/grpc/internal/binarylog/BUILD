@@ -11,7 +11,6 @@ dbx_go_library(
         "env_config.go",
         "method_logger.go",
         "sink.go",
-        "util.go",
     ],
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
@@ -21,6 +20,7 @@ dbx_go_library(
         "//go/src/github.com/golang/protobuf/ptypes",
         "//go/src/google.golang.org/grpc/binarylog/grpc_binarylog_v1",
         "//go/src/google.golang.org/grpc/grpclog",
+        "//go/src/google.golang.org/grpc/internal/grpcutil",
         "//go/src/google.golang.org/grpc/metadata",
         "//go/src/google.golang.org/grpc/status",
     ],

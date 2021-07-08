@@ -28,14 +28,15 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/benchmark"
-	testpb "google.golang.org/grpc/benchmark/grpc_testing"
 	"google.golang.org/grpc/benchmark/stats"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/internal/syscall"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/testdata"
+
+	testgrpc "google.golang.org/grpc/interop/grpc_testing"
+	testpb "google.golang.org/grpc/interop/grpc_testing"
 )
 
 var caFile = flag.String("ca_file", "", "The file containing the CA root cert file")
@@ -81,20 +82,20 @@ func printClientConfig(config *testpb.ClientConfig) {
 	//     will always create sync client
 	// - async client threads.
 	// - core list
-	grpclog.Infof(" * client type: %v (ignored, always creates sync client)", config.ClientType)
-	grpclog.Infof(" * async client threads: %v (ignored)", config.AsyncClientThreads)
+	logger.Infof(" * client type: %v (ignored, always creates sync client)", config.ClientType)
+	logger.Infof(" * async client threads: %v (ignored)", config.AsyncClientThreads)
 	// TODO: use cores specified by CoreList when setting list of cores is supported in go.
-	grpclog.Infof(" * core list: %v (ignored)", config.CoreList)
+	logger.Infof(" * core list: %v (ignored)", config.CoreList)
 
-	grpclog.Infof(" - security params: %v", config.SecurityParams)
-	grpclog.Infof(" - core limit: %v", config.CoreLimit)
-	grpclog.Infof(" - payload config: %v", config.PayloadConfig)
-	grpclog.Infof(" - rpcs per chann: %v", config.OutstandingRpcsPerChannel)
-	grpclog.Infof(" - channel number: %v", config.ClientChannels)
-	grpclog.Infof(" - load params: %v", config.LoadParams)
-	grpclog.Infof(" - rpc type: %v", config.RpcType)
-	grpclog.Infof(" - histogram params: %v", config.HistogramParams)
-	grpclog.Infof(" - server targets: %v", config.ServerTargets)
+	logger.Infof(" - security params: %v", config.SecurityParams)
+	logger.Infof(" - core limit: %v", config.CoreLimit)
+	logger.Infof(" - payload config: %v", config.PayloadConfig)
+	logger.Infof(" - rpcs per chann: %v", config.OutstandingRpcsPerChannel)
+	logger.Infof(" - channel number: %v", config.ClientChannels)
+	logger.Infof(" - load params: %v", config.LoadParams)
+	logger.Infof(" - rpc type: %v", config.RpcType)
+	logger.Infof(" - histogram params: %v", config.HistogramParams)
+	logger.Infof(" - server targets: %v", config.ServerTargets)
 }
 
 func setupClientEnv(config *testpb.ClientConfig) {
@@ -244,7 +245,7 @@ func startBenchmarkClient(config *testpb.ClientConfig) (*benchmarkClient, error)
 
 func (bc *benchmarkClient) doCloseLoopUnary(conns []*grpc.ClientConn, rpcCountPerConn int, reqSize int, respSize int) {
 	for ic, conn := range conns {
-		client := testpb.NewBenchmarkServiceClient(conn)
+		client := testgrpc.NewBenchmarkServiceClient(conn)
 		// For each connection, create rpcCountPerConn goroutines to do rpc.
 		for j := 0; j < rpcCountPerConn; j++ {
 			// Create histogram for each goroutine.
@@ -286,7 +287,7 @@ func (bc *benchmarkClient) doCloseLoopUnary(conns []*grpc.ClientConn, rpcCountPe
 }
 
 func (bc *benchmarkClient) doCloseLoopStreaming(conns []*grpc.ClientConn, rpcCountPerConn int, reqSize int, respSize int, payloadType string) {
-	var doRPC func(testpb.BenchmarkService_StreamingCallClient, int, int) error
+	var doRPC func(testgrpc.BenchmarkService_StreamingCallClient, int, int) error
 	if payloadType == "bytebuf" {
 		doRPC = benchmark.DoByteBufStreamingRoundTrip
 	} else {
@@ -295,10 +296,10 @@ func (bc *benchmarkClient) doCloseLoopStreaming(conns []*grpc.ClientConn, rpcCou
 	for ic, conn := range conns {
 		// For each connection, create rpcCountPerConn goroutines to do rpc.
 		for j := 0; j < rpcCountPerConn; j++ {
-			c := testpb.NewBenchmarkServiceClient(conn)
+			c := testgrpc.NewBenchmarkServiceClient(conn)
 			stream, err := c.StreamingCall(context.Background())
 			if err != nil {
-				grpclog.Fatalf("%v.StreamingCall(_) = _, %v", c, err)
+				logger.Fatalf("%v.StreamingCall(_) = _, %v", c, err)
 			}
 			// Create histogram for each goroutine.
 			idx := ic*rpcCountPerConn + j

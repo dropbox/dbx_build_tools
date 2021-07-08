@@ -33,10 +33,19 @@ import (
 	"google.golang.org/grpc/connectivity"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/internal/channelz"
+	"google.golang.org/grpc/internal/grpctest"
 )
 
 func init() {
 	channelz.TurnOn()
+}
+
+type s struct {
+	grpctest.Tester
+}
+
+func Test(t *testing.T) {
+	grpctest.RunSubTests(t, s{})
 }
 
 func cleanupWrapper(cleanup func() error, t *testing.T) {
@@ -49,7 +58,7 @@ type protoToSocketOptFunc func([]*channelzpb.SocketOption) *channelz.SocketOptio
 
 // protoToSocketOpt is used in function socketProtoToStruct to extract socket option
 // data from unmarshaled proto message.
-// It is only defined under linux, non-appengine environment on x86 architecture.
+// It is only defined under linux environment on x86 architecture.
 var protoToSocketOpt protoToSocketOptFunc
 
 // emptyTime is used for detecting unset value of time.Time type.
@@ -59,6 +68,8 @@ var protoToSocketOpt protoToSocketOptFunc
 // and cause false positive fatal error.
 // TODO: Go1.7 is no longer supported - does this need a change?
 var emptyTime time.Time
+
+const defaultTestTimeout = 10 * time.Second
 
 type dummyChannel struct {
 	state                    connectivity.State
@@ -284,7 +295,7 @@ func init() {
 	proto.RegisterType((*OtherSecurityValue)(nil), "grpc.credentials.OtherChannelzSecurityValue")
 }
 
-func TestGetTopChannels(t *testing.T) {
+func (s) TestGetTopChannels(t *testing.T) {
 	tcs := []*dummyChannel{
 		{
 			state:                    connectivity.Connecting,
@@ -318,7 +329,9 @@ func TestGetTopChannels(t *testing.T) {
 		defer channelz.RemoveEntry(id)
 	}
 	s := newCZServer()
-	resp, _ := s.GetTopChannels(context.Background(), &channelzpb.GetTopChannelsRequest{StartChannelId: 0})
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	resp, _ := s.GetTopChannels(ctx, &channelzpb.GetTopChannelsRequest{StartChannelId: 0})
 	if !resp.GetEnd() {
 		t.Fatalf("resp.GetEnd() want true, got %v", resp.GetEnd())
 	}
@@ -331,13 +344,13 @@ func TestGetTopChannels(t *testing.T) {
 		id := channelz.RegisterChannel(tcs[0], 0, "")
 		defer channelz.RemoveEntry(id)
 	}
-	resp, _ = s.GetTopChannels(context.Background(), &channelzpb.GetTopChannelsRequest{StartChannelId: 0})
+	resp, _ = s.GetTopChannels(ctx, &channelzpb.GetTopChannelsRequest{StartChannelId: 0})
 	if resp.GetEnd() {
 		t.Fatalf("resp.GetEnd() want false, got %v", resp.GetEnd())
 	}
 }
 
-func TestGetServers(t *testing.T) {
+func (s) TestGetServers(t *testing.T) {
 	ss := []*dummyServer{
 		{
 			callsStarted:             6,
@@ -365,7 +378,9 @@ func TestGetServers(t *testing.T) {
 		defer channelz.RemoveEntry(id)
 	}
 	svr := newCZServer()
-	resp, _ := svr.GetServers(context.Background(), &channelzpb.GetServersRequest{StartServerId: 0})
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	resp, _ := svr.GetServers(ctx, &channelzpb.GetServersRequest{StartServerId: 0})
 	if !resp.GetEnd() {
 		t.Fatalf("resp.GetEnd() want true, got %v", resp.GetEnd())
 	}
@@ -378,13 +393,13 @@ func TestGetServers(t *testing.T) {
 		id := channelz.RegisterServer(ss[0], "")
 		defer channelz.RemoveEntry(id)
 	}
-	resp, _ = svr.GetServers(context.Background(), &channelzpb.GetServersRequest{StartServerId: 0})
+	resp, _ = svr.GetServers(ctx, &channelzpb.GetServersRequest{StartServerId: 0})
 	if resp.GetEnd() {
 		t.Fatalf("resp.GetEnd() want false, got %v", resp.GetEnd())
 	}
 }
 
-func TestGetServerSockets(t *testing.T) {
+func (s) TestGetServerSockets(t *testing.T) {
 	czCleanup := channelz.NewChannelzStorage()
 	defer cleanupWrapper(czCleanup, t)
 	svrID := channelz.RegisterServer(&dummyServer{}, "")
@@ -398,7 +413,9 @@ func TestGetServerSockets(t *testing.T) {
 		defer channelz.RemoveEntry(id)
 	}
 	svr := newCZServer()
-	resp, _ := svr.GetServerSockets(context.Background(), &channelzpb.GetServerSocketsRequest{ServerId: svrID, StartSocketId: 0})
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	resp, _ := svr.GetServerSockets(ctx, &channelzpb.GetServerSocketsRequest{ServerId: svrID, StartSocketId: 0})
 	if !resp.GetEnd() {
 		t.Fatalf("resp.GetEnd() want: true, got: %v", resp.GetEnd())
 	}
@@ -415,7 +432,7 @@ func TestGetServerSockets(t *testing.T) {
 		id := channelz.RegisterNormalSocket(&dummySocket{}, svrID, "")
 		defer channelz.RemoveEntry(id)
 	}
-	resp, _ = svr.GetServerSockets(context.Background(), &channelzpb.GetServerSocketsRequest{ServerId: svrID, StartSocketId: 0})
+	resp, _ = svr.GetServerSockets(ctx, &channelzpb.GetServerSocketsRequest{ServerId: svrID, StartSocketId: 0})
 	if resp.GetEnd() {
 		t.Fatalf("resp.GetEnd() want false, got %v", resp.GetEnd())
 	}
@@ -423,7 +440,7 @@ func TestGetServerSockets(t *testing.T) {
 
 // This test makes a GetServerSockets with a non-zero start ID, and expect only
 // sockets with ID >= the given start ID.
-func TestGetServerSocketsNonZeroStartID(t *testing.T) {
+func (s) TestGetServerSocketsNonZeroStartID(t *testing.T) {
 	czCleanup := channelz.NewChannelzStorage()
 	defer cleanupWrapper(czCleanup, t)
 	svrID := channelz.RegisterServer(&dummyServer{}, "")
@@ -437,9 +454,11 @@ func TestGetServerSocketsNonZeroStartID(t *testing.T) {
 		defer channelz.RemoveEntry(id)
 	}
 	svr := newCZServer()
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
 	// Make GetServerSockets with startID = ids[1]+1, so socket-1 won't be
 	// included in the response.
-	resp, _ := svr.GetServerSockets(context.Background(), &channelzpb.GetServerSocketsRequest{ServerId: svrID, StartSocketId: ids[1] + 1})
+	resp, _ := svr.GetServerSockets(ctx, &channelzpb.GetServerSocketsRequest{ServerId: svrID, StartSocketId: ids[1] + 1})
 	if !resp.GetEnd() {
 		t.Fatalf("resp.GetEnd() want: true, got: %v", resp.GetEnd())
 	}
@@ -453,49 +472,49 @@ func TestGetServerSocketsNonZeroStartID(t *testing.T) {
 	}
 }
 
-func TestGetChannel(t *testing.T) {
+func (s) TestGetChannel(t *testing.T) {
 	czCleanup := channelz.NewChannelzStorage()
 	defer cleanupWrapper(czCleanup, t)
 	refNames := []string{"top channel 1", "nested channel 1", "sub channel 2", "nested channel 3"}
 	ids := make([]int64, 4)
 	ids[0] = channelz.RegisterChannel(&dummyChannel{}, 0, refNames[0])
-	channelz.AddTraceEvent(ids[0], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[0], 0, &channelz.TraceEventDesc{
 		Desc:     "Channel Created",
-		Severity: channelz.CtINFO,
+		Severity: channelz.CtInfo,
 	})
 	ids[1] = channelz.RegisterChannel(&dummyChannel{}, ids[0], refNames[1])
-	channelz.AddTraceEvent(ids[1], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[1], 0, &channelz.TraceEventDesc{
 		Desc:     "Channel Created",
-		Severity: channelz.CtINFO,
+		Severity: channelz.CtInfo,
 		Parent: &channelz.TraceEventDesc{
 			Desc:     fmt.Sprintf("Nested Channel(id:%d) created", ids[1]),
-			Severity: channelz.CtINFO,
+			Severity: channelz.CtInfo,
 		},
 	})
 
 	ids[2] = channelz.RegisterSubChannel(&dummyChannel{}, ids[0], refNames[2])
-	channelz.AddTraceEvent(ids[2], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[2], 0, &channelz.TraceEventDesc{
 		Desc:     "SubChannel Created",
-		Severity: channelz.CtINFO,
+		Severity: channelz.CtInfo,
 		Parent: &channelz.TraceEventDesc{
 			Desc:     fmt.Sprintf("SubChannel(id:%d) created", ids[2]),
-			Severity: channelz.CtINFO,
+			Severity: channelz.CtInfo,
 		},
 	})
 	ids[3] = channelz.RegisterChannel(&dummyChannel{}, ids[1], refNames[3])
-	channelz.AddTraceEvent(ids[3], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[3], 0, &channelz.TraceEventDesc{
 		Desc:     "Channel Created",
-		Severity: channelz.CtINFO,
+		Severity: channelz.CtInfo,
 		Parent: &channelz.TraceEventDesc{
 			Desc:     fmt.Sprintf("Nested Channel(id:%d) created", ids[3]),
-			Severity: channelz.CtINFO,
+			Severity: channelz.CtInfo,
 		},
 	})
-	channelz.AddTraceEvent(ids[0], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[0], 0, &channelz.TraceEventDesc{
 		Desc:     fmt.Sprintf("Channel Connectivity change to %v", connectivity.Ready),
-		Severity: channelz.CtINFO,
+		Severity: channelz.CtInfo,
 	})
-	channelz.AddTraceEvent(ids[0], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[0], 0, &channelz.TraceEventDesc{
 		Desc:     "Resolver returns an empty address list",
 		Severity: channelz.CtWarning,
 	})
@@ -503,7 +522,9 @@ func TestGetChannel(t *testing.T) {
 		defer channelz.RemoveEntry(id)
 	}
 	svr := newCZServer()
-	resp, _ := svr.GetChannel(context.Background(), &channelzpb.GetChannelRequest{ChannelId: ids[0]})
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	resp, _ := svr.GetChannel(ctx, &channelzpb.GetChannelRequest{ChannelId: ids[0]})
 	metrics := resp.GetChannel()
 	subChans := metrics.GetSubchannelRef()
 	if len(subChans) != 1 || subChans[0].GetName() != refNames[2] || subChans[0].GetSubchannelId() != ids[2] {
@@ -543,7 +564,7 @@ func TestGetChannel(t *testing.T) {
 			}
 		}
 	}
-	resp, _ = svr.GetChannel(context.Background(), &channelzpb.GetChannelRequest{ChannelId: ids[1]})
+	resp, _ = svr.GetChannel(ctx, &channelzpb.GetChannelRequest{ChannelId: ids[1]})
 	metrics = resp.GetChannel()
 	nestedChans = metrics.GetChannelRef()
 	if len(nestedChans) != 1 || nestedChans[0].GetName() != refNames[3] || nestedChans[0].GetChannelId() != ids[3] {
@@ -551,7 +572,7 @@ func TestGetChannel(t *testing.T) {
 	}
 }
 
-func TestGetSubChannel(t *testing.T) {
+func (s) TestGetSubChannel(t *testing.T) {
 	var (
 		subchanCreated            = "SubChannel Created"
 		subchanConnectivityChange = fmt.Sprintf("Subchannel Connectivity change to %v", connectivity.Ready)
@@ -562,34 +583,36 @@ func TestGetSubChannel(t *testing.T) {
 	refNames := []string{"top channel 1", "sub channel 1", "socket 1", "socket 2"}
 	ids := make([]int64, 4)
 	ids[0] = channelz.RegisterChannel(&dummyChannel{}, 0, refNames[0])
-	channelz.AddTraceEvent(ids[0], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[0], 0, &channelz.TraceEventDesc{
 		Desc:     "Channel Created",
-		Severity: channelz.CtINFO,
+		Severity: channelz.CtInfo,
 	})
 	ids[1] = channelz.RegisterSubChannel(&dummyChannel{}, ids[0], refNames[1])
-	channelz.AddTraceEvent(ids[1], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[1], 0, &channelz.TraceEventDesc{
 		Desc:     subchanCreated,
-		Severity: channelz.CtINFO,
+		Severity: channelz.CtInfo,
 		Parent: &channelz.TraceEventDesc{
 			Desc:     fmt.Sprintf("Nested Channel(id:%d) created", ids[0]),
-			Severity: channelz.CtINFO,
+			Severity: channelz.CtInfo,
 		},
 	})
 	ids[2] = channelz.RegisterNormalSocket(&dummySocket{}, ids[1], refNames[2])
 	ids[3] = channelz.RegisterNormalSocket(&dummySocket{}, ids[1], refNames[3])
-	channelz.AddTraceEvent(ids[1], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[1], 0, &channelz.TraceEventDesc{
 		Desc:     subchanConnectivityChange,
-		Severity: channelz.CtINFO,
+		Severity: channelz.CtInfo,
 	})
-	channelz.AddTraceEvent(ids[1], &channelz.TraceEventDesc{
+	channelz.AddTraceEvent(logger, ids[1], 0, &channelz.TraceEventDesc{
 		Desc:     subChanPickNewAddress,
-		Severity: channelz.CtINFO,
+		Severity: channelz.CtInfo,
 	})
 	for _, id := range ids {
 		defer channelz.RemoveEntry(id)
 	}
 	svr := newCZServer()
-	resp, _ := svr.GetSubchannel(context.Background(), &channelzpb.GetSubchannelRequest{SubchannelId: ids[1]})
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	resp, _ := svr.GetSubchannel(ctx, &channelzpb.GetSubchannelRequest{SubchannelId: ids[1]})
 	metrics := resp.GetSubchannel()
 	want := map[int64]string{
 		ids[2]: refNames[2],
@@ -628,7 +651,7 @@ func TestGetSubChannel(t *testing.T) {
 	}
 }
 
-func TestGetSocket(t *testing.T) {
+func (s) TestGetSocket(t *testing.T) {
 	czCleanup := channelz.NewChannelzStorage()
 	defer cleanupWrapper(czCleanup, t)
 	ss := []*dummySocket{
@@ -710,8 +733,10 @@ func TestGetSocket(t *testing.T) {
 		ids[i] = channelz.RegisterNormalSocket(s, svrID, strconv.Itoa(i))
 		defer channelz.RemoveEntry(ids[i])
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
 	for i, s := range ss {
-		resp, _ := svr.GetSocket(context.Background(), &channelzpb.GetSocketRequest{SocketId: ids[i]})
+		resp, _ := svr.GetSocket(ctx, &channelzpb.GetSocketRequest{SocketId: ids[i]})
 		metrics := resp.GetSocket()
 		if !reflect.DeepEqual(metrics.GetRef(), &channelzpb.SocketRef{SocketId: ids[i], Name: strconv.Itoa(i)}) || !reflect.DeepEqual(socketProtoToStruct(metrics), s) {
 			t.Fatalf("resp.GetSocket() want: metrics.GetRef() = %#v and %#v, got: metrics.GetRef() = %#v and %#v", &channelzpb.SocketRef{SocketId: ids[i], Name: strconv.Itoa(i)}, s, metrics.GetRef(), socketProtoToStruct(metrics))

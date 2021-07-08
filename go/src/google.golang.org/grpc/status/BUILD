@@ -12,10 +12,8 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
-        "//go/src/github.com/golang/protobuf/proto",
-        "//go/src/github.com/golang/protobuf/ptypes",
         "//go/src/google.golang.org/genproto/googleapis/rpc/status",
         "//go/src/google.golang.org/grpc/codes",
-        "//go/src/google.golang.org/grpc/internal",
+        "//go/src/google.golang.org/grpc/internal/status",
     ],
 )

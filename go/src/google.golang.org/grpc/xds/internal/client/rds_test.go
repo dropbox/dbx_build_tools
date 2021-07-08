@@ -1,6 +1,8 @@
+// +build go1.12
+
 /*
  *
- * Copyright 2019 gRPC authors.
+ * Copyright 2020 gRPC authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,73 +21,86 @@
 package client
 
 import (
-	"errors"
 	"fmt"
-	"reflect"
+	"regexp"
 	"testing"
 	"time"
 
-	xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	routepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	"google.golang.org/grpc/xds/internal/client/fakexds"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"google.golang.org/grpc/internal/testutils"
+	"google.golang.org/grpc/internal/xds/env"
+	"google.golang.org/grpc/xds/internal/httpfilter"
+	"google.golang.org/grpc/xds/internal/version"
+	"google.golang.org/protobuf/types/known/durationpb"
+
+	v2xdspb "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	v2routepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
+	v3corepb "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	v3routepb "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	v3matcherpb "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	v3typepb "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	anypb "github.com/golang/protobuf/ptypes/any"
+	wrapperspb "github.com/golang/protobuf/ptypes/wrappers"
 )
 
-func (v2c *v2Client) cloneRDSCacheForTesting() map[string]string {
-	v2c.mu.Lock()
-	defer v2c.mu.Unlock()
+func (s) TestRDSGenerateRDSUpdateFromRouteConfiguration(t *testing.T) {
+	const (
+		uninterestingDomain      = "uninteresting.domain"
+		uninterestingClusterName = "uninterestingClusterName"
+		ldsTarget                = "lds.target.good:1111"
+		routeName                = "routeName"
+		clusterName              = "clusterName"
+	)
 
-	cloneCache := make(map[string]string)
-	for k, v := range v2c.rdsCache {
-		cloneCache[k] = v
-	}
-	return cloneCache
-}
+	var (
+		goodRouteConfigWithFilterConfigs = func(cfgs map[string]*anypb.Any) *v3routepb.RouteConfiguration {
+			return &v3routepb.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*v3routepb.VirtualHost{{
+					Domains: []string{ldsTarget},
+					Routes: []*v3routepb.Route{{
+						Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"}},
+						Action: &v3routepb.Route_Route{
+							Route: &v3routepb.RouteAction{ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: clusterName}},
+						},
+					}},
+					TypedPerFilterConfig: cfgs,
+				}},
+			}
+		}
+		goodUpdateWithFilterConfigs = func(cfgs map[string]httpfilter.FilterConfig) RouteConfigUpdate {
+			return RouteConfigUpdate{
+				VirtualHosts: []*VirtualHost{{
+					Domains: []string{ldsTarget},
+					Routes: []*Route{{
+						Prefix:           newStringP("/"),
+						WeightedClusters: map[string]WeightedCluster{clusterName: {Weight: 1}},
+					}},
+					HTTPFilterConfigOverride: cfgs,
+				}},
+			}
+		}
+	)
 
-func TestRDSGetClusterFromRouteConfiguration(t *testing.T) {
 	tests := []struct {
-		name        string
-		rc          *xdspb.RouteConfiguration
-		wantCluster string
+		name       string
+		rc         *v3routepb.RouteConfiguration
+		wantUpdate RouteConfigUpdate
+		wantError  bool
+		disableFI  bool // disable fault injection
 	}{
 		{
-			name:        "no-virtual-hosts-in-rc",
-			rc:          emptyRouteConfig,
-			wantCluster: "",
-		},
-		{
-			name:        "no-domains-in-rc",
-			rc:          noDomainsInRouteConfig,
-			wantCluster: "",
-		},
-		{
-			name: "non-matching-domain-in-rc",
-			rc: &xdspb.RouteConfiguration{
-				VirtualHosts: []*routepb.VirtualHost{
-					{Domains: []string{uninterestingDomain}},
-				},
-			},
-			wantCluster: "",
-		},
-		{
-			name: "no-routes-in-rc",
-			rc: &xdspb.RouteConfiguration{
-				VirtualHosts: []*routepb.VirtualHost{
-					{Domains: []string{goodMatchingDomain}},
-				},
-			},
-			wantCluster: "",
-		},
-		{
 			name: "default-route-match-field-is-nil",
-			rc: &xdspb.RouteConfiguration{
-				VirtualHosts: []*routepb.VirtualHost{
+			rc: &v3routepb.RouteConfiguration{
+				VirtualHosts: []*v3routepb.VirtualHost{
 					{
-						Domains: []string{goodMatchingDomain},
-						Routes: []*routepb.Route{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
 							{
-								Action: &routepb.Route_Route{
-									Route: &routepb.RouteAction{
-										ClusterSpecifier: &routepb.RouteAction_Cluster{Cluster: goodClusterName1},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: clusterName},
 									},
 								},
 							},
@@ -93,48 +108,48 @@ func TestRDSGetClusterFromRouteConfiguration(t *testing.T) {
 					},
 				},
 			},
-			wantCluster: "",
+			wantError: true,
 		},
 		{
 			name: "default-route-match-field-is-non-nil",
-			rc: &xdspb.RouteConfiguration{
-				VirtualHosts: []*routepb.VirtualHost{
+			rc: &v3routepb.RouteConfiguration{
+				VirtualHosts: []*v3routepb.VirtualHost{
 					{
-						Domains: []string{goodMatchingDomain},
-						Routes: []*routepb.Route{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
 							{
-								Match:  &routepb.RouteMatch{},
-								Action: &routepb.Route_Route{},
+								Match:  &v3routepb.RouteMatch{},
+								Action: &v3routepb.Route_Route{},
 							},
 						},
 					},
 				},
 			},
-			wantCluster: "",
+			wantError: true,
 		},
 		{
 			name: "default-route-routeaction-field-is-nil",
-			rc: &xdspb.RouteConfiguration{
-				VirtualHosts: []*routepb.VirtualHost{
+			rc: &v3routepb.RouteConfiguration{
+				VirtualHosts: []*v3routepb.VirtualHost{
 					{
-						Domains: []string{goodMatchingDomain},
-						Routes:  []*routepb.Route{{}},
+						Domains: []string{ldsTarget},
+						Routes:  []*v3routepb.Route{{}},
 					},
 				},
 			},
-			wantCluster: "",
+			wantError: true,
 		},
 		{
 			name: "default-route-cluster-field-is-empty",
-			rc: &xdspb.RouteConfiguration{
-				VirtualHosts: []*routepb.VirtualHost{
+			rc: &v3routepb.RouteConfiguration{
+				VirtualHosts: []*v3routepb.VirtualHost{
 					{
-						Domains: []string{goodMatchingDomain},
-						Routes: []*routepb.Route{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
 							{
-								Action: &routepb.Route_Route{
-									Route: &routepb.RouteAction{
-										ClusterSpecifier: &routepb.RouteAction_ClusterHeader{},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier: &v3routepb.RouteAction_ClusterHeader{},
 									},
 								},
 							},
@@ -142,439 +157,1012 @@ func TestRDSGetClusterFromRouteConfiguration(t *testing.T) {
 					},
 				},
 			},
-			wantCluster: "",
+			wantError: true,
 		},
 		{
-			name:        "good-route-config",
-			rc:          goodRouteConfig1,
-			wantCluster: goodClusterName1,
+			// default route's match sets case-sensitive to false.
+			name: "good-route-config-but-with-casesensitive-false",
+			rc: &v3routepb.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*v3routepb.VirtualHost{{
+					Domains: []string{ldsTarget},
+					Routes: []*v3routepb.Route{{
+						Match: &v3routepb.RouteMatch{
+							PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"},
+							CaseSensitive: &wrapperspb.BoolValue{Value: false},
+						},
+						Action: &v3routepb.Route_Route{
+							Route: &v3routepb.RouteAction{
+								ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: clusterName},
+							}}}}}}},
+			wantUpdate: RouteConfigUpdate{
+				VirtualHosts: []*VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes:  []*Route{{Prefix: newStringP("/"), CaseInsensitive: true, WeightedClusters: map[string]WeightedCluster{clusterName: {Weight: 1}}}},
+					},
+				},
+			},
+		},
+		{
+			name: "good-route-config-with-empty-string-route",
+			rc: &v3routepb.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*v3routepb.VirtualHost{
+					{
+						Domains: []string{uninterestingDomain},
+						Routes: []*v3routepb.Route{
+							{
+								Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: ""}},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: uninterestingClusterName},
+									},
+								},
+							},
+						},
+					},
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
+							{
+								Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: ""}},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: clusterName},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantUpdate: RouteConfigUpdate{
+				VirtualHosts: []*VirtualHost{
+					{
+						Domains: []string{uninterestingDomain},
+						Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{uninterestingClusterName: {Weight: 1}}}},
+					},
+					{
+						Domains: []string{ldsTarget},
+						Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{clusterName: {Weight: 1}}}},
+					},
+				},
+			},
+		},
+		{
+			// default route's match is not empty string, but "/".
+			name: "good-route-config-with-slash-string-route",
+			rc: &v3routepb.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*v3routepb.VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
+							{
+								Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"}},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: clusterName},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantUpdate: RouteConfigUpdate{
+				VirtualHosts: []*VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes:  []*Route{{Prefix: newStringP("/"), WeightedClusters: map[string]WeightedCluster{clusterName: {Weight: 1}}}},
+					},
+				},
+			},
+		},
+		{
+			// weights not add up to total-weight.
+			name: "route-config-with-weighted_clusters_weights_not_add_up",
+			rc: &v3routepb.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*v3routepb.VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
+							{
+								Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"}},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier: &v3routepb.RouteAction_WeightedClusters{
+											WeightedClusters: &v3routepb.WeightedCluster{
+												Clusters: []*v3routepb.WeightedCluster_ClusterWeight{
+													{Name: "a", Weight: &wrapperspb.UInt32Value{Value: 2}},
+													{Name: "b", Weight: &wrapperspb.UInt32Value{Value: 3}},
+													{Name: "c", Weight: &wrapperspb.UInt32Value{Value: 5}},
+												},
+												TotalWeight: &wrapperspb.UInt32Value{Value: 30},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantError: true,
+		},
+		{
+			name: "good-route-config-with-weighted_clusters",
+			rc: &v3routepb.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*v3routepb.VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
+							{
+								Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"}},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier: &v3routepb.RouteAction_WeightedClusters{
+											WeightedClusters: &v3routepb.WeightedCluster{
+												Clusters: []*v3routepb.WeightedCluster_ClusterWeight{
+													{Name: "a", Weight: &wrapperspb.UInt32Value{Value: 2}},
+													{Name: "b", Weight: &wrapperspb.UInt32Value{Value: 3}},
+													{Name: "c", Weight: &wrapperspb.UInt32Value{Value: 5}},
+												},
+												TotalWeight: &wrapperspb.UInt32Value{Value: 10},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantUpdate: RouteConfigUpdate{
+				VirtualHosts: []*VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*Route{{
+							Prefix: newStringP("/"),
+							WeightedClusters: map[string]WeightedCluster{
+								"a": {Weight: 2},
+								"b": {Weight: 3},
+								"c": {Weight: 5},
+							},
+						}},
+					},
+				},
+			},
+		},
+		{
+			name: "good-route-config-with-max-stream-duration",
+			rc: &v3routepb.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*v3routepb.VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
+							{
+								Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"}},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier:  &v3routepb.RouteAction_Cluster{Cluster: clusterName},
+										MaxStreamDuration: &v3routepb.RouteAction_MaxStreamDuration{MaxStreamDuration: durationpb.New(time.Second)},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantUpdate: RouteConfigUpdate{
+				VirtualHosts: []*VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*Route{{
+							Prefix:            newStringP("/"),
+							WeightedClusters:  map[string]WeightedCluster{clusterName: {Weight: 1}},
+							MaxStreamDuration: newDurationP(time.Second),
+						}},
+					},
+				},
+			},
+		},
+		{
+			name: "good-route-config-with-grpc-timeout-header-max",
+			rc: &v3routepb.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*v3routepb.VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
+							{
+								Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"}},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier:  &v3routepb.RouteAction_Cluster{Cluster: clusterName},
+										MaxStreamDuration: &v3routepb.RouteAction_MaxStreamDuration{GrpcTimeoutHeaderMax: durationpb.New(time.Second)},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantUpdate: RouteConfigUpdate{
+				VirtualHosts: []*VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*Route{{
+							Prefix:            newStringP("/"),
+							WeightedClusters:  map[string]WeightedCluster{clusterName: {Weight: 1}},
+							MaxStreamDuration: newDurationP(time.Second),
+						}},
+					},
+				},
+			},
+		},
+		{
+			name: "good-route-config-with-both-timeouts",
+			rc: &v3routepb.RouteConfiguration{
+				Name: routeName,
+				VirtualHosts: []*v3routepb.VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*v3routepb.Route{
+							{
+								Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"}},
+								Action: &v3routepb.Route_Route{
+									Route: &v3routepb.RouteAction{
+										ClusterSpecifier:  &v3routepb.RouteAction_Cluster{Cluster: clusterName},
+										MaxStreamDuration: &v3routepb.RouteAction_MaxStreamDuration{MaxStreamDuration: durationpb.New(2 * time.Second), GrpcTimeoutHeaderMax: durationpb.New(0)},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			wantUpdate: RouteConfigUpdate{
+				VirtualHosts: []*VirtualHost{
+					{
+						Domains: []string{ldsTarget},
+						Routes: []*Route{{
+							Prefix:            newStringP("/"),
+							WeightedClusters:  map[string]WeightedCluster{clusterName: {Weight: 1}},
+							MaxStreamDuration: newDurationP(0),
+						}},
+					},
+				},
+			},
+		},
+		{
+			name:       "good-route-config-with-http-filter-config",
+			rc:         goodRouteConfigWithFilterConfigs(map[string]*anypb.Any{"foo": customFilterConfig}),
+			wantUpdate: goodUpdateWithFilterConfigs(map[string]httpfilter.FilterConfig{"foo": filterConfig{Override: customFilterConfig}}),
+		},
+		{
+			name:       "good-route-config-with-http-filter-config-typed-struct",
+			rc:         goodRouteConfigWithFilterConfigs(map[string]*anypb.Any{"foo": wrappedCustomFilterTypedStructConfig}),
+			wantUpdate: goodUpdateWithFilterConfigs(map[string]httpfilter.FilterConfig{"foo": filterConfig{Override: customFilterTypedStructConfig}}),
+		},
+		{
+			name:       "good-route-config-with-optional-http-filter-config",
+			rc:         goodRouteConfigWithFilterConfigs(map[string]*anypb.Any{"foo": wrappedOptionalFilter("custom.filter")}),
+			wantUpdate: goodUpdateWithFilterConfigs(map[string]httpfilter.FilterConfig{"foo": filterConfig{Override: customFilterConfig}}),
+		},
+		{
+			name:      "good-route-config-with-http-err-filter-config",
+			rc:        goodRouteConfigWithFilterConfigs(map[string]*anypb.Any{"foo": errFilterConfig}),
+			wantError: true,
+		},
+		{
+			name:      "good-route-config-with-http-optional-err-filter-config",
+			rc:        goodRouteConfigWithFilterConfigs(map[string]*anypb.Any{"foo": wrappedOptionalFilter("err.custom.filter")}),
+			wantError: true,
+		},
+		{
+			name:      "good-route-config-with-http-unknown-filter-config",
+			rc:        goodRouteConfigWithFilterConfigs(map[string]*anypb.Any{"foo": unknownFilterConfig}),
+			wantError: true,
+		},
+		{
+			name:       "good-route-config-with-http-optional-unknown-filter-config",
+			rc:         goodRouteConfigWithFilterConfigs(map[string]*anypb.Any{"foo": wrappedOptionalFilter("unknown.custom.filter")}),
+			wantUpdate: goodUpdateWithFilterConfigs(nil),
+		},
+		{
+			name:       "good-route-config-with-http-err-filter-config-fi-disabled",
+			disableFI:  true,
+			rc:         goodRouteConfigWithFilterConfigs(map[string]*anypb.Any{"foo": errFilterConfig}),
+			wantUpdate: goodUpdateWithFilterConfigs(nil),
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			if gotCluster := getClusterFromRouteConfiguration(test.rc, goodLDSTarget1); gotCluster != test.wantCluster {
-				t.Errorf("getClusterFromRouteConfiguration(%+v, %v) = %v, want %v", test.rc, goodLDSTarget1, gotCluster, test.wantCluster)
+			oldFI := env.FaultInjectionSupport
+			env.FaultInjectionSupport = !test.disableFI
+
+			gotUpdate, gotError := generateRDSUpdateFromRouteConfiguration(test.rc, nil, false)
+			if (gotError != nil) != test.wantError ||
+				!cmp.Equal(gotUpdate, test.wantUpdate, cmpopts.EquateEmpty(),
+					cmp.Transformer("FilterConfig", func(fc httpfilter.FilterConfig) string {
+						return fmt.Sprint(fc)
+					})) {
+				t.Errorf("generateRDSUpdateFromRouteConfiguration(%+v, %v) returned unexpected, diff (-want +got):\\n%s", test.rc, ldsTarget, cmp.Diff(test.wantUpdate, gotUpdate, cmpopts.EquateEmpty()))
+
+				env.FaultInjectionSupport = oldFI
 			}
 		})
 	}
 }
 
-// TestRDSHandleResponse starts a fake xDS server, makes a ClientConn to it,
-// and creates a v2Client using it. Then, it registers an LDS and RDS watcher
-// and tests different RDS responses.
-func TestRDSHandleResponse(t *testing.T) {
-	fakeServer, sCleanup := fakexds.StartServer(t)
-	client, cCleanup := fakeServer.GetClientConn(t)
-	defer func() {
-		cCleanup()
-		sCleanup()
-	}()
-	v2c := newV2Client(client, goodNodeProto, func(int) time.Duration { return 0 })
-	defer v2c.close()
+func (s) TestUnmarshalRouteConfig(t *testing.T) {
+	const (
+		ldsTarget                = "lds.target.good:1111"
+		uninterestingDomain      = "uninteresting.domain"
+		uninterestingClusterName = "uninterestingClusterName"
+		v2RouteConfigName        = "v2RouteConfig"
+		v3RouteConfigName        = "v3RouteConfig"
+		v2ClusterName            = "v2Cluster"
+		v3ClusterName            = "v3Cluster"
+	)
 
-	// Register an LDS watcher, and wait till the request is sent out, the
-	// response is received and the callback is invoked.
-	cbCh := make(chan error, 1)
-	v2c.watchLDS(goodLDSTarget1, func(u ldsUpdate, err error) {
-		t.Logf("v2c.watchLDS callback, ldsUpdate: %+v, err: %v", u, err)
-		cbCh <- err
-	})
-	<-fakeServer.RequestChan
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: goodLDSResponse1}
-	if err := <-cbCh; err != nil {
-		t.Fatalf("v2c.watchLDS returned error in callback: %v", err)
-	}
-
-	tests := []struct {
-		name          string
-		rdsResponse   *xdspb.DiscoveryResponse
-		wantErr       bool
-		wantUpdate    *rdsUpdate
-		wantUpdateErr bool
-	}{
-		// Badly marshaled RDS response.
-		{
-			name:          "badly-marshaled-response",
-			rdsResponse:   badlyMarshaledRDSResponse,
-			wantErr:       true,
-			wantUpdate:    nil,
-			wantUpdateErr: false,
-		},
-		// Response does not contain RouteConfiguration proto.
-		{
-			name:          "no-route-config-in-response",
-			rdsResponse:   badResourceTypeInRDSResponse,
-			wantErr:       true,
-			wantUpdate:    nil,
-			wantUpdateErr: false,
-		},
-		// No VirtualHosts in the response. Just one test case here for a bad
-		// RouteConfiguration, since the others are covered in
-		// TestGetClusterFromRouteConfiguration.
-		{
-			name:          "no-virtual-hosts-in-response",
-			rdsResponse:   noVirtualHostsInRDSResponse,
-			wantErr:       true,
-			wantUpdate:    nil,
-			wantUpdateErr: false,
-		},
-		// Response contains one good RouteConfiguration, uninteresting though.
-		{
-			name:          "one-uninteresting-route-config",
-			rdsResponse:   goodRDSResponse2,
-			wantErr:       false,
-			wantUpdate:    nil,
-			wantUpdateErr: false,
-		},
-		// Response contains one good interesting RouteConfiguration.
-		{
-			name:          "one-good-route-config",
-			rdsResponse:   goodRDSResponse1,
-			wantErr:       false,
-			wantUpdate:    &rdsUpdate{clusterName: goodClusterName1},
-			wantUpdateErr: false,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			gotUpdateCh := make(chan rdsUpdate, 1)
-			gotUpdateErrCh := make(chan error, 1)
-
-			// Register a watcher, to trigger the v2Client to send an RDS request.
-			cancelWatch := v2c.watchRDS(goodRouteName1, func(u rdsUpdate, err error) {
-				t.Logf("in v2c.watchRDS callback, rdsUpdate: %+v, err: %v", u, err)
-				gotUpdateCh <- u
-				gotUpdateErrCh <- err
-			})
-
-			// Wait till the request makes it to the fakeServer. This ensures that
-			// the watch request has been processed by the v2Client.
-			<-fakeServer.RequestChan
-
-			// Directly push the response through a call to handleRDSResponse,
-			// thereby bypassing the fakeServer.
-			if err := v2c.handleRDSResponse(test.rdsResponse); (err != nil) != test.wantErr {
-				t.Fatalf("v2c.handleRDSResponse() returned err: %v, wantErr: %v", err, test.wantErr)
-			}
-
-			// If the test needs the callback to be invoked, verify the update and
-			// error pushed to the callback.
-			if test.wantUpdate != nil {
-				timer := time.NewTimer(defaultTestTimeout)
-				select {
-				case <-timer.C:
-					t.Fatal("Timeout when expecting RDS update")
-				case gotUpdate := <-gotUpdateCh:
-					timer.Stop()
-					if !reflect.DeepEqual(gotUpdate, *test.wantUpdate) {
-						t.Fatalf("got RDS update : %+v, want %+v", gotUpdate, *test.wantUpdate)
-					}
-				}
-				// Since the callback that we registered pushes to both channels at
-				// the same time, this channel read should return immediately.
-				gotUpdateErr := <-gotUpdateErrCh
-				if (gotUpdateErr != nil) != test.wantUpdateErr {
-					t.Fatalf("got RDS update error {%v}, wantErr: %v", gotUpdateErr, test.wantUpdateErr)
-				}
-			}
-			cancelWatch()
+	var (
+		v2VirtualHost = []*v2routepb.VirtualHost{
+			{
+				Domains: []string{uninterestingDomain},
+				Routes: []*v2routepb.Route{
+					{
+						Match: &v2routepb.RouteMatch{PathSpecifier: &v2routepb.RouteMatch_Prefix{Prefix: ""}},
+						Action: &v2routepb.Route_Route{
+							Route: &v2routepb.RouteAction{
+								ClusterSpecifier: &v2routepb.RouteAction_Cluster{Cluster: uninterestingClusterName},
+							},
+						},
+					},
+				},
+			},
+			{
+				Domains: []string{ldsTarget},
+				Routes: []*v2routepb.Route{
+					{
+						Match: &v2routepb.RouteMatch{PathSpecifier: &v2routepb.RouteMatch_Prefix{Prefix: ""}},
+						Action: &v2routepb.Route_Route{
+							Route: &v2routepb.RouteAction{
+								ClusterSpecifier: &v2routepb.RouteAction_Cluster{Cluster: v2ClusterName},
+							},
+						},
+					},
+				},
+			},
+		}
+		v2RouteConfig = testutils.MarshalAny(&v2xdspb.RouteConfiguration{
+			Name:         v2RouteConfigName,
+			VirtualHosts: v2VirtualHost,
 		})
-	}
-}
-
-// TestRDSHandleResponseWithoutLDSWatch tests the case where the v2Client
-// receives an RDS response without a registered LDS watcher.
-func TestRDSHandleResponseWithoutLDSWatch(t *testing.T) {
-	fakeServer, sCleanup := fakexds.StartServer(t)
-	client, cCleanup := fakeServer.GetClientConn(t)
-	defer func() {
-		cCleanup()
-		sCleanup()
-	}()
-	v2c := newV2Client(client, goodNodeProto, func(int) time.Duration { return 0 })
-	defer v2c.close()
-
-	if v2c.handleRDSResponse(goodRDSResponse1) == nil {
-		t.Fatal("v2c.handleRDSResponse() succeeded, should have failed")
-	}
-}
-
-// TestRDSHandleResponseWithoutRDSWatch tests the case where the v2Client
-// receives an RDS response without a registered RDS watcher.
-func TestRDSHandleResponseWithoutRDSWatch(t *testing.T) {
-	fakeServer, sCleanup := fakexds.StartServer(t)
-	client, cCleanup := fakeServer.GetClientConn(t)
-	defer func() {
-		cCleanup()
-		sCleanup()
-	}()
-	v2c := newV2Client(client, goodNodeProto, func(int) time.Duration { return 0 })
-	defer v2c.close()
-
-	// Register an LDS watcher, and wait till the request is sent out, the
-	// response is received and the callback is invoked.
-	cbCh := make(chan error, 1)
-	v2c.watchLDS(goodLDSTarget1, func(u ldsUpdate, err error) {
-		t.Logf("v2c.watchLDS callback, ldsUpdate: %+v, err: %v", u, err)
-		cbCh <- err
-	})
-	<-fakeServer.RequestChan
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: goodLDSResponse1}
-	if err := <-cbCh; err != nil {
-		t.Fatalf("v2c.watchLDS returned error in callback: %v", err)
-	}
-
-	if v2c.handleRDSResponse(goodRDSResponse1) == nil {
-		t.Fatal("v2c.handleRDSResponse() succeeded, should have failed")
-	}
-}
-
-// rdsTestOp contains all data related to one particular test operation. Not
-// all fields make sense for all tests.
-type rdsTestOp struct {
-	// target is the resource name to watch for.
-	target string
-	// responseToSend is the xDS response sent to the client
-	responseToSend *fakexds.Response
-	// wantOpErr specfies whether the main operation should return an error.
-	wantOpErr bool
-	// wantRDSCache is the expected rdsCache at the end of an operation.
-	wantRDSCache map[string]string
-	// wantWatchCallback specifies if the watch callback should be invoked.
-	wantWatchCallback bool
-}
-
-// testRDSCaching is a helper function which starts a fake xDS server, makes a
-// ClientConn to it, creates a v2Client using it, registers an LDS watcher and
-// pushes a good LDS response. It then reads a bunch of test operations to be
-// performed from rdsTestOps and returns error, if any, on the provided error
-// channel. This is executed in a separate goroutine.
-func testRDSCaching(t *testing.T, rdsTestOps []rdsTestOp, errCh chan error) {
-	t.Helper()
-
-	fakeServer, sCleanup := fakexds.StartServer(t)
-	client, cCleanup := fakeServer.GetClientConn(t)
-	defer func() {
-		cCleanup()
-		sCleanup()
-	}()
-	v2c := newV2Client(client, goodNodeProto, func(int) time.Duration { return 0 })
-	defer v2c.close()
-	t.Log("Started xds v2Client...")
-
-	// Register an LDS watcher, and wait till the request is sent out, the
-	// response is received and the callback is invoked.
-	cbCh := make(chan error, 1)
-	v2c.watchLDS(goodLDSTarget1, func(u ldsUpdate, err error) {
-		t.Logf("v2c.watchLDS callback, ldsUpdate: %+v, err: %v", u, err)
-		cbCh <- err
-	})
-	<-fakeServer.RequestChan
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: goodLDSResponse1}
-	if err := <-cbCh; err != nil {
-		errCh <- fmt.Errorf("v2c.watchLDS returned error in callback: %v", err)
-		return
-	}
-
-	callbackCh := make(chan struct{}, 1)
-	for _, rdsTestOp := range rdsTestOps {
-		// Register a watcher if required, and use a channel to signal the
-		// successful invocation of the callback.
-		if rdsTestOp.target != "" {
-			v2c.watchRDS(rdsTestOp.target, func(u rdsUpdate, err error) {
-				t.Logf("Received callback with rdsUpdate {%+v} and error {%v}", u, err)
-				callbackCh <- struct{}{}
-			})
-			t.Logf("Registered a watcher for RDS target: %v...", rdsTestOp.target)
-
-			// Wait till the request makes it to the fakeServer. This ensures that
-			// the watch request has been processed by the v2Client.
-			<-fakeServer.RequestChan
-			t.Log("FakeServer received request...")
-		}
-
-		// Directly push the response through a call to handleRDSResponse,
-		// thereby bypassing the fakeServer.
-		if rdsTestOp.responseToSend != nil {
-			if err := v2c.handleRDSResponse(rdsTestOp.responseToSend.Resp); (err != nil) != rdsTestOp.wantOpErr {
-				errCh <- fmt.Errorf("v2c.handleRDSResponse() returned err: %v", err)
-				return
-			}
-		}
-
-		// If the test needs the callback to be invoked, just verify that
-		// it was invoked. Since we verify the contents of the cache, it's
-		// ok not to verify the contents of the callback.
-		if rdsTestOp.wantWatchCallback {
-			<-callbackCh
-		}
-
-		if !reflect.DeepEqual(v2c.cloneRDSCacheForTesting(), rdsTestOp.wantRDSCache) {
-			errCh <- fmt.Errorf("gotRDSCache: %v, wantRDSCache: %v", v2c.rdsCache, rdsTestOp.wantRDSCache)
-			return
-		}
-	}
-	t.Log("Completed all test ops successfully...")
-	errCh <- nil
-}
-
-// TestRDSCaching tests some end-to-end RDS flows using a fake xDS server, and
-// verifies the RDS data cached at the v2Client.
-func TestRDSCaching(t *testing.T) {
-	errCh := make(chan error, 1)
-	ops := []rdsTestOp{
-		// Add an RDS watch for a resource name (goodRouteName1), which returns one
-		// matching resource in the response.
-		{
-			target:            goodRouteName1,
-			responseToSend:    &fakexds.Response{Resp: goodRDSResponse1},
-			wantRDSCache:      map[string]string{goodRouteName1: goodClusterName1},
-			wantWatchCallback: true,
-		},
-		// Push an RDS response with a new resource. This resource is considered
-		// good because its domain field matches our LDS watch target, but the
-		// routeConfigName does not match our RDS watch (so the watch callback will
-		// not be invoked). But this should still be cached.
-		{
-			responseToSend: &fakexds.Response{Resp: goodRDSResponse2},
-			wantRDSCache: map[string]string{
-				goodRouteName1: goodClusterName1,
-				goodRouteName2: goodClusterName2,
+		v3VirtualHost = []*v3routepb.VirtualHost{
+			{
+				Domains: []string{uninterestingDomain},
+				Routes: []*v3routepb.Route{
+					{
+						Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: ""}},
+						Action: &v3routepb.Route_Route{
+							Route: &v3routepb.RouteAction{
+								ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: uninterestingClusterName},
+							},
+						},
+					},
+				},
 			},
-		},
-		// Push an uninteresting RDS response. This should cause handleRDSResponse
-		// to return an error. But the watch callback should not be invoked, and
-		// the cache should not be updated.
-		{
-			responseToSend: &fakexds.Response{Resp: uninterestingRDSResponse},
-			wantOpErr:      true,
-			wantRDSCache: map[string]string{
-				goodRouteName1: goodClusterName1,
-				goodRouteName2: goodClusterName2,
+			{
+				Domains: []string{ldsTarget},
+				Routes: []*v3routepb.Route{
+					{
+						Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: ""}},
+						Action: &v3routepb.Route_Route{
+							Route: &v3routepb.RouteAction{
+								ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: v3ClusterName},
+							},
+						},
+					},
+				},
 			},
-		},
-		// Switch the watch target to goodRouteName2, which was already cached.  No
-		// response is received from the server (as expected), but we want the
-		// callback to be invoked with the new clusterName.
-		{
-			target: goodRouteName2,
-			wantRDSCache: map[string]string{
-				goodRouteName1: goodClusterName1,
-				goodRouteName2: goodClusterName2,
-			},
-			wantWatchCallback: true,
-		},
-	}
-	go testRDSCaching(t, ops, errCh)
-
-	timer := time.NewTimer(defaultTestTimeout)
-	select {
-	case <-timer.C:
-		t.Fatal("Timeout when expecting RDS update")
-	case err := <-errCh:
-		timer.Stop()
-		if err != nil {
-			t.Fatal(err)
 		}
-	}
-}
+		v3RouteConfig = testutils.MarshalAny(&v3routepb.RouteConfiguration{
+			Name:         v3RouteConfigName,
+			VirtualHosts: v3VirtualHost,
+		})
+	)
+	const testVersion = "test-version-rds"
 
-// TestRDSWatchExpiryTimer tests the case where the client does not receive an
-// RDS response for the request that it sends out. We want the watch callback
-// to be invoked with an error once the watchExpiryTimer fires.
-func TestRDSWatchExpiryTimer(t *testing.T) {
-	oldWatchExpiryTimeout := defaultWatchExpiryTimeout
-	defaultWatchExpiryTimeout = 1 * time.Second
-	defer func() {
-		defaultWatchExpiryTimeout = oldWatchExpiryTimeout
-	}()
-
-	fakeServer, sCleanup := fakexds.StartServer(t)
-	client, cCleanup := fakeServer.GetClientConn(t)
-	defer func() {
-		cCleanup()
-		sCleanup()
-	}()
-	v2c := newV2Client(client, goodNodeProto, func(int) time.Duration { return 0 })
-	defer v2c.close()
-	t.Log("Started xds v2Client...")
-
-	// Register an LDS watcher, and wait till the request is sent out, the
-	// response is received and the callback is invoked.
-	ldsCallbackCh := make(chan struct{})
-	v2c.watchLDS(goodLDSTarget1, func(u ldsUpdate, err error) {
-		t.Logf("v2c.watchLDS callback, ldsUpdate: %+v, err: %v", u, err)
-		close(ldsCallbackCh)
-	})
-	<-fakeServer.RequestChan
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: goodLDSResponse1}
-	<-ldsCallbackCh
-
-	// Wait till the request makes it to the fakeServer. This ensures that
-	// the watch request has been processed by the v2Client.
-	rdsCallbackCh := make(chan error, 1)
-	v2c.watchRDS(goodRouteName1, func(u rdsUpdate, err error) {
-		t.Logf("Received callback with rdsUpdate {%+v} and error {%v}", u, err)
-		if u.clusterName != "" {
-			rdsCallbackCh <- fmt.Errorf("received clusterName %v in rdsCallback, wanted empty string", u.clusterName)
-		}
-		if err == nil {
-			rdsCallbackCh <- errors.New("received nil error in rdsCallback")
-		}
-		rdsCallbackCh <- nil
-	})
-	<-fakeServer.RequestChan
-
-	timer := time.NewTimer(2 * time.Second)
-	select {
-	case <-timer.C:
-		t.Fatalf("Timeout expired when expecting RDS update")
-	case err := <-rdsCallbackCh:
-		timer.Stop()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-}
-
-func TestHostFromTarget(t *testing.T) {
 	tests := []struct {
-		name    string
-		target  string
-		want    string
-		wantErr bool
+		name       string
+		resources  []*anypb.Any
+		wantUpdate map[string]RouteConfigUpdate
+		wantMD     UpdateMetadata
+		wantErr    bool
 	}{
 		{
-			name:    "correct",
-			target:  "foo.bar.com:1234",
-			want:    "foo.bar.com",
-			wantErr: false,
-		},
-		{
-			name:    "error",
-			target:  "invalid:1234:3421",
-			want:    "",
+			name:      "non-routeConfig resource type",
+			resources: []*anypb.Any{{TypeUrl: version.V3HTTPConnManagerURL}},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusNACKed,
+				Version: testVersion,
+				ErrState: &UpdateErrorMetadata{
+					Version: testVersion,
+					Err:     errPlaceHolder,
+				},
+			},
 			wantErr: true,
 		},
 		{
-			name:    "correct but missing port",
-			target:  "foo.bar.com",
-			want:    "foo.bar.com",
-			wantErr: false,
+			name: "badly marshaled routeconfig resource",
+			resources: []*anypb.Any{
+				{
+					TypeUrl: version.V3RouteConfigURL,
+					Value:   []byte{1, 2, 3, 4},
+				},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusNACKed,
+				Version: testVersion,
+				ErrState: &UpdateErrorMetadata{
+					Version: testVersion,
+					Err:     errPlaceHolder,
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "empty resource list",
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusACKed,
+				Version: testVersion,
+			},
+		},
+		{
+			name:      "v2 routeConfig resource",
+			resources: []*anypb.Any{v2RouteConfig},
+			wantUpdate: map[string]RouteConfigUpdate{
+				v2RouteConfigName: {
+					VirtualHosts: []*VirtualHost{
+						{
+							Domains: []string{uninterestingDomain},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{uninterestingClusterName: {Weight: 1}}}},
+						},
+						{
+							Domains: []string{ldsTarget},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{v2ClusterName: {Weight: 1}}}},
+						},
+					},
+					Raw: v2RouteConfig,
+				},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusACKed,
+				Version: testVersion,
+			},
+		},
+		{
+			name:      "v3 routeConfig resource",
+			resources: []*anypb.Any{v3RouteConfig},
+			wantUpdate: map[string]RouteConfigUpdate{
+				v3RouteConfigName: {
+					VirtualHosts: []*VirtualHost{
+						{
+							Domains: []string{uninterestingDomain},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{uninterestingClusterName: {Weight: 1}}}},
+						},
+						{
+							Domains: []string{ldsTarget},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{v3ClusterName: {Weight: 1}}}},
+						},
+					},
+					Raw: v3RouteConfig,
+				},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusACKed,
+				Version: testVersion,
+			},
+		},
+		{
+			name:      "multiple routeConfig resources",
+			resources: []*anypb.Any{v2RouteConfig, v3RouteConfig},
+			wantUpdate: map[string]RouteConfigUpdate{
+				v3RouteConfigName: {
+					VirtualHosts: []*VirtualHost{
+						{
+							Domains: []string{uninterestingDomain},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{uninterestingClusterName: {Weight: 1}}}},
+						},
+						{
+							Domains: []string{ldsTarget},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{v3ClusterName: {Weight: 1}}}},
+						},
+					},
+					Raw: v3RouteConfig,
+				},
+				v2RouteConfigName: {
+					VirtualHosts: []*VirtualHost{
+						{
+							Domains: []string{uninterestingDomain},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{uninterestingClusterName: {Weight: 1}}}},
+						},
+						{
+							Domains: []string{ldsTarget},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{v2ClusterName: {Weight: 1}}}},
+						},
+					},
+					Raw: v2RouteConfig,
+				},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusACKed,
+				Version: testVersion,
+			},
+		},
+		{
+			// To test that unmarshal keeps processing on errors.
+			name: "good and bad routeConfig resources",
+			resources: []*anypb.Any{
+				v2RouteConfig,
+				testutils.MarshalAny(&v3routepb.RouteConfiguration{
+					Name: "bad",
+					VirtualHosts: []*v3routepb.VirtualHost{
+						{Domains: []string{ldsTarget},
+							Routes: []*v3routepb.Route{{
+								Match: &v3routepb.RouteMatch{PathSpecifier: &v3routepb.RouteMatch_ConnectMatcher_{}},
+							}}}}}),
+				v3RouteConfig,
+			},
+			wantUpdate: map[string]RouteConfigUpdate{
+				v3RouteConfigName: {
+					VirtualHosts: []*VirtualHost{
+						{
+							Domains: []string{uninterestingDomain},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{uninterestingClusterName: {Weight: 1}}}},
+						},
+						{
+							Domains: []string{ldsTarget},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{v3ClusterName: {Weight: 1}}}},
+						},
+					},
+					Raw: v3RouteConfig,
+				},
+				v2RouteConfigName: {
+					VirtualHosts: []*VirtualHost{
+						{
+							Domains: []string{uninterestingDomain},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{uninterestingClusterName: {Weight: 1}}}},
+						},
+						{
+							Domains: []string{ldsTarget},
+							Routes:  []*Route{{Prefix: newStringP(""), WeightedClusters: map[string]WeightedCluster{v2ClusterName: {Weight: 1}}}},
+						},
+					},
+					Raw: v2RouteConfig,
+				},
+				"bad": {},
+			},
+			wantMD: UpdateMetadata{
+				Status:  ServiceStatusNACKed,
+				Version: testVersion,
+				ErrState: &UpdateErrorMetadata{
+					Version: testVersion,
+					Err:     errPlaceHolder,
+				},
+			},
+			wantErr: true,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := hostFromTarget(tt.target)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("hostFromTarget() error = %v, wantErr %v", err, tt.wantErr)
-				return
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			update, md, err := UnmarshalRouteConfig(testVersion, test.resources, nil)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("UnmarshalRouteConfig(), got err: %v, wantErr: %v", err, test.wantErr)
 			}
-			if got != tt.want {
-				t.Errorf("hostFromTarget() got = %v, want %v", got, tt.want)
+			if diff := cmp.Diff(update, test.wantUpdate, cmpOpts); diff != "" {
+				t.Errorf("got unexpected update, diff (-got +want): %v", diff)
+			}
+			if diff := cmp.Diff(md, test.wantMD, cmpOptsIgnoreDetails); diff != "" {
+				t.Errorf("got unexpected metadata, diff (-got +want): %v", diff)
 			}
 		})
 	}
+}
+
+func (s) TestRoutesProtoToSlice(t *testing.T) {
+	var (
+		goodRouteWithFilterConfigs = func(cfgs map[string]*anypb.Any) []*v3routepb.Route {
+			// Sets per-filter config in cluster "B" and in the route.
+			return []*v3routepb.Route{{
+				Match: &v3routepb.RouteMatch{
+					PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"},
+					CaseSensitive: &wrapperspb.BoolValue{Value: false},
+				},
+				Action: &v3routepb.Route_Route{
+					Route: &v3routepb.RouteAction{
+						ClusterSpecifier: &v3routepb.RouteAction_WeightedClusters{
+							WeightedClusters: &v3routepb.WeightedCluster{
+								Clusters: []*v3routepb.WeightedCluster_ClusterWeight{
+									{Name: "B", Weight: &wrapperspb.UInt32Value{Value: 60}, TypedPerFilterConfig: cfgs},
+									{Name: "A", Weight: &wrapperspb.UInt32Value{Value: 40}},
+								},
+								TotalWeight: &wrapperspb.UInt32Value{Value: 100},
+							}}}},
+				TypedPerFilterConfig: cfgs,
+			}}
+		}
+		goodUpdateWithFilterConfigs = func(cfgs map[string]httpfilter.FilterConfig) []*Route {
+			// Sets per-filter config in cluster "B" and in the route.
+			return []*Route{{
+				Prefix:                   newStringP("/"),
+				CaseInsensitive:          true,
+				WeightedClusters:         map[string]WeightedCluster{"A": {Weight: 40}, "B": {Weight: 60, HTTPFilterConfigOverride: cfgs}},
+				HTTPFilterConfigOverride: cfgs,
+			}}
+		}
+	)
+
+	tests := []struct {
+		name       string
+		routes     []*v3routepb.Route
+		wantRoutes []*Route
+		wantErr    bool
+		disableFI  bool // disable fault injection
+	}{
+		{
+			name: "no path",
+			routes: []*v3routepb.Route{{
+				Match: &v3routepb.RouteMatch{},
+			}},
+			wantErr: true,
+		},
+		{
+			name: "case_sensitive is false",
+			routes: []*v3routepb.Route{{
+				Match: &v3routepb.RouteMatch{
+					PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/"},
+					CaseSensitive: &wrapperspb.BoolValue{Value: false},
+				},
+				Action: &v3routepb.Route_Route{
+					Route: &v3routepb.RouteAction{
+						ClusterSpecifier: &v3routepb.RouteAction_WeightedClusters{
+							WeightedClusters: &v3routepb.WeightedCluster{
+								Clusters: []*v3routepb.WeightedCluster_ClusterWeight{
+									{Name: "B", Weight: &wrapperspb.UInt32Value{Value: 60}},
+									{Name: "A", Weight: &wrapperspb.UInt32Value{Value: 40}},
+								},
+								TotalWeight: &wrapperspb.UInt32Value{Value: 100},
+							}}}},
+			}},
+			wantRoutes: []*Route{{
+				Prefix:           newStringP("/"),
+				CaseInsensitive:  true,
+				WeightedClusters: map[string]WeightedCluster{"A": {Weight: 40}, "B": {Weight: 60}},
+			}},
+		},
+		{
+			name: "good",
+			routes: []*v3routepb.Route{
+				{
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/a/"},
+						Headers: []*v3routepb.HeaderMatcher{
+							{
+								Name: "th",
+								HeaderMatchSpecifier: &v3routepb.HeaderMatcher_PrefixMatch{
+									PrefixMatch: "tv",
+								},
+								InvertMatch: true,
+							},
+						},
+						RuntimeFraction: &v3corepb.RuntimeFractionalPercent{
+							DefaultValue: &v3typepb.FractionalPercent{
+								Numerator:   1,
+								Denominator: v3typepb.FractionalPercent_HUNDRED,
+							},
+						},
+					},
+					Action: &v3routepb.Route_Route{
+						Route: &v3routepb.RouteAction{
+							ClusterSpecifier: &v3routepb.RouteAction_WeightedClusters{
+								WeightedClusters: &v3routepb.WeightedCluster{
+									Clusters: []*v3routepb.WeightedCluster_ClusterWeight{
+										{Name: "B", Weight: &wrapperspb.UInt32Value{Value: 60}},
+										{Name: "A", Weight: &wrapperspb.UInt32Value{Value: 40}},
+									},
+									TotalWeight: &wrapperspb.UInt32Value{Value: 100},
+								}}}},
+				},
+			},
+			wantRoutes: []*Route{{
+				Prefix: newStringP("/a/"),
+				Headers: []*HeaderMatcher{
+					{
+						Name:        "th",
+						InvertMatch: newBoolP(true),
+						PrefixMatch: newStringP("tv"),
+					},
+				},
+				Fraction:         newUInt32P(10000),
+				WeightedClusters: map[string]WeightedCluster{"A": {Weight: 40}, "B": {Weight: 60}},
+			}},
+			wantErr: false,
+		},
+		{
+			name: "good with regex matchers",
+			routes: []*v3routepb.Route{
+				{
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier: &v3routepb.RouteMatch_SafeRegex{SafeRegex: &v3matcherpb.RegexMatcher{Regex: "/a/"}},
+						Headers: []*v3routepb.HeaderMatcher{
+							{
+								Name:                 "th",
+								HeaderMatchSpecifier: &v3routepb.HeaderMatcher_SafeRegexMatch{SafeRegexMatch: &v3matcherpb.RegexMatcher{Regex: "tv"}},
+							},
+						},
+						RuntimeFraction: &v3corepb.RuntimeFractionalPercent{
+							DefaultValue: &v3typepb.FractionalPercent{
+								Numerator:   1,
+								Denominator: v3typepb.FractionalPercent_HUNDRED,
+							},
+						},
+					},
+					Action: &v3routepb.Route_Route{
+						Route: &v3routepb.RouteAction{
+							ClusterSpecifier: &v3routepb.RouteAction_WeightedClusters{
+								WeightedClusters: &v3routepb.WeightedCluster{
+									Clusters: []*v3routepb.WeightedCluster_ClusterWeight{
+										{Name: "B", Weight: &wrapperspb.UInt32Value{Value: 60}},
+										{Name: "A", Weight: &wrapperspb.UInt32Value{Value: 40}},
+									},
+									TotalWeight: &wrapperspb.UInt32Value{Value: 100},
+								}}}},
+				},
+			},
+			wantRoutes: []*Route{{
+				Regex: func() *regexp.Regexp { return regexp.MustCompile("/a/") }(),
+				Headers: []*HeaderMatcher{
+					{
+						Name:        "th",
+						InvertMatch: newBoolP(false),
+						RegexMatch:  func() *regexp.Regexp { return regexp.MustCompile("tv") }(),
+					},
+				},
+				Fraction:         newUInt32P(10000),
+				WeightedClusters: map[string]WeightedCluster{"A": {Weight: 40}, "B": {Weight: 60}},
+			}},
+			wantErr: false,
+		},
+		{
+			name: "query is ignored",
+			routes: []*v3routepb.Route{
+				{
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/a/"},
+					},
+					Action: &v3routepb.Route_Route{
+						Route: &v3routepb.RouteAction{
+							ClusterSpecifier: &v3routepb.RouteAction_WeightedClusters{
+								WeightedClusters: &v3routepb.WeightedCluster{
+									Clusters: []*v3routepb.WeightedCluster_ClusterWeight{
+										{Name: "B", Weight: &wrapperspb.UInt32Value{Value: 60}},
+										{Name: "A", Weight: &wrapperspb.UInt32Value{Value: 40}},
+									},
+									TotalWeight: &wrapperspb.UInt32Value{Value: 100},
+								}}}},
+				},
+				{
+					Name: "with_query",
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier:   &v3routepb.RouteMatch_Prefix{Prefix: "/b/"},
+						QueryParameters: []*v3routepb.QueryParameterMatcher{{Name: "route_will_be_ignored"}},
+					},
+				},
+			},
+			// Only one route in the result, because the second one with query
+			// parameters is ignored.
+			wantRoutes: []*Route{{
+				Prefix:           newStringP("/a/"),
+				WeightedClusters: map[string]WeightedCluster{"A": {Weight: 40}, "B": {Weight: 60}},
+			}},
+			wantErr: false,
+		},
+		{
+			name: "unrecognized path specifier",
+			routes: []*v3routepb.Route{
+				{
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier: &v3routepb.RouteMatch_ConnectMatcher_{},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "bad regex in path specifier",
+			routes: []*v3routepb.Route{
+				{
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier: &v3routepb.RouteMatch_SafeRegex{SafeRegex: &v3matcherpb.RegexMatcher{Regex: "??"}},
+						Headers: []*v3routepb.HeaderMatcher{
+							{
+								HeaderMatchSpecifier: &v3routepb.HeaderMatcher_PrefixMatch{PrefixMatch: "tv"},
+							},
+						},
+					},
+					Action: &v3routepb.Route_Route{
+						Route: &v3routepb.RouteAction{ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: clusterName}},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "bad regex in header specifier",
+			routes: []*v3routepb.Route{
+				{
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/a/"},
+						Headers: []*v3routepb.HeaderMatcher{
+							{
+								HeaderMatchSpecifier: &v3routepb.HeaderMatcher_SafeRegexMatch{SafeRegexMatch: &v3matcherpb.RegexMatcher{Regex: "??"}},
+							},
+						},
+					},
+					Action: &v3routepb.Route_Route{
+						Route: &v3routepb.RouteAction{ClusterSpecifier: &v3routepb.RouteAction_Cluster{Cluster: clusterName}},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "unrecognized header match specifier",
+			routes: []*v3routepb.Route{
+				{
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/a/"},
+						Headers: []*v3routepb.HeaderMatcher{
+							{
+								Name:                 "th",
+								HeaderMatchSpecifier: &v3routepb.HeaderMatcher_HiddenEnvoyDeprecatedRegexMatch{},
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "no cluster in weighted clusters action",
+			routes: []*v3routepb.Route{
+				{
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/a/"},
+					},
+					Action: &v3routepb.Route_Route{
+						Route: &v3routepb.RouteAction{
+							ClusterSpecifier: &v3routepb.RouteAction_WeightedClusters{
+								WeightedClusters: &v3routepb.WeightedCluster{}}}},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "all 0-weight clusters in weighted clusters action",
+			routes: []*v3routepb.Route{
+				{
+					Match: &v3routepb.RouteMatch{
+						PathSpecifier: &v3routepb.RouteMatch_Prefix{Prefix: "/a/"},
+					},
+					Action: &v3routepb.Route_Route{
+						Route: &v3routepb.RouteAction{
+							ClusterSpecifier: &v3routepb.RouteAction_WeightedClusters{
+								WeightedClusters: &v3routepb.WeightedCluster{
+									Clusters: []*v3routepb.WeightedCluster_ClusterWeight{
+										{Name: "B", Weight: &wrapperspb.UInt32Value{Value: 0}},
+										{Name: "A", Weight: &wrapperspb.UInt32Value{Value: 0}},
+									},
+									TotalWeight: &wrapperspb.UInt32Value{Value: 0},
+								}}}},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name:       "with custom HTTP filter config",
+			routes:     goodRouteWithFilterConfigs(map[string]*anypb.Any{"foo": customFilterConfig}),
+			wantRoutes: goodUpdateWithFilterConfigs(map[string]httpfilter.FilterConfig{"foo": filterConfig{Override: customFilterConfig}}),
+		},
+		{
+			name:       "with custom HTTP filter config in typed struct",
+			routes:     goodRouteWithFilterConfigs(map[string]*anypb.Any{"foo": wrappedCustomFilterTypedStructConfig}),
+			wantRoutes: goodUpdateWithFilterConfigs(map[string]httpfilter.FilterConfig{"foo": filterConfig{Override: customFilterTypedStructConfig}}),
+		},
+		{
+			name:       "with optional custom HTTP filter config",
+			routes:     goodRouteWithFilterConfigs(map[string]*anypb.Any{"foo": wrappedOptionalFilter("custom.filter")}),
+			wantRoutes: goodUpdateWithFilterConfigs(map[string]httpfilter.FilterConfig{"foo": filterConfig{Override: customFilterConfig}}),
+		},
+		{
+			name:       "with custom HTTP filter config, FI disabled",
+			disableFI:  true,
+			routes:     goodRouteWithFilterConfigs(map[string]*anypb.Any{"foo": customFilterConfig}),
+			wantRoutes: goodUpdateWithFilterConfigs(nil),
+		},
+		{
+			name:    "with erroring custom HTTP filter config",
+			routes:  goodRouteWithFilterConfigs(map[string]*anypb.Any{"foo": errFilterConfig}),
+			wantErr: true,
+		},
+		{
+			name:    "with optional erroring custom HTTP filter config",
+			routes:  goodRouteWithFilterConfigs(map[string]*anypb.Any{"foo": wrappedOptionalFilter("err.custom.filter")}),
+			wantErr: true,
+		},
+		{
+			name:       "with erroring custom HTTP filter config, FI disabled",
+			disableFI:  true,
+			routes:     goodRouteWithFilterConfigs(map[string]*anypb.Any{"foo": errFilterConfig}),
+			wantRoutes: goodUpdateWithFilterConfigs(nil),
+		},
+		{
+			name:    "with unknown custom HTTP filter config",
+			routes:  goodRouteWithFilterConfigs(map[string]*anypb.Any{"foo": unknownFilterConfig}),
+			wantErr: true,
+		},
+		{
+			name:       "with optional unknown custom HTTP filter config",
+			routes:     goodRouteWithFilterConfigs(map[string]*anypb.Any{"foo": wrappedOptionalFilter("unknown.custom.filter")}),
+			wantRoutes: goodUpdateWithFilterConfigs(nil),
+		},
+	}
+
+	cmpOpts := []cmp.Option{
+		cmp.AllowUnexported(Route{}, HeaderMatcher{}, Int64Range{}, regexp.Regexp{}),
+		cmpopts.EquateEmpty(),
+		cmp.Transformer("FilterConfig", func(fc httpfilter.FilterConfig) string {
+			return fmt.Sprint(fc)
+		}),
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			oldFI := env.FaultInjectionSupport
+			env.FaultInjectionSupport = !tt.disableFI
+			defer func() { env.FaultInjectionSupport = oldFI }()
+
+			got, err := routesProtoToSlice(tt.routes, nil, false)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("routesProtoToSlice() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if diff := cmp.Diff(got, tt.wantRoutes, cmpOpts...); diff != "" {
+				t.Fatalf("routesProtoToSlice() returned unexpected diff (-got +want):\n%s", diff)
+			}
+		})
+	}
+}
+
+func newStringP(s string) *string {
+	return &s
+}
+
+func newUInt32P(i uint32) *uint32 {
+	return &i
+}
+
+func newBoolP(b bool) *bool {
+	return &b
+}
+
+func newDurationP(d time.Duration) *time.Duration {
+	return &d
 }

@@ -28,7 +28,9 @@ import (
 	"google.golang.org/grpc/connectivity"
 )
 
-func TestClientHealthCheckBackoff(t *testing.T) {
+const defaultTestTimeout = 10 * time.Second
+
+func (s) TestClientHealthCheckBackoff(t *testing.T) {
 	const maxRetries = 5
 
 	var want []time.Duration
@@ -51,7 +53,9 @@ func TestClientHealthCheckBackoff(t *testing.T) {
 	}
 	defer func() { backoffFunc = oldBackoffFunc }()
 
-	clientHealthCheck(context.Background(), newStream, func(connectivity.State, error) {}, "test")
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	clientHealthCheck(ctx, newStream, func(connectivity.State, error) {}, "test")
 
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("Backoff durations for %v retries are %v. (expected: %v)", maxRetries, got, want)

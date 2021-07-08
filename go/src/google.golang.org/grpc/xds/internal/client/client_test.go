@@ -1,3 +1,5 @@
+// +build go1.12
+
 /*
  *
  * Copyright 2019 gRPC authors.
@@ -19,277 +21,328 @@
 package client
 
 import (
-	"errors"
+	"context"
 	"fmt"
 	"testing"
 	"time"
 
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/xds/internal/client/bootstrap"
-	"google.golang.org/grpc/xds/internal/client/fakexds"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
-	corepb "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/internal/grpcsync"
+	"google.golang.org/grpc/internal/grpctest"
+	"google.golang.org/grpc/internal/testutils"
+	"google.golang.org/grpc/xds/internal/client/bootstrap"
+	xdstestutils "google.golang.org/grpc/xds/internal/testutils"
+	"google.golang.org/grpc/xds/internal/version"
+	"google.golang.org/protobuf/testing/protocmp"
 )
 
-func clientOpts(balancerName string) Options {
-	return Options{
-		Config: bootstrap.Config{
-			BalancerName: balancerName,
-			Creds:        grpc.WithInsecure(),
-			NodeProto:    &corepb.Node{},
-		},
-		// WithTimeout is deprecated. But we are OK to call it here from the
-		// test, so we clearly know that the dial failed.
-		DialOpts: []grpc.DialOption{grpc.WithTimeout(5 * time.Second), grpc.WithBlock()},
-	}
+type s struct {
+	grpctest.Tester
 }
 
-func TestNew(t *testing.T) {
-	fakeServer, cleanup := fakexds.StartServer(t)
-	defer cleanup()
+func Test(t *testing.T) {
+	grpctest.RunSubTests(t, s{})
+}
 
-	tests := []struct {
-		name    string
-		opts    Options
-		wantErr bool
-	}{
-		{name: "empty-opts", opts: Options{}, wantErr: true},
-		{
-			name: "empty-balancer-name",
-			opts: Options{
-				Config: bootstrap.Config{
-					Creds:     grpc.WithInsecure(),
-					NodeProto: &corepb.Node{},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty-dial-creds",
-			opts: Options{
-				Config: bootstrap.Config{
-					BalancerName: "dummy",
-					NodeProto:    &corepb.Node{},
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name: "empty-node-proto",
-			opts: Options{
-				Config: bootstrap.Config{
-					BalancerName: "dummy",
-					Creds:        grpc.WithInsecure(),
-				},
-			},
-			wantErr: true,
-		},
-		{
-			name:    "happy-case",
-			opts:    clientOpts(fakeServer.Address),
-			wantErr: false,
-		},
-	}
+const (
+	testXDSServer = "xds-server"
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			c, err := New(test.opts)
-			if err == nil {
-				defer c.Close()
+	testLDSName = "test-lds"
+	testRDSName = "test-rds"
+	testCDSName = "test-cds"
+	testEDSName = "test-eds"
+
+	defaultTestWatchExpiryTimeout = 500 * time.Millisecond
+	defaultTestTimeout            = 5 * time.Second
+	defaultTestShortTimeout       = 10 * time.Millisecond // For events expected to *not* happen.
+)
+
+var (
+	cmpOpts = cmp.Options{
+		cmpopts.EquateEmpty(),
+		cmp.Comparer(func(a, b time.Time) bool { return true }),
+		cmp.Comparer(func(x, y error) bool {
+			if x == nil || y == nil {
+				return x == nil && y == nil
 			}
-			if (err != nil) != test.wantErr {
-				t.Fatalf("New(%+v) = %v, wantErr: %v", test.opts, err, test.wantErr)
-			}
-		})
+			return x.Error() == y.Error()
+		}),
+		protocmp.Transform(),
+	}
+
+	// When comparing NACK UpdateMetadata, we only care if error is nil, but not
+	// the details in error.
+	errPlaceHolder       = fmt.Errorf("error whose details don't matter")
+	cmpOptsIgnoreDetails = cmp.Options{
+		cmp.Comparer(func(a, b time.Time) bool { return true }),
+		cmp.Comparer(func(x, y error) bool {
+			return (x == nil) == (y == nil)
+		}),
+	}
+)
+
+func clientOpts(balancerName string, overrideWatchExpiryTimeout bool) (*bootstrap.Config, time.Duration) {
+	watchExpiryTimeout := defaultWatchExpiryTimeout
+	if overrideWatchExpiryTimeout {
+		watchExpiryTimeout = defaultTestWatchExpiryTimeout
+	}
+	return &bootstrap.Config{
+		BalancerName: balancerName,
+		Creds:        grpc.WithTransportCredentials(insecure.NewCredentials()),
+		NodeProto:    xdstestutils.EmptyNodeProtoV2,
+	}, watchExpiryTimeout
+}
+
+type testAPIClient struct {
+	done          *grpcsync.Event
+	addWatches    map[ResourceType]*testutils.Channel
+	removeWatches map[ResourceType]*testutils.Channel
+}
+
+func overrideNewAPIClient() (*testutils.Channel, func()) {
+	origNewAPIClient := newAPIClient
+	ch := testutils.NewChannel()
+	newAPIClient = func(apiVersion version.TransportAPI, cc *grpc.ClientConn, opts BuildOptions) (APIClient, error) {
+		ret := newTestAPIClient()
+		ch.Send(ret)
+		return ret, nil
+	}
+	return ch, func() { newAPIClient = origNewAPIClient }
+}
+
+func newTestAPIClient() *testAPIClient {
+	addWatches := map[ResourceType]*testutils.Channel{
+		ListenerResource:    testutils.NewChannel(),
+		RouteConfigResource: testutils.NewChannel(),
+		ClusterResource:     testutils.NewChannel(),
+		EndpointsResource:   testutils.NewChannel(),
+	}
+	removeWatches := map[ResourceType]*testutils.Channel{
+		ListenerResource:    testutils.NewChannel(),
+		RouteConfigResource: testutils.NewChannel(),
+		ClusterResource:     testutils.NewChannel(),
+		EndpointsResource:   testutils.NewChannel(),
+	}
+	return &testAPIClient{
+		done:          grpcsync.NewEvent(),
+		addWatches:    addWatches,
+		removeWatches: removeWatches,
 	}
 }
 
-// TestWatchService tests the happy case of registering a watcher for
-// service updates and receiving a good update.
-func TestWatchService(t *testing.T) {
-	fakeServer, cleanup := fakexds.StartServer(t)
-	defer cleanup()
-
-	xdsClient, err := New(clientOpts(fakeServer.Address))
-	if err != nil {
-		t.Fatalf("New returned error: %v", err)
-	}
-	defer xdsClient.Close()
-	t.Log("Created an xdsClient...")
-
-	callbackCh := make(chan error, 1)
-	cancelWatch := xdsClient.WatchService(goodLDSTarget1, func(su ServiceUpdate, err error) {
-		if err != nil {
-			callbackCh <- fmt.Errorf("xdsClient.WatchService returned error: %v", err)
-			return
-		}
-		if su.Cluster != goodClusterName1 {
-			callbackCh <- fmt.Errorf("got clusterName: %+v, want clusterName: %+v", su.Cluster, goodClusterName1)
-			return
-		}
-		callbackCh <- nil
-	})
-	defer cancelWatch()
-	t.Log("Registered a watcher for service updates...")
-
-	// Make the fakeServer send LDS and RDS responses.
-	<-fakeServer.RequestChan
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: goodLDSResponse1}
-	<-fakeServer.RequestChan
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: goodRDSResponse1}
-
-	timer := time.NewTimer(defaultTestTimeout)
-	select {
-	case <-timer.C:
-		t.Fatal("Timeout when expecting a service update")
-	case err := <-callbackCh:
-		timer.Stop()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
+func (c *testAPIClient) AddWatch(resourceType ResourceType, resourceName string) {
+	c.addWatches[resourceType].Send(resourceName)
 }
 
-// TestWatchServiceWithNoResponseFromServer tests the case where the
-// xDS server does not respond to the requests being sent out as part of
-// registering a service update watcher. The underlying v2Client will timeout
-// and will send us an error.
-func TestWatchServiceWithNoResponseFromServer(t *testing.T) {
-	fakeServer, cleanup := fakexds.StartServer(t)
-	defer cleanup()
-
-	xdsClient, err := New(clientOpts(fakeServer.Address))
-	if err != nil {
-		t.Fatalf("New returned error: %v", err)
-	}
-	defer xdsClient.Close()
-	t.Log("Created an xdsClient...")
-
-	oldWatchExpiryTimeout := defaultWatchExpiryTimeout
-	defaultWatchExpiryTimeout = 1 * time.Second
-	defer func() {
-		defaultWatchExpiryTimeout = oldWatchExpiryTimeout
-	}()
-
-	callbackCh := make(chan error, 1)
-	cancelWatch := xdsClient.WatchService(goodLDSTarget1, func(su ServiceUpdate, err error) {
-		if su.Cluster != "" {
-			callbackCh <- fmt.Errorf("got clusterName: %+v, want empty clusterName", su.Cluster)
-			return
-		}
-		if err == nil {
-			callbackCh <- errors.New("xdsClient.WatchService returned error non-nil error")
-			return
-		}
-		callbackCh <- nil
-	})
-	defer cancelWatch()
-	t.Log("Registered a watcher for service updates...")
-
-	// Wait for one request from the client, but send no reponses.
-	<-fakeServer.RequestChan
-
-	timer := time.NewTimer(2 * time.Second)
-	select {
-	case <-timer.C:
-		t.Fatal("Timeout when expecting a service update")
-	case err := <-callbackCh:
-		timer.Stop()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
+func (c *testAPIClient) RemoveWatch(resourceType ResourceType, resourceName string) {
+	c.removeWatches[resourceType].Send(resourceName)
 }
 
-// TestWatchServiceEmptyRDS tests the case where the underlying
-// v2Client receives an empty RDS response.
-func TestWatchServiceEmptyRDS(t *testing.T) {
-	fakeServer, cleanup := fakexds.StartServer(t)
-	defer cleanup()
-
-	xdsClient, err := New(clientOpts(fakeServer.Address))
-	if err != nil {
-		t.Fatalf("New returned error: %v", err)
-	}
-	defer xdsClient.Close()
-	t.Log("Created an xdsClient...")
-
-	oldWatchExpiryTimeout := defaultWatchExpiryTimeout
-	defaultWatchExpiryTimeout = 1 * time.Second
-	defer func() {
-		defaultWatchExpiryTimeout = oldWatchExpiryTimeout
-	}()
-
-	callbackCh := make(chan error, 1)
-	cancelWatch := xdsClient.WatchService(goodLDSTarget1, func(su ServiceUpdate, err error) {
-		if su.Cluster != "" {
-			callbackCh <- fmt.Errorf("got clusterName: %+v, want empty clusterName", su.Cluster)
-			return
-		}
-		if err == nil {
-			callbackCh <- errors.New("xdsClient.WatchService returned error non-nil error")
-			return
-		}
-		callbackCh <- nil
-	})
-	defer cancelWatch()
-	t.Log("Registered a watcher for service updates...")
-
-	// Send a good LDS response, but send an empty RDS response.
-	<-fakeServer.RequestChan
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: goodLDSResponse1}
-	<-fakeServer.RequestChan
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: noVirtualHostsInRDSResponse}
-
-	timer := time.NewTimer(2 * time.Second)
-	select {
-	case <-timer.C:
-		t.Fatal("Timeout when expecting a service update")
-	case err := <-callbackCh:
-		timer.Stop()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
+func (c *testAPIClient) reportLoad(context.Context, *grpc.ClientConn, loadReportingOptions) {
 }
 
-// TestWatchServiceWithClientClose tests the case where xDS responses are
-// received after the client is closed, and we make sure that the registered
-// watcher callback is not invoked.
-func TestWatchServiceWithClientClose(t *testing.T) {
-	fakeServer, cleanup := fakexds.StartServer(t)
+func (c *testAPIClient) Close() {
+	c.done.Fire()
+}
+
+// TestWatchCallAnotherWatch covers the case where watch() is called inline by a
+// callback. It makes sure it doesn't cause a deadlock.
+func (s) TestWatchCallAnotherWatch(t *testing.T) {
+	apiClientCh, cleanup := overrideNewAPIClient()
 	defer cleanup()
 
-	xdsClient, err := New(clientOpts(fakeServer.Address))
+	client, err := newWithConfig(clientOpts(testXDSServer, false))
 	if err != nil {
-		t.Fatalf("New returned error: %v", err)
+		t.Fatalf("failed to create client: %v", err)
 	}
-	defer xdsClient.Close()
-	t.Log("Created an xdsClient...")
+	defer client.Close()
 
-	callbackCh := make(chan error, 1)
-	cancelWatch := xdsClient.WatchService(goodLDSTarget1, func(su ServiceUpdate, err error) {
-		callbackCh <- errors.New("watcher callback invoked after client close")
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	c, err := apiClientCh.Receive(ctx)
+	if err != nil {
+		t.Fatalf("timeout when waiting for API client to be created: %v", err)
+	}
+	apiClient := c.(*testAPIClient)
+
+	clusterUpdateCh := testutils.NewChannel()
+	firstTime := true
+	client.WatchCluster(testCDSName, func(update ClusterUpdate, err error) {
+		clusterUpdateCh.Send(clusterUpdateErr{u: update, err: err})
+		// Calls another watch inline, to ensure there's deadlock.
+		client.WatchCluster("another-random-name", func(ClusterUpdate, error) {})
+
+		if _, err := apiClient.addWatches[ClusterResource].Receive(ctx); firstTime && err != nil {
+			t.Fatalf("want new watch to start, got error %v", err)
+		}
+		firstTime = false
 	})
-	defer cancelWatch()
-	t.Log("Registered a watcher for service updates...")
+	if _, err := apiClient.addWatches[ClusterResource].Receive(ctx); err != nil {
+		t.Fatalf("want new watch to start, got error %v", err)
+	}
 
-	// Make the fakeServer send LDS response.
-	<-fakeServer.RequestChan
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: goodLDSResponse1}
-
-	xdsClient.Close()
-	t.Log("Closing the xdsClient...")
-
-	// Push an RDS response from the fakeserver
-	fakeServer.ResponseChan <- &fakexds.Response{Resp: goodRDSResponse1}
-
-	timer := time.NewTimer(1 * time.Second)
-	select {
-	case <-timer.C:
-		// Do nothing. Success.
-	case err := <-callbackCh:
-		timer.Stop()
+	wantUpdate := ClusterUpdate{ServiceName: testEDSName}
+	client.NewClusters(map[string]ClusterUpdate{testCDSName: wantUpdate}, UpdateMetadata{})
+	if err := verifyClusterUpdate(ctx, clusterUpdateCh, wantUpdate); err != nil {
 		t.Fatal(err)
+	}
+
+	wantUpdate2 := ClusterUpdate{ServiceName: testEDSName + "2"}
+	client.NewClusters(map[string]ClusterUpdate{testCDSName: wantUpdate2}, UpdateMetadata{})
+	if err := verifyClusterUpdate(ctx, clusterUpdateCh, wantUpdate2); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func verifyListenerUpdate(ctx context.Context, updateCh *testutils.Channel, wantUpdate ListenerUpdate) error {
+	u, err := updateCh.Receive(ctx)
+	if err != nil {
+		return fmt.Errorf("timeout when waiting for listener update: %v", err)
+	}
+	gotUpdate := u.(ldsUpdateErr)
+	if gotUpdate.err != nil || !cmp.Equal(gotUpdate.u, wantUpdate) {
+		return fmt.Errorf("unexpected endpointsUpdate: (%v, %v), want: (%v, nil)", gotUpdate.u, gotUpdate.err, wantUpdate)
+	}
+	return nil
+}
+
+func verifyRouteConfigUpdate(ctx context.Context, updateCh *testutils.Channel, wantUpdate RouteConfigUpdate) error {
+	u, err := updateCh.Receive(ctx)
+	if err != nil {
+		return fmt.Errorf("timeout when waiting for route configuration update: %v", err)
+	}
+	gotUpdate := u.(rdsUpdateErr)
+	if gotUpdate.err != nil || !cmp.Equal(gotUpdate.u, wantUpdate) {
+		return fmt.Errorf("unexpected route config update: (%v, %v), want: (%v, nil)", gotUpdate.u, gotUpdate.err, wantUpdate)
+	}
+	return nil
+}
+
+func verifyClusterUpdate(ctx context.Context, updateCh *testutils.Channel, wantUpdate ClusterUpdate) error {
+	u, err := updateCh.Receive(ctx)
+	if err != nil {
+		return fmt.Errorf("timeout when waiting for cluster update: %v", err)
+	}
+	gotUpdate := u.(clusterUpdateErr)
+	if gotUpdate.err != nil || !cmp.Equal(gotUpdate.u, wantUpdate) {
+		return fmt.Errorf("unexpected clusterUpdate: (%v, %v), want: (%v, nil)", gotUpdate.u, gotUpdate.err, wantUpdate)
+	}
+	return nil
+}
+
+func verifyEndpointsUpdate(ctx context.Context, updateCh *testutils.Channel, wantUpdate EndpointsUpdate) error {
+	u, err := updateCh.Receive(ctx)
+	if err != nil {
+		return fmt.Errorf("timeout when waiting for endpoints update: %v", err)
+	}
+	gotUpdate := u.(endpointsUpdateErr)
+	if gotUpdate.err != nil || !cmp.Equal(gotUpdate.u, wantUpdate, cmpopts.EquateEmpty()) {
+		return fmt.Errorf("unexpected endpointsUpdate: (%v, %v), want: (%v, nil)", gotUpdate.u, gotUpdate.err, wantUpdate)
+	}
+	return nil
+}
+
+// Test that multiple New() returns the same Client. And only when the last
+// client is closed, the underlying client is closed.
+func (s) TestClientNewSingleton(t *testing.T) {
+	oldBootstrapNewConfig := bootstrapNewConfig
+	bootstrapNewConfig = func() (*bootstrap.Config, error) {
+		return &bootstrap.Config{
+			BalancerName: testXDSServer,
+			Creds:        grpc.WithInsecure(),
+			NodeProto:    xdstestutils.EmptyNodeProtoV2,
+		}, nil
+	}
+	defer func() { bootstrapNewConfig = oldBootstrapNewConfig }()
+
+	apiClientCh, cleanup := overrideNewAPIClient()
+	defer cleanup()
+
+	// The first New(). Should create a Client and a new APIClient.
+	client, err := New()
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+	clientImpl := client.clientImpl
+	ctx, cancel := context.WithTimeout(context.Background(), defaultTestTimeout)
+	defer cancel()
+	c, err := apiClientCh.Receive(ctx)
+	if err != nil {
+		t.Fatalf("timeout when waiting for API client to be created: %v", err)
+	}
+	apiClient := c.(*testAPIClient)
+
+	// Call New() again. They should all return the same client implementation,
+	// and should not create new API client.
+	const count = 9
+	for i := 0; i < count; i++ {
+		tc, terr := New()
+		if terr != nil {
+			client.Close()
+			t.Fatalf("%d-th call to New() failed with error: %v", i, terr)
+		}
+		if tc.clientImpl != clientImpl {
+			client.Close()
+			tc.Close()
+			t.Fatalf("%d-th call to New() got a different client %p, want %p", i, tc.clientImpl, clientImpl)
+		}
+
+		sctx, scancel := context.WithTimeout(context.Background(), defaultTestShortTimeout)
+		defer scancel()
+		_, err := apiClientCh.Receive(sctx)
+		if err == nil {
+			client.Close()
+			t.Fatalf("%d-th call to New() created a new API client", i)
+		}
+	}
+
+	// Call Close(). Nothing should be actually closed until the last ref calls
+	// Close().
+	for i := 0; i < count; i++ {
+		client.Close()
+		if clientImpl.done.HasFired() {
+			t.Fatalf("%d-th call to Close(), unexpected done in the client implemenation", i)
+		}
+		if apiClient.done.HasFired() {
+			t.Fatalf("%d-th call to Close(), unexpected done in the API client", i)
+		}
+	}
+
+	// Call the last Close(). The underlying implementation and API Client
+	// should all be closed.
+	client.Close()
+	if !clientImpl.done.HasFired() {
+		t.Fatalf("want client implementation to be closed, got not done")
+	}
+	if !apiClient.done.HasFired() {
+		t.Fatalf("want API client to be closed, got not done")
+	}
+
+	// Call New() again after the previous Client is actually closed. Should
+	// create a Client and a new APIClient.
+	client2, err2 := New()
+	if err2 != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+	defer client2.Close()
+	c2, err := apiClientCh.Receive(ctx)
+	if err != nil {
+		t.Fatalf("timeout when waiting for API client to be created: %v", err)
+	}
+	apiClient2 := c2.(*testAPIClient)
+
+	// The client wrapper with ref count should be the same.
+	if client2 != client {
+		t.Fatalf("New() after Close() should return the same client wrapper, got different %p, %p", client2, client)
+	}
+	if client2.clientImpl == clientImpl {
+		t.Fatalf("New() after Close() should return different client implementation, got the same %p", client2.clientImpl)
+	}
+	if apiClient2 == apiClient {
+		t.Fatalf("New() after Close() should return different API client, got the same %p", apiClient2)
 	}
 }

@@ -7,6 +7,7 @@ dbx_go_library(
     name = "grpc_health_v1",
     srcs = [
         "health.pb.go",
+        "health_grpc.pb.go",
     ],
     visibility = [
         "//go/src:__subpackages__",
@@ -16,5 +17,7 @@ dbx_go_library(
         "//go/src/google.golang.org/grpc",
         "//go/src/google.golang.org/grpc/codes",
         "//go/src/google.golang.org/grpc/status",
+        "//go/src/google.golang.org/protobuf/reflect/protoreflect",
+        "//go/src/google.golang.org/protobuf/runtime/protoimpl",
     ],
 )
