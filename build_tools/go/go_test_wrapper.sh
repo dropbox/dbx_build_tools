@@ -20,7 +20,7 @@ set +e
 retcode=${PIPESTATUS[0]}
 set -e
 
-"$RUNFILES/../dbx_build_tools/../go_1_16_5_linux_amd64_tar_gz/go/pkg/tool/linux_amd64/test2json" < "$temp" -t | "$RUNFILES/../dbx_build_tools/go/src/dropbox/build_tools/gojunit/gojunit/gojunit" -target "$target"
+"$RUNFILES/../dbx_build_tools/../go_1_16_6_linux_amd64_tar_gz/go/pkg/tool/linux_amd64/test2json" < "$temp" -t | "$RUNFILES/../dbx_build_tools/go/src/dropbox/build_tools/gojunit/gojunit/gojunit" -target "$target"
 
 if [[ -n "$COVERAGE_OUTPUT_FILE" ]]; then
     "$RUNFILES/../dbx_build_tools/go/src/dropbox/build_tools/gocov2cobertura/gocov2cobertura" < "$coverage_out" > "$COVERAGE_OUTPUT_FILE"
