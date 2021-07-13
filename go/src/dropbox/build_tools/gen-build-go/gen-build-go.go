@@ -538,10 +538,6 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 			_, _ = buffer.WriteString("  ],\n")
 		}
 
-		if len(targetBuildPath) > 0 {
-			_, _ = buffer.WriteString(" module_name = '" + targetBuildPath + "',\n")
-		}
-
 		_, _ = buffer.WriteString("  deps = [\n")
 		for _, dep := range deps {
 			_, _ = buffer.WriteString("    '" + dep + "',\n")
@@ -549,6 +545,10 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 		_, _ = buffer.WriteString("  ],\n")
 
 		if rule == "dbx_go_library" {
+			if len(targetBuildPath) > 0 {
+				_, _ = buffer.WriteString(" module_name = '" + targetBuildPath + "',\n")
+			}
+
 			internalParentPath := pkgPath
 			component := ""
 			hasInternal := false
