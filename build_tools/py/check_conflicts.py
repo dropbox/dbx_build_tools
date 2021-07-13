@@ -25,12 +25,10 @@ def check_piplib_conflicts(output_file, namespace_pkgs, files):
             if os.path.basename(dirname) == "__pycache__":
                 dirname = os.path.dirname(dirname)
             if (
-                basename == "__init__.py"
-                or (
-                    basename.startswith("__init__.")
-                    and basename.endswith((".pydbxc", ".pyc"))
-                )
-            ) and dirname.replace("/", ".") in namespace_pkgs:
+                basename.startswith("__init__.")
+                and basename.endswith((".py", ".pydbxc", ".pyc"))
+                and dirname.replace("/", ".") in namespace_pkgs
+            ):
                 continue
             print(
                 "%s provided by %s and %s" % (item, conflicts[item], curr_piplib),
