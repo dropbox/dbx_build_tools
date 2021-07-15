@@ -69,6 +69,8 @@ def get_unix_pip_env(venv, venv_source, execroot):
         env["F77"] = env["F90"] = os.path.join(os.getcwd(), ARGS.fortran_compiler)
     env["AR"] = os.path.join(os.getcwd(), ARGS.archiver)
     env["CC"] = os.path.join(os.getcwd(), ARGS.compiler_executable)
+    if ARGS.mpi_executable:
+        env["MPICC"] = os.path.join(os.getcwd(), ARGS.mpi_executable)
     env["LD"] = env["CC"]
     env["LDSHARED"] = os.path.abspath(
         os.path.join(os.path.dirname(__file__), "ldshared-wrapper")
@@ -547,6 +549,7 @@ def main():
     p.add_argument("--toolchain-root", default="/usr")
     p.add_argument("--archiver", help="path to unix ar tool")
     p.add_argument("--compiler-executable", help="C++ compiler")
+    p.add_argument("--mpi-executable", help="MPI compiler")
     p.add_argument("--fortran-compiler", help="the fortran compiler")
     p.add_argument(
         "--include-path",
