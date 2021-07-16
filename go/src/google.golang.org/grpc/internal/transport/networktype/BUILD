@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "networktype.go",
     ],
-    module_name = "google.golang.org/grpc/internal/transport/networktype",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

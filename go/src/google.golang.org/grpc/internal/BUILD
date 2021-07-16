@@ -9,7 +9,6 @@ dbx_go_library(
         "internal.go",
         "xds_handshake_cluster.go",
     ],
-    module_name = "google.golang.org/grpc/internal",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

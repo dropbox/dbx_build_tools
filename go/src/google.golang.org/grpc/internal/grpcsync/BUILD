@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "event.go",
     ],
-    module_name = "google.golang.org/grpc/internal/grpcsync",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

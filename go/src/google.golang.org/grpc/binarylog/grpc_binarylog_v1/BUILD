@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "binarylog.pb.go",
     ],
-    module_name = "google.golang.org/grpc/binarylog/grpc_binarylog_v1",
     visibility = [
         "//go/src:__subpackages__",
     ],

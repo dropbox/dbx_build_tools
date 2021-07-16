@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "backoff.go",
     ],
-    module_name = "google.golang.org/grpc/internal/backoff",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "state.go",
     ],
-    module_name = "google.golang.org/grpc/balancer/grpclb/state",
     visibility = [
         "//go/src:__subpackages__",
     ],

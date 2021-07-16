@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "grpcrand.go",
     ],
-    module_name = "google.golang.org/grpc/internal/grpcrand",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

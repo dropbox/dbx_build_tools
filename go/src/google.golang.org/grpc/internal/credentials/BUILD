@@ -11,7 +11,6 @@ dbx_go_library(
         "syscallconn.go",
         "util.go",
     ],
-    module_name = "google.golang.org/grpc/internal/credentials",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],
