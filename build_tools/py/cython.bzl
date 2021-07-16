@@ -14,13 +14,13 @@
 
 load("//build_tools/py:py.bzl", "dbx_py_local_piplib")
 
-def local_new_file(ctx, name):
+def _local_new_file(ctx, name):
     """
     Create a new file prefixed with the current label name
     """
     return ctx.actions.declare_file(ctx.label.name + "/" + name)
 
-def gen_ext_module(ctx):
+def _gen_ext_module(ctx):
     # First filter out files that should be run compiled vs. passed through.
     srcs = [src.path for src in ctx.files.srcs]
     py_srcs = []
@@ -44,7 +44,7 @@ def gen_ext_module(ctx):
     cython_name = module_name + "_cython"
     cpp_src = cython_name + "/" + module_name + ".cpp"
 
-    c_ext_module = local_new_file(ctx, ctx.attr.module_name + ".cpp")
+    c_ext_module = _local_new_file(ctx, ctx.attr.module_name + ".cpp")
     ctx.actions.run(
         inputs = ctx.files.srcs,
         outputs = [c_ext_module],
@@ -77,8 +77,8 @@ setup(
     packages=list(find_packages()),
 ) """
 
-def gen_setup_py(ctx, main_c_file, c_files):
-    setup_py = local_new_file(ctx, "setup.py")
+def _gen_setup_py(ctx, main_c_file, c_files):
+    setup_py = _local_new_file(ctx, "setup.py")
     prefix_len = len(setup_py.dirname) + 1
 
     ctx.actions.write(
@@ -92,7 +92,7 @@ def gen_setup_py(ctx, main_c_file, c_files):
     return setup_py
 
 def _cython_module_impl(ctx):
-    c_ext_module = gen_ext_module(ctx)
+    c_ext_module = _gen_ext_module(ctx)
     prefix_len = len(ctx.build_file_path) - len("BUILD")
     copies = []
     additional_c_files = []
@@ -106,7 +106,7 @@ def _cython_module_impl(ctx):
             file_name = src.path
         else:
             continue
-        copy = local_new_file(ctx, file_name)
+        copy = _local_new_file(ctx, file_name)
         ctx.actions.run_shell(
             inputs = [src],
             outputs = [copy],
@@ -115,7 +115,7 @@ def _cython_module_impl(ctx):
         )
         copies.append(copy)
 
-    setup_py = gen_setup_py(
+    setup_py = _gen_setup_py(
         ctx = ctx,
         main_c_file = c_ext_module,
         c_files = additional_c_files,
