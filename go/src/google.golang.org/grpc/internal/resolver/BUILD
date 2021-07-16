@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "config_selector.go",
     ],
+    module_name = "google.golang.org/grpc/internal/resolver",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

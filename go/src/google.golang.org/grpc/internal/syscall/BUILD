@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "syscall_linux.go",
     ],
+    module_name = "google.golang.org/grpc/internal/syscall",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],
