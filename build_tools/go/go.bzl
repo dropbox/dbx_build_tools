@@ -329,6 +329,7 @@ _generate_test_attrs = {
     ),
     "go_version": attr.string(),
     "test_main": attr.output(),
+    "module_name": attr.string(),
 }
 
 _dbx_go_generate_test_main = rule(
@@ -972,6 +973,7 @@ def _dbx_gen_maybe_services_test(
         deps,
         size = "small",
         package = None,
+        module_name = None,
         tagmap = {},
         tags = [],
         data = [],
@@ -998,6 +1000,7 @@ def _dbx_gen_maybe_services_test(
         srcs = srcs,
         deps = deps,
         package = package,
+        module_name = module_name,
         tags = tags,
         tagmap = tagmap,
         data = data,
@@ -1094,6 +1097,7 @@ def dbx_go_test(
         deps,
         size = "small",
         package = None,
+        module_name = None,
         tagmap = {},
         tags = [],
         data = [],
@@ -1122,6 +1126,7 @@ def dbx_go_test(
         srcs = srcs,
         test_main = test_main,
         testonly = True,
+        module_name = module_name,
     )
 
     # Generate test targets for each entry in `go_versions`, with the following pattern.
@@ -1150,6 +1155,7 @@ def dbx_go_test(
             deps = deps,
             size = size,
             package = package,
+            module_name = module_name,
             tagmap = tagmap,
             tags = versioned_tags,
             data = data,

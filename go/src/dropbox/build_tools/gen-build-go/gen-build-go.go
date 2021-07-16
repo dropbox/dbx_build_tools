@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"go/build"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -188,7 +189,7 @@ func uniqSort(items []string) []string {
 
 	sort.Sort(deduped)
 
-	return []string(deduped)
+	return deduped
 }
 
 // determineTargetBuildPath uses a series of ways to try to
@@ -398,10 +399,6 @@ func (g *ConfigGenerator) createDeps(
 		if g.isBuiltinPkg(dep) {
 			continue
 		}
-		// Can include self in tests if the tests uses _test as package suffix.
-		if dep == pkg.ImportPath {
-			continue
-		}
 
 		depIsInGoMod := false
 		if gomodDepPaths != nil && isVersionExplicit {
@@ -477,140 +474,12 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 	buffer := &bytes.Buffer{}
 	_, _ = buffer.WriteString(buildHeaderTmpl)
 
-	writeTarget := func(
-		rule string,
-		name string,
-		pkgPath string,
-		srcs []string,
-		deps []string,
-		cgoSrcs []string,
-		cgoIncludeFlags []string,
-		cgoLinkerFlags []string,
-		cgoCXXFlags []string,
-		targetBuildPath string) {
-
-		if len(srcs) == 0 &&
-			len(deps) == 0 &&
-			len(cgoSrcs) == 0 {
-
-			// bazel freaks out when the go build rule doesn't have any input
-			return
-		}
-
-		_, _ = buffer.WriteString(rule + "(\n")
-		_, _ = buffer.WriteString("  name = '" + name + "',\n")
-
-		_, _ = buffer.WriteString("  srcs = [\n")
-		for _, src := range srcs {
-			_, _ = buffer.WriteString("    '" + src + "',\n")
-		}
-		_, _ = buffer.WriteString("  ],\n")
-
-		if len(cgoSrcs) > 0 {
-			_, _ = buffer.WriteString("  cgo_srcs = [\n")
-			for _, src := range cgoSrcs {
-				_, _ = buffer.WriteString("    '" + src + "',\n")
-			}
-			_, _ = buffer.WriteString("  ],\n")
-		}
-
-		if len(cgoLinkerFlags) > 0 {
-			_, _ = buffer.WriteString("  cgo_linkerflags = [\n")
-			for _, linkerFlag := range cgoLinkerFlags {
-				_, _ = buffer.WriteString("    '" + linkerFlag + "',\n")
-			}
-			_, _ = buffer.WriteString("  ],\n")
-		}
-
-		if len(cgoCXXFlags) > 0 {
-			_, _ = buffer.WriteString("  cgo_cxxflags = [\n")
-			for _, cXXFlag := range cgoCXXFlags {
-				_, _ = buffer.WriteString("    '" + cXXFlag + "',\n")
-			}
-			_, _ = buffer.WriteString("  ],\n")
-		}
-
-		if len(cgoIncludeFlags) > 0 {
-			_, _ = buffer.WriteString("  cgo_includeflags = [\n")
-			for _, includeFlag := range cgoIncludeFlags {
-				_, _ = buffer.WriteString("    '" + includeFlag + "',\n")
-			}
-			_, _ = buffer.WriteString("  ],\n")
-		}
-
-		_, _ = buffer.WriteString("  deps = [\n")
-		for _, dep := range deps {
-			_, _ = buffer.WriteString("    '" + dep + "',\n")
-		}
-		_, _ = buffer.WriteString("  ],\n")
-
-		if rule == "dbx_go_library" {
-			if len(targetBuildPath) > 0 {
-				_, _ = buffer.WriteString(" module_name = '" + targetBuildPath + "',\n")
-			}
-
-			internalParentPath := pkgPath
-			component := ""
-			hasInternal := false
-			for internalParentPath != "." {
-				internalParentPath, component = path.Split(internalParentPath)
-				internalParentPath = filepath.Clean(internalParentPath)
-
-				if component == "internal" {
-					hasInternal = true
-					break
-				}
-			}
-
-			if hasInternal && !strings.HasPrefix(pkgPath, "dropbox/proto/") {
-				_, _ = buffer.WriteString("  visibility=[\n")
-				_, _ = buffer.WriteString("    '//go/src/")
-				_, _ = buffer.WriteString(internalParentPath)
-				_, _ = buffer.WriteString(":__subpackages__',\n")
-				_, _ = buffer.WriteString("  ],\n")
-			} else if strings.HasPrefix(pkgPath, "dropbox/") {
-				// In general, 3rd party packages (including godropbox)
-				// should not import from dropbox/...
-
-				_, _ = buffer.WriteString("  visibility=[\n")
-				_, _ = buffer.WriteString(
-					"    '//go/src/dropbox:__subpackages__',\n")
-
-				if pkgPath == "dropbox/proto/mysql" {
-					// The internal dropbox/proto/mysql definitions is a
-					// superset of the open sourced definitions.
-					_, _ = buffer.WriteString(
-						"    '//go/src/godropbox/database/binlog:__subpackages__',\n")
-				}
-
-				_, _ = buffer.WriteString("  ],\n")
-			} else {
-				// 3rd party packages are public to go code.
-				_, _ = buffer.WriteString("  visibility=[\n")
-				_, _ = buffer.WriteString("    '//go/src:__subpackages__',\n")
-				_, _ = buffer.WriteString("  ],\n")
-			}
-		} else if rule == "dbx_go_binary" {
-			// NOTE: for now go binaries default to public.
-			_, _ = buffer.WriteString("  visibility=[\n")
-			_, _ = buffer.WriteString("    '//visibility:public',\n")
-			_, _ = buffer.WriteString("  ]\n")
-		}
-
-		_, _ = buffer.WriteString(")\n")
-	}
-
 	// write lib/bin target
-
 	srcs := []string{}
 	srcs = append(srcs, pkg.GoFiles...)
 
 	cgoSrcs := []string{}
 	cgoSrcs = append(cgoSrcs, pkg.CgoFiles...)
-
-	if g.isDbxPkg(pkg.ImportPath) && len(pkg.XTestGoFiles) > 0 {
-		fmt.Printf("WARNING: Ignoring following test files which are not in source package '%s': %v\n", pkg.ImportPath, pkg.XTestGoFiles)
-	}
 
 	cgoSrcs = append(cgoSrcs, pkg.CFiles...)
 	cgoSrcs = append(cgoSrcs, pkg.CXXFiles...)
@@ -695,6 +564,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 		rule = "dbx_go_binary"
 	}
 	writeTarget(
+		buffer,
 		rule,
 		name,
 		pkg.ImportPath,
@@ -704,30 +574,60 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 		cgoIncludeFlags,
 		cgoLinkerFlags,
 		cgoCXXFlags,
-		targetBuildPath)
+		targetBuildPath,
+		"",
+	)
 
 	// write test target
-	if len(pkg.TestGoFiles) > 0 && g.isDbxPkg(pkg.ImportPath) {
-		// NOTE: pkg.XTestGoFiles / pkg.XTestImports are not included.  X stands
-		// for "external".  Including these will cause dependency cycles.
-		srcs = append(srcs, pkg.TestGoFiles...)
-		srcs = uniqSort(srcs)
+	if g.isDbxPkg(pkg.ImportPath) {
+		if len(pkg.TestGoFiles) > 0 {
+			var testSrcs []string
+			testSrcs = append(testSrcs, srcs...)
+			testSrcs = append(testSrcs, pkg.TestGoFiles...)
+			testSrcs = uniqSort(testSrcs)
 
-		deps = append(deps, g.createDeps(pkg, pkg.TestImports, gomodDepPaths)...)
-		deps = uniqSort(deps)
+			var testDeps []string
+			testDeps = append(testDeps, deps...)
+			testDeps = append(testDeps, g.createDeps(pkg, pkg.TestImports, gomodDepPaths)...)
+			testDeps = uniqSort(testDeps)
 
-		_, _ = buffer.WriteString("\n")
-		writeTarget(
-			"dbx_go_test",
-			name+"_test",
-			pkg.ImportPath,
-			srcs,
-			deps,
-			cgoSrcs,
-			cgoIncludeFlags,
-			cgoLinkerFlags,
-			cgoCXXFlags,
-			targetBuildPath)
+			_, _ = buffer.WriteString("\n")
+			writeTarget(
+				buffer,
+				"dbx_go_test",
+				name+"_test",
+				pkg.ImportPath,
+				testSrcs,
+				testDeps,
+				cgoSrcs,
+				cgoIncludeFlags,
+				cgoLinkerFlags,
+				cgoCXXFlags,
+				targetBuildPath,
+				"",
+			)
+		}
+
+		if len(pkg.XTestGoFiles) > 0 {
+			xTestSrcs := uniqSort(pkg.XTestGoFiles)
+			xTestDeps := uniqSort(g.createDeps(pkg, pkg.XTestImports, gomodDepPaths))
+
+			_, _ = buffer.WriteString("\n")
+			writeTarget(
+				buffer,
+				"dbx_go_test",
+				name+"_ext_test",
+				pkg.ImportPath,
+				xTestSrcs,
+				xTestDeps,
+				nil,
+				nil,
+				nil,
+				nil,
+				targetBuildPath,
+				pkg.ImportPath+"_test",
+			)
+		}
 	}
 
 	buildConfigPath := filepath.Join(pkg.Dir, *buildFilename)
@@ -877,6 +777,136 @@ func (g *ConfigGenerator) process(goPkgPath string) error {
 
 	g.processedPkgs[goPkgPath] = struct{}{}
 	return nil
+}
+
+func writeTarget(
+	buffer io.StringWriter,
+	rule string,
+	name string,
+	pkgPath string,
+	srcs []string,
+	deps []string,
+	cgoSrcs []string,
+	cgoIncludeFlags []string,
+	cgoLinkerFlags []string,
+	cgoCXXFlags []string,
+	targetBuildPath string,
+	moduleName string,
+) {
+
+	if len(srcs) == 0 &&
+		len(deps) == 0 &&
+		len(cgoSrcs) == 0 {
+
+		// bazel freaks out when the go build rule doesn't have any input
+		return
+	}
+
+	_, _ = buffer.WriteString(rule + "(\n")
+	_, _ = buffer.WriteString("  name = '" + name + "',\n")
+
+	_, _ = buffer.WriteString("  srcs = [\n")
+	for _, src := range srcs {
+		_, _ = buffer.WriteString("    '" + src + "',\n")
+	}
+	_, _ = buffer.WriteString("  ],\n")
+
+	if len(cgoSrcs) > 0 {
+		_, _ = buffer.WriteString("  cgo_srcs = [\n")
+		for _, src := range cgoSrcs {
+			_, _ = buffer.WriteString("    '" + src + "',\n")
+		}
+		_, _ = buffer.WriteString("  ],\n")
+	}
+
+	if len(cgoLinkerFlags) > 0 {
+		_, _ = buffer.WriteString("  cgo_linkerflags = [\n")
+		for _, linkerFlag := range cgoLinkerFlags {
+			_, _ = buffer.WriteString("    '" + linkerFlag + "',\n")
+		}
+		_, _ = buffer.WriteString("  ],\n")
+	}
+
+	if len(cgoCXXFlags) > 0 {
+		_, _ = buffer.WriteString("  cgo_cxxflags = [\n")
+		for _, cXXFlag := range cgoCXXFlags {
+			_, _ = buffer.WriteString("    '" + cXXFlag + "',\n")
+		}
+		_, _ = buffer.WriteString("  ],\n")
+	}
+
+	if len(cgoIncludeFlags) > 0 {
+		_, _ = buffer.WriteString("  cgo_includeflags = [\n")
+		for _, includeFlag := range cgoIncludeFlags {
+			_, _ = buffer.WriteString("    '" + includeFlag + "',\n")
+		}
+		_, _ = buffer.WriteString("  ],\n")
+	}
+
+	if moduleName != "" {
+		_, _ = buffer.WriteString(" module_name = '" + moduleName + "',\n")
+	}
+
+	_, _ = buffer.WriteString("  deps = [\n")
+	for _, dep := range deps {
+		_, _ = buffer.WriteString("    '" + dep + "',\n")
+	}
+	_, _ = buffer.WriteString("  ],\n")
+
+	if rule == "dbx_go_library" {
+		if len(targetBuildPath) > 0 {
+			_, _ = buffer.WriteString(" module_name = '" + targetBuildPath + "',\n")
+		}
+
+		internalParentPath := pkgPath
+		component := ""
+		hasInternal := false
+		for internalParentPath != "." {
+			internalParentPath, component = path.Split(internalParentPath)
+			internalParentPath = filepath.Clean(internalParentPath)
+
+			if component == "internal" {
+				hasInternal = true
+				break
+			}
+		}
+
+		if hasInternal && !strings.HasPrefix(pkgPath, "dropbox/proto/") {
+			_, _ = buffer.WriteString("  visibility=[\n")
+			_, _ = buffer.WriteString("    '//go/src/")
+			_, _ = buffer.WriteString(internalParentPath)
+			_, _ = buffer.WriteString(":__subpackages__',\n")
+			_, _ = buffer.WriteString("  ],\n")
+		} else if strings.HasPrefix(pkgPath, "dropbox/") {
+			// In general, 3rd party packages (including godropbox)
+			// should not import from dropbox/...
+
+			_, _ = buffer.WriteString("  visibility=[\n")
+			_, _ = buffer.WriteString(
+				"    '//go/src/dropbox:__subpackages__',\n")
+
+			if pkgPath == "dropbox/proto/mysql" {
+				// The internal dropbox/proto/mysql definitions is a
+				// superset of the open sourced definitions.
+				_, _ = buffer.WriteString(
+					"    '//go/src/godropbox/database/binlog:__subpackages__',\n")
+			}
+
+			_, _ = buffer.WriteString("  ],\n")
+		} else {
+			// 3rd party packages are public to go code.
+			_, _ = buffer.WriteString("  visibility=[\n")
+			_, _ = buffer.WriteString("    '//go/src:__subpackages__',\n")
+			_, _ = buffer.WriteString("  ],\n")
+		}
+	} else if rule == "dbx_go_binary" {
+		// NOTE: for now go binaries default to public.
+		_, _ = buffer.WriteString("  visibility=[\n")
+		_, _ = buffer.WriteString("    '//visibility:public',\n")
+		_, _ = buffer.WriteString("  ]\n")
+	}
+
+	_, _ = buffer.WriteString(")\n")
 }
 
 func findWorkspace(startingDir string) (string, error) {
