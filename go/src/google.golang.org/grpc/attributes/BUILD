@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "attributes.go",
     ],
+    module_name = "google.golang.org/grpc/attributes",
     visibility = [
         "//go/src:__subpackages__",
     ],

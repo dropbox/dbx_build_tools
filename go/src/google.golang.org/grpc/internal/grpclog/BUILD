@@ -9,6 +9,7 @@ dbx_go_library(
         "grpclog.go",
         "prefixLogger.go",
     ],
+    module_name = "google.golang.org/grpc/internal/grpclog",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

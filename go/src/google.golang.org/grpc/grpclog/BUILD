@@ -11,6 +11,7 @@ dbx_go_library(
         "logger.go",
         "loggerv2.go",
     ],
+    module_name = "google.golang.org/grpc/grpclog",
     visibility = [
         "//go/src:__subpackages__",
     ],

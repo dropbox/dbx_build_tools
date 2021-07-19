@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "unix.go",
     ],
+    module_name = "google.golang.org/grpc/internal/resolver/unix",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

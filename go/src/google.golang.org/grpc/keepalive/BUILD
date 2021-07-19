@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "keepalive.go",
     ],
+    module_name = "google.golang.org/grpc/keepalive",
     visibility = [
         "//go/src:__subpackages__",
     ],

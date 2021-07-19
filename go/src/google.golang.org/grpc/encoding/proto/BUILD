@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "proto.go",
     ],
+    module_name = "google.golang.org/grpc/encoding/proto",
     visibility = [
         "//go/src:__subpackages__",
     ],

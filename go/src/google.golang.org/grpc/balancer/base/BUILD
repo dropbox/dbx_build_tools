@@ -9,6 +9,7 @@ dbx_go_library(
         "balancer.go",
         "base.go",
     ],
+    module_name = "google.golang.org/grpc/balancer/base",
     visibility = [
         "//go/src:__subpackages__",
     ],

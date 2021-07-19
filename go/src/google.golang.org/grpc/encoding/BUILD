@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "encoding.go",
     ],
+    module_name = "google.golang.org/grpc/encoding",
     visibility = [
         "//go/src:__subpackages__",
     ],

@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "envconfig.go",
     ],
+    module_name = "google.golang.org/grpc/internal/envconfig",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

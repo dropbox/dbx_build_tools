@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "peer.go",
     ],
+    module_name = "google.golang.org/grpc/peer",
     visibility = [
         "//go/src:__subpackages__",
     ],

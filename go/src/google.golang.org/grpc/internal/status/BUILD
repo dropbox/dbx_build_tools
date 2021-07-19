@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "status.go",
     ],
+    module_name = "google.golang.org/grpc/internal/status",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

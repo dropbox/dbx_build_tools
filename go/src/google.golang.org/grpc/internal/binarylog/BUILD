@@ -12,6 +12,7 @@ dbx_go_library(
         "method_logger.go",
         "sink.go",
     ],
+    module_name = "google.golang.org/grpc/internal/binarylog",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "serviceconfig.go",
     ],
+    module_name = "google.golang.org/grpc/serviceconfig",
     visibility = [
         "//go/src:__subpackages__",
     ],
