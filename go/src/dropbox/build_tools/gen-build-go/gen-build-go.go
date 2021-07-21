@@ -202,6 +202,7 @@ func determineTargetBuildPath(dir string) string {
 
 	wsRoot, _ := wspace.FindWorkspaceRoot("")
 	srcPath := filepath.Join(wsRoot, "go", "src")
+	targetRelPath, _ := filepath.Rel(srcPath, dir)
 	submoduleRelPath := ""
 	_, err := os.Stat(filepath.Join(dir, ".dbxvendor.json"))
 	for err != nil {
@@ -214,11 +215,10 @@ func determineTargetBuildPath(dir string) string {
 	}
 
 	targetBuildPath, ok := parseTargetBuildPathFromDbxvendorMetadata(dir, submoduleRelPath)
-	if ok {
+	if ok && targetRelPath != targetBuildPath {
 		return targetBuildPath
-	} else {
-		return ""
 	}
+	return ""
 }
 
 // parseTargetBuildPathFromDbxvendorMetadata parses the .dbxvendor.json
