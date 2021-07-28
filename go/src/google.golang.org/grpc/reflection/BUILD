@@ -4,24 +4,20 @@
 load("//build_tools/go:go.bzl", "dbx_go_library")
 
 dbx_go_library(
-    name = "health",
+    name = "reflection",
     srcs = [
-        "client.go",
-        "logging.go",
-        "server.go",
+        "serverreflection.go",
     ],
-    module_name = "google.golang.org/grpc/health",
+    module_name = "google.golang.org/grpc/reflection",
     visibility = [
         "//go/src:__subpackages__",
     ],
     deps = [
+        "//go/src/github.com/golang/protobuf/proto",
+        "//go/src/github.com/golang/protobuf/protoc-gen-go/descriptor",
         "//go/src/google.golang.org/grpc",
         "//go/src/google.golang.org/grpc/codes",
-        "//go/src/google.golang.org/grpc/connectivity",
-        "//go/src/google.golang.org/grpc/grpclog",
-        "//go/src/google.golang.org/grpc/health/grpc_health_v1",
-        "//go/src/google.golang.org/grpc/internal",
-        "//go/src/google.golang.org/grpc/internal/backoff",
+        "//go/src/google.golang.org/grpc/reflection/grpc_reflection_v1alpha",
         "//go/src/google.golang.org/grpc/status",
     ],
 )
