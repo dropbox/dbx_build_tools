@@ -334,7 +334,7 @@ def build_pip_archive(workdir):
                 #
                 # Note: tensorboard and tensorflow_estimator are pure Python, but are erroneously
                 # marked as binary packages by the tensorflow build process (arch=none-any)
-                "--only-binary=tensorboard,tensorflow,tensorflow_estimator,torch,tokenizers,sentencepiece,pyarrow",
+                "--only-binary=tensorboard,tensorflow,tensorflow_estimator,torch,tokenizers,sentencepiece,pyarrow,torchvision",
             ]
             + index_url_flags_if_required()
             + list(args)
@@ -668,7 +668,9 @@ def main():
             # Add git to PATH so pip can access it
             external_path = os.path.join(os.path.dirname(__file__), "..", "..", "..")
             git_path = os.path.join(external_path, "com_git_scm_git")
-            assert os.path.exists(os.path.join(git_path, "git")), "Must add @com_git_scm_git//:executables as bazel dep to vpip"
+            assert os.path.exists(
+                os.path.join(git_path, "git")
+            ), "Must add @com_git_scm_git//:executables as bazel dep to vpip"
             os.environ["PATH"] += ":" + git_path
             # Need this because the pip environment doesn't have the ca-certificates
             os.environ["GIT_SSL_NO_VERIFY"] = "1"
