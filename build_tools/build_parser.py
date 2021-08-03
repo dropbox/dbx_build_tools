@@ -1,27 +1,36 @@
-# mypy: allow-untyped-defs, no-check-untyped-defs
-
 # Some seriously rinky-dink bullshit for parsing a Bazel build
 # file. At least it is not regex.
 
 import glob
 import os.path
 
-MYPY = False
-if MYPY:
-    from typing import Any, Dict, List, Optional, Sequence, Text
+from functools import lru_cache
+from typing import Any, Dict, List, Optional, Sequence, Set, Text, Tuple, Union
 
 
-def normalize_path(p):
-    # type: (Text) -> Text
+def normalize_path(p: Text) -> Text:
     """Convenience function to convert all path separators to forward slashes."""
     return p.replace(os.path.sep, "/")
 
 
-def _exec_wrapper(code, namespace):
+def _exec_wrapper(code: Text, namespace: Any) -> Any:
     exec(code, namespace)
 
 
-def _glob_pattern(dirname, pattern, exclude_directories):
+@lru_cache(maxsize=None)
+def os_walk(d: Text) -> List[Tuple[str, List[str], List[str]]]:
+    return list(os.walk(d))
+
+
+@lru_cache(maxsize=None)
+def get_glob(path: Text) -> List[Text]:
+    return glob.glob(path)
+
+
+@lru_cache(maxsize=None)
+def _glob_pattern(
+    dirname: Text, pattern: Text, exclude_directories: bool
+) -> Tuple[Set[Text], Set[Text]]:
     chunks = pattern.split("**")
     # Only deal with simple patterns
     assert (
@@ -35,7 +44,7 @@ def _glob_pattern(dirname, pattern, exclude_directories):
         return (
             {
                 normalize_path(f)
-                for f in glob.glob(os.path.join(dirname, pattern))
+                for f in get_glob(os.path.join(dirname, pattern))
                 if not exclude_directories or os.path.isfile(f)
             },
             set(),
@@ -54,9 +63,9 @@ def _glob_pattern(dirname, pattern, exclude_directories):
         "/"
     ), "Invalid bazel glob pattern: %s %s" % (dirname, pattern)
 
-    results = set()
-    sub_pkgs = set()
-    dirs = glob.glob(os.path.join(dirname, prefix))
+    results: Set[Text] = set()
+    sub_pkgs: Set[Text] = set()
+    dirs = get_glob(os.path.join(dirname, prefix))
     for d in dirs:
         if not os.path.isdir(d):
             continue
@@ -64,11 +73,11 @@ def _glob_pattern(dirname, pattern, exclude_directories):
         if not exclude_directories and suffix == "":
             results.update(d)
 
-        for root, _, files in os.walk(d):
+        for root, _, files in os_walk(d):
             if suffix == "":  # <blah>/**
                 results.update(os.path.join(root, f) for f in files)
             else:
-                results.update(glob.glob(os.path.join(root, suffix[1:])))
+                results.update(get_glob(os.path.join(root, suffix[1:])))
 
             if "BUILD" in files and root != dirname:
                 sub_pkgs.add(root)
@@ -82,10 +91,17 @@ def _glob_pattern(dirname, pattern, exclude_directories):
     return results, sub_pkgs
 
 
-# A super hacky implementation of bazel's glob.
-def bazel_glob(dirname, include, exclude=None, exclude_directories=True):
-    results = set()
-    sub_pkgs = set()
+@lru_cache(maxsize=None)
+def _bazel_glob(
+    dirname: Text,
+    include: Tuple[Text, ...],
+    exclude: Optional[Tuple[Text, ...]] = None,
+    exclude_directories: bool = True,
+) -> Tuple[Text, ...]:
+    """A super hacky implementation of bazel's glob."""
+
+    results: Set[Text] = set()
+    sub_pkgs: Set[Text] = set()
 
     dirname = normalize_path(dirname)
 
@@ -103,32 +119,39 @@ def bazel_glob(dirname, include, exclude=None, exclude_directories=True):
     if not dirname.endswith("/"):
         trim += 1
 
-    results = [src[trim:] for src in sorted(results)]
-    sub_pkgs = [sub_pkg[trim:] + "/" for sub_pkg in sub_pkgs]
+    results_list = [src[trim:] for src in sorted(results)]
+    sub_pkgs_list = [sub_pkg[trim:] + "/" for sub_pkg in sub_pkgs]
 
-    final = []
-    for src in results:
-        for sub_pkg in sub_pkgs:
+    final: List[Text] = []
+    for src in results_list:
+        for sub_pkg in sub_pkgs_list:
             if src.startswith(sub_pkg):
                 break
         else:
             final.append(src)
 
-    return final
+    return tuple(final)
 
 
-def select_func(*args, **kwargs):
-    # type: (*Any, **Any) -> List[Select]
-    """Hacky way to handle `select()` calls in BUILD files.
+class BazelGlob:
+    def __init__(self, dirname: Optional[str] = None):
+        self.dirname = dirname
 
-    Note that this treats `select()`s like lists, so it'll
-    fail to parse BUILD files that try to add `select()`s
-    to non-list items."""
-    return [Select(args[0])]
+    def glob(
+        self,
+        include: List[Text],
+        exclude: Optional[List[Text]] = None,
+        exclude_directories: bool = True,
+    ) -> List[Text]:
+        if self.dirname is None:
+            return []
+        _exclude = tuple(exclude) if exclude is not None else exclude
+        return list(
+            _bazel_glob(self.dirname, tuple(include), _exclude, exclude_directories)
+        )
 
 
-def maybe_expand_attribute(attr_val):
-    # type: (Any) -> Any
+def maybe_expand_attribute(attr_val: Any) -> Any:
     """Attempts to expand any `select()`s found in attr_val.
 
     Useful for normalizing values that might contain `select()`s.
@@ -137,7 +160,7 @@ def maybe_expand_attribute(attr_val):
     if not isinstance(attr_val, list):
         return attr_val
 
-    expanded = []
+    expanded: List[Any] = []
     for val in attr_val:
         if isinstance(val, Select):
             expanded.extend(val.expand())
@@ -147,16 +170,15 @@ def maybe_expand_attribute(attr_val):
     return expanded
 
 
-def get_select_aware_attribute_repr(attr_val):
-    # type: (Any) -> Text
+def get_select_aware_attribute_repr(attr_val: Any) -> Text:
     """Returns a string representation of an attribute value
     that respects potential `select()`s."""
     # If an attribute value has a Select, it must be in a list.
     if not isinstance(attr_val, list):
         return repr(attr_val)
 
-    selects = []
-    non_selects = []
+    selects: List[Select] = []
+    non_selects: List[Text] = []
     for val in attr_val:
         if isinstance(val, Select):
             selects.append(val)
@@ -173,95 +195,192 @@ def get_select_aware_attribute_repr(attr_val):
     return repr(non_selects) + " + " + select_repr
 
 
-class Rule(object):
-    def __init__(self, rule_type, attr_map):
-        # type: (Text, Dict[Text, Any]) -> None
+class ConstDict(Dict[Text, Any]):
+    def __setitem__(self, _key: Any, _value: Any) -> None:
+        raise TypeError("ConstDict object does not support item assignment")
+
+    def update(self, *_args: Any, **_kwargs: Any) -> None:
+        raise TypeError("ConstDict object does not support item update")
+
+    def __delitem__(self, _key: Any) -> None:
+        raise TypeError("ConstDict object does not support item deletion")
+
+    def popitem(self) -> Any:
+        raise TypeError("ConstDict object does not support item removal")
+
+    def pop(self, *_key: Any) -> Any:
+        raise TypeError("ConstDict object does not support item removal")
+
+
+class MutableRule:
+    def __init__(
+        self,
+        rule_type: Text,
+        attr_map: Dict[Text, Any],
+        expanded_attr_map: Dict[Text, Union[Text, List[Text]]],
+    ):
         self.rule_type = rule_type
         self.attr_map = attr_map
+        self.expanded_attr_map = expanded_attr_map
+
+    def copy_attr_map(self) -> Dict[Text, Any]:
+        return self.attr_map.copy()
 
 
-class Select(object):
+class Rule:
+    def __init__(self, rule_type: Text, attr_map: Dict[Text, Any]):
+        self._rule_type = rule_type
+        self._attr_map = ConstDict(attr_map)
+        self._expanded_attr_map = ConstDict(
+            {k: maybe_expand_attribute(v) for k, v in attr_map.items()}
+        )
+
+    def copy(self) -> MutableRule:
+        return MutableRule(
+            self._rule_type, self.copy_attr_map(), self.expanded_attr_map.copy()
+        )
+
+    def copy_attr_map(self) -> Dict[Text, Any]:
+        return self._attr_map.copy()
+
+    @property
+    def rule_type(self) -> Text:
+        return self._rule_type
+
+    @rule_type.setter
+    def rule_type(self, _value: Any) -> None:
+        raise TypeError("Rule object does not support item assignment")
+
+    @property
+    def attr_map(self) -> ConstDict:
+        return self._attr_map
+
+    @attr_map.setter
+    def attr_map(self, _value: Any) -> None:
+        raise TypeError("Rule object does not support item assignment")
+
+    @property
+    def expanded_attr_map(self) -> ConstDict:
+        return self._expanded_attr_map
+
+    @expanded_attr_map.setter
+    def expanded_attr_map(self, _value: Any) -> None:
+        raise TypeError("Rule object does not support item assignment")
+
+
+class Select:
     """Represents a `select()` call in Starlark."""
 
-    def __init__(self, select_map):
-        # type: (Dict[Text, Any]) -> None
-        self.select_map = select_map
-        self.expanded = None  # type: Optional[List[Any]]
+    def __init__(self, select_map: Dict[Text, Any]) -> None:
+        self._select_map = select_map
+        self._expanded: Optional[Tuple[Any, ...]] = None
 
-    def __repr__(self):
-        # type: () -> str
-        return "select({})".format(repr(self.select_map))
+    def __repr__(self) -> str:
+        return "select({})".format(repr(self._select_map))
 
-    def expand(self):
-        # type: () -> List[Any]
-        if self.expanded:
-            return self.expanded
+    @property
+    def select_map(self) -> Dict[Text, Any]:
+        return self._select_map
+
+    @select_map.setter
+    def select_map(self, _value: Any) -> None:
+        raise TypeError("Setting const attribute Select.select_map")
+
+    def expand(self) -> Tuple[Any, ...]:
+        if self._expanded:
+            return self._expanded
 
         # For the sake of simplicity, we assume we're either
         # dealing with lists or constants. This doesn't do
         # the right thing with dicts -- callers will have to
         # figure it out themselves.
-        expanded = []  # type: List[Any]
+        expanded: List[Any] = []
         for values in self.select_map.values():
             if isinstance(values, list):
                 expanded.extend(values)
             else:
                 expanded.append(values)
-        self.expanded = expanded
-        return self.expanded
+        self._expanded = tuple(expanded)
+        return self._expanded
 
 
-class BuildParser(object):
-    def __init__(self):
-        self.clauses = []
-        self.constants = {}
+def select_func(*args: Dict[Text, Any], **kwargs: Any) -> List[Select]:
+    """Hacky way to handle `select()` calls in BUILD files.
 
-    def parse(self, data, fname=None):
-        class MissingItem(object):
-            """An object that can pretend to be either a function or a struct.
-            While most items in a BUILD file are rules, we can occasionally get
-            structs (such as the `selects` struct in bazel-skylib).
+    Note that this treats `select()`s like lists, so it'll
+    fail to parse BUILD files that try to add `select()`s
+    to non-list items."""
+    assert not kwargs
+    return [Select(args[0])]
 
-            Be aware that this may be exposed directly in `clauses`, such as
-            cases when a named constant variable is used.
-            """
 
-            def __init__(mi_self, name):
-                # type: (Text) -> None
-                mi_self.name = name
+class _MissingItem:
+    """An object that can pretend to be either a function or a struct.
+    While most items in a BUILD file are rules, we can occasionally get
+    structs (such as the `selects` struct in bazel-skylib).
 
-            def __call__(mi_self, *args, **kargs):
-                # type: (*Any, **Any) -> None
-                """Handles the case where the item is a function."""
-                self.clauses.append(
-                    (object.__getattribute__(mi_self, "name"), args, kargs)
-                )
+    Be aware that this may be exposed directly in `clauses`, such as
+    cases when a named constant variable is used.
+    """
 
-            def __getattribute__(mi_self, key):
-                # type: (Text) -> MissingItem
-                """Handles the case where the item is a struct."""
-                return MissingItem(
-                    "{}.{}".format(object.__getattribute__(mi_self, "name"), key)
-                )
+    def __init__(self, parser: "BuildParser", name: Text) -> None:
+        self.name = name
+        self.parser = parser
 
-        class MacroDict(dict):
-            def __missing__(d_self, name):
-                return MissingItem(name)
+    def __call__(self, *args: List[Any], **kargs: Dict[Any, Any]) -> None:
+        """Handles the case where the item is a function."""
+        parser = object.__getattribute__(self, "parser")
+        parser._parsed_clauses.append(
+            (object.__getattribute__(self, "name"), args, kargs)
+        )
+
+    def __getattribute__(self, key: Text) -> "_MissingItem":
+        """Handles the case where the item is a struct."""
+        return _MissingItem(
+            object.__getattribute__(self, "parser"),
+            "{}.{}".format(object.__getattribute__(self, "name"), key),
+        )
+
+
+class _MacroDict(Dict[Any, Any]):
+    def __init__(self, parser: "BuildParser"):
+        self.parser = parser
+        super().__init__()
+
+    def __missing__(self, name: Text) -> _MissingItem:
+        return _MissingItem(self.parser, name)
+
+
+class BuildParser:
+    filename: Optional[Text]
+    _rules: ConstDict
+    _ordered_rules: Tuple[Rule, ...]
+    _clauses: Tuple[Any, ...]
+    _constants: ConstDict
+
+    def __init__(self) -> None:
+
+        self._parsed_clauses: List[Any] = []
+        self._parsed_constants: Dict[Text, Any] = {}
+
+    def parse(self, data: Text, fname: Optional[Text] = None) -> Tuple[Any, ...]:
+        """ 'parse' a BUILD file """
 
         pkg_name = ""
-        glob_func = lambda *args, **kwargs: []
+        dirname = None
+
+        self.filename = fname
+
         if fname and os.path.isfile(fname):
             dirname = os.path.dirname(fname)
-
-            glob_func = lambda *args, **kwargs: bazel_glob(dirname, *args, **kwargs)
 
             # This is not totally correct.  This should be full path relative
             # to workspace
             pkg_name = os.path.basename(dirname)
 
-        build_globals = MacroDict()
+        build_globals = _MacroDict(self)
         build_globals["package_name"] = lambda: pkg_name
-        build_globals["glob"] = glob_func
+        build_globals["glob"] = BazelGlob(dirname).glob
         build_globals["True"] = True
         build_globals["False"] = False
         build_globals["str"] = str
@@ -276,52 +395,64 @@ class BuildParser(object):
         for key, value in build_globals.items():
             if key.isupper():
                 # This only happens if the parser is reused for multiple files
-                assert key not in self.constants, "Constant name conflicit: " + key
-                self.constants[key] = value
+                assert (
+                    key not in self._parsed_constants
+                ), f"Constant name conflicit: {key}"
+                self._parsed_constants[key] = value
 
-        return self.clauses
+        parsed_rules: Dict[Text, Rule] = {}
+        ordered_rules: List[Rule] = []
+        for rule_type, args, kargs in self._parsed_clauses:
+            rule: Rule = Rule(rule_type, kargs)
+            parsed_rules[kargs.get("name")] = rule
+            ordered_rules.append(rule)
 
-    def parse_file(self, build_file):
-        with open(build_file, "rb") as f:
+        # Store the final parse data in immutable form
+        self._rules = ConstDict(parsed_rules)
+        self._ordered_rules = tuple(ordered_rules)
+        self._clauses = tuple(self._parsed_clauses)
+        self._constants = ConstDict(self._parsed_constants)
+        # Clear mutable data to prevent access
+        self._parsed_clauses = []
+        self._parsed_constants = {}
+        return self._clauses
+
+    def parse_file(self, build_file: Text) -> Tuple[Any, ...]:
+        with open(build_file, "r") as f:
             return self.parse(f.read(), build_file)
 
     # Return a rule by name.
-    def get_rule(self, name):
-        # type: (object) -> Rule
-        for rule_type, args, kargs in self.clauses:
-            if kargs.get("name") == name:
-                return Rule(rule_type, kargs)
-        raise KeyError("no rule with name", name)
+    def get_rule(self, name: Text) -> Rule:
+        rule = self._rules.get(name)
+        if not rule:
+            raise KeyError("no rule with name", name)
+        return rule
 
-    def get_rules_by_types(self, type_names):
-        # type: (Sequence[str]) -> List[Rule]
+    def get_rules_by_types(self, type_names: Sequence[str]) -> List[Rule]:
         rules = []
-        for rule_type, args, kargs in self.clauses:
-            if rule_type in type_names:
-                rules.append(Rule(rule_type, kargs))
+        for rule in self._rules.values():
+            if rule.rule_type in type_names:
+                rules.append(rule)
         return rules
 
-    def get_all_rules(self):
-        # type: () -> List[Rule]
-        rules = []
-        for rule_type, args, kargs in self.clauses:
-            rules.append(Rule(rule_type, kargs))
-        return rules
+    def get_all_rules(self) -> Tuple[Rule, ...]:
+        # At least one generator is sensitive to the ordering of the rules, for example:
+        #  bzl gen //configs/proto/dropbox/proto/envoy
+        assert self._ordered_rules
+        return self._ordered_rules
 
-    def get_constant_value(self, name, default=None):
-        return self.constants.get(name, default)
+    def get_constant_value(self, name: Text, default: Any = None) -> Any:
+        return self._constants.get(name, default)
 
-    def default_visibility(self):
-        # type: () -> List[Text]
+    def default_visibility(self) -> List[Text]:
         for rule in self.get_all_rules():
             if "default_visibility" in rule.attr_map:
                 return rule.attr_map["default_visibility"]
         return []
 
-    def get_normalized_visibility_by_name(self):
-        # type: () -> Dict[Text, List[Text]]
+    def get_normalized_visibility_by_name(self) -> Dict[Text, List[Text]]:
         default_visibility = self.default_visibility()
-        visibility_by_name = {}  # type: Dict[Text, List[Text]]
+        visibility_by_name = {}
         for rule in self.get_all_rules():
             if not rule.attr_map.get("name"):
                 # without names, we can't reference in. This should only be load and default visibility statements, not actual rules
@@ -331,14 +462,37 @@ class BuildParser(object):
             )
         return visibility_by_name
 
+    @property
+    def clauses(self) -> Tuple[Any, ...]:
+        return self._clauses
 
-def parse_file(fname):
-    with open(fname, "rb") as f:
+    @clauses.setter
+    def clauses(self, _value: Any) -> None:
+        raise TypeError("BuildParser does not support item assignment")
+
+    @property
+    def constants(self) -> ConstDict:
+        return self._constants
+
+    @constants.setter
+    def constants(self, _value: Any) -> None:
+        raise TypeError("BuildParser does not support item assignment")
+
+    @property
+    def rules(self) -> ConstDict:
+        return self._rules
+
+    @rules.setter
+    def rules(self, _value: Any) -> None:
+        raise TypeError("BuildParser does not support item assignment")
+
+
+def parse_file(fname: Text) -> BuildParser:
+    with open(fname, "r") as f:
         return parse(f.read(), fname=fname)
 
 
-def parse(src, fname="<BUILD>"):
-    # type: (Any, str) -> BuildParser
+def parse(src: Text, fname: Text = "<BUILD>") -> BuildParser:
     bp = BuildParser()
     try:
         bp.parse(src, fname)
