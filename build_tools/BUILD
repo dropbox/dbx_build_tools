@@ -63,7 +63,6 @@ dbx_py_library(
 dbx_py_pytest_test(
     name = "build_parser_tests",
     srcs = ["build_parser_tests.py"],
-    python2_compatible = False,
     deps = [
         ":build_parser_lib",
     ],
@@ -112,7 +111,7 @@ dbx_py_library(
     srcs = ["whatpyver.py"],
     # This must not have further dependencies.
     autogen_deps = False,
-    python2_compatible = False,
+    python2_compatible = True,
     validate = "strict",
     deps = [":build_parser_lib"],
 )
