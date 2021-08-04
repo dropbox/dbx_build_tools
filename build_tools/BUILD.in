@@ -163,11 +163,13 @@ dbx_py_dbx_test(
     ],
 )
 
-py_library(
+dbx_py_library(
     name = "build_parser_lib",
     srcs = [
         "build_parser.py",
     ],
+    python2_compatible = True,
+    python3_compatible = True,
     # This must not have further dependencies.
     deps = [],
 )
