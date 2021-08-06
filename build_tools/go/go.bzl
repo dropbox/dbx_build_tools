@@ -202,16 +202,6 @@ def go_binary_impl(ctx):
     link_inputs_trans = []
     link_inputs_trans.append(go_toolchain.stdlib)
     link_args = ctx.actions.args()
-    linker_inputs = main_package.native_info.linking_context.linker_inputs.to_list()
-    dynamic_libraries = [l2l.dynamic_library for li in linker_inputs for l2l in li.libraries if l2l.dynamic_library]
-
-    dylib_spec = ""
-    if dynamic_libraries:
-        dylib_paths = []
-        for lib in dynamic_libraries:
-            runfiles_lib_dir = "$RUNFILES/" + "/".join(lib.short_path.split("/")[0:-1])
-            dylib_paths.append(runfiles_lib_dir)
-        dylib_spec = "LD_LIBRARY_PATH=\"{}\"".format(":".join(dylib_paths))
 
     if getattr(ctx.attr, "standalone", False):
         if test_wrapper != None:
@@ -230,15 +220,14 @@ def go_binary_impl(ctx):
         write_runfiles_tmpl(
             ctx,
             executable_wrapper,
-            '{} exec {}$RUNFILES/{} "$@"'.format(
-                dylib_spec,
+            'exec {}$RUNFILES/{} "$@"'.format(
                 test_wrapper_path,
                 executable_inner.short_path,
             ),
         )
 
         runfiles = ctx.runfiles(
-            files = [executable_wrapper, executable_inner] + dynamic_libraries,
+            files = [executable_wrapper, executable_inner],
             transitive_files = main_package.transitive_go_sources,
             collect_default = True,
         )
@@ -248,7 +237,8 @@ def go_binary_impl(ctx):
 
     link_args.add("-linkmode=external")
     link_args.add("-extld", cc_toolchain.compiler_executable)
-    link_inputs_direct.extend([l2l.pic_static_library or l2l.dynamic_library for li in linker_inputs for l2l in li.libraries])
+    linker_inputs = main_package.native_info.linking_context.linker_inputs.to_list()
+    link_inputs_direct.extend([l2l.pic_static_library for li in linker_inputs for l2l in li.libraries])
     features = []
     if getattr(ctx.attr, "standalone", False):
         features.append("fully_static_link")
@@ -354,10 +344,7 @@ def _link_items_to_cmdline(link_items):
             whole_archive = lib.alwayslink
             if whole_archive:
                 res.append("-Wl,--whole-archive")
-            if lib.pic_static_library:
-                res.append(lib.pic_static_library.path)
-            elif lib.dynamic_library:
-                res.append(lib.dynamic_library.path)
+            res.append(lib.pic_static_library.path)
             if whole_archive:
                 res.append("-Wl,--no-whole-archive")
     return res
