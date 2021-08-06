@@ -111,6 +111,7 @@ except Exception:
 script_dir = os.path.join(runfiles, {main_package})
 filepath = os.path.join(script_dir, {main})
 sys.argv[0] = filepath
+os.environ["PYTHONPATH"] = ":".join(sys.path)
 
 import types
 module = types.ModuleType('__main__')
