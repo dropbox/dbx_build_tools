@@ -123,7 +123,7 @@ var linkerMp = map[string]struct {
 	},
 }
 
-var whitelistedLinkerModules = []string{"m", "rt", "util", "dl"}
+var whitelistedLinkerModules = []string{"m", "rt", "util", "dl", "tensorflow", "tensorflow_framework"}
 
 // Paths within //go/src/... which permit build_tags in BUILD.in.
 var whitelistForBuildTags = []string{
