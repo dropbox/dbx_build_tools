@@ -1,4 +1,8 @@
 #!/bin/bash -eu
+
+if [ ! -x ${RUNFILES_DIR:+x} ]; then
+    runfiles=${RUNFILES_DIR}
+else
 abs_binary="$0"
 if [[ ! "$abs_binary" == /* ]]; then
     abs_binary=$(pwd)/"$abs_binary"
@@ -20,6 +24,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     runfiles="$(python -c "import os;print(os.path.realpath('$abs_binary.runfiles'))")"
 else
     runfiles="$(/bin/readlink -f "$abs_binary".runfiles)"
+fi
 fi
 
 export RUNFILES="$runfiles"/{workspace_name}
