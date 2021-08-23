@@ -1,5 +1,5 @@
 # Tests of Starlark built-in functions
-# option:float option:set
+# option:set
 
 load("assert.star", "assert")
 
@@ -17,6 +17,21 @@ assert.eq(0 and "foo", 0)
 none = None
 _1 = none and none[0]      # rhs is not evaluated
 _2 = (not none) or none[0] # rhs is not evaluated
+
+# abs
+assert.eq(abs(2.0), 2.0)
+assert.eq(abs(0.0), 0.0)
+assert.eq(abs(-2.0), 2.0)
+assert.eq(abs(2), 2)
+assert.eq(abs(0), 0)
+assert.eq(abs(-2), 2)
+assert.eq(abs(float("inf")), float("inf"))
+assert.eq(abs(float("-inf")), float("inf"))
+assert.eq(abs(float("nan")), float("nan"))
+assert.fails(lambda: abs("0"), "got string, want int or float")
+maxint32 = (1 << 31) - 1
+assert.eq(abs(+123 * maxint32), +123 * maxint32)
+assert.eq(abs(-123 * maxint32), +123 * maxint32)
 
 # any, all
 assert.true(all([]))
@@ -104,7 +119,8 @@ assert.eq(list(range(10)[1:11:2]), [1, 3, 5, 7, 9])
 assert.eq(list(range(10)[::-2]), [9, 7, 5, 3, 1])
 assert.eq(list(range(0, 10, 2)[::2]), [0, 4, 8])
 assert.eq(list(range(0, 10, 2)[::-2]), [8, 4, 0])
-assert.fails(lambda: range(3000000000), "3000000000 out of range") # signed 32-bit values only
+# range() is limited by the width of the Go int type (int32 or int64).
+assert.fails(lambda: range(1<<64), "... out of range .want value in signed ..-bit range")
 assert.eq(len(range(0x7fffffff)), 0x7fffffff) # O(1)
 # Two ranges compare equal if they denote the same sequence:
 assert.eq(range(0), range(2, 1, 3))       # []

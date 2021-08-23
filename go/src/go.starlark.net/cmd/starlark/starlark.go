@@ -16,10 +16,12 @@ import (
 	"strings"
 
 	"go.starlark.net/internal/compile"
+	"go.starlark.net/lib/json"
+	"go.starlark.net/lib/math"
+	"go.starlark.net/lib/time"
 	"go.starlark.net/repl"
 	"go.starlark.net/resolve"
 	"go.starlark.net/starlark"
-	"go.starlark.net/starlarkjson"
 )
 
 // flags
@@ -35,10 +37,9 @@ func init() {
 	flag.BoolVar(&compile.Disassemble, "disassemble", compile.Disassemble, "show disassembly during compilation of each function")
 
 	// non-standard dialect flags
-	flag.BoolVar(&resolve.AllowFloat, "float", resolve.AllowFloat, "allow floating-point numbers")
+	flag.BoolVar(&resolve.AllowFloat, "float", resolve.AllowFloat, "obsolete; no effect")
 	flag.BoolVar(&resolve.AllowSet, "set", resolve.AllowSet, "allow set data type")
 	flag.BoolVar(&resolve.AllowLambda, "lambda", resolve.AllowLambda, "allow lambda expressions")
-	flag.BoolVar(&resolve.AllowNestedDef, "nesteddef", resolve.AllowNestedDef, "allow nested def statements")
 	flag.BoolVar(&resolve.AllowRecursion, "recursion", resolve.AllowRecursion, "allow while statements and recursive functions")
 	flag.BoolVar(&resolve.AllowGlobalReassign, "globalreassign", resolve.AllowGlobalReassign, "allow reassignment of globals, and if/for/while statements at top level")
 }
@@ -91,7 +92,9 @@ func doMain() int {
 
 	// Ideally this statement would update the predeclared environment.
 	// TODO(adonovan): plumb predeclared env through to the REPL.
-	starlark.Universe["json"] = starlarkjson.Module
+	starlark.Universe["json"] = json.Module
+	starlark.Universe["time"] = time.Module
+	starlark.Universe["math"] = math.Module
 
 	switch {
 	case flag.NArg() == 1 || *execprog != "":

@@ -8,15 +8,19 @@ import (
 	"bytes"
 	"fmt"
 	"math"
+	"os/exec"
 	"path/filepath"
+	"reflect"
 	"sort"
 	"strings"
 	"testing"
 
 	"go.starlark.net/internal/chunkedfile"
+	"go.starlark.net/lib/json"
+	starlarkmath "go.starlark.net/lib/math"
+	"go.starlark.net/lib/time"
 	"go.starlark.net/resolve"
 	"go.starlark.net/starlark"
-	"go.starlark.net/starlarkjson"
 	"go.starlark.net/starlarkstruct"
 	"go.starlark.net/starlarktest"
 	"go.starlark.net/syntax"
@@ -24,11 +28,8 @@ import (
 
 // A test may enable non-standard options by containing (e.g.) "option:recursion".
 func setOptions(src string) {
-	resolve.AllowFloat = option(src, "float")
 	resolve.AllowGlobalReassign = option(src, "globalreassign")
 	resolve.LoadBindsGlobally = option(src, "loadbindsglobally")
-	resolve.AllowLambda = option(src, "lambda")
-	resolve.AllowNestedDef = option(src, "nesteddef")
 	resolve.AllowRecursion = option(src, "recursion")
 	resolve.AllowSet = option(src, "set")
 }
@@ -116,6 +117,7 @@ func TestExecFile(t *testing.T) {
 		"testdata/assign.star",
 		"testdata/bool.star",
 		"testdata/builtins.star",
+		"testdata/bytes.star",
 		"testdata/control.star",
 		"testdata/dict.star",
 		"testdata/float.star",
@@ -123,9 +125,11 @@ func TestExecFile(t *testing.T) {
 		"testdata/int.star",
 		"testdata/json.star",
 		"testdata/list.star",
+		"testdata/math.star",
 		"testdata/misc.star",
 		"testdata/set.star",
 		"testdata/string.star",
+		"testdata/time.star",
 		"testdata/tuple.star",
 		"testdata/recursion.star",
 		"testdata/module.star",
@@ -191,7 +195,13 @@ func load(thread *starlark.Thread, module string) (starlark.StringDict, error) {
 		return starlarktest.LoadAssertModule()
 	}
 	if module == "json.star" {
-		return starlark.StringDict{"json": starlarkjson.Module}, nil
+		return starlark.StringDict{"json": json.Module}, nil
+	}
+	if module == "time.star" {
+		return starlark.StringDict{"time": time.Module}, nil
+	}
+	if module == "math.star" {
+		return starlark.StringDict{"math": starlarkmath.Module}, nil
 	}
 
 	// TODO(adonovan): test load() using this execution path.
@@ -298,6 +308,7 @@ def j(a, b=42, *args, c, d=123, e, **kwargs):
 		t.Fatal(err)
 	}
 
+	// All errors are dynamic; see resolver for static errors.
 	for _, test := range []struct{ src, want string }{
 		// a()
 		{`a()`, `None`},
@@ -353,8 +364,6 @@ def j(a, b=42, *args, c, d=123, e, **kwargs):
 		{`f(0, b=1)`, `(0, 1, (), {})`},
 		{`f(0, a=1)`, `function f got multiple values for parameter "a"`},
 		{`f(0, b=1, c=2)`, `(0, 1, (), {"c": 2})`},
-		{`f(0, 1, x=2, *[3, 4], y=5, **dict(z=6))`, // github.com/google/skylark/issues/135
-			`(0, 1, (3, 4), {"x": 2, "y": 5, "z": 6})`},
 
 		// g(a, b=42, *args, c=123, **kwargs)
 		{`g()`, `function g missing 1 argument (a)`},
@@ -366,8 +375,6 @@ def j(a, b=42, *args, c, d=123, e, **kwargs):
 		{`g(0, b=1)`, `(0, 1, (), 123, {})`},
 		{`g(0, a=1)`, `function g got multiple values for parameter "a"`},
 		{`g(0, b=1, c=2, d=3)`, `(0, 1, (), 2, {"d": 3})`},
-		{`g(0, 1, x=2, *[3, 4], y=5, **dict(z=6))`,
-			`(0, 1, (3, 4), 123, {"x": 2, "y": 5, "z": 6})`},
 
 		// h(a, b=42, *, c=123, **kwargs)
 		{`h()`, `function h missing 1 argument (a)`},
@@ -379,7 +386,6 @@ def j(a, b=42, *args, c, d=123, e, **kwargs):
 		{`h(0, a=1)`, `function h got multiple values for parameter "a"`},
 		{`h(0, b=1, c=2)`, `(0, 1, 2, {})`},
 		{`h(0, b=1, d=2)`, `(0, 1, 123, {"d": 2})`},
-		{`h(0, b=1, c=2, d=3)`, `(0, 1, 2, {"d": 3})`},
 		{`h(0, b=1, c=2, d=3)`, `(0, 1, 2, {"d": 3})`},
 
 		// i(a, b=42, *, c, d=123, e, **kwargs)
@@ -510,20 +516,19 @@ func TestBacktrace(t *testing.T) {
 	// functions, including propagation through built-ins such as 'min'.
 	const src = `
 def f(x): return 1//x
-def g(x): f(x)
+def g(x): return f(x)
 def h(): return min([1, 2, 0], key=g)
 def i(): return h()
 i()
 `
 	thread := new(starlark.Thread)
 	_, err := starlark.ExecFile(thread, "crash.star", src, nil)
-	// Compiled code currently has no column information.
 	const want = `Traceback (most recent call last):
   crash.star:6:2: in <toplevel>
   crash.star:5:18: in i
   crash.star:4:20: in h
   <builtin>: in min
-  crash.star:3:12: in g
+  crash.star:3:19: in g
   crash.star:2:19: in f
 Error: floored division by zero`
 	if got := backtrace(t, err); got != want {
@@ -532,6 +537,9 @@ Error: floored division by zero`
 
 	// Additionally, ensure that errors originating in
 	// Starlark and/or Go each have an accurate frame.
+	// The topmost frame, if built-in, is not shown,
+	// but the name of the built-in function is shown
+	// as "Error in fn: ...".
 	//
 	// This program fails in Starlark (f) if x==0,
 	// or in Go (string.join) if x is non-zero.
@@ -547,8 +555,7 @@ Error: floored division by zero`,
 		1: `Traceback (most recent call last):
   crash.star:3:2: in <toplevel>
   crash.star:2:17: in f
-  <builtin>: in join
-Error: join: in list, want string, got int`,
+Error in join: join: in list, want string, got int`,
 	} {
 		globals := starlark.StringDict{"i": starlark.MakeInt(i)}
 		_, err := starlark.ExecFile(thread, "crash.star", src2, globals)
@@ -712,6 +719,78 @@ func TestUnpackCustomUnpacker(t *testing.T) {
 	err := starlark.UnpackArgs("unpack", starlark.Tuple{starlark.MakeInt(42)}, nil, "a", &a)
 	if want := "unpack: for parameter a: got int, want string"; fmt.Sprint(err) != want {
 		t.Errorf("unpack args error = %q, want %q", err, want)
+	}
+}
+
+func TestUnpackNoneCoalescing(t *testing.T) {
+	a := optionalStringUnpacker{str: "a"}
+	wantA := optionalStringUnpacker{str: "a", isSet: false}
+	b := optionalStringUnpacker{str: "b"}
+	wantB := optionalStringUnpacker{str: "b", isSet: false}
+
+	// Success
+	args := starlark.Tuple{starlark.None}
+	kwargs := []starlark.Tuple{starlark.Tuple{starlark.String("b"), starlark.None}}
+	if err := starlark.UnpackArgs("unpack", args, kwargs, "a??", &a, "b??", &a); err != nil {
+		t.Errorf("UnpackArgs failed: %v", err)
+	}
+	if a != wantA {
+		t.Errorf("for a, got %v, want %v", a, wantA)
+	}
+	if b != wantB {
+		t.Errorf("for b, got %v, want %v", b, wantB)
+	}
+
+	// failure
+	err := starlark.UnpackArgs("unpack", starlark.Tuple{starlark.MakeInt(42)}, nil, "a??", &a)
+	if want := "unpack: for parameter a: got int, want string"; fmt.Sprint(err) != want {
+		t.Errorf("unpack args error = %q, want %q", err, want)
+	}
+
+	err = starlark.UnpackArgs("unpack", nil, []starlark.Tuple{
+		starlark.Tuple{starlark.String("a"), starlark.None},
+		starlark.Tuple{starlark.String("a"), starlark.None},
+	}, "a??", &a)
+	if want := "unpack: got multiple values for keyword argument \"a\""; fmt.Sprint(err) != want {
+		t.Errorf("unpack args error = %q, want %q", err, want)
+	}
+}
+
+func TestUnpackRequiredAfterOptional(t *testing.T) {
+	// Assert 'c' is implicitly optional
+	var a, b, c string
+	args := starlark.Tuple{starlark.String("a")}
+	if err := starlark.UnpackArgs("unpack", args, nil, "a", &a, "b?", &b, "c", &c); err != nil {
+		t.Errorf("UnpackArgs failed: %v", err)
+	}
+}
+
+func TestAsInt(t *testing.T) {
+	for _, test := range []struct {
+		val  starlark.Value
+		ptr  interface{}
+		want string
+	}{
+		{starlark.MakeInt(42), new(int32), "42"},
+		{starlark.MakeInt(-1), new(int32), "-1"},
+		// Use Lsh not 1<<40 as the latter exceeds int if GOARCH=386.
+		{starlark.MakeInt(1).Lsh(40), new(int32), "1099511627776 out of range (want value in signed 32-bit range)"},
+		{starlark.MakeInt(-1).Lsh(40), new(int32), "-1099511627776 out of range (want value in signed 32-bit range)"},
+
+		{starlark.MakeInt(42), new(uint16), "42"},
+		{starlark.MakeInt(0xffff), new(uint16), "65535"},
+		{starlark.MakeInt(0x10000), new(uint16), "65536 out of range (want value in unsigned 16-bit range)"},
+		{starlark.MakeInt(-1), new(uint16), "-1 out of range (want value in unsigned 16-bit range)"},
+	} {
+		var got string
+		if err := starlark.AsInt(test.val, test.ptr); err != nil {
+			got = err.Error()
+		} else {
+			got = fmt.Sprint(reflect.ValueOf(test.ptr).Elem().Interface())
+		}
+		if got != test.want {
+			t.Errorf("AsInt(%s, %T): got %q, want %q", test.val, test.ptr, got, test.want)
+		}
 	}
 }
 
@@ -893,5 +972,27 @@ func TestExecutionSteps(t *testing.T) {
 	_, err = countSteps(1000)
 	if fmt.Sprint(err) != "Starlark computation cancelled: too many steps" {
 		t.Errorf("execution returned error %q, want cancellation", err)
+	}
+}
+
+// TestDeps fails if the interpreter proper (not the REPL, etc) sprouts new external dependencies.
+// We may expand the list of permitted dependencies, but should do so deliberately, not casually.
+func TestDeps(t *testing.T) {
+	cmd := exec.Command("go", "list", "-deps")
+	out, err := cmd.Output()
+	if err != nil {
+		t.Skipf("'go list' failed: %s", err)
+	}
+	for _, pkg := range strings.Split(string(out), "\n") {
+		// Does pkg have form "domain.name/dir"?
+		slash := strings.IndexByte(pkg, '/')
+		dot := strings.IndexByte(pkg, '.')
+		if 0 < dot && dot < slash {
+			if strings.HasPrefix(pkg, "go.starlark.net/") ||
+				strings.HasPrefix(pkg, "golang.org/x/sys/") {
+				continue // permitted dependencies
+			}
+			t.Errorf("new interpreter dependency: %s", pkg)
+		}
 	}
 }

@@ -79,7 +79,7 @@ _ = [x for x in "abc"]
 M(x) ### "undefined: x"
 
 ---
-# Functions may have forward refs.   (option:lambda option:nesteddef)
+# Functions may have forward refs.
 def f():
    g()
    h() ### "undefined: h"
@@ -289,12 +289,12 @@ f(**{}, *[]) ### `\*args may not follow \*\*kwargs`
 f(**{}, **{}) ### `multiple \*\*kwargs not allowed`
 
 ---
-# Only keyword arguments may follow *args in a call.
+# Only **kwargs may follow *args in a call.
 def f(*args, **kwargs):
   pass
 
-f(*[], 1) ### `argument may not follow \*args`
-f(*[], a=1) # ok
+f(*[], 1) ### `positional argument may not follow \*args`
+f(*[], a=1) ### `keyword argument may not follow \*args`
 f(*[], *[]) ### `multiple \*args not allowed`
 f(*[], **{}) # ok
 
@@ -307,12 +307,7 @@ def h(kwargs, a, **kwargs): pass ### "duplicate parameter: kwargs"
 def i(*x, **x): pass ### "duplicate parameter: x"
 
 ---
-# No floating point
-a = float("3.141") ### `dialect does not support floating point`
-b = 1 / 2          ### `dialect does not support floating point \(use //\)`
-c = 3.141          ### `dialect does not support floating point`
----
-# Floating point support (option:float)
+# Floating-point support is now standard.
 a = float("3.141")
 b = 1 / 2
 c = 3.141

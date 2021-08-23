@@ -28,5 +28,6 @@ dbx_go_library(
         "//go/src/go.starlark.net/internal/spell",
         "//go/src/go.starlark.net/resolve",
         "//go/src/go.starlark.net/syntax",
+        "//go/src/golang.org/x/sys/unix",
     ],
 )

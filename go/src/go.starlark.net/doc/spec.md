@@ -444,7 +444,7 @@ escaping:
 
 ```python
 "a\nb"		# "a\nb"  = 'a' + '\n' + 'b'
-r"a\nb"		# "a\\nb" = 'a' + '\\' + '\n' + 'b'
+r"a\nb"		# "a\\nb" = 'a' + '\\' + 'n' + 'b'
 
 "a\
 b"		# "ab"
@@ -545,7 +545,7 @@ The `*` operator performs multiplication.
 The `//` and `%` operations on integers compute floored division and
 remainder of floored division, respectively.
 If the signs of the operands differ, the sign of the remainder `x % y`
-matches that of the dividend, `x`.
+matches that of the divisor, `y`.
 For all finite x and y (y ≠ 0), `(x // y) * y + (x % y) == x`.
 The `/` operator implements real division, and
 yields a `float` result even when its operands are both of type `int`.
@@ -571,14 +571,6 @@ non-zero.
 int("ffff", 16)                 # 65535, 0xffff
 ```
 
-<b>Implementation note:</b>
-In the Go implementation of Starlark, integer representation and
-arithmetic is exact, motivated by the need for lossless manipulation
-of protocol messages which may contain signed and unsigned 64-bit
-integers.
-The Java implementation currently supports only signed 32-bit integers.
-
-
 ### Floating-point numbers
 
 The Starlark floating-point data type represents an IEEE 754
@@ -598,6 +590,11 @@ whereas `x // y` yields `floor(x / y)`, that is, the largest
 integer value not greater than `x / y`.
 Although the resulting number is integral, it is represented as a
 `float` if either operand is a `float`.
+
+The `%` operation computes the remainder of floored division.
+As with the corresponding operation on integers,
+if the signs of the operands differ, the sign of the remainder `x % y`
+matches that of the divisor, `y`.
 
 The infinite float values `+Inf` and `-Inf` represent numbers
 greater/less than all finite float values.
@@ -621,17 +618,8 @@ non-zero.
 3.0 / 2                                         # 1.5
 3 / 2.0                                         # 1.5
 float(3) / 2                                    # 1.5
-3.0 // 2.0                                      # 1
+3.0 // 2.0                                      # 1.0
 ```
-
-<b>Implementation note:</b>
-The Go implementation of Starlark supports floating-point numbers as an
-optional feature, motivated by the need for lossless manipulation of
-protocol messages.
-The `-float` flag enables support for floating-point literals,
-the `float` built-in function, and the real division operator `/`.
-The Java implementation does not yet support floating-point numbers.
-
 
 ### Strings
 
@@ -1183,10 +1171,6 @@ A built-in function is a function or method implemented in Go by the interpreter
 or the application into which the interpreter is embedded.
 
 The [type](#type) of a built-in function is `"builtin_function_or_method"`.
-<b>Implementation note:</b>
-The Java implementation of `type(x)` returns `"function"` for all
-functions, whether built in or defined in Starlark,
-even though applications distinguish these two types.
 
 A built-in function value used in a Boolean context is always considered true.
 
@@ -2534,13 +2518,6 @@ def twice(x):
 twice = lambda x: x * 2
 ```
 
-<b>Implementation note:</b>
-The Go implementation of Starlark requires the `-lambda` flag
-to enable support for lambda expressions.
-The Java implementation does not support them.
-See Google Issue b/36358844.
-
-
 ## Statements
 
 ```grammar {.good}
@@ -2618,9 +2595,6 @@ a, b = {"a": 1, "b": 2}
 
 The same process for assigning a value to a target expression is used
 in `for` loops and in comprehensions.
-
-<b>Implementation note:</b>
-In the Java implementation, targets cannot be dot expressions.
 
 
 ### Augmented assignments
@@ -2757,12 +2731,6 @@ referenced within the function body; and the global dictionary of the
 current module.
 
 <!-- this is too implementation-oriented; it's not a spec. -->
-
-<b>Implementation note:</b>
-The Go implementation of Starlark requires the `-nesteddef`
-flag to enable support for nested `def` statements.
-The Java implementation does not permit a `def` expression to be
-nested within the body of another function.
 
 
 ### Return statements
@@ -3057,6 +3025,11 @@ application-specific dialect) without breaking existing programs.
 
 `True` and `False` are the two values of type `bool`.
 
+### abs
+
+`abs(x)` returns the absolute value of its argument `x`, which must be an int or float.
+The result has the same type as `x`.
+
 ### any
 
 `any(x)` returns `True` if any element of the iterable sequence x has a truth value of true.
@@ -3169,13 +3142,6 @@ if x is an `int`, the result is the nearest floating point value to x.
 If x is a string, the string is interpreted as a floating-point literal.
 With no arguments, `float()` returns `0.0`.
 
-<b>Implementation note:</b>
-Floating-point numbers are an optional feature.
-The Go implementation of Starlark requires the `-float` flag to
-enable support for floating-point literals, the `float` built-in
-function, and the real division operator `/`.
-The Java implementation does not yet support floating-point numbers.
-
 
 ### getattr
 
@@ -3225,10 +3191,29 @@ If x is a `bool`, the result is 0 for `False` or 1 for `True`.
 If x is a string, it is interpreted as a sequence of digits in the
 specified base, decimal by default.
 If `base` is zero, x is interpreted like an integer literal, the base
-being inferred from an optional base marker such as `0b`, `0o`, or
+being inferred from an optional base prefix such as `0b`, `0o`, or
 `0x` preceding the first digit.
+When the `base` is provided explictly, a matching base prefix is
+also permitted, and has no effect.
 Irrespective of base, the string may start with an optional `+` or `-`
 sign indicating the sign of the result.
+
+```python
+int("11")               # 11
+int("11", 0)            # 11
+int("11", 10)           # 11
+int("11", 2)            # 3
+int("11", 8)            # 9
+int("11", 16)           # 17
+
+int("0x11", 0)          # 17
+int("0x11", 16)         # 17
+int("0b1", 16)          # 177 (0xb1)
+int("0b1", 2)           # 1
+int("0b1", 0)           # 1
+
+int("0x11")             # error: invalid literal with base 10
+```
 
 ### len
 
@@ -4270,23 +4255,14 @@ applications to mimic the Bazel dialect more closely. Our goal is
 eventually to eliminate all such differences on a case-by-case basis.
 See [Starlark spec issue 20](https://github.com/bazelbuild/starlark/issues/20).
 
-* Integers are represented with infinite precision.
-* Integer arithmetic is exact.
-* Floating-point literals are supported (option: `-float`).
-* The `float` built-in function is provided (option: `-float`).
-* Real division using `float / float` is supported (option: `-float`).
-* String interpolation supports the `[ioxXeEfFgGc]` conversions.
-* `def` statements may be nested (option: `-nesteddef`).
-* `lambda` expressions are supported (option: `-lambda`).
+* String interpolation supports the `[ioxXc]` conversions.
 * String elements are bytes.
 * Non-ASCII strings are encoded using UTF-8.
-* Strings support octal and hex byte escapes.
+* Strings support hex byte escapes.
 * Strings have the additional methods `elem_ords`, `codepoint_ords`, and `codepoints`.
 * The `chr` and `ord` built-in functions are supported.
 * The `set` built-in function is provided (option: `-set`).
 * `set & set` and `set | set` compute set intersection and union, respectively.
 * `assert` is a valid identifier.
-* Dot expressions may appear on the left side of an assignment: `x.f = 1`.
-* `type(x)` returns `"builtin_function_or_method"` for built-in functions.
 * `if`, `for`, and `while` are permitted at top level (option: `-globalreassign`).
 * top-level rebindings are permitted (option: `-globalreassign`).

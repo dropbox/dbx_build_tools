@@ -1,5 +1,5 @@
 # Tests of Starlark 'function'
-# option:nesteddef option:set
+# option:set
 
 # TODO(adonovan):
 # - add some introspection functions for looking at function values
@@ -223,23 +223,23 @@ load("assert.star", "assert")
 r = []
 
 def id(x):
-       r.append(x)
-       return x
+  r.append(x)
+  return x
 
 def f(*args, **kwargs):
   return (args, kwargs)
 
-y = f(id(1), id(2), x=id(3), *[id(4)], y=id(5), **dict(z=id(6)))
-assert.eq(y, ((1, 2, 4), dict(x=3, y=5, z=6)))
+y = f(id(1), id(2), x=id(3), *[id(4)], **dict(z=id(5)))
+assert.eq(y, ((1, 2, 4), dict(x=3, z=5)))
 
-# This matches Python2, but not Starlark-in-Java:
+# This matches Python2 and Starlark-in-Java, but not Python3 [1 2 4 3 6].
 # *args and *kwargs are evaluated last.
-# See github.com/bazelbuild/starlark#13 for pending spec change.
-assert.eq(r, [1, 2, 3, 5, 4, 6])
-
+# (Python[23] also allows keyword arguments after *args.)
+# See github.com/bazelbuild/starlark#13 for spec change.
+assert.eq(r, [1, 2, 3, 4, 5])
 
 ---
-# option:nesteddef option:recursion
+# option:recursion
 # See github.com/bazelbuild/starlark#170
 load("assert.star", "assert")
 
@@ -276,7 +276,6 @@ def e():
 assert.eq(e(), 1)
 
 ---
-# option:nesteddef
 load("assert.star", "assert")
 
 def e():
@@ -288,6 +287,23 @@ def e():
 
 assert.fails(e, "local variable x referenced before assignment")
 
+def f():
+    def inner():
+        return x
+    if False:
+        x = 0
+    return x # fails (x is an uninitialized cell of this function)
+
+assert.fails(f, "local variable x referenced before assignment")
+
+def g():
+    def inner():
+        return x # fails (x is an uninitialized cell of the enclosing function)
+    if False:
+        x = 0
+    return inner()
+
+assert.fails(g, "local variable x referenced before assignment")
 
 ---
 # A trailing comma is allowed in any function definition or call.

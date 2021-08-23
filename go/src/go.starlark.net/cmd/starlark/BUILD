@@ -13,9 +13,11 @@ dbx_go_binary(
     ],
     deps = [
         "//go/src/go.starlark.net/internal/compile",
+        "//go/src/go.starlark.net/lib/json",
+        "//go/src/go.starlark.net/lib/math",
+        "//go/src/go.starlark.net/lib/time",
         "//go/src/go.starlark.net/repl",
         "//go/src/go.starlark.net/resolve",
         "//go/src/go.starlark.net/starlark",
-        "//go/src/go.starlark.net/starlarkjson",
     ],
 )

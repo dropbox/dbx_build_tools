@@ -12,7 +12,6 @@ dbx_go_library(
         "//go/src:__subpackages__",
     ],
     deps = [
-        "//go/src/go.starlark.net/starlark",
-        "//go/src/go.starlark.net/starlarkstruct",
+        "//go/src/go.starlark.net/lib/json",
     ],
 )

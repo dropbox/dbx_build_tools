@@ -361,9 +361,12 @@ func writeTree(out *bytes.Buffer, x reflect.Value) {
 	case reflect.Struct:
 		switch v := x.Interface().(type) {
 		case syntax.Literal:
-			if v.Token == syntax.STRING {
+			switch v.Token {
+			case syntax.STRING:
 				fmt.Fprintf(out, "%q", v.Value)
-			} else if v.Token == syntax.INT {
+			case syntax.BYTES:
+				fmt.Fprintf(out, "b%q", v.Value)
+			case syntax.INT:
 				fmt.Fprintf(out, "%d", v.Value)
 			}
 			return
@@ -436,6 +439,27 @@ func TestParseErrors(t *testing.T) {
 			t.Error(err)
 		}
 		chunk.Done()
+	}
+}
+
+func TestFilePortion(t *testing.T) {
+	// Imagine that the Starlark file or expression print(x.f) is extracted
+	// from the middle of a file in some hypothetical template language;
+	// see https://github.com/google/starlark-go/issues/346. For example:
+	// --
+	// {{loop x seq}}
+	//   {{print(x.f)}}
+	// {{end}}
+	// --
+	fp := syntax.FilePortion{Content: []byte("print(x.f)"), FirstLine: 2, FirstCol: 4}
+	file, err := syntax.Parse("foo.template", fp, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	span := fmt.Sprint(file.Stmts[0].Span())
+	want := "foo.template:2:4 foo.template:2:14"
+	if span != want {
+		t.Errorf("wrong span: got %q, want %q", span, want)
 	}
 }
 
