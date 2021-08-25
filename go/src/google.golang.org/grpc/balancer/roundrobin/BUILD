@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "roundrobin.go",
     ],
-    module_name = "google.golang.org/grpc/balancer/roundrobin",
     visibility = [
         "//go/src:__subpackages__",
     ],

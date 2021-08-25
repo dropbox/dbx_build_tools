@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "connectivity.go",
     ],
-    module_name = "google.golang.org/grpc/connectivity",
     visibility = [
         "//go/src:__subpackages__",
     ],

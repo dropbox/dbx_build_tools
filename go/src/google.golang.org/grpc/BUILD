@@ -25,7 +25,6 @@ dbx_go_library(
         "trace.go",
         "version.go",
     ],
-    module_name = "google.golang.org/grpc",
     visibility = [
         "//go/src:__subpackages__",
     ],

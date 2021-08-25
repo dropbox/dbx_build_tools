@@ -10,7 +10,6 @@ dbx_go_library(
         "go12.go",
         "tls.go",
     ],
-    module_name = "google.golang.org/grpc/credentials",
     visibility = [
         "//go/src:__subpackages__",
     ],

@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "tap.go",
     ],
-    module_name = "google.golang.org/grpc/tap",
     visibility = [
         "//go/src:__subpackages__",
     ],

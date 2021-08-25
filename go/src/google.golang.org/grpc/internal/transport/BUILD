@@ -17,7 +17,6 @@ dbx_go_library(
         "proxy.go",
         "transport.go",
     ],
-    module_name = "google.golang.org/grpc/internal/transport",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

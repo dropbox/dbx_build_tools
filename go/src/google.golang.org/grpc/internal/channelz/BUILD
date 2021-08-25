@@ -12,7 +12,6 @@ dbx_go_library(
         "types_linux.go",
         "util_linux.go",
     ],
-    module_name = "google.golang.org/grpc/internal/channelz",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],

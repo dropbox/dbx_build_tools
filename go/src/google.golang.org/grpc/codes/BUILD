@@ -9,7 +9,6 @@ dbx_go_library(
         "code_string.go",
         "codes.go",
     ],
-    module_name = "google.golang.org/grpc/codes",
     visibility = [
         "//go/src:__subpackages__",
     ],

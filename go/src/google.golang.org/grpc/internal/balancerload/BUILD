@@ -8,7 +8,6 @@ dbx_go_library(
     srcs = [
         "load.go",
     ],
-    module_name = "google.golang.org/grpc/internal/balancerload",
     visibility = [
         "//go/src/google.golang.org/grpc:__subpackages__",
     ],
