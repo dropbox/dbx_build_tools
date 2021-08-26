@@ -55,7 +55,7 @@ def main():
         """
         exit_code = 0
 
-    output_file = os.environ.get("XML_OUTPUT_FILE")
+    output_file = os.environ.get("XML_OUTPUT_FILE", "/dev/null")
     with open(output_file, "w") as f:  # type: ignore[arg-type]
         f.write(
             junit_template
