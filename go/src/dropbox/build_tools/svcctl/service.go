@@ -399,11 +399,19 @@ func (svc *serviceDef) waitTillHealthyAndMark() {
 				svc.logger.Printf("Task exited with an error: %s", exitErr)
 				svc.StateMachine.SetState(svclib_proto.StatusResp_ERROR)
 			}
-		} else {
-			svc.markStarted()
-			svc.logger.Printf("Task completed: wall-time:%v cpu-time:%v", FmtDuration(svc.startDuration),
-				FmtDuration(process.Cmd.ProcessState.UserTime()+process.Cmd.ProcessState.SystemTime()))
+			return
 		}
+
+		// For tasks, run additional verify cmds after the task closes.
+		for _, checkCmd := range svc.VerifyCmds {
+			waitForHealthChecks.Add(1)
+			go svc.PollChkCmd(checkCmd, &waitForHealthChecks)
+		}
+		waitForHealthChecks.Wait()
+
+		svc.markStarted()
+		svc.logger.Printf("Task completed: wall-time:%v cpu-time:%v", FmtDuration(svc.startDuration),
+			FmtDuration(process.Cmd.ProcessState.UserTime()+process.Cmd.ProcessState.SystemTime()))
 	}
 }
 
