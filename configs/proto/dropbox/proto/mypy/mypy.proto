@@ -4,6 +4,7 @@ package mypy;
 
 import "google/protobuf/descriptor.proto";
 
+option go_package = "dropbox/proto/mypy";
 option java_package = 'com.dropbox.proto.mypy';
 option java_multiple_files = true;
 
