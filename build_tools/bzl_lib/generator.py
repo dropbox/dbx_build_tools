@@ -28,11 +28,13 @@ class Config:
     # so they shouldn't be assuming a correct or complete BUILD graph when they run.
     bazel_path: str
 
+    # A Flag that may be used to indicate testing. Must be manually set.
+    testing: bool = False
+
 
 class Generator:
     def preprocess_targets(self, bazel_targets: Sequence[str]) -> Sequence[str]:
-        """ Given the list of targets we plan to generate, do any preprocessing needed and return a new list of targets.  Preprocessing could including making folders with BUILD.in files for non-existant packages.
-        """
+        """Given the list of targets we plan to generate, do any preprocessing needed and return a new list of targets.  Preprocessing could including making folders with BUILD.in files for non-existant packages."""
         return bazel_targets
 
     @abstractmethod

@@ -115,6 +115,7 @@ dbx_py_library(
     deps = [
         ":cfg",
         "//build_tools:build_parser_lib",
+        "//pip/pathlib",
         "//pip/typing",
     ],
 )
