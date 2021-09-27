@@ -1,7 +1,7 @@
 #!/bin/bash -e
 # Downloads openssl, configures it, and creates a the file BUILD file.
 
-version=1.1.1k
+version=1.1.1l
 mydir=$(realpath $(dirname "$0"))
 rm -fr openssl-$version
 curl -f "https://www.openssl.org/source/openssl-$version.tar.gz" | tar xz
