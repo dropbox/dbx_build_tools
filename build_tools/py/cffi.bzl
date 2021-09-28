@@ -129,7 +129,7 @@ def dbx_cffi_module(
         python3_compatible = python3_compatible,
         setup_requires = ["//pip/cffi"],
         ignore_missing_static_libraries = ignore_missing_static_libraries,
-        conly = conly,
+        enable_cxx = not conly,
         tags = tags,
         import_test_tags = import_test_tags,
     )

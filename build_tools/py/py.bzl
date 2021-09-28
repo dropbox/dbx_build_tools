@@ -68,7 +68,7 @@ def _get_build_interpreters_for_target(ctx):
 # Placeholder text which gets replaced with base/root directory where action is executed.
 ROOT_PLACEHOLDER = "____root____"
 
-def _add_vpip_compiler_args(ctx, cc_toolchain, copts, conly, args):
+def _add_vpip_compiler_args(ctx, cc_toolchain, copts, enable_cxx, args):
     # Set the compiler to the crosstool compilation driver.
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
@@ -78,7 +78,7 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, conly, args):
     )
     c_compiler = cc_common.get_tool_for_action(
         feature_configuration = feature_configuration,
-        action_name = C_COMPILE_ACTION_NAME if conly else CPP_COMPILE_ACTION_NAME,
+        action_name = CPP_COMPILE_ACTION_NAME if enable_cxx else C_COMPILE_ACTION_NAME,
     )
     archiver = cc_common.get_tool_for_action(
         feature_configuration = feature_configuration,
@@ -92,8 +92,8 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, conly, args):
     # flags are added in addition to whatever other flags distutils sees fit to
     # use. distutils does not distinguish between compilation of C and C++; we
     # must pass the C++ flags through CFLAGS if there is any C++ in the extension
-    # module. Passing C++ options when compiling C is basically harmless. At most,
-    # it generates some warnings that no one ever has to look at.
+    # module. Passing C++ options when compiling C is basically harmless but some
+    # stricter compilers such as clang 13 (or newer) will see this as an error.
     compile_variables = cc_common.create_compile_variables(
         feature_configuration = feature_configuration,
         cc_toolchain = cc_toolchain,
@@ -101,7 +101,7 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, conly, args):
     )
     compiler_options = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
-        action_name = C_COMPILE_ACTION_NAME if conly else CPP_COMPILE_ACTION_NAME,
+        action_name = CPP_COMPILE_ACTION_NAME if enable_cxx else C_COMPILE_ACTION_NAME,
         variables = compile_variables,
     )
     args.add_all(compiler_options, format_each = "--compile-flags=%s")
@@ -171,7 +171,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     outputs = [wheel]
 
     cc_toolchain = find_cpp_toolchain(ctx)
-    link_env = _add_vpip_compiler_args(ctx, cc_toolchain, ctx.attr.copts, ctx.attr.conly, command_args)
+    link_env = _add_vpip_compiler_args(ctx, cc_toolchain, ctx.attr.copts, ctx.attr.enable_cxx, command_args)
 
     inputs_direct = []
     inputs_trans = [
@@ -554,7 +554,7 @@ _piplib_attrs = {
     "deps": attr.label_list(allow_files = True),
     "data": attr.label_list(allow_files = True),
     "copts": attr.string_list(),
-    "conly": attr.bool(default = False),
+    "enable_cxx": attr.bool(default = False),
     "global_options": attr.string_list(),
     "build_options": attr.string_list(),
     "extra_path": attr.string_list(),
