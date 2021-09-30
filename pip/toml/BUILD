@@ -6,5 +6,5 @@ licenses(["notice"])  # MIT
 
 dbx_py_pypi_piplib(
     name = "toml",
-    pip_version = "0.10.1",
+    pip_version = "0.10.2",
 )
