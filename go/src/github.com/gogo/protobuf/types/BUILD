@@ -3,6 +3,8 @@
 
 load("//build_tools/go:go.bzl", "dbx_go_library")
 
+# This library must not be imported directly, as it is being deprecated,
+# and eventually removed. Please look for helpers in go/src/dropbox/protobuf/types
 dbx_go_library(
     name = "types",
     srcs = [
@@ -26,7 +28,13 @@ dbx_go_library(
         "wrappers_gogo.go",
     ],
     visibility = [
-        "//go/src:__subpackages__",
+        "//go/src/dropbox/nexus/pkg/probe/proto:__subpackages__",
+        "//go/src/dropbox/proto:__subpackages__",
+        "//go/src/dropbox/protobuf:__subpackages__",
+        "//go/src/github.com:__subpackages__",
+        "//go/src/go.etcd.io:__subpackages__",
+        "//go/src/go.opentelemetry.io:__subpackages__",
+        "//go/src/k8s.io:__subpackages__",
     ],
     deps = [
         "//go/src/github.com/gogo/protobuf/proto",
