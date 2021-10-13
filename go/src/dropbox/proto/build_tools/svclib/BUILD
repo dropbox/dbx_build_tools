@@ -7,14 +7,17 @@ dbx_go_library(
     name = "svclib",
     srcs = [
         "service.pb.go",
+        "service_grpc.pb.go",
     ],
     visibility = [
         "//go/src/dropbox:__subpackages__",
     ],
     deps = [
-        "//go/src/github.com/gogo/protobuf/proto",
+        "//go/src/github.com/golang/protobuf/proto",
         "//go/src/google.golang.org/grpc",
         "//go/src/google.golang.org/grpc/codes",
         "//go/src/google.golang.org/grpc/status",
+        "//go/src/google.golang.org/protobuf/reflect/protoreflect",
+        "//go/src/google.golang.org/protobuf/runtime/protoimpl",
     ],
 )

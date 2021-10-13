@@ -22,6 +22,9 @@ type SvcCtlProcessor struct {
 	lock     sync.RWMutex
 	services map[string]*serviceDef
 	verbose  bool
+
+	// Required for google GRPC compatibility
+	svclib_proto.UnimplementedSvcCtlServer
 }
 
 func NewSvcCtlProcessor(verbose bool) *SvcCtlProcessor {
