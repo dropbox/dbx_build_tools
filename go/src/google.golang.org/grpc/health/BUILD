@@ -10,7 +10,6 @@ dbx_go_library(
         "logging.go",
         "server.go",
     ],
-    module_name = "google.golang.org/grpc/health",
     visibility = [
         "//go/src:__subpackages__",
     ],

@@ -9,7 +9,6 @@ dbx_go_library(
         "health.pb.go",
         "health_grpc.pb.go",
     ],
-    module_name = "google.golang.org/grpc/health/grpc_health_v1",
     visibility = [
         "//go/src:__subpackages__",
     ],

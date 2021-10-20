@@ -9,7 +9,6 @@ dbx_go_library(
         "reflection.pb.go",
         "reflection_grpc.pb.go",
     ],
-    module_name = "google.golang.org/grpc/reflection/grpc_reflection_v1alpha",
     visibility = [
         "//go/src:__subpackages__",
     ],
