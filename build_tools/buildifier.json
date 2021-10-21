@@ -18,6 +18,5 @@
     "additional_visibility": true
   },
   "SortableBlacklist": {
-    "dbx_deprecated_metaserver_js_amd_bundle.srcs": true
   }
 }
