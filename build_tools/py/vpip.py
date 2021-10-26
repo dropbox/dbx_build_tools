@@ -372,6 +372,7 @@ def build_pip_archive(workdir):
         else:
             made_build_dir = True
             cmd.extend(["--build-dir", build_dir])
+            _find_and_replace(env, ARGS.buildroot_placeholder, build_dir)
         try:
             run_silently(cmd, env)
         finally:
@@ -637,6 +638,11 @@ def main():
         "--root-placeholder",
         default="____root____",
         help="Placeholder text to be replaced with absolute path to CWD in command and env vars",
+    )
+    p.add_argument(
+        "--buildroot-placeholder",
+        default="____buildroot____",
+        help="Placeholder text to be replaced with absolute path to build directory in env vars",
     )
     p.add_argument(
         "--ignore-missing-static-libraries",
