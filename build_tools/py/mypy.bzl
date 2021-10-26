@@ -335,7 +335,7 @@ def _build_mypyc_ext_module(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + ["thin_lto"],
     )
 
     so_name = "%s.cpython-38-x86_64-linux-gnu.so" % group_name
