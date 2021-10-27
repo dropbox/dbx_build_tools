@@ -256,7 +256,7 @@ def go_binary_impl(ctx):
         ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features + features,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + ["thin_lto"],
     )
     link_variables = cc_common.create_link_variables(
         feature_configuration = feature_configuration,
@@ -482,7 +482,7 @@ def _compute_cgo_parameters(ctx, native_info):
         ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + ["thin_lto"],
     )
     compiler_inputs_direct = []
     compiler_inputs_trans = [

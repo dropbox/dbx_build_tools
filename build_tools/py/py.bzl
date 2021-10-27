@@ -79,7 +79,7 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, conly, args):
         ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + ["thin_lto"],
     )
     c_compiler = cc_common.get_tool_for_action(
         feature_configuration = feature_configuration,
