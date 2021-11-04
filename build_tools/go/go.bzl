@@ -510,6 +510,7 @@ def _compute_cgo_parameters(ctx, native_info):
         include_directories = include_directories,
         quote_include_directories = quote_include_directories,
         system_include_directories = system_include_directories,
+        use_pic = True,
     )
     cflags = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
@@ -524,6 +525,7 @@ def _compute_cgo_parameters(ctx, native_info):
         include_directories = include_directories,
         quote_include_directories = quote_include_directories,
         system_include_directories = system_include_directories,
+        use_pic = True,
     )
     cxxflags = cc_common.get_memory_inefficient_command_line(
         feature_configuration = feature_configuration,
