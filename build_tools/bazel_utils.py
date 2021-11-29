@@ -89,8 +89,9 @@ def expand_bazel_targets(
     require_build_file=True,
     cwd=".",
     allow_nonexistent_npm_folders=False,
+    expand_short_form_labels=False,
 ):
-    # type: (Text, Iterable[Any], bool, bool, Text, bool) -> List[Any]
+    # type: (Text, Iterable[Any], bool, bool, Text, bool, bool) -> List[Any]
     matched = set()  # type: ignore[var-annotated]
     filtered = set()  # type: ignore[var-annotated]
     for target in targets:
@@ -105,6 +106,7 @@ def expand_bazel_targets(
                     require_build_file=require_build_file,
                     cwd=cwd,
                     allow_nonexistent_npm_folders=allow_nonexistent_npm_folders,
+                    expand_short_form_labels=expand_short_form_labels,
                 )
             )
         else:
@@ -116,6 +118,7 @@ def expand_bazel_targets(
                     require_build_file=require_build_file,
                     cwd=cwd,
                     allow_nonexistent_npm_folders=allow_nonexistent_npm_folders,
+                    expand_short_form_labels=expand_short_form_labels,
                 )
             )
     return list(sorted(matched - filtered))
@@ -128,8 +131,9 @@ def _expand_bazel_target(
     require_build_file=True,
     cwd=".",
     allow_nonexistent_npm_folders=False,
+    expand_short_form_labels=False,
 ):
-    # type: (Text, Any, bool, bool, Text, bool) -> List[Any]
+    # type: (Text, Any, bool, bool, Text, bool, bool) -> List[Any]
     if target.endswith("..."):
         recursive = True
         target_dir = target[:-3]
@@ -180,6 +184,9 @@ def _expand_bazel_target(
     # Despite the name, items in "targets" are actually paths that are likely to have
     # a mix of forward and backwards slashes on Windows.
     targets = [normalize_os_path_to_target(target) for target in targets]
+
+    if expand_short_form_labels:
+        targets = [expand_short_form_label(target) for target in targets]
 
     return targets
 
@@ -507,6 +514,15 @@ def normalize_relative_target_to_absolute(package, target):
         )
         + target[colon:]
     )
+
+
+# If the target name is a short form label, convert it to a long form
+# Note: this only supports explicit label names
+def expand_short_form_label(target):
+    # type: (str) -> str
+    if ":" in target:
+        return target
+    return target.rstrip(os.path.sep) + ":" + os.path.basename(os.path.normpath(target))
 
 
 # A macro to build an internal tool in the background.
