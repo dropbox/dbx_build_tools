@@ -697,6 +697,7 @@ def dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = None)
         internal_bootstrap = internal_bootstrap,
         python2_compatible = ctx.attr.python2_compatible,
         python3_compatible = ctx.attr.python3_compatible,
+        dynamic_libraries = ctx.attr.dynamic_libraries,
     )
     runfiles = runfiles.merge(ctx.runfiles(collect_default = True))
     return struct(
@@ -728,6 +729,7 @@ _dbx_py_binary_base_attrs = {
     "python2_compatible": attr.bool(default = False),
     "python3_compatible": attr.bool(default = True),
     "python": attr.string(values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys() + [""]),
+    "dynamic_libraries": attr.label_list(allow_files = True),
 }
 _dbx_py_binary_base_attrs.update(runfiles_attrs)
 _dbx_py_binary_base_attrs.update({

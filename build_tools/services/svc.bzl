@@ -176,6 +176,7 @@ def _apply_service_extensions(ctx, services, extensions):
             internal_bootstrap = False,
             python2_compatible = info.python2_compatible,
             python3_compatible = info.python3_compatible,
+            dynamic_libraries = [],
         )
         service_exe[service] = binary_out_file.short_path
 

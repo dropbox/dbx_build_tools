@@ -130,6 +130,8 @@ dbx_importer.install()
 """
 
 def allow_dynamic_links(ctx):
+    if hasattr(ctx.attr, "dynamic_libraries") and ctx.attr.dynamic_libraries:
+        return True
     return ctx.attr._py_link_dynamic_libs[DbxStringValue].value == "allowed"
 
 def workspace_root_to_pythonpath(workspace_root):
@@ -296,7 +298,8 @@ def emit_py_binary(
         python,
         internal_bootstrap,
         python2_compatible,
-        python3_compatible):
+        python3_compatible,
+        dynamic_libraries):
     if internal_bootstrap:
         if python:
             fail("`python` arg must be None when internal_bootstrap is True")
@@ -347,7 +350,7 @@ def emit_py_binary(
             pyc_files_by_build_tag,
             piplib_contents,
             extra_pythonpath,
-            dynamic_libraries,
+            dynamic_libraries_trans,
             frameworks_trans,
         ) = collect_transitive_srcs_and_libs(
             ctx,
@@ -371,9 +374,15 @@ def emit_py_binary(
         all_piplib_contents = piplib_contents_set.to_list()
         runfiles_trans.append(pyc_files_by_build_tag[build_tag])
 
+        # create a depset of dynamic library files
+        dylibs_direct = []
+        for target in dynamic_libraries:
+            dylibs_direct.extend(target.files.to_list())
+        dylibs = depset(direct = dylibs_direct, transitive = dynamic_libraries_trans.to_list())
+
         if not internal_bootstrap and allow_dynamic_links(ctx):
-            runfiles_trans.append(dynamic_libraries)
-            for f in dynamic_libraries.to_list():
+            runfiles_trans.append(dylibs)
+            for f in dylibs.to_list():
                 library_search_entries[f.short_path.rpartition("/")[0]] = True
             for f in frameworks_trans.to_list():
                 runfiles_trans.append(f.framework_files)
