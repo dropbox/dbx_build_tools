@@ -9,6 +9,7 @@ dbx_go_library(
         "runfiles.go",
     ],
     visibility = [
+        "//go/src/atlas:__subpackages__",
         "//go/src/dropbox:__subpackages__",
         "//go/src/github.com/dropbox:__subpackages__",
     ],
