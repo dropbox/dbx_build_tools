@@ -128,7 +128,7 @@ def _copy_outputs_multi(
     out_dir,  # type: Text
     preserve_paths,  # type: bool
     preserve_symlinks,  # type: bool
-    _dedup_files,  # type: Text
+    _dedup_files,  # type: Optional[Text]
     bazel_args,  # type: Optional[List[str]]
     bazel_build_args,  # type: Optional[List[str]]
 ):
@@ -271,7 +271,7 @@ def copy_labels(
     if _dedup_files:
         contents_path = os.path.join(out_dir, ".contents")
     else:
-        contents_path = None  # type: ignore[assignment]
+        contents_path = None
 
     query_args = []  # type: ignore[var-annotated]
     if bazel_args:
