@@ -385,7 +385,10 @@ func (g *ConfigGenerator) isBuiltinPkg(pkgName string) bool {
 }
 
 func (g *ConfigGenerator) isDbxPkg(pkgName string) bool {
-	return strings.HasPrefix(pkgName, "dropbox/") || strings.HasPrefix(pkgName, "godropbox/") || strings.HasPrefix(pkgName, "github.com/dropbox")
+	return strings.HasPrefix(pkgName, "dropbox/") ||
+		strings.HasPrefix(pkgName, "godropbox/") ||
+		strings.HasPrefix(pkgName, "atlas/") ||
+		strings.HasPrefix(pkgName, "github.com/dropbox")
 }
 
 func (g *ConfigGenerator) createDeps(
@@ -882,6 +885,8 @@ func writeTarget(
 			// should not import from dropbox/...
 
 			_, _ = buffer.WriteString("  visibility=[\n")
+			_, _ = buffer.WriteString(
+				"    '//go/src/atlas:__subpackages__',\n")
 			_, _ = buffer.WriteString(
 				"    '//go/src/dropbox:__subpackages__',\n")
 

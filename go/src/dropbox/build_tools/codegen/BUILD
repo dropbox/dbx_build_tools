@@ -11,6 +11,7 @@ dbx_go_library(
         "py_writer.go",
     ],
     visibility = [
+        "//go/src/atlas:__subpackages__",
         "//go/src/dropbox:__subpackages__",
     ],
     deps = [
