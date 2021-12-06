@@ -898,6 +898,13 @@ func writeTarget(
 			}
 
 			_, _ = buffer.WriteString("  ],\n")
+		} else if strings.HasPrefix(pkgPath, "atlas/") {
+			// In general, only the same service should import from atlas/<service>/...
+			_, _ = buffer.WriteString("  visibility=[\n")
+			service := strings.Split(pkgPath, "/")[1]
+			_, _ = buffer.WriteString(
+				fmt.Sprintf("    '//go/src/atlas/%s:__subpackages__',\n", service))
+			_, _ = buffer.WriteString("  ],\n")
 		} else {
 			// 3rd party packages are public to go code.
 			_, _ = buffer.WriteString("  visibility=[\n")
