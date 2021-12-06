@@ -334,7 +334,7 @@ def build_pip_archive(workdir):
                 #
                 # Note: tensorboard and tensorflow_estimator are pure Python, but are erroneously
                 # marked as binary packages by the tensorflow build process (arch=none-any)
-                "--only-binary=tensorboard,tensorflow,tensorflow_estimator,torch,tokenizers,sentencepiece,pyarrow,torchvision,tensorflow_addons",
+                "--only-binary=tensorboard,tensorflow,tensorflow_estimator,torch,tokenizers,sentencepiece,pyarrow,torchvision,tensorflow_addons,lightgbm",
             ]
             + index_url_flags_if_required()
             + list(args)
