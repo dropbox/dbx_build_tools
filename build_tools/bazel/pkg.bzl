@@ -57,7 +57,7 @@ on this, use a filegroup instead.
         name = name,
         srcs = ["//configs:_config_hack.sh"],
         data = data,
-        visibility = ["//configs/services:__subpackages__"],
+        visibility = ["//configs/services:__subpackages__", "//dropbox/clusterops/pirlo:__subpackages__"],
     )
 
 def dbx_unsquash(name, srcs, outs, visibility = None):
