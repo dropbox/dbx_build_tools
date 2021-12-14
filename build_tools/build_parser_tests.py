@@ -67,6 +67,16 @@ selects.config_setting_group(
 """
 
 
+BUILD_WITH_ARGS = """
+exports_files(
+    ['test.json'],
+    visibility = 'public',
+)
+
+rule1(name = "rule1")
+"""
+
+
 def test_parse_basic_build_file():
     # type: () -> None
     """Ensures that we can parse simple BUILD files."""
@@ -165,3 +175,15 @@ def test_build_with_structs():
     rule = bp.get_rule("perfect-day")
     assert rule.rule_type == "selects.config_setting_group"
     assert rule.attr_map["match_all"] == [":warm", ":sunny"]
+
+
+def test_build_with_exports_files():
+    # type: () -> None
+    """Ensures that build_parser can handle rules with position arguments."""
+    bp = build_parser.parse(BUILD_WITH_ARGS)
+
+    assert len(bp.get_all_rules()) == 2
+    rule = bp.get_all_rules()[0]
+    assert rule.rule_type == "exports_files"
+    assert rule.args == (["test.json"],)
+    assert bp.get_rule("rule1").args == ()

@@ -262,10 +262,11 @@ class MutableRule(object):
 
 
 class Rule(object):
-    def __init__(self, rule_type, attr_map):
-        # type: (Text, Dict[Text, Any]) -> None
+    def __init__(self, rule_type, attr_map, args=None):
+        # type: (Text, Dict[Text, Any], Optional[Tuple]) -> None
         self._rule_type = rule_type
         self._attr_map = ConstDict(attr_map)
+        self._args = args or ()
         self._expanded_attr_map = ConstDict(
             {k: maybe_expand_attribute(v) for k, v in attr_map.items()}
         )
@@ -287,6 +288,16 @@ class Rule(object):
 
     @rule_type.setter
     def rule_type(self, _value):
+        # type: (Any) -> None
+        raise TypeError("Rule object does not support item assignment")
+
+    @property
+    def args(self):
+        # type: () -> Tuple
+        return self._args
+
+    @args.setter
+    def args(self, _value):
         # type: (Any) -> None
         raise TypeError("Rule object does not support item assignment")
 
@@ -414,7 +425,7 @@ class BuildParser(object):
 
     def parse(self, data, fname=None):
         # type: (Text, Optional[Text]) -> Tuple[Any, ...]
-        """ 'parse' a BUILD file """
+        """'parse' a BUILD file"""
 
         pkg_name = ""  # type: Text
         dirname = None
@@ -453,7 +464,7 @@ class BuildParser(object):
         parsed_rules = {}  # type: Dict[Text, Rule]
         ordered_rules = []  # type: List[Rule]
         for rule_type, args, kargs in self._parsed_clauses:
-            rule = Rule(rule_type, kargs)  # type: Rule
+            rule = Rule(rule_type, kargs, args)  # type: Rule
             parsed_rules[kargs.get("name")] = rule
             ordered_rules.append(rule)
 
