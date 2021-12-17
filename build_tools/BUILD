@@ -120,6 +120,18 @@ dbx_py_binary(
     python3_compatible = True,
 )
 
+dbx_py_pytest_test(
+    name = "stdin_to_junit_tests",
+    srcs = ["stdin_to_junit_tests.py"],
+    data = ["//build_tools:stdin_to_junit"],
+    python2_compatible = False,
+    python3_compatible = True,
+    deps = [
+        "//dropbox:runfiles",
+        "//pip/pytest",
+    ],
+)
+
 dbx_py_library(
     name = "whatpyver_lib",
     srcs = ["whatpyver.py"],

@@ -45,14 +45,18 @@ def main():
             <failure type="test failed">%(input)s</failure>
           </testcase>
         </testsuite>
-        """
+        """.strip().replace(
+            "\n", ""
+        )
         exit_code = 1
     else:
         junit_template = """
         <testsuite tests="1" time="%(duration).3f">
           <testcase classname="%(classname)s" name="%(testname)s" time="%(duration).3f" />
         </testsuite>
-        """
+        """.strip().replace(
+            "\n", ""
+        )
         exit_code = 0
 
     output_file = os.environ.get("XML_OUTPUT_FILE", "/dev/null")
