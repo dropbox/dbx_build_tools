@@ -40,6 +40,7 @@ def main():
     stdin = "\n".join(stdin_lines)
     if stdin:
         junit_template = """
+        <?xml version="1.0" encoding="UTF-8"?>
         <testsuite tests="1" time="%(duration).3f">
           <testcase classname="%(classname)s" name="%(testname)s" time="%(duration).3f">
             <failure type="test failed">%(input)s</failure>
@@ -51,6 +52,7 @@ def main():
         exit_code = 1
     else:
         junit_template = """
+        <?xml version="1.0" encoding="UTF-8"?>
         <testsuite tests="1" time="%(duration).3f">
           <testcase classname="%(classname)s" name="%(testname)s" time="%(duration).3f" />
         </testsuite>

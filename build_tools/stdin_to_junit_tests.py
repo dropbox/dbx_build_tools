@@ -22,6 +22,7 @@ def test_stdin_to_junit_no_stdin() -> None:
             == b""
         )
         assert xml_output.read().decode("utf-8") == (
+            '<?xml version="1.0" encoding="UTF-8"?>        '
             '<testsuite tests="1" time="0.000">          '
             '<testcase classname="class" name="test" time="0.000" />        '
             "</testsuite>"
@@ -46,6 +47,7 @@ def test_stdin_to_junit() -> None:
         # otherwise we will miss piped output.
         assert stdin_to_junit.stdout.read().decode("utf-8").strip() == message
         assert xml_output.read().decode("utf-8") == (
+            '<?xml version="1.0" encoding="UTF-8"?>        '
             '<testsuite tests="1" time="0.000">          '
             '<testcase classname="class" name="method" time="0.000">            '
             '<failure type="test failed">test error\n</failure>          '
