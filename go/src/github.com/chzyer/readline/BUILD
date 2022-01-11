@@ -6,12 +6,9 @@ load("//build_tools/go:go.bzl", "dbx_go_library")
 dbx_go_library(
     name = "readline",
     srcs = [
-        "char.go",
         "complete.go",
         "complete_helper.go",
         "complete_segment.go",
-        "debug.go",
-        "doc.go",
         "history.go",
         "operation.go",
         "password.go",
@@ -23,6 +20,7 @@ dbx_go_library(
         "std.go",
         "term.go",
         "term_linux.go",
+        "term_unix.go",
         "terminal.go",
         "utils.go",
         "utils_unix.go",
