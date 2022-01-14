@@ -318,6 +318,23 @@ def build_pip_archive(workdir):
     env["PYTHONDONTWRITEBYTECODE"] = "1"
 
     def pip_cmd(cmd, *args):
+        # Binary packages for ML use
+        # Note: tensorboard and tensorflow_estimator are pure Python, but are erroneously
+        # marked as binary packages by the tensorflow build process (arch=none-any)
+        allowed_binaries = [
+            "lightgbm",
+            "onnxruntime",
+            "pyarrow",
+            "sentencepiece",
+            "tensorboard",
+            "tensorflow",
+            "tensorflow_addons",
+            "tensorflow_estimator",
+            "tokenizers",
+            "torch",
+            "torchvision",
+        ]
+
         return (
             [
                 venv_python,
@@ -331,10 +348,7 @@ def build_pip_archive(workdir):
                 "--no-binary=:all:",
                 # Binary packages are not acceptable in general.
                 # These are exceptions for ML usage only.
-                #
-                # Note: tensorboard and tensorflow_estimator are pure Python, but are erroneously
-                # marked as binary packages by the tensorflow build process (arch=none-any)
-                "--only-binary=tensorboard,tensorflow,tensorflow_estimator,torch,tokenizers,sentencepiece,pyarrow,torchvision,tensorflow_addons,lightgbm",
+                "--only-binary={}".format(",".join(allowed_binaries)),
             ]
             + index_url_flags_if_required()
             + list(args)
