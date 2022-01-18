@@ -16,13 +16,13 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strings"
 
-	bazelbuild "github.com/bazelbuild/buildtools/build"
 	"github.com/bazelbuild/buildtools/wspace"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
+
+	buildlib "dropbox/build_tools/genbuildgolib"
 )
 
 const (
@@ -32,165 +32,6 @@ const (
 
 `
 )
-
-var linkerMp = map[string]struct {
-	Deps     []string
-	LibFlags []string
-}{
-	"boost_1_54_algorithm": {
-		Deps: []string{"@org_boost//:algorithm"},
-	},
-	"boost_1_54_filesystem": {
-		Deps: []string{"@org_boost//:filesystem"},
-	},
-	"boost_1_54_lexical_cast": {
-		Deps: []string{"@org_boost//:lexical_cast"},
-	},
-	"boost_1_54_regex": {
-		Deps: []string{"@org_boost//:regex"},
-	},
-	"boost_1_54_system": {
-		Deps: []string{"@org_boost//:system"},
-	},
-	"boost_1_54_thread": {
-		Deps: []string{"@org_boost//:thread"},
-	},
-	"bpf": {
-		Deps: []string{"@libbpf//:bpf"},
-	},
-	"brotli_ffi": {
-		Deps: []string{"//rust/vendor/brotli-ffi-1.1.1:go_brotli_dep_lib"},
-	},
-	"bz2": {
-		Deps: []string{"@org_bzip_bzip2//:bz2"},
-	},
-	"crypto": {
-		Deps: []string{"@org_openssl//:ssl"},
-	},
-	"flatbuffers": {
-		Deps: []string{"@com_github_google_flatbuffers//:flatbuffers"},
-	},
-	"jemalloc": {
-		Deps: []string{"@jemalloc//:jemalloc"},
-	},
-	"leveldb": {
-		Deps: []string{"@leveldb//:leveldb", "@snappy//:snappy"},
-	},
-	"lxc": {
-		Deps: []string{"@org_linuxcontainers_lxc//:lxc"},
-	},
-	"lz4": {
-		Deps: []string{"@lz4//:lz4"},
-	},
-	"mysqlclient_r": {
-		Deps: []string{"//thirdparty/percona-server-5.6:perconaserverclient"},
-	},
-	"protobuf": {
-		Deps: []string{"//thirdparty/protobuf:protobuf"},
-	},
-	"rdkafka": {
-		Deps: []string{"@rdkafka//:rdkafka"},
-	},
-	"rocksdb": {
-		Deps: []string{"@rocksdb//:rocksdb_with_jemalloc"},
-	},
-	"rust_ffi_acl_lib_static": {
-		Deps: []string{"//rust/filesystem/ffi_acl:acl_lib_static"},
-	},
-	"rust_ffi_dbxpath_c": {
-		Deps: []string{"//rust/filesystem/dbxpath:dbxpath_c"},
-	},
-	"rust_ffi_fast_rsync_lib": {
-		Deps: []string{"//rust/dropbox/fast_rsync_ffi:fast_rsync_ffi_lib"},
-	},
-	"rust_ffi_go_dep": {
-		Deps: []string{"//rust/examples/go_dep:go_dep_lib"},
-	},
-	"rust_ffi_namespace_view_lib": {
-		Deps: []string{"//rust/dropbox/namespace_view_ffi:namespace_view_ffi_lib"},
-	},
-	"rust_ffi_osd2_disk_tracker": {
-		Deps: []string{"//rust/mp/osd2/osd2_ffi:osd2_ffi_cc_lib"},
-	},
-	"snappy": {
-		Deps: []string{"@snappy//:snappy"},
-	},
-	"zookeeper_mt_3_4_6": {
-		Deps: []string{"@zookeeper//:zookeeper_mt"},
-	},
-	"zstd": {
-		Deps: []string{"@zstd//:zstd"},
-	},
-}
-
-var whitelistedLinkerModules = []string{"m", "rt", "util", "dl", "tensorflow", "tensorflow_framework"}
-
-// Paths within //go/src/... which permit build_tags in BUILD.in.
-var whitelistForBuildTags = []string{
-	"gonum.org/",
-	"github.com/opencontainers/runc",
-}
-
-func isWhitelistedForBuildTags(goPkgPath string) bool {
-	for _, whitelistPrefix := range whitelistForBuildTags {
-		if strings.HasPrefix(goPkgPath, whitelistPrefix) {
-			return true
-		}
-	}
-	return false
-}
-
-type targetList []string
-
-func (s targetList) Len() int {
-	return len(s)
-}
-
-func (s targetList) Swap(i int, j int) {
-	s[i], s[j] = s[j], s[i]
-}
-
-func (s targetList) Less(i int, j int) bool {
-	p1 := s.priority(s[i])
-	p2 := s.priority(s[j])
-
-	if p1 < p2 {
-		return true
-	}
-	if p2 < p1 {
-		return false
-	}
-
-	return s[i] < s[j]
-}
-
-func (s targetList) priority(target string) int {
-	if strings.HasPrefix(target, "//") {
-		return 3
-	}
-	if strings.HasPrefix(target, ":") {
-		return 2
-	}
-	return 1
-}
-
-func uniqSort(items []string) []string {
-	keys := make(map[string]struct{})
-	deduped := make(targetList, 0, len(items))
-
-	for _, item := range items {
-		if _, ok := keys[item]; ok {
-			continue
-		}
-
-		keys[item] = struct{}{}
-		deduped = append(deduped, item)
-	}
-
-	sort.Sort(deduped)
-
-	return deduped
-}
 
 // determineTargetBuildPath uses a series of ways to try to
 // determine the major version of the module that `bzl gen` is
@@ -340,44 +181,14 @@ type ConfigGenerator struct {
 	visitStack []string // for detecting cycles
 }
 
-func init() {
-	build.Default.ReleaseTags = []string{"go1.1", "go1.2", "go1.3", "go1.4", "go1.5", "go1.6", "go1.7", "go1.8", "go1.9", "go1.10", "go1.11", "go1.12", "go1.13", "go1.14", "go1.15", "go1.16"}
-}
-
 func (g *ConfigGenerator) isBuiltinPkg(pkgName string) bool {
-	if pkgName == "C" { // c binding
-		return true
-	}
-
 	if g.isDbxPkg(pkgName) {
 		return false
 	}
 
-	// Check for a "testdata" component.
-	for _, component := range strings.Split(pkgName, "/") {
-		if component == "testdata" {
-			return true
-		}
-	}
-
-	// A "." in the name implies a url and thus clearly not builtin.
-	if strings.Contains(strings.Split(pkgName, "/")[0], ".") {
-		return false
-	}
-
-	if _, ok := g.golangPkgs[pkgName]; ok {
-		return ok
-	}
-
-	_, err := build.Default.ImportDir(
-		filepath.Join(build.Default.GOROOT, "src", pkgName),
-		build.ImportComment&build.IgnoreVendor)
-
-	if err != nil {
-		if g.verbose {
-			fmt.Printf("Can't find builtin pkg: %s %s\n", pkgName, filepath.Join(build.Default.GOROOT, "src", pkgName))
-		}
-		return false
+	result, hasResult := buildlib.IsBuiltinPkg(pkgName, g.golangPkgs, g.verbose)
+	if hasResult {
+		return result
 	}
 
 	g.golangPkgs[pkgName] = struct{}{}
@@ -435,40 +246,6 @@ func (g *ConfigGenerator) createDeps(
 	return deps
 }
 
-// Parse the BUILD.in file in a workspace path and return top-level variable
-// assignments as a table of identifier name to string or list of strings.
-func (g *ConfigGenerator) readAssignmentsFromBuildIN(workspacePkgPath string) (map[string]interface{}, error) {
-	config := make(map[string]interface{})
-
-	buildConfigPath := filepath.Join(workspacePkgPath, "BUILD.in")
-	buildContent, err := ioutil.ReadFile(buildConfigPath)
-	if err != nil {
-		return config, err
-	}
-
-	file, err := bazelbuild.ParseBuild(buildConfigPath, buildContent)
-	if err != nil {
-		return config, err
-	}
-
-	for _, stmt := range file.Stmt {
-		if assignExpr, ok := stmt.(*bazelbuild.AssignExpr); ok {
-			if assignExpr.Op == "=" {
-				if lhs, ok := assignExpr.LHS.(*bazelbuild.Ident); ok {
-					config[lhs.Name] = nil
-					switch rhs := assignExpr.RHS.(type) {
-					case *bazelbuild.StringExpr:
-						config[lhs.Name] = rhs.Value
-					case *bazelbuild.ListExpr:
-						config[lhs.Name] = bazelbuild.Strings(rhs)
-					}
-				}
-			}
-		}
-	}
-	return config, nil
-}
-
 func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 	if g.verbose {
 		fmt.Println("Generating config for", pkg.Dir)
@@ -477,21 +254,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 	buffer := &bytes.Buffer{}
 	_, _ = buffer.WriteString(buildHeaderTmpl)
 
-	// write lib/bin target
-	srcs := []string{}
-	srcs = append(srcs, pkg.GoFiles...)
-
-	cgoSrcs := []string{}
-	cgoSrcs = append(cgoSrcs, pkg.CgoFiles...)
-
-	cgoSrcs = append(cgoSrcs, pkg.CFiles...)
-	cgoSrcs = append(cgoSrcs, pkg.CXXFiles...)
-	// srcs = append(srcs, pkg.MFiles...)
-	cgoSrcs = append(cgoSrcs, pkg.HFiles...)
-	cgoSrcs = append(cgoSrcs, pkg.SFiles...)
-	// srcs = append(srcs, pkg.SwigFiles...)
-	// srcs = append(srcs, pkg.SwigCXXFiles...)
-	srcs = append(srcs, pkg.SysoFiles...)
+	srcs, cgoSrcs := buildlib.InitializeSrcsAndCGOSrcs(pkg)
 
 	cgoIncludeFlags := []string{}
 	cgoLinkerFlags := []string{}
@@ -499,63 +262,20 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 	gomodDepPaths := parseDepPathsFromGoModFile(pkg.Dir)
 	deps := g.createDeps(pkg, pkg.Imports, gomodDepPaths)
 
-	if len(pkg.CgoFiles) != 0 {
-		for _, cflag := range pkg.CgoCFLAGS {
-			if !strings.HasPrefix(cflag, "-I") {
-				cgoIncludeFlags = append(cgoIncludeFlags, cflag)
-			}
-		}
-
-		for _, cxx_flag := range pkg.CgoCXXFLAGS {
-			cgoCXXFlags = append(cgoCXXFlags, cxx_flag)
-		}
-
-		// Prevent duplicate expansions - generally order matters and you can't dedup LDFLAGS.
-		uniqueSpecialLd := make(map[string]struct{})
-		for _, ldflag := range pkg.CgoLDFLAGS {
-			if strings.HasPrefix(ldflag, "-l") {
-				ldflag = strings.TrimPrefix(ldflag, "-l")
-				// Check if we know what to do with the module
-				if str, ok := linkerMp[ldflag]; ok {
-					if _, ok := uniqueSpecialLd[ldflag]; ok {
-						continue
-					} else {
-						uniqueSpecialLd[ldflag] = struct{}{}
-					}
-					cgoLinkerFlags = append(cgoLinkerFlags, str.LibFlags...)
-					deps = append(deps, str.Deps...)
-					continue
-				}
-
-				// Check against whitelist of modules
-				found := false
-				for _, whitelistedModule := range whitelistedLinkerModules {
-					if ldflag == whitelistedModule {
-						found = true
-					}
-				}
-				if found {
-					// Add to list of linkerflags
-					cgoLinkerFlags = append(cgoLinkerFlags, fmt.Sprintf("-l%s", ldflag))
-				} else {
-					return fmt.Errorf(
-						"Attempting to link against non-whitelisted module: %s", ldflag)
-				}
-			} else if strings.HasPrefix(ldflag, "-L") {
-				// Ignore any -L flags
-			} else if strings.HasPrefix(ldflag, "-W") {
-				cgoLinkerFlags = append(cgoLinkerFlags, ldflag)
-			} else {
-				return fmt.Errorf(
-					"LDFlag does not begin with one of the following: '-l', '-L', '-W': %s", ldflag)
-			}
-		}
+	cgoIncludeFlags,
+		cgoCXXFlags,
+		cgoLinkerFlags,
+		deps,
+		srcs,
+		cgoSrcs, err := buildlib.PopulateSrcsAndDeps(pkg, cgoIncludeFlags,
+		cgoCXXFlags,
+		cgoLinkerFlags,
+		deps,
+		srcs,
+		cgoSrcs)
+	if err != nil {
+		return err
 	}
-
-	srcs = uniqSort(srcs)
-	cgoSrcs = uniqSort(cgoSrcs)
-
-	deps = uniqSort(deps)
 
 	name := filepath.Base(pkg.Dir)
 
@@ -587,12 +307,12 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 			var testSrcs []string
 			testSrcs = append(testSrcs, srcs...)
 			testSrcs = append(testSrcs, pkg.TestGoFiles...)
-			testSrcs = uniqSort(testSrcs)
+			testSrcs = buildlib.UniqSort(testSrcs)
 
 			var testDeps []string
 			testDeps = append(testDeps, deps...)
 			testDeps = append(testDeps, g.createDeps(pkg, pkg.TestImports, gomodDepPaths)...)
-			testDeps = uniqSort(testDeps)
+			testDeps = buildlib.UniqSort(testDeps)
 
 			_, _ = buffer.WriteString("\n")
 			writeTarget(
@@ -612,8 +332,8 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 		}
 
 		if len(pkg.XTestGoFiles) > 0 {
-			xTestSrcs := uniqSort(pkg.XTestGoFiles)
-			xTestDeps := uniqSort(g.createDeps(pkg, pkg.XTestImports, gomodDepPaths))
+			xTestSrcs := buildlib.UniqSort(pkg.XTestGoFiles)
+			xTestDeps := buildlib.UniqSort(g.createDeps(pkg, pkg.XTestImports, gomodDepPaths))
 
 			_, _ = buffer.WriteString("\n")
 			writeTarget(
@@ -633,26 +353,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 		}
 	}
 
-	buildConfigPath := filepath.Join(pkg.Dir, *buildFilename)
-	if g.dryRun {
-		fmt.Println("(dry run) Writing", buildConfigPath)
-		fmt.Println(buffer.String())
-	} else {
-		fmt.Println("Writing", buildConfigPath)
-
-		file, err := os.OpenFile(
-			buildConfigPath,
-			os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
-			0644)
-		if err != nil {
-			return errors.New("Cannot write " + buildConfigPath + ": " + err.Error())
-		}
-		defer func() { _ = file.Close() }()
-
-		_, _ = file.WriteString(buffer.String())
-	}
-
-	return nil
+	return buildlib.WriteToBuildConfigFile(g.dryRun, pkg, *buildFilename, buffer)
 }
 
 func (g *ConfigGenerator) Process(goPkgPath string) error {
@@ -665,77 +366,15 @@ func (g *ConfigGenerator) Process(goPkgPath string) error {
 }
 
 func (g *ConfigGenerator) process(goPkgPath string) error {
-	if g.verbose {
-		fmt.Println("Process pkg \"" + goPkgPath + "\"")
-	}
-	if g.isBuiltinPkg(goPkgPath) {
-		if g.verbose {
-			fmt.Println("Skipping builtin pkg \"" + goPkgPath + "\"")
-		}
-		return nil
-	}
-
-	if _, ok := g.processedPkgs[goPkgPath]; ok {
-		if g.verbose {
-			fmt.Printf("Skipping previously processed pkg: %s\n", goPkgPath)
-		}
-		return nil
-	}
-
-	for i, path := range g.visitStack {
-		if path == goPkgPath {
-			if g.verbose {
-				cycle := ""
-				for _, path := range g.visitStack[i:] {
-					cycle += path + " -> "
-				}
-
-				cycle += goPkgPath
-
-				fmt.Println("Cycle detected:", cycle)
-			}
-
-			// NOTE: A directory may have multiple bazel targets.  The
-			// directory's dependency set is the union of all of its bazel
-			// targets' dependencies.  When we consider the targets
-			// individually, there may not be any cycle in the dependency
-			// graph.  However, when we treat mutliple targets as a single
-			// unit, unintentional cycle may form.
-			//
-			// Return nil here to ensure we process each directory at most once.
-			return nil
-		}
-	}
-
-	g.visitStack = append(g.visitStack, goPkgPath)
-	defer func() { g.visitStack = g.visitStack[:len(g.visitStack)-1] }()
-
-	workspacePkgPath := filepath.Join(g.workspace, g.goSrc, goPkgPath)
-	config, err := g.readAssignmentsFromBuildIN(workspacePkgPath)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-
-	buildContext := build.Default
-	if config["build_tags"] != nil {
-		if !isWhitelistedForBuildTags(goPkgPath) {
-			return fmt.Errorf("You must add %s to whitelistForBuildTags in gen-build-go.go to enable build_tags.", goPkgPath)
-		}
-		buildContext.BuildTags = config["build_tags"].([]string)
-	}
-
-	pkg, err := buildContext.ImportDir(
-		workspacePkgPath,
-		build.ImportComment&build.IgnoreVendor)
-
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		if _, ok := err.(*build.NoGoError); ok {
-			// Directory exists, but does not include go sources.
-			return nil
-		}
+	pkg, err := buildlib.PopulatePackageInfo(
+		goPkgPath,
+		g.workspace,
+		g.goSrc,
+		g.verbose,
+		g.isBuiltinPkg(goPkgPath),
+		g.processedPkgs,
+		g.visitStack)
+	if pkg == nil {
 		return err
 	}
 
@@ -796,65 +435,17 @@ func writeTarget(
 	targetBuildPath string,
 	moduleName string,
 ) {
-
-	if len(srcs) == 0 &&
-		len(deps) == 0 &&
-		len(cgoSrcs) == 0 {
-
-		// bazel freaks out when the go build rule doesn't have any input
-		return
-	}
-
-	_, _ = buffer.WriteString(rule + "(\n")
-	_, _ = buffer.WriteString("  name = '" + name + "',\n")
-
-	_, _ = buffer.WriteString("  srcs = [\n")
-	for _, src := range srcs {
-		_, _ = buffer.WriteString("    '" + src + "',\n")
-	}
-	_, _ = buffer.WriteString("  ],\n")
-
-	if len(cgoSrcs) > 0 {
-		_, _ = buffer.WriteString("  cgo_srcs = [\n")
-		for _, src := range cgoSrcs {
-			_, _ = buffer.WriteString("    '" + src + "',\n")
-		}
-		_, _ = buffer.WriteString("  ],\n")
-	}
-
-	if len(cgoLinkerFlags) > 0 {
-		_, _ = buffer.WriteString("  cgo_linkerflags = [\n")
-		for _, linkerFlag := range cgoLinkerFlags {
-			_, _ = buffer.WriteString("    '" + linkerFlag + "',\n")
-		}
-		_, _ = buffer.WriteString("  ],\n")
-	}
-
-	if len(cgoCXXFlags) > 0 {
-		_, _ = buffer.WriteString("  cgo_cxxflags = [\n")
-		for _, cXXFlag := range cgoCXXFlags {
-			_, _ = buffer.WriteString("    '" + cXXFlag + "',\n")
-		}
-		_, _ = buffer.WriteString("  ],\n")
-	}
-
-	if len(cgoIncludeFlags) > 0 {
-		_, _ = buffer.WriteString("  cgo_includeflags = [\n")
-		for _, includeFlag := range cgoIncludeFlags {
-			_, _ = buffer.WriteString("    '" + includeFlag + "',\n")
-		}
-		_, _ = buffer.WriteString("  ],\n")
-	}
-
-	if moduleName != "" {
-		_, _ = buffer.WriteString(" module_name = '" + moduleName + "',\n")
-	}
-
-	_, _ = buffer.WriteString("  deps = [\n")
-	for _, dep := range deps {
-		_, _ = buffer.WriteString("    '" + dep + "',\n")
-	}
-	_, _ = buffer.WriteString("  ],\n")
+	buildlib.WriteCommonBuildAttrToTarget(
+		buffer,
+		rule,
+		name,
+		srcs,
+		deps,
+		cgoSrcs,
+		cgoIncludeFlags,
+		cgoLinkerFlags,
+		cgoCXXFlags,
+		moduleName)
 
 	if rule == "dbx_go_library" {
 		if len(targetBuildPath) > 0 {
