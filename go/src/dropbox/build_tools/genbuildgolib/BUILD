@@ -13,5 +13,6 @@ dbx_go_library(
         "//go/src/dropbox:__subpackages__",
     ],
     deps = [
+        "//go/src/github.com/bazelbuild/buildtools/build",
     ],
 )

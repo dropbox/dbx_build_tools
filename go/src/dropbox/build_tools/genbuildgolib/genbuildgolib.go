@@ -1,8 +1,12 @@
 package genbuildgolib
 
 import (
+	"io/ioutil"
+	"path/filepath"
 	"sort"
 	"strings"
+
+	bazelbuild "github.com/bazelbuild/buildtools/build"
 )
 
 var LinkerMp = map[string]struct {
@@ -162,4 +166,39 @@ func UniqSort(items []string) []string {
 	sort.Sort(deduped)
 
 	return deduped
+}
+
+// ReadAssignmentsFromBuildIN Parse the BUILD.in file in a workspace
+// path and return top-level variable assignments as a table of
+// identifier name to string or list of strings.
+func ReadAssignmentsFromBuildIN(workspacePkgPath string) (map[string]interface{}, error) {
+	config := make(map[string]interface{})
+
+	buildConfigPath := filepath.Join(workspacePkgPath, "BUILD.in")
+	buildContent, err := ioutil.ReadFile(buildConfigPath)
+	if err != nil {
+		return config, err
+	}
+
+	file, err := bazelbuild.ParseBuild(buildConfigPath, buildContent)
+	if err != nil {
+		return config, err
+	}
+
+	for _, stmt := range file.Stmt {
+		if assignExpr, ok := stmt.(*bazelbuild.AssignExpr); ok {
+			if assignExpr.Op == "=" {
+				if lhs, ok := assignExpr.LHS.(*bazelbuild.Ident); ok {
+					config[lhs.Name] = nil
+					switch rhs := assignExpr.RHS.(type) {
+					case *bazelbuild.StringExpr:
+						config[lhs.Name] = rhs.Value
+					case *bazelbuild.ListExpr:
+						config[lhs.Name] = bazelbuild.Strings(rhs)
+					}
+				}
+			}
+		}
+	}
+	return config, nil
 }

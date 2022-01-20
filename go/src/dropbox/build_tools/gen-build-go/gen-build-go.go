@@ -18,7 +18,6 @@ import (
 	"regexp"
 	"strings"
 
-	bazelbuild "github.com/bazelbuild/buildtools/build"
 	"github.com/bazelbuild/buildtools/wspace"
 	"golang.org/x/mod/modfile"
 	"golang.org/x/mod/module"
@@ -277,40 +276,6 @@ func (g *ConfigGenerator) createDeps(
 	return deps
 }
 
-// Parse the BUILD.in file in a workspace path and return top-level variable
-// assignments as a table of identifier name to string or list of strings.
-func (g *ConfigGenerator) readAssignmentsFromBuildIN(workspacePkgPath string) (map[string]interface{}, error) {
-	config := make(map[string]interface{})
-
-	buildConfigPath := filepath.Join(workspacePkgPath, "BUILD.in")
-	buildContent, err := ioutil.ReadFile(buildConfigPath)
-	if err != nil {
-		return config, err
-	}
-
-	file, err := bazelbuild.ParseBuild(buildConfigPath, buildContent)
-	if err != nil {
-		return config, err
-	}
-
-	for _, stmt := range file.Stmt {
-		if assignExpr, ok := stmt.(*bazelbuild.AssignExpr); ok {
-			if assignExpr.Op == "=" {
-				if lhs, ok := assignExpr.LHS.(*bazelbuild.Ident); ok {
-					config[lhs.Name] = nil
-					switch rhs := assignExpr.RHS.(type) {
-					case *bazelbuild.StringExpr:
-						config[lhs.Name] = rhs.Value
-					case *bazelbuild.ListExpr:
-						config[lhs.Name] = bazelbuild.Strings(rhs)
-					}
-				}
-			}
-		}
-	}
-	return config, nil
-}
-
 func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 	if g.verbose {
 		fmt.Println("Generating config for", pkg.Dir)
@@ -553,7 +518,7 @@ func (g *ConfigGenerator) process(goPkgPath string) error {
 	defer func() { g.visitStack = g.visitStack[:len(g.visitStack)-1] }()
 
 	workspacePkgPath := filepath.Join(g.workspace, g.goSrc, goPkgPath)
-	config, err := g.readAssignmentsFromBuildIN(workspacePkgPath)
+	config, err := genlib.ReadAssignmentsFromBuildIN(workspacePkgPath)
 	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
