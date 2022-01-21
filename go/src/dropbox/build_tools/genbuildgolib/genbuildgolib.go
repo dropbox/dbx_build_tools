@@ -1,6 +1,8 @@
 package genbuildgolib
 
 import (
+	"fmt"
+	"go/build"
 	"io/ioutil"
 	"path/filepath"
 	"sort"
@@ -9,7 +11,7 @@ import (
 	bazelbuild "github.com/bazelbuild/buildtools/build"
 )
 
-var LinkerMp = map[string]struct {
+var linkerMp = map[string]struct {
 	Deps     []string
 	LibFlags []string
 }{
@@ -99,7 +101,7 @@ var LinkerMp = map[string]struct {
 	},
 }
 
-var WhitelistedLinkerModules = []string{"m", "rt", "util", "dl", "tensorflow", "tensorflow_framework"}
+var whitelistedLinkerModules = []string{"m", "rt", "util", "dl", "tensorflow", "tensorflow_framework"}
 
 // whitelistForBuildTags Paths within //go/src/... which permit build_tags in BUILD.in.
 var whitelistForBuildTags = []string{
@@ -201,4 +203,98 @@ func ReadAssignmentsFromBuildIN(workspacePkgPath string) (map[string]interface{}
 		}
 	}
 	return config, nil
+}
+
+// PopulateBuildAttributes Populates BUILD file attributes
+// like srcs, cgoSrcs, deps, and some flags
+func PopulateBuildAttributes(
+	pkg *build.Package,
+	deps []string,
+) ([]string, []string, []string, []string, []string, []string, string, error) {
+	// write lib/bin target
+	srcs := []string{}
+	srcs = append(srcs, pkg.GoFiles...)
+
+	cgoSrcs := []string{}
+	cgoSrcs = append(cgoSrcs, pkg.CgoFiles...)
+
+	cgoSrcs = append(cgoSrcs, pkg.CFiles...)
+	cgoSrcs = append(cgoSrcs, pkg.CXXFiles...)
+	// srcs = append(srcs, pkg.MFiles...)
+	cgoSrcs = append(cgoSrcs, pkg.HFiles...)
+	cgoSrcs = append(cgoSrcs, pkg.SFiles...)
+	// srcs = append(srcs, pkg.SwigFiles...)
+	// srcs = append(srcs, pkg.SwigCXXFiles...)
+	srcs = append(srcs, pkg.SysoFiles...)
+
+	cgoIncludeFlags := []string{}
+	cgoLinkerFlags := []string{}
+	cgoCXXFlags := []string{}
+
+	if len(pkg.CgoFiles) != 0 {
+		for _, cflag := range pkg.CgoCFLAGS {
+			if !strings.HasPrefix(cflag, "-I") {
+				cgoIncludeFlags = append(cgoIncludeFlags, cflag)
+			}
+		}
+
+		for _, cxx_flag := range pkg.CgoCXXFLAGS {
+			cgoCXXFlags = append(cgoCXXFlags, cxx_flag)
+		}
+
+		// Prevent duplicate expansions - generally order matters and you can't dedup LDFLAGS.
+		uniqueSpecialLd := make(map[string]struct{})
+		for _, ldflag := range pkg.CgoLDFLAGS {
+			if strings.HasPrefix(ldflag, "-l") {
+				ldflag = strings.TrimPrefix(ldflag, "-l")
+				// Check if we know what to do with the module
+				if str, ok := linkerMp[ldflag]; ok {
+					if _, ok := uniqueSpecialLd[ldflag]; ok {
+						continue
+					} else {
+						uniqueSpecialLd[ldflag] = struct{}{}
+					}
+					cgoLinkerFlags = append(cgoLinkerFlags, str.LibFlags...)
+					deps = append(deps, str.Deps...)
+					continue
+				}
+
+				// Check against whitelist of modules
+				found := false
+				for _, whitelistedModule := range whitelistedLinkerModules {
+					if ldflag == whitelistedModule {
+						found = true
+					}
+				}
+				if found {
+					// Add to list of linkerflags
+					cgoLinkerFlags = append(cgoLinkerFlags, fmt.Sprintf("-l%s", ldflag))
+				} else {
+					return nil, nil, nil, nil, nil, nil, "", fmt.Errorf(
+						"Attempting to link against non-whitelisted module: %s", ldflag)
+				}
+			} else if strings.HasPrefix(ldflag, "-L") {
+				// Ignore any -L flags
+			} else if strings.HasPrefix(ldflag, "-W") {
+				cgoLinkerFlags = append(cgoLinkerFlags, ldflag)
+			} else {
+				return nil, nil, nil, nil, nil, nil, "", fmt.Errorf(
+					"LDFlag does not begin with one of the following: '-l', '-L', '-W': %s", ldflag)
+			}
+		}
+	}
+
+	srcs = UniqSort(srcs)
+	cgoSrcs = UniqSort(cgoSrcs)
+	deps = UniqSort(deps)
+	name := filepath.Base(pkg.Dir)
+
+	return cgoIncludeFlags,
+		cgoCXXFlags,
+		cgoLinkerFlags,
+		deps,
+		srcs,
+		cgoSrcs,
+		name,
+		nil
 }

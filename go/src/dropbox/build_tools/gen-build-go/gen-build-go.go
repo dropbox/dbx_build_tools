@@ -283,88 +283,20 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 
 	buffer := &bytes.Buffer{}
 	_, _ = buffer.WriteString(buildHeaderTmpl)
-
-	// write lib/bin target
-	srcs := []string{}
-	srcs = append(srcs, pkg.GoFiles...)
-
-	cgoSrcs := []string{}
-	cgoSrcs = append(cgoSrcs, pkg.CgoFiles...)
-
-	cgoSrcs = append(cgoSrcs, pkg.CFiles...)
-	cgoSrcs = append(cgoSrcs, pkg.CXXFiles...)
-	// srcs = append(srcs, pkg.MFiles...)
-	cgoSrcs = append(cgoSrcs, pkg.HFiles...)
-	cgoSrcs = append(cgoSrcs, pkg.SFiles...)
-	// srcs = append(srcs, pkg.SwigFiles...)
-	// srcs = append(srcs, pkg.SwigCXXFiles...)
-	srcs = append(srcs, pkg.SysoFiles...)
-
-	cgoIncludeFlags := []string{}
-	cgoLinkerFlags := []string{}
-	cgoCXXFlags := []string{}
 	gomodDepPaths := parseDepPathsFromGoModFile(pkg.Dir)
 	deps := g.createDeps(pkg, pkg.Imports, gomodDepPaths)
 
-	if len(pkg.CgoFiles) != 0 {
-		for _, cflag := range pkg.CgoCFLAGS {
-			if !strings.HasPrefix(cflag, "-I") {
-				cgoIncludeFlags = append(cgoIncludeFlags, cflag)
-			}
-		}
-
-		for _, cxx_flag := range pkg.CgoCXXFLAGS {
-			cgoCXXFlags = append(cgoCXXFlags, cxx_flag)
-		}
-
-		// Prevent duplicate expansions - generally order matters and you can't dedup LDFLAGS.
-		uniqueSpecialLd := make(map[string]struct{})
-		for _, ldflag := range pkg.CgoLDFLAGS {
-			if strings.HasPrefix(ldflag, "-l") {
-				ldflag = strings.TrimPrefix(ldflag, "-l")
-				// Check if we know what to do with the module
-				if str, ok := genlib.LinkerMp[ldflag]; ok {
-					if _, ok := uniqueSpecialLd[ldflag]; ok {
-						continue
-					} else {
-						uniqueSpecialLd[ldflag] = struct{}{}
-					}
-					cgoLinkerFlags = append(cgoLinkerFlags, str.LibFlags...)
-					deps = append(deps, str.Deps...)
-					continue
-				}
-
-				// Check against whitelist of modules
-				found := false
-				for _, whitelistedModule := range genlib.WhitelistedLinkerModules {
-					if ldflag == whitelistedModule {
-						found = true
-					}
-				}
-				if found {
-					// Add to list of linkerflags
-					cgoLinkerFlags = append(cgoLinkerFlags, fmt.Sprintf("-l%s", ldflag))
-				} else {
-					return fmt.Errorf(
-						"Attempting to link against non-whitelisted module: %s", ldflag)
-				}
-			} else if strings.HasPrefix(ldflag, "-L") {
-				// Ignore any -L flags
-			} else if strings.HasPrefix(ldflag, "-W") {
-				cgoLinkerFlags = append(cgoLinkerFlags, ldflag)
-			} else {
-				return fmt.Errorf(
-					"LDFlag does not begin with one of the following: '-l', '-L', '-W': %s", ldflag)
-			}
-		}
+	cgoIncludeFlags,
+		cgoCXXFlags,
+		cgoLinkerFlags,
+		deps,
+		srcs,
+		cgoSrcs,
+		name,
+		err := genlib.PopulateBuildAttributes(pkg, deps)
+	if err != nil {
+		return err
 	}
-
-	srcs = genlib.UniqSort(srcs)
-	cgoSrcs = genlib.UniqSort(cgoSrcs)
-
-	deps = genlib.UniqSort(deps)
-
-	name := filepath.Base(pkg.Dir)
 
 	var targetBuildPath string
 	targetBuildPath = determineTargetBuildPath(pkg.Dir)
