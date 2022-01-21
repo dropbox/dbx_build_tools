@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"go/build"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -323,4 +324,71 @@ func WriteToBuildConfigFile(isDryRun bool, pkg *build.Package, buildFilename str
 	}
 
 	return nil
+}
+
+// WriteCommonBuildAttrToTarget writes some of the common BUILD file
+// attributes to the buffer. Including name, srcs, deps, module_name,
+// etc.
+func WriteCommonBuildAttrToTarget(
+	buffer io.StringWriter,
+	rule string,
+	name string,
+	srcs []string,
+	deps []string,
+	cgoSrcs []string,
+	cgoIncludeFlags []string,
+	cgoLinkerFlags []string,
+	cgoCXXFlags []string,
+	moduleName string,
+) {
+	_, _ = buffer.WriteString(rule + "(\n")
+	_, _ = buffer.WriteString("  name = '" + name + "',\n")
+
+	_, _ = buffer.WriteString("  srcs = [\n")
+	for _, src := range srcs {
+		_, _ = buffer.WriteString("    '" + src + "',\n")
+	}
+	_, _ = buffer.WriteString("  ],\n")
+
+	if len(cgoSrcs) > 0 {
+		_, _ = buffer.WriteString("  cgo_srcs = [\n")
+		for _, src := range cgoSrcs {
+			_, _ = buffer.WriteString("    '" + src + "',\n")
+		}
+		_, _ = buffer.WriteString("  ],\n")
+	}
+
+	if len(cgoLinkerFlags) > 0 {
+		_, _ = buffer.WriteString("  cgo_linkerflags = [\n")
+		for _, linkerFlag := range cgoLinkerFlags {
+			_, _ = buffer.WriteString("    '" + linkerFlag + "',\n")
+		}
+		_, _ = buffer.WriteString("  ],\n")
+	}
+
+	if len(cgoCXXFlags) > 0 {
+		_, _ = buffer.WriteString("  cgo_cxxflags = [\n")
+		for _, cXXFlag := range cgoCXXFlags {
+			_, _ = buffer.WriteString("    '" + cXXFlag + "',\n")
+		}
+		_, _ = buffer.WriteString("  ],\n")
+	}
+
+	if len(cgoIncludeFlags) > 0 {
+		_, _ = buffer.WriteString("  cgo_includeflags = [\n")
+		for _, includeFlag := range cgoIncludeFlags {
+			_, _ = buffer.WriteString("    '" + includeFlag + "',\n")
+		}
+		_, _ = buffer.WriteString("  ],\n")
+	}
+
+	if moduleName != "" {
+		_, _ = buffer.WriteString(" module_name = '" + moduleName + "',\n")
+	}
+
+	_, _ = buffer.WriteString("  deps = [\n")
+	for _, dep := range deps {
+		_, _ = buffer.WriteString("    '" + dep + "',\n")
+	}
+	_, _ = buffer.WriteString("  ],\n")
 }
