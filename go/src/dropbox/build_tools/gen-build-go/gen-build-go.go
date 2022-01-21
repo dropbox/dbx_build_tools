@@ -186,43 +186,11 @@ func init() {
 }
 
 func (g *ConfigGenerator) isBuiltinPkg(pkgName string) bool {
-	if pkgName == "C" { // c binding
-		return true
-	}
-
 	if g.isDbxPkg(pkgName) {
 		return false
 	}
 
-	// Check for a "testdata" component.
-	for _, component := range strings.Split(pkgName, "/") {
-		if component == "testdata" {
-			return true
-		}
-	}
-
-	// A "." in the name implies a url and thus clearly not builtin.
-	if strings.Contains(strings.Split(pkgName, "/")[0], ".") {
-		return false
-	}
-
-	if _, ok := g.golangPkgs[pkgName]; ok {
-		return ok
-	}
-
-	_, err := build.Default.ImportDir(
-		filepath.Join(build.Default.GOROOT, "src", pkgName),
-		build.ImportComment&build.IgnoreVendor)
-
-	if err != nil {
-		if g.verbose {
-			fmt.Printf("Can't find builtin pkg: %s %s\n", pkgName, filepath.Join(build.Default.GOROOT, "src", pkgName))
-		}
-		return false
-	}
-
-	g.golangPkgs[pkgName] = struct{}{}
-	return true
+	return genlib.IsBuiltinPkg(pkgName, &g.golangPkgs, g.verbose)
 }
 
 func (g *ConfigGenerator) isDbxPkg(pkgName string) bool {
