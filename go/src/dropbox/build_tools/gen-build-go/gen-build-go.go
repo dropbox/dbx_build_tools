@@ -372,26 +372,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) error {
 		}
 	}
 
-	buildConfigPath := filepath.Join(pkg.Dir, *buildFilename)
-	if g.dryRun {
-		fmt.Println("(dry run) Writing", buildConfigPath)
-		fmt.Println(buffer.String())
-	} else {
-		fmt.Println("Writing", buildConfigPath)
-
-		file, err := os.OpenFile(
-			buildConfigPath,
-			os.O_CREATE|os.O_WRONLY|os.O_TRUNC,
-			0644)
-		if err != nil {
-			return errors.New("Cannot write " + buildConfigPath + ": " + err.Error())
-		}
-		defer func() { _ = file.Close() }()
-
-		_, _ = file.WriteString(buffer.String())
-	}
-
-	return nil
+	return genlib.WriteToBuildConfigFile(g.dryRun, pkg, *buildFilename, buffer)
 }
 
 func (g *ConfigGenerator) Process(goPkgPath string) error {
