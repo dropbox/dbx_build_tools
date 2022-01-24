@@ -383,7 +383,7 @@ func WriteCommonBuildAttrToTarget(
 	}
 
 	if moduleName != "" {
-		_, _ = buffer.WriteString(" module_name = '" + moduleName + "',\n")
+		_, _ = buffer.WriteString("  module_name = '" + moduleName + "',\n")
 	}
 
 	_, _ = buffer.WriteString("  deps = [\n")
