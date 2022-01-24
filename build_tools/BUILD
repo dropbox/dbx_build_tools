@@ -40,6 +40,7 @@ dbx_py_pytest_test(
     srcs = [
         "npm_utils_tests.py",
     ],
+    python2_compatible = True,
     python3_compatible = True,
     deps = [
         ":bazel_utils",
