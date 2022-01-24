@@ -1056,7 +1056,7 @@ def dbx_py_pytest_test(
         quarantine = {},
         python = None,
         plugins = [],
-        python2_compatible = True,
+        python2_compatible = False,
         python3_compatible = True,
         visibility = None,
         **kwargs):
