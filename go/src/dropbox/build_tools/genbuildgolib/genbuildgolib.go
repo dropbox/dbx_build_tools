@@ -113,7 +113,7 @@ var whitelistForBuildTags = []string{
 	"github.com/opencontainers/runc",
 }
 
-func IsWhitelistedForBuildTags(goPkgPath string) bool {
+func isWhitelistedForBuildTags(goPkgPath string) bool {
 	for _, whitelistPrefix := range whitelistForBuildTags {
 		if strings.HasPrefix(goPkgPath, whitelistPrefix) {
 			return true
@@ -174,10 +174,10 @@ func UniqSort(items []string) []string {
 	return deduped
 }
 
-// ReadAssignmentsFromBuildIN Parse the BUILD.in file in a workspace
+// readAssignmentsFromBuildIN Parse the BUILD.in file in a workspace
 // path and return top-level variable assignments as a table of
 // identifier name to string or list of strings.
-func ReadAssignmentsFromBuildIN(workspacePkgPath string) (map[string]interface{}, error) {
+func readAssignmentsFromBuildIN(workspacePkgPath string) (map[string]interface{}, error) {
 	config := make(map[string]interface{})
 
 	buildConfigPath := filepath.Join(workspacePkgPath, "BUILD.in")
@@ -432,4 +432,88 @@ func IsBuiltinPkg(pkgName string, golangPkgs *map[string]struct{}, isVerbose boo
 
 	(*golangPkgs)[pkgName] = struct{}{}
 	return true
+}
+
+func ValidateGoPkgPath(
+	isVerbose,
+	isBuiltinPkg bool,
+	goPkgPath string,
+	processedPkgs map[string]struct{},
+	visitStack *[]string,
+) bool {
+	if isVerbose {
+		fmt.Println("Process pkg \"" + goPkgPath + "\"")
+	}
+	if isBuiltinPkg {
+		if isVerbose {
+			fmt.Println("Skipping builtin pkg \"" + goPkgPath + "\"")
+		}
+		return false
+	}
+
+	if _, ok := processedPkgs[goPkgPath]; ok {
+		if isVerbose {
+			fmt.Printf("Skipping previously processed pkg: %s\n", goPkgPath)
+		}
+		return false
+	}
+
+	for i, path := range *visitStack {
+		if path == goPkgPath {
+			if isVerbose {
+				cycle := ""
+				for _, path := range (*visitStack)[i:] {
+					cycle += path + " -> "
+				}
+
+				cycle += goPkgPath
+
+				fmt.Println("Cycle detected:", cycle)
+			}
+
+			// NOTE: A directory may have multiple bazel targets.  The
+			// directory's dependency set is the union of all of its bazel
+			// targets' dependencies.  When we consider the targets
+			// individually, there may not be any cycle in the dependency
+			// graph.  However, when we treat mutliple targets as a single
+			// unit, unintentional cycle may form.
+			//
+			// Return nil here to ensure we process each directory at most once.
+			return false
+		}
+	}
+
+	return true
+}
+
+func PopulatePackageInfo(workspace, goSrc, goPkgPath string) (*build.Package, error) {
+	workspacePkgPath := filepath.Join(workspace, goSrc, goPkgPath)
+	config, err := readAssignmentsFromBuildIN(workspacePkgPath)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	buildContext := build.Default
+	if config["build_tags"] != nil {
+		if !isWhitelistedForBuildTags(goPkgPath) {
+			return nil, fmt.Errorf("You must add %s to whitelistForBuildTags in genbuildgolib.go to enable build_tags.", goPkgPath)
+		}
+		buildContext.BuildTags = config["build_tags"].([]string)
+	}
+
+	pkg, err := buildContext.ImportDir(
+		workspacePkgPath,
+		build.ImportComment&build.IgnoreVendor)
+
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		if _, ok := err.(*build.NoGoError); ok {
+			// Directory exists, but does not include go sources.
+			return nil, nil
+		}
+		return nil, err
+	}
+	return pkg, nil
 }

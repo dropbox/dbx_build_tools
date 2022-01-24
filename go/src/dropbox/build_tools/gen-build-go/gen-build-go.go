@@ -353,77 +353,18 @@ func (g *ConfigGenerator) Process(goPkgPath string) error {
 }
 
 func (g *ConfigGenerator) process(goPkgPath string) error {
-	if g.verbose {
-		fmt.Println("Process pkg \"" + goPkgPath + "\"")
-	}
-	if g.isBuiltinPkg(goPkgPath) {
-		if g.verbose {
-			fmt.Println("Skipping builtin pkg \"" + goPkgPath + "\"")
-		}
+	isBuiltinPkg := g.isBuiltinPkg(goPkgPath)
+	isValid := genlib.ValidateGoPkgPath(
+		g.verbose, isBuiltinPkg, goPkgPath, g.processedPkgs, &g.visitStack)
+	if !isValid {
 		return nil
-	}
-
-	if _, ok := g.processedPkgs[goPkgPath]; ok {
-		if g.verbose {
-			fmt.Printf("Skipping previously processed pkg: %s\n", goPkgPath)
-		}
-		return nil
-	}
-
-	for i, path := range g.visitStack {
-		if path == goPkgPath {
-			if g.verbose {
-				cycle := ""
-				for _, path := range g.visitStack[i:] {
-					cycle += path + " -> "
-				}
-
-				cycle += goPkgPath
-
-				fmt.Println("Cycle detected:", cycle)
-			}
-
-			// NOTE: A directory may have multiple bazel targets.  The
-			// directory's dependency set is the union of all of its bazel
-			// targets' dependencies.  When we consider the targets
-			// individually, there may not be any cycle in the dependency
-			// graph.  However, when we treat mutliple targets as a single
-			// unit, unintentional cycle may form.
-			//
-			// Return nil here to ensure we process each directory at most once.
-			return nil
-		}
 	}
 
 	g.visitStack = append(g.visitStack, goPkgPath)
-	defer func() { g.visitStack = g.visitStack[:len(g.visitStack)-1] }()
+	defer func() { g.visitStack = (g.visitStack)[:len(g.visitStack)-1] }()
 
-	workspacePkgPath := filepath.Join(g.workspace, g.goSrc, goPkgPath)
-	config, err := genlib.ReadAssignmentsFromBuildIN(workspacePkgPath)
-	if err != nil && !os.IsNotExist(err) {
-		return err
-	}
-
-	buildContext := build.Default
-	if config["build_tags"] != nil {
-		if !genlib.IsWhitelistedForBuildTags(goPkgPath) {
-			return fmt.Errorf("You must add %s to whitelistForBuildTags in genbuildgolib.go to enable build_tags.", goPkgPath)
-		}
-		buildContext.BuildTags = config["build_tags"].([]string)
-	}
-
-	pkg, err := buildContext.ImportDir(
-		workspacePkgPath,
-		build.ImportComment&build.IgnoreVendor)
-
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil
-		}
-		if _, ok := err.(*build.NoGoError); ok {
-			// Directory exists, but does not include go sources.
-			return nil
-		}
+	pkg, err := genlib.PopulatePackageInfo(g.workspace, g.goSrc, goPkgPath)
+	if pkg == nil {
 		return err
 	}
 
