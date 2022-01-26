@@ -403,6 +403,9 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     ), dynamic_libs, frameworks
 
 def _vpip_rule_impl(ctx, local):
+    if not ctx.attr.python3_compatible:
+        fail("All code must be python 3 compatible.")
+
     if local and NON_THIRDPARTY_PACKAGE_PREFIXES:
         thirdparty_package = not any([
             ctx.label.package == prefix or ctx.label.package.startswith(prefix + "/")
@@ -633,6 +636,9 @@ def get_default_py_toolchain_name(python3_compatible):
     return BUILD_TAG_TO_TOOLCHAIN_MAP[PY3_DEFAULT_BINARY_ABI.build_tag]
 
 def _dbx_py_binary_impl(ctx):
+    if not ctx.attr.python3_compatible:
+        fail("All code must be python 3 compatible.")
+
     return dbx_py_binary_base_impl(ctx, internal_bootstrap = False)
 
 def _dbx_py_internal_bootstrap_binary_impl(ctx):
@@ -913,6 +919,9 @@ dbx_py_library_attrs = {
 }
 
 def _dbx_py_library_impl(ctx):
+    if not ctx.attr.python3_compatible:
+        fail("All code must be python 3 compatible.")
+
     (
         pyc_files_by_build_tag,
         piplib_contents,
