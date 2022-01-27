@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	buildHeaderTmpl = `load('@rServer//build_tools/go:go.bzl', 'dbx_go_binary', 'dbx_go_library', 'dbx_go_test')
+	buildHeaderTmpl = `load('@__main__//build_tools/go:go.bzl', 'dbx_go_binary', 'dbx_go_library', 'dbx_go_test')
 
 `
 )
