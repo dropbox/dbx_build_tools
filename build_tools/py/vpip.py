@@ -317,6 +317,9 @@ def build_pip_archive(workdir):
     # writing (non-deterministic) pycs into the build product.
     env["PYTHONDONTWRITEBYTECODE"] = "1"
 
+    # Set the hash seed to a the same value that we use for dbx_py_binary when building piplibs.
+    env["PYTHONHASHSEED"] = "4"
+
     def pip_cmd(cmd, *args):
         # Binary packages for ML use
         # Note: tensorboard and tensorflow_estimator are pure Python, but are erroneously
