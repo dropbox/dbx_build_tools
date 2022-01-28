@@ -7,7 +7,6 @@ dbx_py_library(
     name = "bazel_deps",
     srcs = ["bazel_deps.py"],
     python2_compatible = False,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         ":builtins",
@@ -23,7 +22,6 @@ dbx_py_pytest_test(
     name = "bazel_deps_test",
     srcs = ["bazel_deps_test.py"],
     python2_compatible = False,
-    python3_compatible = True,
     deps = [
         ":bazel_deps",
         "//pip/pathlib",
@@ -36,7 +34,6 @@ dbx_py_binary(
     srcs = ["check_bazel_deps.py"],
     main = "check_bazel_deps.py",
     python2_compatible = False,
-    python3_compatible = True,
     validate = "strict",
     visibility = ["//visibility:public"],
     deps = [
@@ -50,7 +47,6 @@ dbx_py_library(
     name = "builtins",
     srcs = ["builtins.py"],
     python2_compatible = False,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         "//pip/typing",

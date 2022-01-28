@@ -14,7 +14,6 @@ dbx_py_library(
         "atomic.py",
     ],
     python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         "//pip/typing",
@@ -28,7 +27,6 @@ dbx_py_library(
         "npm_utils.py",
     ],
     python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         "//pip/typing",
@@ -41,7 +39,6 @@ dbx_py_pytest_test(
         "npm_utils_tests.py",
     ],
     python2_compatible = True,
-    python3_compatible = True,
     deps = [
         ":bazel_utils",
     ],
@@ -51,7 +48,6 @@ dbx_py_library(
     name = "bazelpkg",
     srcs = ["bazelpkg.py"],
     python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         ":bazel_utils",
@@ -69,7 +65,6 @@ dbx_py_library(
     # This must not have further dependencies.
     autogen_deps = False,
     python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = ["//pip/typing"],
 )
@@ -118,7 +113,6 @@ dbx_py_binary(
     srcs = ["stdin_to_junit.py"],
     main = "stdin_to_junit.py",
     python2_compatible = False,
-    python3_compatible = True,
 )
 
 dbx_py_pytest_test(
@@ -126,7 +120,6 @@ dbx_py_pytest_test(
     srcs = ["stdin_to_junit_tests.py"],
     data = ["//build_tools:stdin_to_junit"],
     python2_compatible = False,
-    python3_compatible = True,
     deps = [
         "//dropbox:runfiles",
         "//pip/pytest",
@@ -271,7 +264,6 @@ dbx_py_dbx_test(
         "${XML_OUTPUT_FILE:-/dev/null}",
     ],
     pip_main = "@dbx_build_tools//pip/pytest",
-    python3_compatible = True,
     deps = [
         ":bazel_utils",
         "@dbx_build_tools//pip/pytest",

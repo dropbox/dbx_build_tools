@@ -7,6 +7,5 @@ dbx_py_pypi_piplib(
     pip_version = "1.4.0",
     provides = ["typed_ast"],
     python2_compatible = False,
-    python3_compatible = True,
     deps = [],
 )

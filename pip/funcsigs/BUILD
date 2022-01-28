@@ -4,6 +4,5 @@ dbx_py_pypi_piplib(
     name = "funcsigs",
     pip_version = "1.0.2",
     python2_compatible = True,
-    python3_compatible = True,
     visibility = ["//visibility:public"],
 )

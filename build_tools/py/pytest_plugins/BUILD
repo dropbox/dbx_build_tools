@@ -10,7 +10,6 @@ dbx_py_library(
     testonly = True,
     srcs = ["codecoverage.py"],
     python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         "//pip/coverage",
@@ -25,7 +24,6 @@ dbx_py_library(
         "preserve_symlinks.py",
     ],
     python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         "//pip/py",

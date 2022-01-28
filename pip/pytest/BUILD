@@ -12,7 +12,6 @@ dbx_py_library(
     srcs = [],
     autogen_deps = False,
     python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [":pytest"],
 )
@@ -29,7 +28,6 @@ dbx_py_pypi_piplib(
         "_pytest",
     ],
     python2_compatible = True,
-    python3_compatible = True,
     setup_requires = ["//pip/setuptools_scm"],
     use_pep517 = True,
     deps = [

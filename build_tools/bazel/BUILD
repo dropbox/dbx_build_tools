@@ -24,7 +24,6 @@ dbx_py_pytest_test(
         "@com_github_plougher_squashfs_tools//:unsquashfs",
     ],
     python2_compatible = False,
-    python3_compatible = True,
     visibility = ["//visibility:private"],
     deps = [
         "//dropbox:runfiles",

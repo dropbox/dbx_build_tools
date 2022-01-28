@@ -10,6 +10,5 @@ dbx_py_pypi_piplib(
         "setuptools",
     ],
     python2_compatible = True,
-    python3_compatible = True,
     visibility = ["//visibility:public"],
 )
