@@ -17,7 +17,7 @@ while true; do
 done
 if [[ "$OSTYPE" == "darwin"* ]]; then
     # readlink -f is not supported on mac, but Python should be available.
-    runfiles="$(python -c "import os;print(os.path.realpath('$abs_binary.runfiles'))")"
+    runfiles="$(python3 -c "import os;print(os.path.realpath('$abs_binary.runfiles'))")"
 else
     runfiles="$(/bin/readlink -f "$abs_binary".runfiles)"
 fi
