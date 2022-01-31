@@ -121,18 +121,10 @@ def _apply_service_extensions(ctx, services, extensions):
                     continue
                 fail("Extension target service {} which is not in the dependency tree".format(info.service))
             if info.service not in py_binary_info:
-                # Make up the python3/python2 compatibility based on the selected python interpreter.
-                if info.python == cpython_27.build_tag:
-                    python2_compatible = True
-                else:
-                    python2_compatible = False
-                python3_compatible = not python2_compatible
-
                 py_binary_info[info.service] = struct(
                     main = info.main,
                     libs = [info.lib],
-                    python2_compatible = python2_compatible,
-                    python3_compatible = python3_compatible,
+                    python2_compatible = False,
                     python = info.python,
                 )
             else:
@@ -175,7 +167,6 @@ def _apply_service_extensions(ctx, services, extensions):
             python = python,
             internal_bootstrap = False,
             python2_compatible = info.python2_compatible,
-            python3_compatible = info.python3_compatible,
             dynamic_libraries = [],
         )
         service_exe[service] = binary_out_file.short_path

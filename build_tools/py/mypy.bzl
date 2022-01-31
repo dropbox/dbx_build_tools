@@ -554,17 +554,12 @@ def dbx_mypy_test(
         size = "small",
         tags = [],
         python2_compatible = True,
-        python3_compatible = True,
         **kwds):
     things = []
     if python2_compatible:
-        if python3_compatible:
-            suffix = "-python2"
-        else:
-            suffix = ""
+        suffix = "-python2"
         things.append((suffix, "2.7"))
-    if python3_compatible:
-        things.append(("", "3.8"))
+    things.append(("", "3.8"))
     for suffix, python_version in things:
         _dbx_mypy_test(
             name = name + suffix,
@@ -688,15 +683,11 @@ def _dbx_py_compiled_only_pytest_test(
         flaky = 0,
         quarantine = {},
         python = None,
-        python3_compatible = True,
         python2_compatible = False,
         compiled = False,
         plugins = [],
         visibility = None,
         **kwargs):
-    if not python3_compatible:
-        fail("Compiled tests must support Python 3")
-
     pytest_args, pytest_deps = extract_pytest_args(args, test_root, plugins, **kwargs)
 
     tags = tags + process_quarantine_attr(quarantine)
@@ -714,7 +705,6 @@ def _dbx_py_compiled_only_pytest_test(
             local = local,
             quarantine = quarantine,
             python = python,
-            python3_compatible = True,
             python2_compatible = False,
             visibility = ["//visibility:private"],
             **kwargs
@@ -742,7 +732,6 @@ def _dbx_py_compiled_only_pytest_test(
             local = local,
             flaky = flaky,
             python = python,
-            python3_compatible = True,
             python2_compatible = False,
             quarantine = quarantine,
             visibility = visibility,

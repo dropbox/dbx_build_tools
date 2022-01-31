@@ -83,8 +83,8 @@ def _dbx_py_validate_imports_impl(target, ctx):
 
     if run_check_action:
         args = ctx.actions.args()
-        if rule.attr.python3_compatible:
-            args.add("--py3-compatible")
+        # TODO: cleanup
+        args.add("--py3-compatible")
         if rule.attr.python2_compatible:
             args.add("--py2-compatible")
 

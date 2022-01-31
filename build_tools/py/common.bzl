@@ -11,7 +11,6 @@ load("//build_tools/windows:windows.bzl", "is_windows")
 
 DbxPyVersionCompatibility = provider(fields = [
     "python2_compatible",
-    "python3_compatible",
 ])
 
 ALL_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS]
@@ -156,8 +155,7 @@ def collect_transitive_srcs_and_libs(
         ctx,
         deps,
         data,
-        python2_compatible,
-        python3_compatible):
+        python2_compatible):
     pyc_files_by_build_tag_trans = {}
     for abi in ALL_ABIS:
         pyc_files_by_build_tag_trans[abi.build_tag] = []
@@ -168,9 +166,6 @@ def collect_transitive_srcs_and_libs(
     extra_pythonpath_trans = []
     dynamic_libraries_trans = []
     frameworks_trans = []
-
-    if not python2_compatible and not python3_compatible:
-        fail("Neither compatible with Python 2 or Python 3.")
 
     if data:
         for x in data:
@@ -186,8 +181,6 @@ def collect_transitive_srcs_and_libs(
             versions = x[DbxPyVersionCompatibility]
             if python2_compatible and not versions.python2_compatible:
                 fail("%s is not compatible with Python 2." % (x.label,))
-            if python3_compatible and not versions.python3_compatible:
-                fail("%s is not compatible with Python 3." % (x.label,))
 
         if hasattr(x, "piplib_contents"):
             # Likely to be a dbx_py_library
@@ -298,7 +291,6 @@ def emit_py_binary(
         python,
         internal_bootstrap,
         python2_compatible,
-        python3_compatible,
         dynamic_libraries):
     if internal_bootstrap:
         if python:
@@ -320,9 +312,6 @@ def emit_py_binary(
         if python.major_python_version == 2:
             if not python2_compatible:
                 fail("Python 2 interpreter selected but binary is not compatible with Python 2.")
-        elif python.major_python_version == 3:
-            if not python3_compatible:
-                fail("Python 3 interpreter selected but binary is not compatible with Python 3.")
 
     if not pythonpath:
         pythonpath = workspace_root_to_pythonpath(ctx.label.workspace_root)
@@ -357,7 +346,6 @@ def emit_py_binary(
             deps = deps,
             data = data,
             python2_compatible = python2_compatible,
-            python3_compatible = python3_compatible,
         )
         if py_toolchain.dbx_importer:
             # The importer is only used on py2 non-bootstrap builds
