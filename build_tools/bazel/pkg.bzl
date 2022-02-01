@@ -295,15 +295,21 @@ _dbx_pkg_sqfs = rule(
                   "This attribute will be ignored if yaps config explicitly sets repo_key.",
             default = [],
         ),
-        "block_size_kb": attr.int(),
+        "block_size_kb": attr.int(
+            default = 16,
+            doc = "SquashFS block size. Increasing this improves compression but " +
+                  "also increases IOPS for pagefaults and lowers memory efficiency. " +
+                  "SquashFS deafult is 128kb.",
+        ),
         "capability_map": attr.string_dict(),
         "compression_algo": attr.string(
-            # TODO(rbtz): switch to zstd after u20 upgrade.
-            default = "gzip",
+            default = "zstd",
             values = ["gzip", "lz4", "zstd"],
             doc = "Compression algorithm.  Zstd is supported starting from v4.13+.",
         ),
         "compression_level": attr.int(
+            # 5 has a good balance between compression ratio and compression speed
+            default = 5,
             doc = "Compression level.  Higher values give better compression ratios " +
                   "but increase sqfs package creation times.",
         ),

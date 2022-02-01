@@ -569,7 +569,7 @@ func main() {
 	if *compressionAlgo != "" {
 		args = append(args, "-comp", *compressionAlgo)
 	}
-	if *compressionLevel != 0 {
+	if *compressionLevel != 0 && *compressionAlgo != "lz4" {
 		args = append(args, "-Xcompression-level", fmt.Sprintf("%d", *compressionLevel))
 	}
 
