@@ -56,23 +56,6 @@ RULE_TYPES = [
     "dbx_py_tf_pytest_test",
 ]
 
-RULE_TYPES_THAT_DEFAULT_PY3_ONLY = [
-    "dbx_py_binary",
-    "dbx_py_library",
-    "dbx_py_selenium_test",
-    "dbx_atlas_blockserver_http_test",
-    "dbx_atlas_servicers_py_library",
-    "dbx_atlas_slow_and_expensive_testutil_library",
-    "dbx_py_test",
-    "py_binary",
-    "py_library",
-    "dbx_py_tf_binary",
-    "dbx_py_pytest_test",
-    "dbx_py_test",
-    "dbx_slow_metaserver_test",
-    "dbx_metaserver_test",
-]
-
 
 class PythonVersionCache(object):
     def __init__(self, verbose=False):
@@ -220,16 +203,7 @@ class PythonVersionCache(object):
             # python2_compatible is used by dbx_py_binary
             # python_version is used by py_binary
             # srcs_version is used by py_library
-            py2 = (
-                rule.attr_map.get(
-                    "python2_compatible",
-                    rule.rule_type not in RULE_TYPES_THAT_DEFAULT_PY3_ONLY,
-                )
-                or rule.attr_map.get("python_version", "PY3") == "PY2"
-                or rule.attr_map.get("srcs_version", "PY3")
-                in ("PY2", "PY2ONLY", "PY2AND3")
-            )
-
+            py2 = False
             py3 = (
                 rule.attr_map.get("python3_compatible", True)
                 and rule.attr_map.get("python_version", "PY3") != "PY2"
