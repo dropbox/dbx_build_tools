@@ -124,7 +124,6 @@ def _apply_service_extensions(ctx, services, extensions):
                 py_binary_info[info.service] = struct(
                     main = info.main,
                     libs = [info.lib],
-                    python2_compatible = False,
                     python = info.python,
                 )
             else:
@@ -166,7 +165,6 @@ def _apply_service_extensions(ctx, services, extensions):
             ext_modules = None,
             python = python,
             internal_bootstrap = False,
-            python2_compatible = info.python2_compatible,
             dynamic_libraries = [],
         )
         service_exe[service] = binary_out_file.short_path

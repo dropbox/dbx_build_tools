@@ -553,12 +553,9 @@ def dbx_mypy_test(
         deps,
         size = "small",
         tags = [],
-        python2_compatible = False,
         **kwds):
+    # TODO: Don't hard code abi, use ALTERNATIVE_TEST_ABIS
     things = []
-    if python2_compatible:
-        suffix = "-python2"
-        things.append((suffix, "2.7"))
     things.append(("", "3.8"))
     for suffix, python_version in things:
         _dbx_mypy_test(
@@ -626,16 +623,12 @@ _mypyc_attrs = {
         aspects = [dbx_mypyc_aspect],
     ),
     "python_version": attr.string(default = "3.8"),
-    "python2_compatible": attr.bool(default = False),
 }
 
 _dbx_py_compiled_binary_attrs = dict(dbx_py_binary_attrs)
 _dbx_py_compiled_binary_attrs.update(_mypyc_attrs)
 
 def _dbx_py_compiled_binary_impl(ctx):
-    if ctx.attr.python2_compatible:
-        fail("Compiled binaries do not support Python 2")
-
     ext_modules = depset(
         transitive = [dep[MypycProvider].trans_ext_modules for dep in ctx.attr.deps],
     )
@@ -683,7 +676,6 @@ def _dbx_py_compiled_only_pytest_test(
         flaky = 0,
         quarantine = {},
         python = None,
-        python2_compatible = False,
         compiled = False,
         plugins = [],
         visibility = None,
@@ -705,7 +697,6 @@ def _dbx_py_compiled_only_pytest_test(
             local = local,
             quarantine = quarantine,
             python = python,
-            python2_compatible = False,
             visibility = ["//visibility:private"],
             **kwargs
         )
@@ -732,7 +723,6 @@ def _dbx_py_compiled_only_pytest_test(
             local = local,
             flaky = flaky,
             python = python,
-            python2_compatible = False,
             quarantine = quarantine,
             visibility = visibility,
             **kwargs
