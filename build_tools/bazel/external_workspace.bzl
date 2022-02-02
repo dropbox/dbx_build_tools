@@ -13,7 +13,7 @@ DEFAULT_EXTERNAL_URLS = {
     "cpython_39": ["https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tar.xz"],
     "go_1_16_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.16.7.linux-amd64.tar.gz"],
     "io_pypa_pip_whl": ["https://files.pythonhosted.org/packages/54/0c/d01aa759fdc501a58f431eb594a17495f15b88da142ce14b5845662c13f3/pip-20.0.2-py2.py3-none-any.whl"],
-    "io_pypa_setuptools_whl": ["https://files.pythonhosted.org/packages/f9/d3/955738b20d3832dfa3cd3d9b07e29a8162edb480bf988332f5e6e48ca444/setuptools-44.0.0-py2.py3-none-any.whl"],
+    "io_pypa_setuptools_whl": ["https://files.pythonhosted.org/packages/11/b9/adac241e2c4aca7ae4ddd86d3c18227667665b6e7eac550695bfc50c7e3d/setuptools-60.6.0-py3-none-any.whl"],
     "io_pypa_wheel_whl": ["https://files.pythonhosted.org/packages/8c/23/848298cccf8e40f5bbb59009b32848a4c38f4e7f3364297ab3c3e2e2cd14/wheel-0.34.2-py2.py3-none-any.whl"],
     "lz4": ["https://github.com/lz4/lz4/archive/v1.9.3.tar.gz"],
     "net_zlib": ["http://zlib.net/zlib-1.2.11.tar.gz"],
@@ -186,8 +186,8 @@ def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_file(
         name = "io_pypa_setuptools_whl",
         urls = urls["io_pypa_setuptools_whl"],
-        downloaded_file_path = "setuptools-44.0.0-py2.py3-none-any.whl",
-        sha256 = "180081a244d0888b0065e18206950d603f6550721bd6f8c0a10221ed467dd78e",
+        downloaded_file_path = "setuptools-60.6.0-py3-none-any.whl",
+        sha256 = "c99207037c38984eae838c2fd986f39a9ddf4fabfe0fddd957e622d1d1dcdd05",
     )
 
     http_file(
