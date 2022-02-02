@@ -9,7 +9,6 @@ DEFAULT_EXTERNAL_URLS = {
     "abseil_py": ["https://github.com/abseil/abseil-py/archive/pypi-v0.7.1.tar.gz"],
     "bazel_skylib": ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz"],
     "com_github_plougher_squashfs_tools": ["https://github.com/plougher/squashfs-tools/archive/4.4.tar.gz"],
-    "cpython_27": ["https://www.python.org/ftp/python/2.7.17/Python-2.7.17.tar.xz"],
     "cpython_38": ["https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz"],
     "cpython_39": ["https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tar.xz"],
     "go_1_16_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.16.7.linux-amd64.tar.gz"],
@@ -45,14 +44,6 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
         sha256 = "72fba7922703ddfa7a028d513ac15a85c8d54c8d67f55fa5a4802885dc652056",
         build_file = filename_from_label("@dbx_build_tools//thirdparty/libffi:BUILD.libffi"),
         strip_prefix = "libffi-3.3",
-    )
-
-    http_archive(
-        name = "org_python_cpython_27",
-        urls = urls["cpython_27"],
-        sha256 = "4d43f033cdbd0aa7b7023c81b0e986fd11e653b5248dac9144d508f11812ba41",
-        build_file = filename_from_label("@dbx_build_tools//thirdparty/cpython:BUILD.python27"),
-        strip_prefix = "Python-2.7.17",
     )
 
     http_archive(

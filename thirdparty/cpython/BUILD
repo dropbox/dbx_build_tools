@@ -1,6 +1,5 @@
 load(
     "//build_tools/py:toolchain.bzl",
-    "CPYTHON_27_TOOLCHAIN_NAME",
     "CPYTHON_38_TOOLCHAIN_NAME",
     "dbx_py_interpreter",
     "dbx_py_toolchain",
@@ -21,35 +20,6 @@ config_setting(
     values = {
         "define": "cpython=bazel",
     },
-)
-
-dbx_py_interpreter(
-    name = "cpython-27",
-    build_tag = "cpython-27",
-    exe_file = "@org_python_cpython_27//:bin/python",
-    headers = "@org_python_cpython_27//:include_headers",
-    runtime = "@org_python_cpython_27//:runtime",
-)
-
-dbx_py_toolchain(
-    name = "cpython-27-py_toolchain",
-    dbx_importer = "//build_tools/py:dbx_importer",
-    interpreter = ":cpython-27",
-    pyc_compile = "//build_tools/py:dbx_compile",
-)
-
-toolchain(
-    name = "drte-v3-27-toolchain",
-    exec_compatible_with = DRTEV3_LINUX64_CONSTRAINTS,
-    target_compatible_with = DRTEV3_LINUX64_CONSTRAINTS,
-    toolchain = ":cpython-27-py_toolchain",
-    toolchain_type = CPYTHON_27_TOOLCHAIN_NAME,
-)
-
-toolchain(
-    name = "drte-off-27-toolchain",
-    toolchain = ":cpython-27-py_toolchain",
-    toolchain_type = CPYTHON_27_TOOLCHAIN_NAME,
 )
 
 dbx_py_interpreter(
