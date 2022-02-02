@@ -9,7 +9,6 @@ load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 dbx_py_library(
     name = "python_encoding",
     srcs = ["python_encoding.py"],
-    python2_compatible = False,
     validate = "strict",
 )
 
@@ -92,7 +91,6 @@ dbx_internal_bootstrap_py_binary(
     name = "py3_compile",
     srcs = ["py3_compile.py"],
     main = "py3_compile.py",
-    python2_compatible = False,
 )
 
 toolchain_type(

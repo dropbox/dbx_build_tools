@@ -8,7 +8,6 @@ load("//build_tools/py:py.bzl", "dbx_py_library")
 dbx_py_library(
     name = "commands",
     srcs = ["commands.py"],
-    python2_compatible = False,
     validate = "strict",
     deps = [
         ":exec_wrapper",
@@ -30,7 +29,6 @@ dbx_py_library(
         "//build_tools:buildfmt",
         "//go/src/dropbox/build_tools/gen-build-go",
     ],
-    python2_compatible = False,
     validate = "strict",
     deps = [
         ":build_merge_lib",
@@ -51,7 +49,6 @@ dbx_py_library(
     srcs = [
         "parse_py_imports.py",
     ],
-    python2_compatible = False,
     validate = "strict",
     visibility = ["//visibility:public"],
     deps = [
@@ -67,7 +64,6 @@ dbx_py_library(
         "build_merge.py",
     ],
     data = ["//go/src/dropbox/build_tools/build-merge"],
-    python2_compatible = True,
     validate = "strict",
     deps = [
         "//dropbox:runfiles",
@@ -78,7 +74,6 @@ dbx_py_library(
 dbx_py_library(
     name = "exec_wrapper",
     srcs = ["exec_wrapper.py"],
-    python2_compatible = False,
     validate = "strict",
     deps = [
         ":metrics",
@@ -89,7 +84,6 @@ dbx_py_library(
 dbx_py_library(
     name = "metrics",
     srcs = ["metrics.py"],
-    python2_compatible = False,
     validate = "strict",
     deps = [
         "//pip/typing",
@@ -99,7 +93,6 @@ dbx_py_library(
 dbx_py_library(
     name = "run",
     srcs = ["run.py"],
-    python2_compatible = False,
     validate = "strict",
     deps = [
         "//build_tools/go:env",
@@ -110,7 +103,6 @@ dbx_py_library(
 dbx_py_library(
     name = "cache",
     srcs = ["cache.py"],
-    python2_compatible = False,
     validate = "strict",
     deps = [
         ":cfg",
@@ -122,7 +114,6 @@ dbx_py_library(
 dbx_py_library(
     name = "core",
     srcs = ["core.py"],
-    python2_compatible = False,
     validate = "strict",
     deps = [
         ":commands",
@@ -137,6 +128,5 @@ dbx_py_library(
 dbx_py_library(
     name = "cfg",
     srcs = ["cfg.py"],
-    python2_compatible = False,
     validate = "strict",
 )

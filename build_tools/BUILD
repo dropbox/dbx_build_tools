@@ -13,7 +13,6 @@ dbx_py_library(
     srcs = [
         "atomic.py",
     ],
-    python2_compatible = True,
     validate = "strict",
     deps = [
         "//pip/typing",
@@ -26,7 +25,6 @@ dbx_py_library(
         "bazel_utils.py",
         "npm_utils.py",
     ],
-    python2_compatible = True,
     validate = "strict",
     deps = [
         "//pip/typing",
@@ -38,7 +36,6 @@ dbx_py_pytest_test(
     srcs = [
         "npm_utils_tests.py",
     ],
-    python2_compatible = True,
     deps = [
         ":bazel_utils",
     ],
@@ -47,7 +44,6 @@ dbx_py_pytest_test(
 dbx_py_library(
     name = "bazelpkg",
     srcs = ["bazelpkg.py"],
-    python2_compatible = True,
     validate = "strict",
     deps = [
         ":bazel_utils",
@@ -64,7 +60,6 @@ dbx_py_library(
     ],
     # This must not have further dependencies.
     autogen_deps = False,
-    python2_compatible = True,
     validate = "strict",
     deps = ["//pip/typing"],
 )
@@ -72,7 +67,6 @@ dbx_py_library(
 dbx_py_pytest_test(
     name = "build_parser_tests",
     srcs = ["build_parser_tests.py"],
-    python2_compatible = True,
     deps = [
         ":build_parser_lib",
     ],
@@ -84,7 +78,6 @@ dbx_py_binary(
         "bzl.py",
     ],
     main = "bzl.py",
-    python2_compatible = False,
     deps = [
         "//build_tools/bzl_lib:commands",
         "//build_tools/bzl_lib:core",
@@ -99,7 +92,6 @@ dbx_py_binary(
         "bzl-gen.py",
     ],
     main = "bzl-gen.py",
-    python2_compatible = False,
     deps = [
         ":bazel_utils",
         "//build_tools/bzl_lib:gazel_lib",
@@ -112,14 +104,12 @@ dbx_py_binary(
     name = "stdin_to_junit",
     srcs = ["stdin_to_junit.py"],
     main = "stdin_to_junit.py",
-    python2_compatible = False,
 )
 
 dbx_py_pytest_test(
     name = "stdin_to_junit_tests",
     srcs = ["stdin_to_junit_tests.py"],
     data = ["//build_tools:stdin_to_junit"],
-    python2_compatible = False,
     deps = [
         "//dropbox:runfiles",
         "//pip/pytest",
@@ -131,7 +121,6 @@ dbx_py_library(
     srcs = ["whatpyver.py"],
     # This must not have further dependencies.
     autogen_deps = False,
-    python2_compatible = False,
     validate = "strict",
     deps = [":build_parser_lib"],
 )
@@ -140,7 +129,6 @@ dbx_py_binary(
     name = "whatpyver",
     srcs = ["whatpyver.py"],
     main = "whatpyver.py",
-    python2_compatible = False,
     deps = [
         ":build_parser_lib",
         "//pip/typing",

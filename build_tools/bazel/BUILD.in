@@ -70,7 +70,6 @@ dbx_py_pytest_test(
         ":test_sqfs_zstd_2.sqfs",
         "@com_github_plougher_squashfs_tools//:unsquashfs",
     ],
-    python2_compatible = False,
     visibility = ["//visibility:private"],
 )
 

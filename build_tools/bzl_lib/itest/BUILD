@@ -14,7 +14,6 @@ dbx_py_library(
         ":bzl-itest-init",
         ":bzl-itest-wait",
     ],
-    python2_compatible = False,
     validate = "strict",
     deps = [
         "//build_tools:bazel_utils",

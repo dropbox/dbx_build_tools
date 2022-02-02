@@ -553,7 +553,7 @@ def dbx_mypy_test(
         deps,
         size = "small",
         tags = [],
-        python2_compatible = True,
+        python2_compatible = False,
         **kwds):
     things = []
     if python2_compatible:
@@ -626,7 +626,7 @@ _mypyc_attrs = {
         aspects = [dbx_mypyc_aspect],
     ),
     "python_version": attr.string(default = "3.8"),
-    "python2_compatible": attr.bool(default = True),
+    "python2_compatible": attr.bool(default = False),
 }
 
 _dbx_py_compiled_binary_attrs = dict(dbx_py_binary_attrs)

@@ -102,7 +102,7 @@ def dbx_cffi_module(
         module_name = None,
         visibility = None,
         deps = [],
-        python2_compatible = True,
+        python2_compatible = False,
         ignore_missing_static_libraries = True,
         conly = False,
         tags = [],

@@ -4,5 +4,4 @@ dbx_py_binary(
     name = "junit_wrapper",
     testonly = True,
     main = "junit_wrapper.py",
-    python2_compatible = False,
 )

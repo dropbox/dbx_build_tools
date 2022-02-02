@@ -9,6 +9,5 @@ dbx_py_pypi_piplib(
         "pkg_resources",
         "setuptools",
     ],
-    python2_compatible = True,
     visibility = ["//visibility:public"],
 )

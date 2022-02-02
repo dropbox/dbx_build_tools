@@ -562,7 +562,7 @@ _piplib_attrs = {
     "pip_main": attr.string(),
     "provides": attr.string_list(),
     "py_excludes": attr.string_list(default = ["test", "tests", "testing", "SelfTest", "Test", "Tests"]),
-    "python2_compatible": attr.bool(default = True),
+    "python2_compatible": attr.bool(default = False),
     "env": attr.string_dict(),
     "ignore_missing_static_libraries": attr.bool(
         default = True,
@@ -812,7 +812,7 @@ def dbx_py_pypi_piplib(
         provides = None,
         hidden_provides = None,
         import_test_tags = None,
-        python2_compatible = True,
+        python2_compatible = False,
         quarantine = {},
         **kwargs):
     if provides == None:
@@ -845,7 +845,7 @@ def dbx_py_local_piplib(
         provides = None,
         hidden_provides = None,
         import_test_tags = None,
-        python2_compatible = True,
+        python2_compatible = False,
         quarantine = {},
         **kwargs):
     if provides == None:

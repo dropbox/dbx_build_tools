@@ -5,7 +5,6 @@ load("//build_tools/services:svc.bzl", "dbx_service_daemon")
 dbx_py_binary(
     name = "echo_server",
     main = "echo_server.py",
-    python2_compatible = False,
 )
 
 # this is used by a `bzl itest` tutorial
@@ -13,7 +12,6 @@ dbx_py_binary(
     name = "echo_client",
     srcs = ["echo_client.py"],
     main = "echo_client.py",
-    python2_compatible = False,
 )
 
 # this is used by a `bzl itest` tutorial
