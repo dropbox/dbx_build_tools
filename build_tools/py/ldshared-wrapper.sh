@@ -20,13 +20,26 @@ for flag in "$@"; do
     fi
 done
 
+# We may have passed in static libraries explicitly in $LDSHARED_WRAPPER_ADDITIONAL_LIBS,
+# which will be appended to the arguments at the end.
+declare -a extralibs
+read -ra tempextralibs <<< "$LDSHARED_WRAPPER_ADDITIONAL_LIBS"
+for i in "${tempextralibs[@]}"; do
+    extralibs+=("${i##*/}")
+done
+
 declare -a opts
 for flag in "$@"; do
     if [[ "$flag" == -l* ]]; then
         lib="${flag#-l}"
         if [[ ! "$lib" =~ ^(dl|gfortran|m|rt)$ ]]; then
+            libname="lib$lib.a"
+            # Drop the flag if we specify the static library path directly.
+            if [[ " ${extralibs[*]} " == *" $libname "* ]]; then
+                continue
+            fi
             for libdir in "${libdirs[@]}"; do
-                staticlib="$libdir/lib"$lib".a"
+                staticlib="$libdir/$libname"
                 if [[ -f "$staticlib" ]]; then
                     flag="$staticlib"
                 fi
