@@ -94,14 +94,6 @@ dbx_internal_bootstrap_py_binary(
 )
 
 toolchain_type(
-    name = "toolchain_27",
-)
-
-toolchain_type(
-    name = "toolchain_37",
-)
-
-toolchain_type(
     name = "toolchain_38",
 )
 

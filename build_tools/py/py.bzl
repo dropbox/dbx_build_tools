@@ -11,7 +11,6 @@ load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
 load(
     "@dbx_build_tools//build_tools/py:toolchain.bzl",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
-    "CPYTHON_27_TOOLCHAIN_NAME",
     "DbxPyInterpreter",
     "get_py_toolchain_name",
 )

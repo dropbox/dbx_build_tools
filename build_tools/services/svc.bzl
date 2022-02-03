@@ -1,4 +1,5 @@
 load("//build_tools/bazel:runfiles.bzl", "runfiles_attrs", "write_runfiles_tmpl")
+load("//build_tools/py:cfg.bzl", "PY3_DEFAULT_BINARY_ABI")
 load(
     "//build_tools/py:common.bzl",
     "ALL_TOOLCHAIN_NAMES",
@@ -11,7 +12,6 @@ load(
     "//build_tools/py:toolchain.bzl",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
     "DbxPyInterpreter",
-    "cpython_27",
 )
 
 DbxServicePyBinaryExtension = provider(fields = [
@@ -565,7 +565,7 @@ service_extension_py_binary_internal = rule(
             providers = [[PyInfo], [DbxPyVersionCompatibility]],
         ),
         "service": attr.label(providers = ["service_name"], mandatory = True),
-        "python": attr.string(default = cpython_27.build_tag, values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys()),
+        "python": attr.string(default = PY3_DEFAULT_BINARY_ABI.build_tag, values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys()),
         "allow_missing": attr.bool(default = False),
     },
 )
