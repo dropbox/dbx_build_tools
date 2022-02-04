@@ -254,7 +254,7 @@ def build_pip_archive(workdir):
         external_dir,
         "io_pypa_setuptools_whl",
         "file",
-        "setuptools-60.6.0-py3-none-any.whl",
+        "setuptools-44.0.0-py2.py3-none-any.whl",
     )
     wheel_wheel = os.path.join(
         external_dir, "io_pypa_wheel_whl", "file", "wheel-0.34.2-py2.py3-none-any.whl"
