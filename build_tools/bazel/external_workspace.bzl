@@ -153,8 +153,8 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "org_sqlite",
         urls = urls["org_sqlite"],
-        sha256 = "999826fe4c871f18919fdb8ed7ec9dd8217180854dd1fe21eea96aed36186729",
-        strip_prefix = "sqlite-amalgamation-3360000",
+        sha256 = "cb25df0fb90b77be6660f6ace641bbea88f3d0441110d394ce418f35f7561bb0",
+        strip_prefix = "sqlite-amalgamation-3370200",
         build_file = filename_from_label("//thirdparty/sqlite:BUILD.sqlite"),
     )
 
