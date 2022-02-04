@@ -348,7 +348,7 @@ def emit_py_binary(
         dylibs_direct = []
         for target in dynamic_libraries:
             dylibs_direct.extend(target.files.to_list())
-        dylibs = depset(direct = dylibs_direct, transitive = dynamic_libraries_trans.to_list())
+        dylibs = depset(direct = dylibs_direct, transitive = [dynamic_libraries_trans])
 
         if not internal_bootstrap and allow_dynamic_links(ctx):
             runfiles_trans.append(dylibs)
