@@ -10,9 +10,7 @@ dbx_py_library(
     deps = [
         ":builtins",
         "//build_tools/bzl_lib:parse_py_imports_lib",
-        "//build_tools/py:python_encoding",
         "//pip/pathlib",
-        "//pip/typed-ast",
         "//pip/typing",
     ],
 )
@@ -44,7 +42,4 @@ dbx_py_library(
     name = "builtins",
     srcs = ["builtins.py"],
     validate = "strict",
-    deps = [
-        "//pip/typing",
-    ],
 )

@@ -51,11 +51,6 @@ dbx_py_library(
     ],
     validate = "strict",
     visibility = ["//visibility:public"],
-    deps = [
-        "//build_tools/py:python_encoding",
-        "//pip/typed-ast",
-        "//pip/typing",
-    ],
 )
 
 dbx_py_library(

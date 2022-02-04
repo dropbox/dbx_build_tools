@@ -22,12 +22,6 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", action="append", help="a file to check the imports of")
     parser.add_argument(
-        "--py3-compatible", action="store_true", help="source is py3 compatible"
-    )
-    parser.add_argument(
-        "--py2-compatible", action="store_true", help="source is py2 compatible"
-    )
-    parser.add_argument(
         "--target-provides",
         action="append",
         help="Format target=module. Indicates that a target provides a module",
@@ -50,15 +44,11 @@ def main() -> None:
         imports.extend(
             parse_imports(
                 source_file=Path(src),
-                py2_compatible=args.py2_compatible,
-                py3_compatible=args.py3_compatible,
                 pythonpath=args.pythonpath,
             )
         )
 
     result = validate_bazel_deps(
-        py2_compatible=args.py2_compatible,
-        py3_compatible=args.py3_compatible,
         imports=imports,
         primary_target=primary_target,
         provides_map=flatten_provides(

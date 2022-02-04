@@ -4,12 +4,6 @@ from __future__ import print_function
 import ast
 import os
 
-from typing import Any, Union
-
-from typed_ast import ast27
-
-from build_tools.py.python_encoding import decode_python_encoding
-
 
 def normalize_module(src, module_path):
     # type: (str, str) -> str
@@ -43,31 +37,23 @@ def normalize_module(src, module_path):
     return normalized_path
 
 
-def parse_imports(workspace_dir, src, py3_compatible=True):
+def parse_imports(workspace_dir, src):
     with open(os.path.join(workspace_dir, src), "rb") as f:
         content = f.read()
 
-    if py3_compatible:
-        ast_module: Any = ast
-        content_to_parse: Union[bytes, str] = content
-    else:
-        # When using the typed_ast parser we have to manually deal with python encoding.
-        content_to_parse = decode_python_encoding(content)
-        ast_module = ast27
-
     try:
-        parsed = ast_module.parse(content_to_parse, src)
+        parsed = ast.parse(content, src)
     except Exception:
         print("Failed to parse", src)
         raise
 
     import_set = set()
     from_set = set()
-    for node in ast_module.walk(parsed):
-        if isinstance(node, ast_module.Import):
+    for node in ast.walk(parsed):
+        if isinstance(node, ast.Import):
             for entry in node.names:
                 import_set.add(normalize_module(src, entry.name))
-        elif isinstance(node, ast_module.ImportFrom):
+        elif isinstance(node, ast.ImportFrom):
             if node.module:
                 prefix = ("." * node.level) + node.module
             else:

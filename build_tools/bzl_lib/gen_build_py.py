@@ -884,13 +884,6 @@ class PyBuildGenerator(Generator):
             deps = build_parser.maybe_expand_attribute(rule.attr_map.get("deps", []))
             validate = "strict" in rule.attr_map.get("validate", "strict")
             python_path = rule.attr_map.get("pythonpath", "")
-            is_py2_compat = rule.attr_map.get("python2_compatible", True)
-            is_py3_compat = rule.attr_map.get("python3_compatible", True)
-            assert (
-                is_py2_compat or is_py3_compat
-            ), "Python target must be either python-2 or python-3 compatible (package {})".format(
-                pkg
-            )
 
             unknown_imports, unknown_froms = None, None
             if autogen_deps:
@@ -911,7 +904,6 @@ class PyBuildGenerator(Generator):
                     main,
                     pip_main,
                     validate,
-                    is_py3_compat,
                 )
 
             to_traverse.extend(deps)
@@ -982,7 +974,6 @@ class PyBuildGenerator(Generator):
         main,
         pip_main,
         validate,
-        is_py3_compatible,
     ):
         srcs = (srcs or []) + (stub_srcs or [])
         if main:
@@ -1025,7 +1016,6 @@ class PyBuildGenerator(Generator):
             import_set, from_set = parse_imports(
                 self.workspace_dir,
                 src,
-                py3_compatible=is_py3_compatible or src.endswith(".pyi"),
             )
 
             import_deps, unknown_imports = mapping.find_import_targets(

@@ -3,14 +3,8 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary", "dbx_py_library")
+load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
-
-dbx_py_library(
-    name = "python_encoding",
-    srcs = ["python_encoding.py"],
-    validate = "strict",
-)
 
 py_binary(
     name = "blank_py_binary",

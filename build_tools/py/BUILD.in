@@ -99,9 +99,4 @@ bzl_library(
     ],
 )
 
-dbx_py_library(
-    name = "python_encoding",
-    srcs = ["python_encoding.py"],
-)
-
 exports_files(["import_check.py"])

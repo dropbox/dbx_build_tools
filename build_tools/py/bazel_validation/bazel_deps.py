@@ -1,15 +1,13 @@
 # mypy: allow-untyped-defs
 
+import ast
 import os.path
 
 from pathlib import Path
 from typing import List, Mapping, MutableMapping, NamedTuple, Set, Tuple
 
-from typed_ast import ast3, ast27
-
 from build_tools.bzl_lib.parse_py_imports import normalize_module
-from build_tools.py.bazel_validation.builtins import get_builtins_with_compatibility
-from build_tools.py.python_encoding import decode_python_encoding
+from build_tools.py.bazel_validation.builtins import BUILTIN_MODULES
 
 SourceLocation = NamedTuple("SourceLocation", [("source_file", Path), ("lineno", int)])
 
@@ -33,23 +31,14 @@ class AmbiguousModuleException(Exception):
     pass
 
 
-def parse_imports(
-    source_file: Path, py2_compatible: bool, py3_compatible: bool, pythonpath=None
-) -> List[Import]:
-    assert py2_compatible or py3_compatible
+def parse_imports(source_file: Path, pythonpath=None) -> List[Import]:
     if not pythonpath:
         pythonpath = "."
-
-    if py3_compatible or source_file.suffix == ".pyi":
-        ast = ast3
-    else:
-        ast = ast27  # type: ignore
 
     with source_file.open("rb") as f:
         content = f.read()
 
-    decoded_content = decode_python_encoding(content)
-    parsed = ast.parse(decoded_content, str(source_file))
+    parsed = ast.parse(content, str(source_file))
 
     # We need the path relative to the pythonpath here so that normalize_module
     # will return the correct import name for relative imports
@@ -129,16 +118,12 @@ def flatten_provides_prefix(
 
 
 def validate_bazel_deps(
-    py2_compatible: bool,
-    py3_compatible: bool,
     imports: List[Import],
     primary_target: str,
     provides_map: Mapping[str, str],
     prefix_provides_map: Mapping[str, str],
 ) -> DependencyValidationResult:
-    system_modules = get_builtins_with_compatibility(
-        py2_compatible=py2_compatible, py3_compatible=py3_compatible
-    )
+    system_modules = BUILTIN_MODULES
 
     target_set = set()  # type: Set[str]
     target_set.update(provides_map.values())
