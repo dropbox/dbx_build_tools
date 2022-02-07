@@ -5,7 +5,8 @@ class RunfilesError(Exception):
     pass
 
 
-def _validate_repo_path(repo_path: str) -> None:
+def _validate_repo_path(repo_path):
+    # type: (str) -> None
     if not repo_path.startswith(("//", "@")):
         raise RunfilesError("absolute Bazel path required", repo_path)
     if ":" in repo_path:
@@ -18,7 +19,8 @@ def _validate_repo_path(repo_path: str) -> None:
 
 
 # Return a full path to a resource referenced by the Bazel target path.
-def data_path(repo_path: str) -> str:
+def data_path(repo_path):
+    # type: (str) -> str
     _validate_repo_path(repo_path)
 
     runfiles_dir = os.getenv("RUNFILES")
@@ -32,7 +34,8 @@ def data_path(repo_path: str) -> str:
 
 # Return a full path to a resource referenced by the Bazel target path
 # deployed by external config path.
-def config_data_path(repo_path: str, external_config_path: str) -> str:
+def config_data_path(repo_path, external_config_path):
+    # type: (str, str) -> str
     _validate_repo_path(repo_path)
 
     runfiles_dir = external_config_path + ".runfiles"
@@ -44,7 +47,8 @@ def config_data_path(repo_path: str, external_config_path: str) -> str:
     return os.path.join(runfiles_dir, "__main__", repo_path[2:])
 
 
-def maybe_data_path(file_or_repo_path: str) -> str:
+def maybe_data_path(file_or_repo_path):
+    # type: (str) -> str
     """
     If given a Bazel target path, return a full file path to the referenced resource.
     Otherwise, return the input unchanged.
