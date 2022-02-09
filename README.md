@@ -44,7 +44,6 @@ load('@dbx_build_tools//build_tools/bazel:external_workspace.bzl', 'drte_deps')
 drte_deps()
 
 register_toolchains(
-    "@dbx_build_tools//thirdparty/cpython:drte-off-27-toolchain",
     "@dbx_build_tools//thirdparty/cpython:drte-off-38-toolchain",
 )
 ```
@@ -161,9 +160,7 @@ INFO: Elapsed time: 46.494s, Critical Path: 40.22s
 INFO: 1618 processes: 1578 linux-sandbox, 40 local.
 INFO: Build completed successfully, 1825 total actions
 //python/website:itest                                                   PASSED in 1.3s
-//python/website:itest-python2                                           PASSED in 1.3s
 //python/website:unit_test                                               PASSED in 1.1s
-//python/website:unit_test-python2                                       PASSED in 1.1s
 //python/website:website_service_service_test                            PASSED in 0.5s
 
 INFO: Build completed successfully, 1825 total actions
