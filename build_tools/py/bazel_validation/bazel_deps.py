@@ -1,5 +1,6 @@
 # mypy: allow-untyped-defs
 
+from __future__ import annotations
 import ast
 import os.path
 
@@ -85,7 +86,7 @@ def parse_imports(source_file: Path, pythonpath=None) -> List[Import]:
 def flatten_provides(
     primary_target: str, target_provides: List[Tuple[str, str]]
 ) -> Mapping[str, str]:
-    provides_map = {}  # type: MutableMapping[str, str]
+    provides_map: MutableMapping[str, str] = {}
     for target, provides in target_provides:
         if target != primary_target:
             # we only allow conflicts with the actual target (often the cause for dbx_py_binary with main
@@ -108,7 +109,7 @@ def flatten_provides(
 def flatten_provides_prefix(
     target_provides_prefix: List[Tuple[str, str]]
 ) -> Mapping[str, str]:
-    prefix_provides_map = {}  # type: MutableMapping[str, str]
+    prefix_provides_map: MutableMapping[str, str] = {}
     for target, provides in target_provides_prefix or []:
         if provides in prefix_provides_map:
             raise AmbiguousModuleException(
@@ -126,11 +127,11 @@ def validate_bazel_deps(
 ) -> DependencyValidationResult:
     system_modules = BUILTIN_MODULES
 
-    target_set = set()  # type: Set[str]
+    target_set: Set[str] = set()
     target_set.update(provides_map.values())
     target_set.update(prefix_provides_map.values())
 
-    unresolved_imports = []  # type: List[Import]
+    unresolved_imports: List[Import] = []
     unused_targets = set()
 
     # Add primary_target to targets_used so we don't assert that we use it

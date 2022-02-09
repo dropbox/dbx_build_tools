@@ -5,8 +5,7 @@ import ast
 import os
 
 
-def normalize_module(src, module_path):
-    # type: (str, str) -> str
+def normalize_module(src: str, module_path: str) -> str:
     if not module_path.startswith("."):
         return module_path
 

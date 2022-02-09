@@ -1,8 +1,7 @@
 from build_tools.npm_utils import target_to_npm_name
 
 
-def test_target_to_npm_name():
-    # type: () -> None
+def test_target_to_npm_name() -> None:
     """ target_to_npm_name takes the target and computes the name of the npm package
         that the target should refer to.
     """

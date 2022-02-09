@@ -1,3 +1,4 @@
+from __future__ import annotations
 import subprocess
 import sys
 
@@ -6,8 +7,7 @@ from typing import List, Optional
 from build_tools.go.env import make_go_env
 
 
-def run_cmd(cmd, use_go_env=False, verbose=False, cwd=None):
-    # type: (List[str], bool, bool, Optional[str]) -> str
+def run_cmd(cmd: List[str], use_go_env: bool = False, verbose: bool = False, cwd: Optional[str] = None) -> str:
     env = dict()
     if use_go_env:
         env = make_go_env()

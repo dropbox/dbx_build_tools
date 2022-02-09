@@ -3,6 +3,7 @@
 To test changes locally, prepend BZL_DONT_USE_SQPKG = 1 to your bzl command since it's is bundled in bzl (likely)
 """
 
+from __future__ import annotations
 from __future__ import print_function
 
 import argparse
@@ -293,8 +294,7 @@ def get_container_name_for_target(target):
     return CONTAINER_NAME_PREFIX + target.strip("/").replace("/", "-").replace(":", "-")
 
 
-def _get_all_containers(docker_path):
-    # type: (Text) -> List[Text]
+def _get_all_containers(docker_path: Text) -> List[Text]:
     return [
         x[0]
         for x in _get_all_containers_targets(
@@ -303,8 +303,7 @@ def _get_all_containers(docker_path):
     ]
 
 
-def _get_all_containers_targets(docker_path, pattern):
-    # type: (Text, Tuple[Text, ...]) -> List[Tuple[Text, ...]]
+def _get_all_containers_targets(docker_path: Text, pattern: Tuple[Text, ...]) -> List[Tuple[Text, ...]]:
     """
     Retrieve (container_name, target) tuples.
     """
