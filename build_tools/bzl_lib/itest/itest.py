@@ -418,6 +418,7 @@ def _guess_mem_limit_kb():
 
 
 def cmd_itest_run(args, bazel_args, mode_args):
+    args.target = bazel_utils.normalize_relative_target_to_absolute_cwd(args.target)
     _raise_on_glob_target(args.target)
     _build_target(args, bazel_args, mode_args, args.target)
     itest_target = _get_itest_target(
@@ -476,8 +477,8 @@ exec {test} "$@"
     if args.verbose:
         launch_cmd += ["--svc.verbose"]
 
-    default_paths = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin".split(
-        ":"
+    default_paths = (
+        "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin".split(":")
     )
     itest_paths = [
         os.path.join(

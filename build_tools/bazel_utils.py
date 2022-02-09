@@ -516,6 +516,21 @@ def normalize_relative_target_to_absolute(package, target):
     )
 
 
+def normalize_relative_target_to_absolute_cwd(target):
+    # type: (str) -> str
+    """
+    Given a target pattern that may be relative to a package (for example, ':my_lib' or 'tests/...')
+    return an absolute version of the target pattern. The current package is determined by looking
+    at the cwd.
+    If the target pattern is already absolute, it'll just be returned as-is.
+    """
+    if target.startswith("//") or target.startswith("@"):
+        return target
+
+    _, _, package = find_workspace_and_package(os.getcwd())
+    return normalize_relative_target_to_absolute(package[2:], target)
+
+
 # If the target name is a short form label, convert it to a long form
 # Note: this only supports explicit label names
 def expand_short_form_label(target):
