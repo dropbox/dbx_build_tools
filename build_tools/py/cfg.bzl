@@ -2,12 +2,14 @@ load("@dbx_build_tools//build_tools/py:toolchain.bzl", "cpython_38")
 
 GLOBAL_PYTEST_PLUGINS = [
     "@dbx_build_tools//build_tools/py/pytest_plugins:preserve_symlinks",
+    "@dbx_build_tools//pip/pytest-asyncio",
 ] + select({
     "@dbx_build_tools//build_tools:coverage-enabled": ["@dbx_build_tools//build_tools/py/pytest_plugins:codecoverage"],
     "//conditions:default": [],
 })
 
 GLOBAL_PYTEST_ARGS = [
+    "--asyncio-mode=auto",
     "-p",
     "build_tools.py.pytest_plugins.preserve_symlinks",
 ] + select({

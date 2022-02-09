@@ -1,0 +1,4 @@
+dbx_py_pytest_test(
+    name = "asyncio_test",
+    srcs = ["asyncio_test.py"],
+)
