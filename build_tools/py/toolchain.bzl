@@ -77,7 +77,6 @@ def _dbx_py_toolchain_impl(ctx):
             pyc_compile_exe = ctx.executable.pyc_compile,
             pyc_compile_files_to_run = ctx.attr.pyc_compile[DefaultInfo].files_to_run,
             pyc_compilation_enabled = ctx.attr.pyc_compilation_enabled,
-            dbx_importer = ctx.attr.dbx_importer,
         ),
     ]
 
@@ -87,7 +86,6 @@ dbx_py_toolchain = rule(
         "interpreter": attr.label(mandatory = True),
         "pyc_compile": attr.label(mandatory = True, executable = True, cfg = "host"),
         "pyc_compilation_enabled": attr.bool(default = True),
-        "dbx_importer": attr.label(),
     },
     doc = """
 Python toolchain.
@@ -106,17 +104,12 @@ Attributes:
  - pyc_compilation_enabled: Optional. A boolean that affects whether or
    not pyc files will be generated with this toolchain. Default is True.
 
- - dbx_importer: Optional. A py_library that's used to import
-   Dropbox's custom pyc files.
-
 The toolchain returns the following fields:
 
  - interpreter: The dbx_py_interpreter for the build_tag.
  - pyc_compile_exe: The executable file for pyc_compile.
  - pyc_compile_files_to_run: The runfiles for pyc_compile.
  - pyc_compilation_enabled: Whether or not pyc files should be created
- - dbx_importer: The importer attribute, or None if it's not passed
-   in.
 
 For some reason, executables don't contain the runfiles when you add
 them as an executable for a `ctx.actions.run` action. You need to make

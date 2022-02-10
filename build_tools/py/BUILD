@@ -57,30 +57,6 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-# All Python 2.7 dbx_py_binarys implicitly depend on this target in
-# order to 1) provide the import hook that loads our custom pycs 2)
-# pick up Bazel's magic builtin __init__.py generation behavior.
-py_binary(
-    name = "dbx_importer",
-    srcs = [":dbx_importer_lib"],
-    python_version = "PY2",
-)
-
-py_library(
-    name = "dbx_importer_lib",
-    srcs = ["dbx_importer.py"],
-    srcs_version = "PY2ONLY",
-)
-
-dbx_internal_bootstrap_py_binary(
-    name = "dbx_compile",
-    srcs = ["dbx_compile.py"],
-    main = "dbx_compile.py",
-    deps = [
-        ":dbx_importer",
-    ],
-)
-
 dbx_internal_bootstrap_py_binary(
     name = "py3_compile",
     srcs = ["py3_compile.py"],

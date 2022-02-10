@@ -92,7 +92,6 @@ sys.path.extend([
     runfiles + {path_sep} + p
     for p in ({relative_piplib_python_path})
 ])
-{dbx_importer}
 import os
 try:
     fd = os.open('/proc/self/comm', os.O_WRONLY)
@@ -117,13 +116,6 @@ sys.modules['__main__'] = module
 with open(filepath, 'rb') as f:
     code = compile(f.read(), filepath, "exec")
 exec(code, module.__dict__)
-"""
-
-_setup_dbx_importer = """
-sys.path.insert(0, runfiles + '/../{workspace}')
-from build_tools.py import dbx_importer
-del sys.path[0]
-dbx_importer.install()
 """
 
 def allow_dynamic_links(ctx):
@@ -312,7 +304,6 @@ def emit_py_binary(
 
     if internal_bootstrap:
         extra_pythonpath = depset(direct = [pythonpath])
-        dbx_importer = ""
     else:
         # Only collect dependencies from dbx_py_library and
         # dbx_py_pypi* rules for non-bootstrap binaries. Those
@@ -329,16 +320,7 @@ def emit_py_binary(
             deps = deps,
             data = data,
         )
-        if py_toolchain.dbx_importer:
-            # The importer is only used on py2 non-bootstrap builds
-            # (bootstrap builds don't read dropbox's pyc).
-            extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath, workspace_root_to_pythonpath(py_toolchain.dbx_importer.label.workspace_root)])
-            dbx_importer = _setup_dbx_importer.format(
-                workspace = py_toolchain.dbx_importer.label.workspace_name,
-            )
-        else:
-            extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath])
-            dbx_importer = ""
+        extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath])
 
         piplib_contents_set = piplib_contents[build_tag]
         all_piplib_contents = piplib_contents_set.to_list()
@@ -468,7 +450,6 @@ __path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
             proc_title = repr(ctx.label.name[:15]),
             relative_user_python_path = user_python_path,
             relative_piplib_python_path = piplib_python_path,
-            dbx_importer = dbx_importer,
             path_sep = repr("\\" if is_windows(ctx) else "/"),
         ),
     )
@@ -529,13 +510,8 @@ __path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
     for d in data:
         runfiles = runfiles.merge(d[DefaultInfo].default_runfiles)
 
-    if py_toolchain and py_toolchain.dbx_importer:
-        # Manually add dbx_import.py. This also implicitly picks up Bazel's magically automatic
-        # __init__.py insertion behavior, which is why we add it unconditionally.
-        runfiles = runfiles.merge(py_toolchain.dbx_importer[DefaultInfo].default_runfiles)
-    else:
-        # Add blank_py_binary to trigger Bazel's automatic __init__.py insertion behavior.
-        runfiles = runfiles.merge(ctx.attr._blank_py_binary[DefaultInfo].default_runfiles)
+    # Add blank_py_binary to trigger Bazel's automatic __init__.py insertion behavior.
+    runfiles = runfiles.merge(ctx.attr._blank_py_binary[DefaultInfo].default_runfiles)
 
     write_runfiles_tmpl(
         ctx,
