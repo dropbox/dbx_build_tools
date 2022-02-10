@@ -1,7 +1,8 @@
 import asyncio
-import pytest
 
 from typing import Generator
+
+import pytest
 
 _ran = False
 
