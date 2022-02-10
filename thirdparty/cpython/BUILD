@@ -1,3 +1,4 @@
+load("@bazel_tools//tools/python:toolchain.bzl", "py_runtime_pair")
 load(
     "//build_tools/py:toolchain.bzl",
     "CPYTHON_38_TOOLCHAIN_NAME",
