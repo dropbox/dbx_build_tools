@@ -331,7 +331,6 @@ def build_pip_archive(workdir):
             "sentencepiece",
             "tensorboard",
             "tensorflow",
-            "tensorflow_addons",
             "tensorflow_estimator",
             "tokenizers",
             "torch",
