@@ -3,7 +3,6 @@
 # Some seriously rinky-dink bullshit for parsing a Bazel build
 # file. At least it is not regex.
 
-from __future__ import annotations
 import glob
 import os.path
 
@@ -25,12 +24,14 @@ from typing import (
 F = TypeVar("F", bound=Callable[..., Any])
 
 # Used in place of functools.lru_cache as it is significantly faster in this case
-def memoize(func: F) -> F:
+def memoize(func):
+    # type: (F) -> F
     """A simple memoization decorator.
     NOTICE: kwargs is ignored for key construction"""
-    cache: Dict[Any, Any] = {}
+    cache = {}  # type: Dict[Any, Any]
 
-    def wrap(*args: Any, **kwargs: Any) -> Any:
+    def wrap(*args, **kwargs):
+        # type: (Any, Any) -> Any
         key = tuple(args)
         value = cache.get(key)
         if value is None:
@@ -41,27 +42,32 @@ def memoize(func: F) -> F:
     return cast(F, wrap)
 
 
-def normalize_path(p: Text) -> Text:
+def normalize_path(p):
+    # type: (Text) -> Text
     """Convenience function to convert all path separators to forward slashes."""
     return p.replace(os.path.sep, "/")
 
 
-def _exec_wrapper(code: Text, namespace: Any) -> Any:
+def _exec_wrapper(code, namespace):
+    # type: (Text, Any) -> Any
     exec(code, namespace)
 
 
 @memoize
-def os_walk(d: Text) -> List[Tuple[Text, List[Text], List[Text]]]:
+def os_walk(d):
+    # type: (Text) -> List[Tuple[Text, List[Text], List[Text]]]
     return list(os.walk(d))
 
 
 @memoize
-def get_glob(path: Text) -> List[Text]:
+def get_glob(path):
+    # type: (Text) -> List[Text]
     return glob.glob(path)
 
 
 @memoize
-def _glob_pattern(dirname: Text, pattern: Text, exclude_directories: bool) -> Tuple[Set[Text], Set[Text]]:
+def _glob_pattern(dirname, pattern, exclude_directories):
+    # type: (Text, Text, bool) -> Tuple[Set[Text], Set[Text]]
     chunks = pattern.split("**")
     # Only deal with simple patterns
     assert (
@@ -94,8 +100,8 @@ def _glob_pattern(dirname: Text, pattern: Text, exclude_directories: bool) -> Tu
         "/"
     ), "Invalid bazel glob pattern: %s %s" % (dirname, pattern)
 
-    results: Set[Text] = set()
-    sub_pkgs: Set[Text] = set()
+    results = set()  # type: Set[Text]
+    sub_pkgs = set()  # type: Set[Text]
     dirs = get_glob(os.path.join(dirname, prefix))
     for d in dirs:
         if not os.path.isdir(d):
@@ -123,11 +129,12 @@ def _glob_pattern(dirname: Text, pattern: Text, exclude_directories: bool) -> Tu
 
 
 @memoize
-def _bazel_glob(dirname: Text, include: Tuple[Text, ...], exclude: Optional[Tuple[Text, ...]] = None, exclude_directories: bool = True) -> Tuple[Text, ...]:
+def _bazel_glob(dirname, include, exclude=None, exclude_directories=True):
+    # type: (Text, Tuple[Text, ...], Optional[Tuple[Text, ...]], bool) -> Tuple[Text, ...]
     """A super hacky implementation of bazel's glob."""
 
-    results: Set[Text] = set()
-    sub_pkgs: Set[Text] = set()
+    results = set()  # type: Set[Text]
+    sub_pkgs = set()  # type: Set[Text]
 
     dirname = normalize_path(dirname)
 
@@ -148,7 +155,7 @@ def _bazel_glob(dirname: Text, include: Tuple[Text, ...], exclude: Optional[Tupl
     results_list = [src[trim:] for src in sorted(results)]
     sub_pkgs_list = [sub_pkg[trim:] + "/" for sub_pkg in sub_pkgs]
 
-    final: List[Text] = []
+    final = []  # type: List[Text]
     for src in results_list:
         for sub_pkg in sub_pkgs_list:
             if src.startswith(sub_pkg):
@@ -160,10 +167,12 @@ def _bazel_glob(dirname: Text, include: Tuple[Text, ...], exclude: Optional[Tupl
 
 
 class BazelGlob(object):
-    def __init__(self, dirname: Optional[Text] = None) -> None:
+    def __init__(self, dirname=None):
+        # type: (Optional[Text]) -> None
         self.dirname = dirname
 
-    def glob(self, include: List[Text], exclude: Optional[List[Text]] = None, exclude_directories: bool = True) -> List[Text]:
+    def glob(self, include, exclude=None, exclude_directories=True):
+        # type: (List[Text], Optional[List[Text]], bool) -> List[Text]
         if self.dirname is None:
             return []
         _exclude = tuple(exclude) if exclude is not None else exclude
@@ -172,7 +181,8 @@ class BazelGlob(object):
         )
 
 
-def maybe_expand_attribute(attr_val: Any) -> Any:
+def maybe_expand_attribute(attr_val):
+    # type: (Any) -> Any
     """Attempts to expand any `select()`s found in attr_val.
 
     Useful for normalizing values that might contain `select()`s.
@@ -181,7 +191,7 @@ def maybe_expand_attribute(attr_val: Any) -> Any:
     if not isinstance(attr_val, list):
         return attr_val
 
-    expanded: List[Any] = []
+    expanded = []  # type: List[Any]
     for val in attr_val:
         if isinstance(val, Select):
             expanded.extend(val.expand())
@@ -191,15 +201,16 @@ def maybe_expand_attribute(attr_val: Any) -> Any:
     return expanded
 
 
-def get_select_aware_attribute_repr(attr_val: Any) -> Text:
+def get_select_aware_attribute_repr(attr_val):
+    # type: (Any) -> Text
     """Returns a string representation of an attribute value
     that respects potential `select()`s."""
     # If an attribute value has a Select, it must be in a list.
     if not isinstance(attr_val, list):
         return repr(attr_val)
 
-    selects: List[Select] = []
-    non_selects: List[Text] = []
+    selects = []  # type: List[Select]
+    non_selects = []  # type: List[Text]
     for val in attr_val:
         if isinstance(val, Select):
             selects.append(val)
@@ -217,34 +228,42 @@ def get_select_aware_attribute_repr(attr_val: Any) -> Text:
 
 
 class ConstDict(dict):
-    def __setitem__(self, _key: Any, _value: Any) -> None:
+    def __setitem__(self, _key, _value):
+        # type: (Any, Any) -> None
         raise TypeError("ConstDict object does not support item assignment")
 
-    def update(self, *_args: Any, **_kwargs: Any) -> None:
+    def update(self, *_args, **_kwargs):
+        # type: (Any, Any) -> None
         raise TypeError("ConstDict object does not support item update")
 
-    def __delitem__(self, _key: Any) -> None:
+    def __delitem__(self, _key):
+        # type: (Any) -> None
         raise TypeError("ConstDict object does not support item deletion")
 
-    def popitem(self) -> Any:
+    def popitem(self):
+        # type: () -> Any
         raise TypeError("ConstDict object does not support item removal")
 
-    def pop(self, *_key: Any) -> Any:
+    def pop(self, *_key):
+        # type: (Any) -> Any
         raise TypeError("ConstDict object does not support item removal")
 
 
 class MutableRule(object):
-    def __init__(self, rule_type: Text, attr_map: Dict[Text, Any], expanded_attr_map: Dict[Text, Union[Text, List[Text]]]) -> None:
+    def __init__(self, rule_type, attr_map, expanded_attr_map):
+        # type: (Text, Dict[Text, Any], Dict[Text, Union[Text, List[Text]]]) -> None
         self.rule_type = rule_type
         self.attr_map = attr_map
         self.expanded_attr_map = expanded_attr_map
 
-    def copy_attr_map(self) -> Dict[Text, Any]:
+    def copy_attr_map(self):
+        # type: () -> Dict[Text, Any]
         return self.attr_map.copy()
 
 
 class Rule(object):
-    def __init__(self, rule_type: Text, attr_map: Dict[Text, Any], args: Optional[Tuple] = None) -> None:
+    def __init__(self, rule_type, attr_map, args=None):
+        # type: (Text, Dict[Text, Any], Optional[Tuple]) -> None
         self._rule_type = rule_type
         self._attr_map = ConstDict(attr_map)
         self._args = args or ()
@@ -252,66 +271,81 @@ class Rule(object):
             {k: maybe_expand_attribute(v) for k, v in attr_map.items()}
         )
 
-    def copy(self) -> MutableRule:
+    def copy(self):
+        # type: () ->  MutableRule
         return MutableRule(
             self._rule_type, self.copy_attr_map(), self.expanded_attr_map.copy()
         )
 
-    def copy_attr_map(self) -> Dict[Text, Any]:
+    def copy_attr_map(self):
+        # type: () -> Dict[Text, Any]
         return self._attr_map.copy()
 
     @property
-    def rule_type(self) -> Text:
+    def rule_type(self):
+        # type: () -> Text
         return self._rule_type
 
     @rule_type.setter
-    def rule_type(self, _value: Any) -> None:
+    def rule_type(self, _value):
+        # type: (Any) -> None
         raise TypeError("Rule object does not support item assignment")
 
     @property
-    def args(self) -> Tuple:
+    def args(self):
+        # type: () -> Tuple
         return self._args
 
     @args.setter
-    def args(self, _value: Any) -> None:
+    def args(self, _value):
+        # type: (Any) -> None
         raise TypeError("Rule object does not support item assignment")
 
     @property
-    def attr_map(self) -> ConstDict:
+    def attr_map(self):
+        # type: () -> ConstDict
         return self._attr_map
 
     @attr_map.setter
-    def attr_map(self, _value: Any) -> None:
+    def attr_map(self, _value):
+        # type: (Any) -> None
         raise TypeError("Rule object does not support item assignment")
 
     @property
-    def expanded_attr_map(self) -> ConstDict:
+    def expanded_attr_map(self):
+        # type: () -> ConstDict
         return self._expanded_attr_map
 
     @expanded_attr_map.setter
-    def expanded_attr_map(self, _value: Any) -> None:
+    def expanded_attr_map(self, _value):
+        # type: (Any) -> None
         raise TypeError("Rule object does not support item assignment")
 
 
 class Select(object):
     """Represents a `select()` call in Starlark."""
 
-    def __init__(self, select_map: Dict[Text, Any]) -> None:
+    def __init__(self, select_map):
+        # type: (Dict[Text, Any]) -> None
         self._select_map = select_map
-        self._expanded: Optional[Tuple[Any, ...]] = None
+        self._expanded = None  # type: Optional[Tuple[Any, ...]]
 
-    def __repr__(self) -> str:
+    def __repr__(self):
+        # type: () -> str
         return "select({})".format(repr(self._select_map))
 
     @property
-    def select_map(self) -> Dict[Text, Any]:
+    def select_map(self):
+        # type: () -> Dict[Text, Any]
         return self._select_map
 
     @select_map.setter
-    def select_map(self, _value: Any) -> None:
+    def select_map(self, _value):
+        # type: (Any) -> None
         raise TypeError("Setting const attribute Select.select_map")
 
-    def expand(self) -> Tuple[Any, ...]:
+    def expand(self):
+        # type: () -> Tuple[Any, ...]
         if self._expanded:
             return self._expanded
 
@@ -319,7 +353,7 @@ class Select(object):
         # dealing with lists or constants. This doesn't do
         # the right thing with dicts -- callers will have to
         # figure it out themselves.
-        expanded: List[Any] = []
+        expanded = []  # type: List[Any]
         for values in self.select_map.values():
             if isinstance(values, list):
                 expanded.extend(values)
@@ -329,7 +363,8 @@ class Select(object):
         return self._expanded
 
 
-def select_func(*args: Dict[Text, Any], **kwargs: Any) -> List[Select]:
+def select_func(*args, **kwargs):
+    # type: (Dict[Text, Any], Any) -> List[Select]
     """Hacky way to handle `select()` calls in BUILD files.
 
     Note that this treats `select()`s like lists, so it'll
@@ -348,18 +383,21 @@ class _MissingItem(object):
     cases when a named constant variable is used.
     """
 
-    def __init__(self, parser: BuildParser, name: Text) -> None:
+    def __init__(self, parser, name):
+        # type: (BuildParser, Text) -> None
         self.name = name
         self.parser = parser
 
-    def __call__(self, *args: List[Any], **kargs: Dict[Any, Any]) -> None:
+    def __call__(self, *args, **kargs):
+        # type: (List[Any], Dict[Any, Any]) -> None
         """Handles the case where the item is a function."""
         parser = object.__getattribute__(self, "parser")
         parser._parsed_clauses.append(
             (object.__getattribute__(self, "name"), args, kargs)
         )
 
-    def __getattribute__(self, key: Text) -> _MissingItem:
+    def __getattribute__(self, key):
+        # type: (Text) -> _MissingItem
         """Handles the case where the item is a struct."""
         return _MissingItem(
             object.__getattribute__(self, "parser"),
@@ -368,24 +406,28 @@ class _MissingItem(object):
 
 
 class _MacroDict(dict):
-    def __init__(self, parser: BuildParser) -> None:
+    def __init__(self, parser):
+        # type: (BuildParser) -> None
         self.parser = parser
         super(_MacroDict, self).__init__()
 
-    def __missing__(self, name: Text) -> _MissingItem:
+    def __missing__(self, name):
+        # type: (Text) -> _MissingItem
         return _MissingItem(self.parser, name)
 
 
 class BuildParser(object):
-    def __init__(self) -> None:
+    def __init__(self):
+        # type: () -> None
 
-        self._parsed_clauses: List[Any] = []
-        self._parsed_constants: Dict[Text, Any] = {}
+        self._parsed_clauses = []  # type: List[Any]
+        self._parsed_constants = {}  # type: Dict[Text, Any]
 
-    def parse(self, data: Text, fname: Optional[Text] = None) -> Tuple[Any, ...]:
+    def parse(self, data, fname=None):
+        # type: (Text, Optional[Text]) -> Tuple[Any, ...]
         """'parse' a BUILD file"""
 
-        pkg_name: Text = ""
+        pkg_name = ""  # type: Text
         dirname = None
 
         self.filename = fname
@@ -419,10 +461,10 @@ class BuildParser(object):
                 ), "Constant name conflicit: {}".format(key)
                 self._parsed_constants[key] = value
 
-        parsed_rules: Dict[Text, Rule] = {}
-        ordered_rules: List[Rule] = []
+        parsed_rules = {}  # type: Dict[Text, Rule]
+        ordered_rules = []  # type: List[Rule]
         for rule_type, args, kargs in self._parsed_clauses:
-            rule: Rule = Rule(rule_type, kargs, args)
+            rule = Rule(rule_type, kargs, args)  # type: Rule
             parsed_rules[kargs.get("name")] = rule
             ordered_rules.append(rule)
 
@@ -436,40 +478,47 @@ class BuildParser(object):
         self._parsed_constants = {}
         return self._clauses
 
-    def parse_file(self, build_file: Text) -> Tuple[Any, ...]:
+    def parse_file(self, build_file):
+        # type: (Text) -> Tuple[Any, ...]
         with open(build_file, "r") as f:
             return self.parse(f.read(), build_file)
 
     # Return a rule by name.
-    def get_rule(self, name: Text) -> Rule:
+    def get_rule(self, name):
+        # type: (Text) -> Rule
         rule = self._rules.get(name)
         if not rule:
             raise KeyError("no rule with name", name)
         return rule
 
-    def get_rules_by_types(self, type_names: Sequence[str]) -> List[Rule]:
+    def get_rules_by_types(self, type_names):
+        # type: (Sequence[str]) -> List[Rule]
         rules = []
         for rule in self._rules.values():
             if rule.rule_type in type_names:
                 rules.append(rule)
         return rules
 
-    def get_all_rules(self) -> Tuple[Rule, ...]:
+    def get_all_rules(self):
+        # type: () -> Tuple[Rule, ...]
         # At least one generator is sensitive to the ordering of the rules, for example:
         #  bzl gen //configs/proto/dropbox/proto/envoy
         assert self._ordered_rules
         return self._ordered_rules
 
-    def get_constant_value(self, name: Text, default: Any = None) -> Any:
+    def get_constant_value(self, name, default=None):
+        # type: (Text, Any) -> Any
         return self._constants.get(name, default)
 
-    def default_visibility(self) -> List[Text]:
+    def default_visibility(self):
+        # type: () -> List[Text]
         for rule in self.get_all_rules():
             if "default_visibility" in rule.attr_map:
                 return rule.attr_map["default_visibility"]
         return []
 
-    def get_normalized_visibility_by_name(self) -> Dict[Text, List[Text]]:
+    def get_normalized_visibility_by_name(self):
+        # type: () -> Dict[Text, List[Text]]
         default_visibility = self.default_visibility()
         visibility_by_name = {}
         for rule in self.get_all_rules():
@@ -482,36 +531,44 @@ class BuildParser(object):
         return visibility_by_name
 
     @property
-    def clauses(self) -> Tuple[Any, ...]:
+    def clauses(self):
+        # type: () -> Tuple[Any, ...]
         return self._clauses
 
     @clauses.setter
-    def clauses(self, _value: Any) -> None:
+    def clauses(self, _value):
+        # type: (Any) -> None
         raise TypeError("BuildParser does not support item assignment")
 
     @property
-    def constants(self) -> ConstDict:
+    def constants(self):
+        # type: () -> ConstDict
         return self._constants
 
     @constants.setter
-    def constants(self, _value: Any) -> None:
+    def constants(self, _value):
+        # type: (Any) -> None
         raise TypeError("BuildParser does not support item assignment")
 
     @property
-    def rules(self) -> ConstDict:
+    def rules(self):
+        # type: () -> ConstDict
         return self._rules
 
     @rules.setter
-    def rules(self, _value: Any) -> None:
+    def rules(self, _value):
+        # type: (Any) -> None
         raise TypeError("BuildParser does not support item assignment")
 
 
-def parse_file(fname: Text) -> BuildParser:
+def parse_file(fname):
+    # type: (Text) -> BuildParser
     with open(fname, "r") as f:
         return parse(f.read(), fname=fname)
 
 
-def parse(src: Text, fname: Text = "<BUILD>") -> BuildParser:
+def parse(src, fname="<BUILD>"):
+    # type: (Text, Text) -> BuildParser
     bp = BuildParser()
     try:
         bp.parse(src, fname)

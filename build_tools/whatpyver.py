@@ -16,7 +16,6 @@ If an argument is a directory, we produce output for all .py files in
 that directory and recursively in all its subdirectories.
 """
 
-from __future__ import annotations
 from __future__ import print_function
 
 import argparse
@@ -59,18 +58,21 @@ RULE_TYPES = [
 
 
 class PythonVersionCache(object):
-    def __init__(self, verbose: bool = False) -> None:
+    def __init__(self, verbose=False):
+        # type: (bool) -> None
         self._verbose = verbose
         self.clear()
 
-    def clear(self) -> None:
-        self._files_to_build_files: Dict[str, str] = {}
-        self._build_file_mtimes: Dict[str, Optional[float]] = {}
-        self._build_file_parsers: Dict[str, build_parser.BuildParser] = {}
-        self._py2_files: Set[str] = set()
-        self._py3_files: Set[str] = set()
+    def clear(self):
+        # type: () -> None
+        self._files_to_build_files = {}  # type: Dict[str, str]
+        self._build_file_mtimes = {}  # type: Dict[str, Optional[float]]
+        self._build_file_parsers = {}  # type: Dict[str, build_parser.BuildParser]
+        self._py2_files = set()  # type: Set[str]
+        self._py3_files = set()  # type: Set[str]
 
-    def _get_build_file_and_mtime(self, dir: str) -> Tuple[str, Optional[float]]:
+    def _get_build_file_and_mtime(self, dir):
+        # type: (str) -> Tuple[str, Optional[float]]
         # On macOS, os.stat('BUILD') will return a result if 'build'
         # exists.  In most cases, only BUILD exists and is a file, and
         # that's what we want.  In a few rare cases, 'build' is a
@@ -95,7 +97,7 @@ class PythonVersionCache(object):
 
         for build_file in possibilities:
             if build_file in self._build_file_mtimes:
-                mtime: Optional[float] = self._build_file_mtimes[build_file]
+                mtime = self._build_file_mtimes[build_file]  # type: Optional[float]
                 if self._verbose > 1:
                     print("%s: cached mtime %s" % (build_file, mtime), file=sys.stderr)
                 return build_file, mtime
@@ -119,7 +121,8 @@ class PythonVersionCache(object):
         self._build_file_mtimes[build_file] = mtime
         return build_file, mtime
 
-    def find_build_files(self, file: str) -> Optional[List[Tuple[str, Optional[float]]]]:
+    def find_build_files(self, file):
+        # type: (str) -> Optional[List[Tuple[str, Optional[float]]]]
         dir = os.path.dirname(file)
         trail = []
         while dir:
@@ -140,7 +143,8 @@ class PythonVersionCache(object):
             print("%s: no BUILD file" % file, file=sys.stderr)
         return None
 
-    def add_file(self, file: str) -> Optional[str]:
+    def add_file(self, file):
+        # type: (str) -> Optional[str]
         if file in self._files_to_build_files:
             return self._files_to_build_files[file]
         build_file_trail = self.find_build_files(file)
@@ -150,13 +154,15 @@ class PythonVersionCache(object):
         self._files_to_build_files[file] = build_file
         return build_file
 
-    def parse_build_files(self) -> None:
+    def parse_build_files(self):
+        # type: () -> None
         for build_file in set(self._files_to_build_files.values()):
             if build_file in self._build_file_parsers:
                 continue
             self.parse_build_file(build_file)
 
-    def parse_build_file(self, build_file: str) -> None:
+    def parse_build_file(self, build_file):
+        # type: (str) -> None
         if not os.path.isfile(build_file):
             return
         if self._verbose:
@@ -217,7 +223,8 @@ class PythonVersionCache(object):
                     self._py3_files.add(src)
                     self._py3_files.add(os.path.join(dir, "__init__.py"))
 
-    def get_flags(self, file: str) -> Tuple[bool, bool]:
+    def get_flags(self, file):
+        # type: (str) -> Tuple[bool, bool]
         if file not in self._files_to_build_files:
             build_file = self.add_file(file)
             if build_file and build_file not in self._build_file_parsers:
@@ -225,14 +232,16 @@ class PythonVersionCache(object):
         return (file in self._py2_files, file in self._py3_files)
 
 
-def find_python_files(dir: str) -> Iterable[str]:
+def find_python_files(dir):
+    # type: (str) -> Iterable[str]
     for root, dirs, files in os.walk(dir):
         for file in files:
             if file.endswith(".py"):
                 yield os.path.join(root, file)
 
 
-def main() -> int:
+def main():
+    # type: () -> int
     ap = argparse.ArgumentParser()
     ap.add_argument(
         "-v",

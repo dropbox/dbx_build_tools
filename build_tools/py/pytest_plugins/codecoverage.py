@@ -1,6 +1,5 @@
 # mypy: allow-untyped-defs
 
-from __future__ import annotations
 "Stripped-down version of pytest-cov."
 
 import os
@@ -53,7 +52,8 @@ def pytest_configure(config):
 
 
 class CovPlugin(object):
-    def __init__(self, coverage_source: List[str], coverage_output: Optional[str]) -> None:
+    def __init__(self, coverage_source, coverage_output):
+        # type: (List[str], Optional[str]) -> None
         self.cov = coverage.Coverage(
             source=[s.replace("/", ".")[:-3] for s in coverage_source]
         )

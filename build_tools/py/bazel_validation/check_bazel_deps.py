@@ -1,4 +1,3 @@
-from __future__ import annotations
 import argparse
 import sys
 
@@ -40,7 +39,7 @@ def main() -> None:
     args = parser.parse_args()
 
     primary_target = args.target
-    imports: List[Import] = []
+    imports = []  # type: List[Import]
     for src in args.src:
         imports.extend(
             parse_imports(

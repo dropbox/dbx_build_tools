@@ -1,6 +1,5 @@
 # mypy: allow-untyped-defs
 
-from __future__ import annotations
 import glob
 import os
 import os.path
@@ -404,7 +403,7 @@ class PythonPathMapping(AbstractPythonPath):
         self.pip_directories = pip_directories
         self.extension_directories = extension_directories
         # If you want pip module targets, use get_pip_module_targets.
-        self._pip_module_targets: Optional[Dict[str, List[str]]] = None
+        self._pip_module_targets = None  # type: Optional[Dict[str, List[str]]]
 
         self.processed_local_build_dirs = set()
         # python module -> (bazel target, target's srcs size)
@@ -412,7 +411,8 @@ class PythonPathMapping(AbstractPythonPath):
 
         self.invalid_modules = set()
 
-    def _to_pkg(self, directory: Text) -> Text:
+    def _to_pkg(self, directory):
+        # type: (Text) -> Text
         directory = os.path.realpath(directory)
         assert directory.startswith(self.workspace_dir), (
             "Programming error: " + directory
@@ -420,9 +420,10 @@ class PythonPathMapping(AbstractPythonPath):
         directory = directory.replace(self.workspace_dir, "/")
         return bazel_utils.normalize_os_path_to_target(directory)
 
-    def get_pip_module_targets(self) -> Dict[str, List[str]]:
+    def get_pip_module_targets(self):
+        # type: () -> Dict[str, List[str]]
         if self._pip_module_targets is None:
-            pip_module_targets: Dict[str, List[str]] = {}
+            pip_module_targets = {}  # type: Dict[str, List[str]]
             self._collect_pips(self.pip_directories, pip_module_targets)
             self._collect_extensions(
                 self.extension_directories or [], pip_module_targets
@@ -430,7 +431,8 @@ class PythonPathMapping(AbstractPythonPath):
             self._pip_module_targets = pip_module_targets
         return self._pip_module_targets
 
-    def _collect_pips(self, pip_directories: List[str], pip_module_targets: Dict[str, List[str]]) -> None:
+    def _collect_pips(self, pip_directories, pip_module_targets):
+        # type: (List[str], Dict[str, List[str]]) -> None
         if not self.python_path:
             pip_module_targets.update(EXTERNAL_PIP_MODULE_TARGETS)
 
@@ -459,7 +461,8 @@ class PythonPathMapping(AbstractPythonPath):
                         )
                         pip_module_targets[module] = [target]
 
-    def _collect_extensions(self, extension_directories: List[str], pip_module_targets: Dict[str, List[str]]) -> None:
+    def _collect_extensions(self, extension_directories, pip_module_targets):
+        # type: (List[str], Dict[str, List[str]]) -> None
         for ext in extension_directories:
             for root, _, _ in os.walk(os.path.join(self.workspace_dir, ext)):
                 _, parsed = self.parsed_file_cache.get_bzl_or_build(root)
@@ -598,7 +601,8 @@ class PythonPathMapping(AbstractPythonPath):
 
         assert False, "Should never reach here ..."
 
-    def _find_targets(self, module: str) -> List[str]:
+    def _find_targets(self, module):
+        # type: (str) -> List[str]
         if module in self.invalid_modules:
             return []
 

@@ -1,6 +1,5 @@
 # mypy: allow-untyped-defs
 
-from __future__ import annotations
 from __future__ import print_function
 
 import argparse
@@ -20,7 +19,8 @@ from build_tools.bzl_lib.commands import bazel_modes
 from build_tools.bzl_lib.itest import itest
 
 DEFAULT_DOCKER_REGISTRY = "docker.io"
-def create_parser() -> Tuple[ArgumentParser, _SubParsersAction]:  # type: ignore[type-arg]
+def create_parser():  # type: ignore[type-arg]
+    # type: () -> Tuple[ArgumentParser, _SubParsersAction]
     metrics.set_mode("_bzl_parse_args")
     ap = argparse.ArgumentParser(
         "bzl", epilog=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter

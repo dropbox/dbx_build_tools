@@ -1,4 +1,3 @@
-from __future__ import annotations
 """
 Helper functions that replace os.exec* functions. This is mostly for debugging
 and metrics purposes.
@@ -13,7 +12,8 @@ from typing import Any, List, Mapping, Optional
 from build_tools.bzl_lib import metrics
 
 
-def execv(binary: str, args: List[Any]) -> None:
+def execv(binary, args):
+    # type: (str, List[Any]) -> None
     metrics.report_metrics()
     if os.getenv("BZL_DEBUG"):
         print(
@@ -23,7 +23,8 @@ def execv(binary: str, args: List[Any]) -> None:
     os.execv(binary, args)
 
 
-def execvp(binary: str, args: List[str]) -> None:
+def execvp(binary, args):
+    # type: (str, List[str]) -> None
     metrics.report_metrics()
     if os.getenv("BZL_DEBUG"):
         print(
@@ -33,7 +34,8 @@ def execvp(binary: str, args: List[str]) -> None:
     os.execvp(binary, args)
 
 
-def execve(binary: str, args: List[str], env: Mapping[str, str]) -> None:
+def execve(binary, args, env):
+    # type: (str, List[str], Mapping[str, str]) -> None
     metrics.report_metrics()
     if os.getenv("BZL_DEBUG"):
         print(
@@ -46,7 +48,8 @@ def execve(binary: str, args: List[str], env: Mapping[str, str]) -> None:
     os.execve(binary, args, env)
 
 
-def execvpe(binary: str, args: List[str], env: Mapping[str, str]) -> None:
+def execvpe(binary, args, env):
+    # type: (str, List[str], Mapping[str, str]) -> None
     metrics.report_metrics()
     if os.getenv("BZL_DEBUG"):
         print(
@@ -68,7 +71,8 @@ def execvpe(binary: str, args: List[str], env: Mapping[str, str]) -> None:
 # NOTE this currently deliberately doesn't try to forward any signals or do any signal handling,
 # to keep code simple. All uses for subprocess_exec is currently expected to be interactive, from a shell.
 # Shells will send signal to the entire session.
-def subprocess_exec(binary: str, args: List[str], env: Optional[Mapping[str, str]] = None) -> int:
+def subprocess_exec(binary, args, env=None):
+    # type: (str, List[str], Optional[Mapping[str, str]]) -> int
     if os.getenv("BZL_DEBUG"):
         print(
             "subprocess_exec: {} {}".format(

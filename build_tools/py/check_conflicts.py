@@ -1,4 +1,3 @@
-from __future__ import annotations
 from __future__ import print_function
 
 import argparse
@@ -10,10 +9,11 @@ from typing import Dict, List
 PIPLIB_SEPARATOR = "=" * 10
 
 
-def check_piplib_conflicts(output_file: str, namespace_pkgs: List[str], files: List[str]) -> None:
+def check_piplib_conflicts(output_file, namespace_pkgs, files):
+    # type: (str, List[str], List[str]) -> None
     curr_piplib = None
 
-    conflicts: Dict[str, str] = {}
+    conflicts = {}  # type: Dict[str, str]
     for item in files:
         if item.startswith(PIPLIB_SEPARATOR) and item.endswith(PIPLIB_SEPARATOR):
             curr_piplib = item.split(PIPLIB_SEPARATOR)[1]
@@ -41,7 +41,8 @@ def check_piplib_conflicts(output_file: str, namespace_pkgs: List[str], files: L
         f.write("No conflicts in merged piplib!")
 
 
-def main() -> None:
+def main():
+    # type: () -> None
     parser = argparse.ArgumentParser(fromfile_prefix_chars="@")
     parser.add_argument("-o", "--output-file", help="Name of file to write output to")
     parser.add_argument(

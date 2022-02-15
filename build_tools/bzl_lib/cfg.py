@@ -1,4 +1,3 @@
-from __future__ import annotations
 from typing import Dict, List
 
 ###
@@ -31,7 +30,7 @@ PY_LOAD_STATEMENT = """
 load('@dbx_build_tools//build_tools/py:py.bzl', 'dbx_py_library', 'dbx_py_binary', 'dbx_py_pytest_test')
 """
 
-EXTERNAL_PIP_MODULE_TARGETS: Dict[str, List[str]] = {}
+EXTERNAL_PIP_MODULE_TARGETS = {}  # type: Dict[str, List[str]]
 
 PIP_DEFAULT_EXCLUDES = ["test", "tests", "testing", "SelfTest", "Test", "Tests"]
 PIP_GEN_RULE_TYPES = ("dbx_py_pypi_piplib", "dbx_py_local_piplib")
@@ -45,4 +44,4 @@ PIP_LOAD_STATEMENT = "load('@dbx_build_tools//build_tools/py:py.bzl', %s)" % (
 ###
 GO_RULE_TYPES = ("dbx_go_binary", "dbx_go_library", "dbx_go_test")
 
-WHITELISTED_GO_SRCS_PATHS: List[str] = []
+WHITELISTED_GO_SRCS_PATHS = []  # type: List[str]
