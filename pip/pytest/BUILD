@@ -21,7 +21,7 @@ dbx_py_pypi_piplib(
     name = "pytest",
     testonly = True,
     pip_main = "py.test",
-    pip_version = "7.0.0",
+    pip_version = "7.0.1",
     provides = [
         "pytest",
         "_pytest",
