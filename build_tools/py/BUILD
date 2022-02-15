@@ -67,6 +67,10 @@ toolchain_type(
     name = "toolchain_38",
 )
 
+toolchain_type(
+    name = "toolchain_39",
+)
+
 bzl_library(
     name = "py_bzl",
     srcs = glob([
