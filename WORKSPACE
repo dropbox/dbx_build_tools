@@ -6,5 +6,5 @@ load('//build_tools/bazel:external_workspace.bzl', 'drte_deps')
 drte_deps()
 
 register_toolchains(
-    "//thirdparty/cpython:drte-off-38-toolchain",
+    "//thirdparty/cpython:drte-off-39-toolchain",
 )
