@@ -989,6 +989,7 @@ def dbx_py_pytest_test(
         # have services either way, this works.
         force_services = False,
         start_services = True,
+        disallow_variants = False,
         tags = [],
         test_root = None,
         local = 0,
@@ -1020,6 +1021,9 @@ def dbx_py_pytest_test(
             extra_args = pytest_args
             suffix = ""
             variant_tags = tags
+        if variant and disallow_variants:
+            continue
+
         if force_services or len(services) > 0:
             dbx_py_dbx_test(
                 name = name + "_bin" + suffix,
