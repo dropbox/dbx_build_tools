@@ -79,12 +79,13 @@ go_toolchain = rule(
     },
 )
 
-SUPPORTED_GO_VERSIONS = ["1.16"]
+SUPPORTED_GO_VERSIONS = ["1.16", "1.17"]
 DEFAULT_GO_VERSION = "1.16"
-DEFAULT_GO_LIBRARY_VERSIONS = ["1.16"]
+DEFAULT_GO_LIBRARY_VERSIONS = ["1.16", "1.17"]
 DEFAULT_GO_TEST_VERSIONS = ["1.16"]
 SUPPORTED_GO_TOOLCHAINS = [
     Label("//build_tools/go:go1.16"),
+    Label("//build_tools/go:go1.17"),
 ]
 
 # DbxGoPackage is the main provider exported by dbx_go_library. Go libraries generate compilation

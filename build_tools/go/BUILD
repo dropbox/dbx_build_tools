@@ -51,13 +51,47 @@ go_toolchain(
     version = "1.16",
 )
 
+go_toolchain(
+    name = "go1.17",
+    asm = "@go_1_17_linux_amd64_tar_gz//:asm",
+    asm_inputs = "@go_1_17_linux_amd64_tar_gz//:asm-inputs",
+    cgo = "@go_1_17_linux_amd64_tar_gz//:cgo",
+    compile = "@go_1_17_linux_amd64_tar_gz//:compile",
+    cover = "@go_1_17_linux_amd64_tar_gz//:cover",
+    include_dir = "external/go_1_17_linux_amd64_tar_gz/go/pkg/include",
+    link = "@go_1_17_linux_amd64_tar_gz//:link",
+    pack = "@go_1_17_linux_amd64_tar_gz//:pack",
+    stdlib = "@go_1_17_linux_amd64_tar_gz//:stdlib",
+    stdlib_race = "@go_1_17_linux_amd64_tar_gz//:stdlib-race",
+    taglist = [
+        "go1.1",
+        "go1.2",
+        "go1.3",
+        "go1.4",
+        "go1.5",
+        "go1.6",
+        "go1.7",
+        "go1.8",
+        "go1.9",
+        "go1.10",
+        "go1.11",
+        "go1.12",
+        "go1.13",
+        "go1.14",
+        "go1.15",
+        "go1.16",
+        "go1.17",
+    ],
+    version = "1.17",
+)
+
 dbx_sh_binary(
     name = "go_test_wrapper",
     testonly = True,
     srcs = ["go_test_wrapper.sh"],
     data = [
         "//go/src/dropbox/build_tools/gojunit/gojunit",
-        "@go_1_16_linux_amd64_tar_gz//:test2json",
+        "@go_1_17_linux_amd64_tar_gz//:test2json",
     ] + select({
         "//build_tools:coverage-enabled": ["//go/src/dropbox/build_tools/gocov2cobertura"],
         "//conditions:default": [],

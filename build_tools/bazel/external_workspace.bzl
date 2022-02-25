@@ -12,6 +12,7 @@ DEFAULT_EXTERNAL_URLS = {
     "cpython_38": ["https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz"],
     "cpython_39": ["https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tar.xz"],
     "go_1_16_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.16.7.linux-amd64.tar.gz"],
+    "go_1_17_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.17.7.linux-amd64.tar.gz"],
     "io_pypa_pip_whl": ["https://files.pythonhosted.org/packages/54/0c/d01aa759fdc501a58f431eb594a17495f15b88da142ce14b5845662c13f3/pip-20.0.2-py2.py3-none-any.whl"],
     "io_pypa_setuptools_whl": ["https://files.pythonhosted.org/packages/11/b9/adac241e2c4aca7ae4ddd86d3c18227667665b6e7eac550695bfc50c7e3d/setuptools-60.6.0-py3-none-any.whl"],
     "io_pypa_wheel_whl": ["https://files.pythonhosted.org/packages/8c/23/848298cccf8e40f5bbb59009b32848a4c38f4e7f3364297ab3c3e2e2cd14/wheel-0.34.2-py2.py3-none-any.whl"],
@@ -35,6 +36,13 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
         name = "go_1_16_linux_amd64_tar_gz",
         urls = urls["go_1_16_linux_amd64_tar_gz"],
         sha256 = "7fe7a73f55ba3e2285da36f8b085e5c0159e9564ef5f63ee0ed6b818ade8ef04",
+        build_file = filename_from_label("//build_tools/go:BUILD.go-dist"),
+    )
+
+    http_archive(
+        name = "go_1_17_linux_amd64_tar_gz",
+        urls = urls["go_1_17_linux_amd64_tar_gz"],
+        sha256 = "02b111284bedbfa35a7e5b74a06082d18632eff824fd144312f6063943d49259",
         build_file = filename_from_label("//build_tools/go:BUILD.go-dist"),
     )
 
