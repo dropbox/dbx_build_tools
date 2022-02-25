@@ -24,15 +24,15 @@ def _dbx_go_dependency_impl(ctx):
     else:
         fail("one of commit or tag must be specified")
 
-    execute_command = str(ctx.path(Label("@bazel_gazelle_go_repository_tools//:bin/fetch_repo")))
-    result = ctx.execute(
-        [execute_command] + fetch_repo_args,
-        timeout = _DBX_GO_REPOSITORY_RULE_TIMEOUT,
+    # This line forces the go_1_16_linux_amd64_tar_gz package to be pulled in.
+    # It's a dependency we need for gen-build-go-dep to determine which imports
+    # are native go imports.
+    ctx.path(Label("@go_1_16_linux_amd64_tar_gz//:WORKSPACE"))
+    ctx.download_and_extract(
+        ctx.attr.url,
+        sha256 = ctx.attr.sha256,
+        type = "tgz",
     )
-    if result.return_code:
-        fail("failed to fetch %s: %s" % (ctx.name, result.stderr))
-    if result.stderr:
-        print("fetch_repo: " + result.stderr)
 
     _run_gen_dep_on_repo(ctx)
 
@@ -54,6 +54,7 @@ def _run_gen_dep(ctx, working_directory):
     }
     env_keys = ["PATH", "HOME"]
     environment.update({k: ctx.os.environ[k] for k in env_keys if k in ctx.os.environ})
+
     result = ctx.execute(
         [
             "/sqpkg/team/build-infra-team/bzl/bzl-gen.runfiles/__main__/go/src/dropbox/build_tools/gen-build-go-dep/gen-build-go-dep",
@@ -121,5 +122,7 @@ dbx_go_dependency = repository_rule(
             ],
         ),
         "remote": attr.string(),
+        "url": attr.string(doc = "The url of the repo's zip file. We currently use magic mirror"),
+        "sha256": attr.string(),
     },
 )

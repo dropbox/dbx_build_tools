@@ -92,7 +92,7 @@ func (g *DepConfigGenerator) createDeps(
 			for _, importPath := range gomodDepPaths {
 				if strings.HasPrefix(dep, importPath) {
 					if dep == importPath {
-						depName := pathToExtRepoName(importPath)
+						depName := genlib.PathToExtRepoName(importPath)
 						deps = append(deps, "@"+depName+"//:"+depName)
 						depIsInGoMod = true
 					} else {
@@ -100,8 +100,8 @@ func (g *DepConfigGenerator) createDeps(
 						if err != nil {
 							break
 						}
-						repoName := pathToExtRepoName(importPath)
-						depName := pathToExtRepoName(dep)
+						repoName := genlib.PathToExtRepoName(importPath)
+						depName := genlib.PathToExtRepoName(dep)
 						deps = append(deps, "@"+repoName+"//"+relativePath+":"+depName)
 						depIsInGoMod = true
 					}
@@ -112,7 +112,7 @@ func (g *DepConfigGenerator) createDeps(
 				continue
 			}
 		}
-		depName := pathToExtRepoName(dep)
+		depName := genlib.PathToExtRepoName(dep)
 		deps = append(deps, "@"+depName+"//:"+depName)
 	}
 	return deps
@@ -145,7 +145,7 @@ func (g *DepConfigGenerator) generateConfig(pkg *build.Package) error {
 		return err
 	}
 
-	name := pathToExtRepoName(g.moduleName)
+	name := genlib.PathToExtRepoName(g.moduleName)
 
 	var targetBuildPath string
 	targetBuildPath = ""
@@ -183,7 +183,7 @@ func (g *DepConfigGenerator) Process(goPkgPath string) error {
 func (g *DepConfigGenerator) process(goPkgPath string) error {
 
 	isValid := genlib.ValidateGoPkgPath(
-		g.verbose, g.isBuiltinPkg(goPkgPath), goPkgPath, g.processedPkgs, &g.visitStack)
+		g.verbose, g.isBuiltinPkg(goPkgPath), goPkgPath, g.workspace, g.goSrc, g.processedPkgs, &g.visitStack)
 	if !isValid {
 		return nil
 	}
@@ -272,27 +272,6 @@ func depGenWriteTarget(
 	_, _ = buffer.WriteString("    '//visibility:public',\n")
 	_, _ = buffer.WriteString("  ]\n")
 	_, _ = buffer.WriteString(")\n")
-}
-
-// pathToExtRepoName converts the url of the 3rd party repo
-// to an underscore connected name, we use it to name the
-// the downloaded repo in our bazel cache
-// eg: "github.com/mattn/rune-width" -> "com_github_mattn_rune_width"
-func pathToExtRepoName(repoPath string) string {
-	urlSegments := strings.Split(repoPath, "/")
-	siteString := strings.Split(urlSegments[0], ".")
-	result := ""
-	for i := len(siteString) - 1; i >= 0; i-- {
-		result += siteString[i] + "_"
-	}
-	for i := 1; i < len(urlSegments); i++ {
-		result += urlSegments[i] + "_"
-	}
-	result = strings.TrimSuffix(result, "_")
-	result = strings.ReplaceAll(result, ".", "_")
-	result = strings.ReplaceAll(result, " ", "_")
-	result = strings.ReplaceAll(result, "-", "_")
-	return result
 }
 
 func depGenUsage() {

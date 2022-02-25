@@ -437,13 +437,14 @@ func IsBuiltinPkg(pkgName string, golangPkgs *map[string]struct{}, isVerbose boo
 func ValidateGoPkgPath(
 	isVerbose,
 	isBuiltinPkg bool,
-	goPkgPath string,
+	goPkgPath, workspace, goSrc string,
 	processedPkgs map[string]struct{},
 	visitStack *[]string,
 ) bool {
 	if isVerbose {
 		fmt.Println("Process pkg \"" + goPkgPath + "\"")
 	}
+
 	if isBuiltinPkg {
 		if isVerbose {
 			fmt.Println("Skipping builtin pkg \"" + goPkgPath + "\"")
@@ -455,6 +456,12 @@ func ValidateGoPkgPath(
 		if isVerbose {
 			fmt.Printf("Skipping previously processed pkg: %s\n", goPkgPath)
 		}
+		return false
+	}
+
+	workspacePkgPath := filepath.Join(workspace, goSrc, goPkgPath)
+	if _, err := os.Stat(workspacePkgPath); err != nil {
+		fmt.Println(workspacePkgPath, " does not exist, skipping.")
 		return false
 	}
 
@@ -516,4 +523,25 @@ func PopulatePackageInfo(workspace, goSrc, goPkgPath string) (*build.Package, er
 		return nil, err
 	}
 	return pkg, nil
+}
+
+// PathToExtRepoName converts the url of the 3rd party repo
+// to an underscore connected name, we use it to name the
+// the downloaded repo in our bazel cache
+// eg: "github.com/mattn/rune-width" -> "com_github_mattn_rune_width"
+func PathToExtRepoName(repoPath string) string {
+	urlSegments := strings.Split(repoPath, "/")
+	siteString := strings.Split(urlSegments[0], ".")
+	result := ""
+	for i := len(siteString) - 1; i >= 0; i-- {
+		result += siteString[i] + "_"
+	}
+	for i := 1; i < len(urlSegments); i++ {
+		result += urlSegments[i] + "_"
+	}
+	result = strings.TrimSuffix(result, "_")
+	result = strings.ReplaceAll(result, ".", "_")
+	result = strings.ReplaceAll(result, " ", "_")
+	result = strings.ReplaceAll(result, "-", "_")
+	return result
 }

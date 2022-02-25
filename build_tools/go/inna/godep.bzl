@@ -52,30 +52,40 @@ def define_go_deps():
     dbx_go_dependency(
         name = "com_github_schollz_progressbar",
         commit = "7486f6b9f2207d78ad4636ee635f5f2386a26451",
+        url = "https://forge-magic-mirror.awsvip.dbxnw.net/git-archives/progressbar.git-7486f6b9f2207d78ad4636ee635f5f2386a26451.tgz",
+        sha256 = "f9b133827c426d8c14e5bc903d0fb198539abd38ea6b62123736afca16c57915",
         importpath = "github.com/schollz/progressbar",
     )
 
     dbx_go_dependency(
         name = "com_github_mitchellh_colorstring",
         commit = "d06e56a500db4d08c33db0b79461e7c9beafca2d",
+        url = "https://forge-magic-mirror.awsvip.dbxnw.net/git-archives/colorstring.git-d06e56a500db4d08c33db0b79461e7c9beafca2d.tgz",
+        sha256 = "9794420aa88478b04b7dc29ebdb215af282255e75dc3b2122b07ab81d7f09c06",
         importpath = "github.com/mitchellh/colorstring",
     )
 
     dbx_go_dependency(
         name = "com_github_mattn_go_runewidth",
         commit = "dc8fe66265afbd17ea8515ea85adb7de6e685a78",
+        url = "https://forge-magic-mirror.awsvip.dbxnw.net/git-archives/go-runewidth.git-dc8fe66265afbd17ea8515ea85adb7de6e685a78.tgz",
+        sha256 = "91107be76965f05edb8d472e4b38bc52eeb19e6e42ba2e32b25688cfe3395d24",
         importpath = "github.com/mattn/go-runewidth",
     )
 
     dbx_go_dependency(
         name = "com_github_rivo_uniseg",
         commit = "57c86be7915a626793725fce30bb2f4da513c1a2",
+        url = "https://forge-magic-mirror.awsvip.dbxnw.net/git-archives/uniseg.git-57c86be7915a626793725fce30bb2f4da513c1a2.tgz",
+        sha256 = "81b97b64ba710dbf896b5d38321b70ee89cb48f1e386f9735b51bfffe6b625c5",
         importpath = "github.com/rivo/uniseg",
     )
 
     dbx_go_dependency(
         name = "org_golang_x_crypto",
         commit = "ae814b36b87190c757eede9bc2d32ed77df88551",
+        url = "https://forge-magic-mirror.awsvip.dbxnw.net/git-archives/crypto.git-ae814b36b87190c757eede9bc2d32ed77df88551.tgz",
+        sha256 = "e4e47a394ea57ae65e1e0edf38ce92bb832802d2fd0b99f3b97d9ac4720d7f23",
         importpath = "golang.org/x/crypto",
         submodules = [
             "ssh/terminal",
@@ -85,12 +95,16 @@ def define_go_deps():
     dbx_go_dependency(
         name = "org_golang_x_term",
         commit = "03fcf44c2211dcd5eb77510b5f7c1fb02d6ded50",
+        url = "https://forge-magic-mirror.awsvip.dbxnw.net/git-archives/term.git-03fcf44c2211dcd5eb77510b5f7c1fb02d6ded50.tgz",
+        sha256 = "6d644cd834f059b6a8b5a98c3d710a9f6d5ae52a0941229521c866e82548783d",
         importpath = "golang.org/x/term",
     )
 
     dbx_go_dependency(
         name = "org_golang_x_sys",
         commit = "dee7805ff2e13b1c4206de89b1c06e95ab66ae0d",
+        url = "https://forge-magic-mirror.awsvip.dbxnw.net/git-archives/sys.git-dee7805ff2e13b1c4206de89b1c06e95ab66ae0d.tgz",
+        sha256 = "4f9a23a8c262e05c23d8eeb8d765385c8f5518ba698f157ce40e34cd0ffc63a0",
         importpath = "golang.org/x/sys",
         submodules = [
             "unix",

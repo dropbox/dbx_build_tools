@@ -355,7 +355,7 @@ func (g *ConfigGenerator) Process(goPkgPath string) error {
 func (g *ConfigGenerator) process(goPkgPath string) error {
 	isBuiltinPkg := g.isBuiltinPkg(goPkgPath)
 	isValid := genlib.ValidateGoPkgPath(
-		g.verbose, isBuiltinPkg, goPkgPath, g.processedPkgs, &g.visitStack)
+		g.verbose, isBuiltinPkg, goPkgPath, g.workspace, g.goSrc, g.processedPkgs, &g.visitStack)
 	if !isValid {
 		return nil
 	}
