@@ -281,9 +281,12 @@ cc_binary(
     srcs = ["exit0.c"],
 )
 
-cc_test(
+# `pass` used to be a `cc_test` but starting with Bazel 5.0.0 we ran into conflicting actions issues due
+# to this test target being added as a dependency to other test and non-test targets.
+# See this issue for more info: see https://github.com/bazelbuild/bazel/issues/14294.
+sh_test(
     name = "pass",
-    srcs = ["exit0.c"],
+    srcs = ["exit0.sh"],
 )
 
 dbx_sh_binary(

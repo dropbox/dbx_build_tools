@@ -7,7 +7,7 @@ def filename_from_label(label):
 
 DEFAULT_EXTERNAL_URLS = {
     "abseil_py": ["https://github.com/abseil/abseil-py/archive/pypi-v0.7.1.tar.gz"],
-    "bazel_skylib": ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz"],
+    "bazel_skylib": ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.2.0/bazel-skylib-1.2.0.tar.gz"],
     "com_github_plougher_squashfs_tools": ["https://github.com/plougher/squashfs-tools/archive/4.4.tar.gz"],
     "cpython_38": ["https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz"],
     "cpython_39": ["https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tar.xz"],
@@ -82,7 +82,7 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "bazel_skylib",
         urls = urls["bazel_skylib"],
-        sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
+        sha256 = "af87959afe497dc8dfd4c6cb66e1279cb98ccc84284619ebfec27d9c09a903de",
     )
 
     pypi_core_deps(urls)
