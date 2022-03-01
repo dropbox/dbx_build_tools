@@ -32,6 +32,7 @@ DbxPyInterpreter = provider(fields = [
     "headers",
     "runtime",
     "major_python_version",
+    "minor_python_version",
 ])
 
 def get_py_toolchain_name(python_or_build_tag):
@@ -64,6 +65,7 @@ def _dbx_py_interpreter_impl(ctx):
             headers = ctx.attr.headers.files if ctx.attr.headers else depset(),
             runtime = ctx.attr.runtime.files if ctx.attr.runtime else depset(),
             major_python_version = ctx.attr.major_python_version,
+            minor_python_version = ctx.attr.minor_python_version,
         ),
     ]
 
@@ -76,6 +78,7 @@ dbx_py_interpreter = rule(
         "headers": attr.label(),
         "runtime": attr.label(),
         "major_python_version": attr.int(default = 2),
+        "minor_python_version": attr.int(mandatory = True),
         "_windows_platform": attr.label(default = Label("@platforms//os:windows")),
     },
 )

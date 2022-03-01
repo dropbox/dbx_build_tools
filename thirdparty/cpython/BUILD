@@ -30,6 +30,7 @@ dbx_py_interpreter(
     exe_file = "@org_python_cpython_38//:bin/python",
     headers = "@org_python_cpython_38//:include_headers",
     major_python_version = 3,
+    minor_python_version = 8,
     runtime = "@org_python_cpython_38//:runtime",
 )
 
@@ -66,6 +67,7 @@ dbx_py_interpreter(
     exe_file = "@org_python_cpython_39//:bin/python",
     headers = "@org_python_cpython_39//:include_headers",
     major_python_version = 3,
+    minor_python_version = 9,
     runtime = "@org_python_cpython_39//:runtime",
 )
 

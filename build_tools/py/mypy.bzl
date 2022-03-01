@@ -30,10 +30,12 @@ load(
 load("//build_tools/py:common.bzl", "DbxPyVersionCompatibility")
 load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
 load("//build_tools/services:svc.bzl", "dbx_services_test")
-load("@dbx_build_tools//build_tools/py:toolchain.bzl", "BUILD_TAG_TO_TOOLCHAIN_MAP")
-load("@dbx_build_tools//build_tools/py:cfg.bzl", "ALL_ABIS")
+load("@dbx_build_tools//build_tools/py:toolchain.bzl", "BUILD_TAG_TO_TOOLCHAIN_MAP", "DbxPyInterpreter")
+load("@dbx_build_tools//build_tools/py:mypy_toolchain.bzl", "MYPY_BUILD_TAG_TO_TOOLCHAIN_MAP")
+load("@dbx_build_tools//build_tools/py:cfg.bzl", "ALL_ABIS", "PY3_ALTERNATIVE_TEST_ABIS", "PY3_DEFAULT_BINARY_ABI", "PY3_TEST_ABI")
 
-ALL_PY3_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS if abi.major_python_version == 3]
+ALL_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS] + [MYPY_BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS]
+BOOTSTRAP_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS]
 
 _mypy_provider_fields = [
     "trans_srcs",
@@ -118,32 +120,32 @@ _supported_rules = [
     "services_internal_test",
 ]
 
-def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, use_mypyc, compile_target = False):
+def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python, use_mypyc, compile_target = False, bootstrap_typeshed = None):
     """
     Code shared between aspect and bootstrap rule.
 
     target: rule name for aspect, None for bootstrap
     ctx: original context
     deps, srcs, stub_srcs: rule attributes
-    python_version: '2.7' or '3.8'
+    python: 'cpython-39' etc
     """
     mypy_provider = MypycProvider if use_mypyc else MypyProvider
 
-    if python_version == "2.7" or not use_mypyc:
+    if not use_mypyc:
         compile_target = False
-
-    pyver_dash = python_version.replace(".", "-")
-    pyver_under = python_version.replace(".", "_")
 
     # Except for the bootstrap rule, add typeshed and mypy-stubs to the dependencies.
     is_typeshed = False
+
+    # if not bootstrapping...
     if target:
-        typeshed = getattr(ctx.attr, "_typeshed_" + pyver_under)
-        mypy_stubs = getattr(ctx.attr, "_mypy_stubs_" + pyver_under)
+        mypy_toolchain = ctx.toolchains[MYPY_BUILD_TAG_TO_TOOLCHAIN_MAP[python]]
+        typeshed = mypy_toolchain.typeshed
+        mypy_stubs = mypy_toolchain.mypy_stubs
         deps = deps + [typeshed, mypy_stubs]
-    elif str(ctx.label).startswith("//mypy-stubs:mypy-stubs"):
+    elif bootstrap_typeshed != None:
         # Two-stage bootstrap, mypy-stubs depend on typeshed, but not vice versa.
-        deps = deps + [getattr(ctx.attr, "_typeshed_" + pyver_under)]
+        deps = deps + [bootstrap_typeshed]
     else:
         is_typeshed = True
 
@@ -187,6 +189,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         internal_header, external_header, group_src = group_files
         ext_module, compilation_context = _build_mypyc_ext_module(
             ctx,
+            python,
             short_name + "__mypyc",
             group_src,
             [external_header],
@@ -219,7 +222,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         ]
 
     mypyc_part = "-mypyc" if use_mypyc else ""
-    junit_xml = "%s-%s%s-junit.xml" % (ctx.label.name.replace("/", "-"), pyver_dash, mypyc_part)
+    junit_xml = "%s-%s-%s-junit.xml" % (ctx.label.name.replace("/", "-"), python, mypyc_part)
     junit_xml_file = ctx.actions.declare_file(junit_xml)
 
     for src in srcs:
@@ -233,7 +236,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         kinds = ["meta", "data"] + (["ir"] if compile_target else [])
         for kind in kinds:
             mypyc_part = ".mypyc" if use_mypyc else ""
-            path = "%s.%s%s.%s.json" % (path_base, python_version, mypyc_part, kind)
+            path = "%s.%s%s.%s.json" % (path_base, python, mypyc_part, kind)
             file = ctx.actions.declare_file(path)
 
             outs.append(file)
@@ -244,7 +247,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         if compile_target:
             full_modname = path_base.replace("/", ".")
             modname = full_modname.split(".")[-1]
-            file = ctx.actions.declare_file(modname + ".c")
+            file = ctx.actions.declare_file(modname + "-" + python + ".c")
 
             ctx.actions.expand_template(
                 template = shim_template,
@@ -256,7 +259,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
                 },
             )
 
-            ext_modules.append(_build_mypyc_ext_module(ctx, modname, file)[0])
+            ext_modules.append(_build_mypyc_ext_module(ctx, python, modname, file)[0])
 
     trans_outs = _get_trans_field(outs, deps, "outs", mypy_provider)
     trans_cache_map = _get_trans_field(cache_map, deps, "cache_map", mypy_provider)
@@ -285,10 +288,12 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python_version, us
         args.add("--follow-imports=skip")
         args.add("--ignore-missing-imports")
 
+    interpreter = ctx.toolchains[BUILD_TAG_TO_TOOLCHAIN_MAP[python]].interpreter[DbxPyInterpreter]
+
     args.add("--bazel")
-    if python_version != "2.7":
-        # For some reason, explicitly passing --python-version 2.7 fails.
-        args.add("--python-version", python_version)
+
+    # For some reason, explicitly passing --python-version 2.7 fails.
+    args.add("--python-version", str(interpreter.major_python_version) + "." + str(interpreter.minor_python_version))
     args.add_all(trans_roots, before_each = "--package-root")
     args.add("--no-error-summary")
     args.add("--incremental")
@@ -325,6 +330,7 @@ def _mypyc_exported_name(fullname):
 
 def _build_mypyc_ext_module(
         ctx,
+        python,
         group_name,
         c_source,
         public_hdrs = [],
@@ -338,11 +344,11 @@ def _build_mypyc_ext_module(
         unsupported_features = ctx.disabled_features + ["thin_lto"],
     )
 
-    # TODO: broken assumption of single abi
-    so_name = "%s.cpython-38-x86_64-linux-gnu.so" % group_name
+    so_name = "%s.%s-x86_64-linux-gnu.so" % (group_name, python)
     so_file = ctx.actions.declare_file(so_name)
 
-    mypyc_runtime = ctx.attr._mypyc_runtime
+    mypy_toolchain = ctx.toolchains[MYPY_BUILD_TAG_TO_TOOLCHAIN_MAP[python]]
+    mypyc_runtime = mypy_toolchain.runtime
 
     compilation_context, compilation_outputs = cc_common.compile(
         actions = ctx.actions,
@@ -456,7 +462,7 @@ def _dbx_mypy_aspect_impl(target, ctx):
             [rule.attr.bin],
             [],
             [],
-            ctx.attr.python_version,
+            ctx.attr.python,
             use_mypyc = False,
         )
     return _dbx_mypy_common_code(
@@ -465,27 +471,18 @@ def _dbx_mypy_aspect_impl(target, ctx):
         rule.attr.deps,
         rule.files.srcs,
         rule.files.stub_srcs,
-        ctx.attr.python_version,
+        ctx.attr.python,
         use_mypyc = ctx.attr._use_mypyc,
         compile_target = getattr(rule.attr, "compiled", False),
     )
 
-_dbx_mypy_typeshed_attrs = {
-    "_typeshed_2_7": attr.label(default = Label("//thirdparty/typeshed:typeshed-2.7")),
-    "_typeshed_3_8": attr.label(default = Label("//thirdparty/typeshed:typeshed-3.8")),
-}
-
 _dbx_mypy_aspect_attrs = {
-    "python_version": attr.string(values = ["2.7", "3.8"]),
+    "python": attr.string(values = [abi.build_tag for abi in ALL_ABIS]),
     "_use_mypyc": attr.bool(default = False),
-    "_mypy_stubs_2_7": attr.label(default = Label("//mypy-stubs:mypy-stubs-2.7")),
-    "_mypy_stubs_3_8": attr.label(default = Label("//mypy-stubs:mypy-stubs-3.8")),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
-    "_mypyc_runtime": attr.label(default = Label("//thirdparty/mypy:mypyc_runtime")),
     "_module_shim_template": attr.label(default = Label("//thirdparty/mypy:module_shim_template")),
 }
 _dbx_mypy_aspect_attrs.update(_dbx_mypy_common_attrs)
-_dbx_mypy_aspect_attrs.update(_dbx_mypy_typeshed_attrs)
 
 dbx_mypy_aspect = aspect(
     implementation = _dbx_mypy_aspect_impl,
@@ -493,6 +490,7 @@ dbx_mypy_aspect = aspect(
     attrs = _dbx_mypy_aspect_attrs,
     fragments = ["cpp"],
     provides = [MypyProvider],
+    toolchains = ALL_TOOLCHAIN_NAMES,
 )
 
 _dbx_mypyc_aspect_attrs = dict(_dbx_mypy_aspect_attrs)
@@ -504,6 +502,7 @@ dbx_mypyc_aspect = aspect(
     attrs = _dbx_mypyc_aspect_attrs,
     fragments = ["cpp"],
     provides = [MypycProvider],
+    toolchains = ALL_TOOLCHAIN_NAMES,
 )
 
 # Test rule used to trigger mypy via a test target.
@@ -513,7 +512,7 @@ dbx_mypyc_aspect = aspect(
 
 _dbx_mypy_test_attrs = {
     "deps": attr.label_list(aspects = [dbx_mypy_aspect]),
-    "python_version": attr.string(),
+    "python": attr.string(values = [abi.build_tag for abi in ALL_ABIS]),
     "_mypy_test": attr.label(
         default = Label("//dropbox/mypy:mypy_test"),
         allow_files = True,
@@ -555,21 +554,23 @@ def dbx_mypy_test(
         size = "small",
         tags = [],
         **kwds):
-    # TODO: Don't hard code abi, use ALTERNATIVE_TEST_ABIS
+    # TODO: fix mypyc to generate intermediate files with the abi in the name
     things = []
-    things.append(("", "3.8"))
-    for suffix, python_version in things:
+    things.append(("", PY3_TEST_ABI.build_tag))
+    for abi in PY3_ALTERNATIVE_TEST_ABIS:
+        things.append(("-" + abi.build_tag, abi.build_tag))
+    for suffix, python in things:
         _dbx_mypy_test(
             name = name + suffix,
             deps = deps,
             size = size,
             tags = tags + ["mypy"],
-            python_version = python_version,
+            python = python,
             **kwds
         )
 
 # Bootstrap rule to build typeshed.
-# This is parameterized by python_version.
+# This is parameterized by python.
 
 def _dbx_mypy_bootstrap_impl(ctx):
     return _dbx_mypy_common_code(
@@ -578,42 +579,31 @@ def _dbx_mypy_bootstrap_impl(ctx):
         [],
         [],
         ctx.files.stub_srcs,
-        ctx.attr.python_version,
+        ctx.attr.python,
         use_mypyc = False,
+        bootstrap_typeshed = ctx.attr.bootstrap_typeshed,
     ) + _dbx_mypy_common_code(
         None,
         ctx,
         [],
         [],
         ctx.files.stub_srcs,
-        ctx.attr.python_version,
+        ctx.attr.python,
         use_mypyc = True,
+        bootstrap_typeshed = ctx.attr.bootstrap_typeshed,
     )
 
 _dbx_mypy_bootstrap_attrs = {
-    "python_version": attr.string(default = "2.7"),
+    "python": attr.string(values = [abi.build_tag for abi in ALL_ABIS]),
     "stub_srcs": attr.label_list(allow_files = [".pyi"]),
+    "bootstrap_typeshed": attr.label(mandatory = False),
 }
 _dbx_mypy_bootstrap_attrs.update(_dbx_mypy_common_attrs)
 
 dbx_mypy_bootstrap = rule(
     implementation = _dbx_mypy_bootstrap_impl,
     attrs = _dbx_mypy_bootstrap_attrs,
-)
-
-# Second bootstrap rule to build mypy-stubs.
-# This depends on typeshed is parameterized by python_version.
-
-_dbx_mypy_bootstrap_stubs_attrs = {
-    "python_version": attr.string(default = "2.7"),
-    "stub_srcs": attr.label_list(allow_files = [".pyi"]),
-}
-_dbx_mypy_bootstrap_stubs_attrs.update(_dbx_mypy_common_attrs)
-_dbx_mypy_bootstrap_stubs_attrs.update(_dbx_mypy_typeshed_attrs)
-
-dbx_mypy_bootstrap_stubs = rule(
-    implementation = _dbx_mypy_bootstrap_impl,
-    attrs = _dbx_mypy_bootstrap_stubs_attrs,
+    toolchains = BOOTSTRAP_TOOLCHAIN_NAMES,
 )
 
 # mypyc rules
@@ -623,7 +613,7 @@ _mypyc_attrs = {
         providers = [[PyInfo], [DbxPyVersionCompatibility]],
         aspects = [dbx_mypyc_aspect],
     ),
-    "python_version": attr.string(default = "3.8"),
+    "python": attr.string(values = [abi.build_tag for abi in ALL_ABIS]),
 }
 
 _dbx_py_compiled_binary_attrs = dict(dbx_py_binary_attrs)
@@ -635,18 +625,29 @@ def _dbx_py_compiled_binary_impl(ctx):
     )
     return dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = ext_modules)
 
-dbx_py_compiled_binary = rule(
+_dbx_py_compiled_binary = rule(
     implementation = _dbx_py_compiled_binary_impl,
     attrs = _dbx_py_compiled_binary_attrs,
-    toolchains = ALL_PY3_TOOLCHAIN_NAMES,
+    toolchains = ALL_TOOLCHAIN_NAMES,
     executable = True,
 )
+
+def dbx_py_compiled_binary(name, python = None, **kwargs):
+    # We don't want to parameterize the aspect with a third value of python ("")
+    # so we handle the empty case in a macro.
+    if python == None:
+        python = PY3_DEFAULT_BINARY_ABI.build_tag
+    _dbx_py_compiled_binary(
+        name = name,
+        python = python,
+        **kwargs
+    )
 
 _compiled_test_attrs = dict(dbx_py_test_attrs)
 _compiled_test_attrs.update(_mypyc_attrs)
 dbx_py_compiled_test = rule(
     implementation = _dbx_py_compiled_binary_impl,
-    toolchains = ALL_PY3_TOOLCHAIN_NAMES,
+    toolchains = ALL_TOOLCHAIN_NAMES,
     test = True,
     attrs = _compiled_test_attrs,
 )
@@ -676,8 +677,7 @@ def _dbx_py_compiled_only_pytest_test(
         local = 0,
         flaky = 0,
         quarantine = {},
-        # TODO: use default
-        python = "cpython-38",
+        python = PY3_TEST_ABI.build_tag,
         compiled = False,
         plugins = [],
         visibility = None,
