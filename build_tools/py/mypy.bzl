@@ -338,7 +338,6 @@ def _build_mypyc_ext_module(
         unsupported_features = ctx.disabled_features + ["thin_lto"],
     )
 
-    # TODO: broken assumption of single abi
     so_name = "%s.cpython-38-x86_64-linux-gnu.so" % group_name
     so_file = ctx.actions.declare_file(so_name)
 
@@ -676,8 +675,7 @@ def _dbx_py_compiled_only_pytest_test(
         local = 0,
         flaky = 0,
         quarantine = {},
-        # TODO: use default
-        python = "cpython-38",
+        python = None,
         compiled = False,
         plugins = [],
         visibility = None,
