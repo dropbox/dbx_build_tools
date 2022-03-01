@@ -52,17 +52,17 @@ go_toolchain(
 )
 
 go_toolchain(
-    name = "go1.17",
-    asm = "@go_1_17_linux_amd64_tar_gz//:asm",
-    asm_inputs = "@go_1_17_linux_amd64_tar_gz//:asm-inputs",
-    cgo = "@go_1_17_linux_amd64_tar_gz//:cgo",
-    compile = "@go_1_17_linux_amd64_tar_gz//:compile",
-    cover = "@go_1_17_linux_amd64_tar_gz//:cover",
-    include_dir = "external/go_1_17_linux_amd64_tar_gz/go/pkg/include",
-    link = "@go_1_17_linux_amd64_tar_gz//:link",
-    pack = "@go_1_17_linux_amd64_tar_gz//:pack",
-    stdlib = "@go_1_17_linux_amd64_tar_gz//:stdlib",
-    stdlib_race = "@go_1_17_linux_amd64_tar_gz//:stdlib-race",
+    name = "go1.18",
+    asm = "@go_1_18_linux_amd64_tar_gz//:asm",
+    asm_inputs = "@go_1_18_linux_amd64_tar_gz//:asm-inputs",
+    cgo = "@go_1_18_linux_amd64_tar_gz//:cgo",
+    compile = "@go_1_18_linux_amd64_tar_gz//:compile",
+    cover = "@go_1_18_linux_amd64_tar_gz//:cover",
+    include_dir = "external/go_1_18_linux_amd64_tar_gz/go/pkg/include",
+    link = "@go_1_18_linux_amd64_tar_gz//:link",
+    pack = "@go_1_18_linux_amd64_tar_gz//:pack",
+    stdlib = "@go_1_18_linux_amd64_tar_gz//:stdlib",
+    stdlib_race = "@go_1_18_linux_amd64_tar_gz//:stdlib-race",
     taglist = [
         "go1.1",
         "go1.2",
@@ -81,8 +81,9 @@ go_toolchain(
         "go1.15",
         "go1.16",
         "go1.17",
+        "go1.18",
     ],
-    version = "1.17",
+    version = "1.18",
 )
 
 dbx_sh_binary(
@@ -91,7 +92,7 @@ dbx_sh_binary(
     srcs = ["go_test_wrapper.sh"],
     data = [
         "//go/src/dropbox/build_tools/gojunit/gojunit",
-        "@go_1_17_linux_amd64_tar_gz//:test2json",
+        "@go_1_18_linux_amd64_tar_gz//:test2json",
     ] + select({
         "//build_tools:coverage-enabled": ["//go/src/dropbox/build_tools/gocov2cobertura"],
         "//conditions:default": [],
