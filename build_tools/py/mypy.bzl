@@ -483,7 +483,7 @@ _dbx_mypy_aspect_attrs = {
     "python": attr.string(values = [abi.build_tag for abi in ALL_ABIS]),
     "_use_mypyc": attr.bool(default = False),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
-    "_module_shim_template": attr.label(default = Label("//thirdparty/mypy:module_shim_template")),
+    "_module_shim_template": attr.label(default = Label("@mypy//:module_shim_template")),
 }
 _dbx_mypy_aspect_attrs.update(_dbx_mypy_common_attrs)
 
