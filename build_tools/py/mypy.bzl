@@ -300,11 +300,12 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python, use_mypyc,
     args.add("--no-error-summary")
     args.add("--incremental")
     args.add("--junit-xml", junit_xml_file)
-    args.add("--custom-typeshed-dir", "thirdparty/typeshed")
+    args.add("--custom-typeshed-dir", "external/mypy/mypy/typeshed")
     args.add("--cache-map")
     args.add_all(trans_cache_map)
     args.add("--")
     args.add_all(trans_srcs)
+    print(args)
     ctx.actions.run(
         executable = ctx.executable._mypy,
         arguments = [args],
@@ -414,7 +415,7 @@ _dbx_mypy_common_attrs = {
         allow_files = True,
     ),
     "_versions": attr.label(
-        default = Label("//thirdparty/typeshed:stdlib/VERSIONS"),
+        default = Label("@mypy//:mypy/typeshed/stdlib/VERSIONS"),
         allow_files = True,
     ),
     # TODO: Move list of plugins to a separate target
