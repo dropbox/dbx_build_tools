@@ -176,7 +176,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python, use_mypyc,
         # If we are using mypyc, mypy will generate C source as part of its output.
         # Create a C extension module using that source.
         shim_template = ctx.attr._module_shim_template[DefaultInfo].files.to_list()[0]
-        group_name = str(target.label).lstrip("/").replace("/", ".").replace(":", ".")
+        group_name = str(target.label).lstrip("/").replace("/", ".").replace(":", ".") + python.replace("-", "_")
         group_libname = group_name + "__mypyc"
         short_name = group_name.split(".")[-1]
 
@@ -190,6 +190,9 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python, use_mypyc,
         ext_module, compilation_context = _build_mypyc_ext_module(
             ctx,
             python,
+            # short_name here already has the version of python encoded because
+            # its also used for the header files.
+            short_name + "__mypyc",
             short_name + "__mypyc",
             group_src,
             [external_header],
@@ -259,7 +262,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python, use_mypyc,
                 },
             )
 
-            ext_modules.append(_build_mypyc_ext_module(ctx, python, modname, file)[0])
+            ext_modules.append(_build_mypyc_ext_module(ctx, python, modname, modname + python, file)[0])
 
     trans_outs = _get_trans_field(outs, deps, "outs", mypy_provider)
     trans_cache_map = _get_trans_field(cache_map, deps, "cache_map", mypy_provider)
@@ -292,7 +295,6 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python, use_mypyc,
 
     args.add("--bazel")
 
-    # For some reason, explicitly passing --python-version 2.7 fails.
     args.add("--python-version", str(interpreter.major_python_version) + "." + str(interpreter.minor_python_version))
     args.add_all(trans_roots, before_each = "--package-root")
     args.add("--no-error-summary")
@@ -332,6 +334,7 @@ def _build_mypyc_ext_module(
         ctx,
         python,
         group_name,
+        cc_name,
         c_source,
         public_hdrs = [],
         private_hdrs = [],
@@ -358,7 +361,7 @@ def _build_mypyc_ext_module(
         includes = [c_source.root.path],
         public_hdrs = public_hdrs,
         private_hdrs = private_hdrs,
-        name = group_name,
+        name = cc_name,
         user_compile_flags = [
             "-Wno-unused-function",
             "-Wno-unused-label",
