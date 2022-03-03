@@ -17,6 +17,7 @@ DEFAULT_EXTERNAL_URLS = {
     "io_pypa_setuptools_whl": ["https://files.pythonhosted.org/packages/11/b9/adac241e2c4aca7ae4ddd86d3c18227667665b6e7eac550695bfc50c7e3d/setuptools-60.6.0-py3-none-any.whl"],
     "io_pypa_wheel_whl": ["https://files.pythonhosted.org/packages/8c/23/848298cccf8e40f5bbb59009b32848a4c38f4e7f3364297ab3c3e2e2cd14/wheel-0.34.2-py2.py3-none-any.whl"],
     "lz4": ["https://github.com/lz4/lz4/archive/v1.9.3.tar.gz"],
+    "mypy": ["https://github.com/python/mypy/archive/b4df2b341c345bb009210783dddeb454e7b45fc5.tar.gz"],
     "net_zlib": ["http://zlib.net/zlib-1.2.11.tar.gz"],
     "org_bzip_bzip2": ["https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"],
     "org_gnu_ncurses": ["https://invisible-mirror.net/archives/ncurses/ncurses-6.2.tar.gz"],
@@ -211,4 +212,12 @@ def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
         urls = urls["ducible"],
         sha256 = "b90d636b6ee08768cd198e00f007a25b91bc1be279d417bdd3d476296060b7da",
         build_file_content = """exports_files(["ducible.exe"])""",
+    )
+
+    http_archive(
+        name = "mypy",
+        urls = urls["mypy"],
+        sha256 = "87eb6f23dd244789b820da73ac4fcfb15b08d88c11d63f349d20731136cb3827",
+        strip_prefix = "mypy-b4df2b341c345bb009210783dddeb454e7b45fc5",
+        build_file = filename_from_label("//thirdparty/mypy:BUILD.mypy"),
     )
