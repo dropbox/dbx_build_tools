@@ -305,7 +305,6 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python, use_mypyc,
     args.add_all(trans_cache_map)
     args.add("--")
     args.add_all(trans_srcs)
-    print(args)
     ctx.actions.run(
         executable = ctx.executable._mypy,
         arguments = [args],
