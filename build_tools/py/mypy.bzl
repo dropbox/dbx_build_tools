@@ -740,3 +740,60 @@ def dbx_py_compiled_pytest_test(name, compiled_only = False, **kwargs):
         dbx_py_pytest_test(name, **kwargs)
         suffix = "-compiled"
     _dbx_py_compiled_only_pytest_test(name + suffix, **kwargs)
+
+# mypy runtime needs a reference to python headers. This is like a cc_library but
+# gets the headers from python from the toolchain. The mypy aspect will then
+# access the runtime via the mypy toolchain.
+def _dbx_mypy_runtime(ctx):
+    cc_toolchain = find_cpp_toolchain(ctx)
+    py_toolchain = ctx.toolchains[BUILD_TAG_TO_TOOLCHAIN_MAP[ctx.attr.python]]
+    py_headers = py_toolchain.interpreter[DbxPyInterpreter].cc_headers
+
+    feature_configuration = cc_common.configure_features(
+        ctx = ctx,
+        cc_toolchain = cc_toolchain,
+        requested_features = ctx.features,
+        unsupported_features = ctx.disabled_features + ["thin_lto"],
+    )
+
+    compilation_context, compilation_outputs = cc_common.compile(
+        name = ctx.attr.name,
+        actions = ctx.actions,
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+        srcs = ctx.files.srcs,
+        public_hdrs = ctx.files.hdrs,
+        user_compile_flags = ctx.attr.copts,
+        compilation_contexts = [py_headers[CcInfo].compilation_context],
+        strip_include_prefix = ctx.attr.strip_include_prefix,
+    )
+
+    linking_context, linking_outputs = cc_common.create_linking_context_from_compilation_outputs(
+        name = ctx.attr.name,
+        actions = ctx.actions,
+        feature_configuration = feature_configuration,
+        cc_toolchain = cc_toolchain,
+        compilation_outputs = compilation_outputs,
+        disallow_dynamic_library = True,
+    )
+
+    return [
+        CcInfo(
+            compilation_context = compilation_context,
+            linking_context = linking_context,
+        ),
+    ]
+
+dbx_mypy_runtime = rule(
+    implementation = _dbx_mypy_runtime,
+    attrs = {
+        "srcs": attr.label_list(mandatory = True, allow_files = True),
+        "hdrs": attr.label_list(mandatory = True, allow_files = True),
+        "python": attr.string(values = [abi.build_tag for abi in ALL_ABIS]),
+        "copts": attr.string_list(mandatory = True),
+        "strip_include_prefix": attr.string(),
+        "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+    },
+    toolchains = BOOTSTRAP_TOOLCHAIN_NAMES,
+    fragments = ["cpp"],
+)

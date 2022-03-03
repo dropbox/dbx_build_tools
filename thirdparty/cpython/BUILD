@@ -27,6 +27,7 @@ config_setting(
 dbx_py_interpreter(
     name = "cpython-38",
     build_tag = "cpython-38",
+    cc_headers = "@org_python_cpython_38//:headers",
     exe_file = "@org_python_cpython_38//:bin/python",
     headers = "@org_python_cpython_38//:include_headers",
     major_python_version = 3,
@@ -64,6 +65,7 @@ py_binary(
 dbx_py_interpreter(
     name = "cpython-39",
     build_tag = "cpython-39",
+    cc_headers = "@org_python_cpython_39//:headers",
     exe_file = "@org_python_cpython_39//:bin/python",
     headers = "@org_python_cpython_39//:include_headers",
     major_python_version = 3,

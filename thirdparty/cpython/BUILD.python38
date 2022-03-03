@@ -211,6 +211,7 @@ cc_library(
     name = "headers",
     hdrs = PYTHON_HEADERS,
     linkstatic = True,
+    visibility = ["//visibility:public"],
 )
 
 # All of the builtin extensions that we need from the Modules/ directory.
