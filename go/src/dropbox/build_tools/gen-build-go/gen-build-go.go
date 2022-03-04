@@ -19,10 +19,9 @@ import (
 	"strings"
 
 	"github.com/bazelbuild/buildtools/wspace"
-	"golang.org/x/mod/modfile"
-	"golang.org/x/mod/module"
 
 	genlib "dropbox/build_tools/genbuildgolib"
+	"dropbox/devtools/gomodlib"
 )
 
 const (
@@ -85,7 +84,7 @@ func parseTargetBuildPathFromDbxvendorMetadata(dir string, submodulePath string)
 
 func parseDepPathsFromGoModFile(pkg string) map[string]string {
 	depToImportPathMap := make(map[string]string)
-	dependencies, err := findGoModDeps(pkg)
+	dependencies, err := gomodlib.FindGoModDeps(pkg)
 	if err != nil {
 		return nil
 	}
@@ -147,23 +146,6 @@ func isVersionExplicitModule(dir string) bool {
 	} else {
 		return false
 	}
-}
-
-func findGoModDeps(rootPath string) ([]module.Version, error) {
-	mfPath := filepath.Join(rootPath, "go.mod")
-	modData, err := ioutil.ReadFile(mfPath)
-	if err != nil {
-		return nil, err
-	}
-	mf, err := modfile.Parse(mfPath, modData, nil)
-	if err != nil {
-		return nil, err
-	}
-	reqs := make([]module.Version, 0, len(mf.Require))
-	for _, r := range mf.Require {
-		reqs = append(reqs, r.Mod)
-	}
-	return reqs, nil
 }
 
 type ConfigGenerator struct {
