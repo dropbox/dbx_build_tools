@@ -1163,6 +1163,7 @@ genrule(
     outs = ["lib/python39.zip"],
     cmd = """
 export ASAN_OPTIONS=detect_leaks=0
+export PYTHONHASHSEED=0
 mkdir $(@D)/python3.9
 touch $(@D)/python3.9/os.py
 mkdir $(@D)/python3.9/lib-dynload

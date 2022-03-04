@@ -1123,6 +1123,7 @@ genrule(
     outs = ["lib/python38.zip"],
     cmd = """
 export ASAN_OPTIONS=detect_leaks=0
+export PYTHONHASHSEED=0
 mkdir $(@D)/python3.8
 touch $(@D)/python3.8/os.py
 mkdir $(@D)/python3.8/lib-dynload
