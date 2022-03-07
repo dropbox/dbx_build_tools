@@ -214,10 +214,12 @@ def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
         build_file_content = """exports_files(["ducible.exe"])""",
     )
 
+    # Version is also encoded in //thirdparty/mypy:mypy pip_version attribute, keep in sync.
     http_archive(
         name = "mypy",
         urls = urls["mypy"],
         sha256 = "87eb6f23dd244789b820da73ac4fcfb15b08d88c11d63f349d20731136cb3827",
         strip_prefix = "mypy-b4df2b341c345bb009210783dddeb454e7b45fc5",
         build_file = filename_from_label("//thirdparty/mypy:BUILD.mypy"),
+        patches = [filename_from_label("//thirdparty/mypy:version.patch")],
     )
