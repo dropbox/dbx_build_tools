@@ -44,7 +44,7 @@ load('@dbx_build_tools//build_tools/bazel:external_workspace.bzl', 'drte_deps')
 drte_deps()
 
 register_toolchains(
-    "@dbx_build_tools//thirdparty/cpython:drte-off-38-toolchain",
+    "@dbx_build_tools//thirdparty/cpython:drte-off-39-toolchain",
 )
 ```
 ## Install `bzl`
