@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import subprocess
 
@@ -6,8 +8,7 @@ from typing import Dict
 from build_tools import bazel_utils
 
 
-def _ensure_goroot_exists(goroot):
-    # type: (str) -> None
+def _ensure_goroot_exists(goroot: str) -> None:
     """Tries to populate GOROOT and verify that it exists."""
     # Doesn't actually build anything, but should populate the Go toolchain.
     subprocess.run(
@@ -16,8 +17,7 @@ def _ensure_goroot_exists(goroot):
     assert os.path.isdir(goroot), "Could not populate GOROOT"
 
 
-def make_go_env(ensure_goroot=True):
-    # type: (bool) -> Dict[str, str]
+def make_go_env(ensure_goroot: bool = True) -> Dict[str, str]:
     # TODO(msolo) Respect args to bzl to use the proper default runtime.
     ws = bazel_utils.find_workspace()
 

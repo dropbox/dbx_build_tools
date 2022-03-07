@@ -1,8 +1,7 @@
 import argparse
 
 
-def main():
-    # type: () -> None
+def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("imports", nargs="*", help="imports to check")
     ARGS = p.parse_args()

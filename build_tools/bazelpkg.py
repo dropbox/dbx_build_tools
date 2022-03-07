@@ -1,6 +1,6 @@
 # mypy: allow-untyped-defs
 
-from __future__ import absolute_import, print_function
+from __future__ import absolute_import, annotations, print_function
 
 import errno
 import fnmatch
@@ -55,8 +55,7 @@ def sha256_file(path):
 
 
 # Make a directory, but allow that there might be a race creating it.
-def _maybe_makedirs(path):
-    # type: (Union[str, Text]) -> None
+def _maybe_makedirs(path: Union[str, Text]) -> None:
     try:
         os.makedirs(path)
     except OSError as e:
@@ -103,8 +102,7 @@ def dedup_file(fpath, contents_path):
         raise bazel_utils.BazelError("hard link error", e, f_hash_path, fpath)
 
 
-def _init_worker():
-    # type: () -> None
+def _init_worker() -> None:
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 
@@ -123,16 +121,15 @@ def _copy_outputs_wrapper(args):
 
 
 def _copy_outputs_multi(
-    bazel_path,  # type: str
-    outputs,  # type: List[Text]
-    out_dir,  # type: Text
-    preserve_paths,  # type: bool
-    preserve_symlinks,  # type: bool
-    _dedup_files,  # type: Optional[Text]
-    bazel_args,  # type: Optional[List[str]]
-    bazel_build_args,  # type: Optional[List[str]]
-):
-    # type: (...) -> None
+    bazel_path: str,
+    outputs: List[Text],
+    out_dir: Text,
+    preserve_paths: bool,
+    preserve_symlinks: bool,
+    _dedup_files: Optional[Text],
+    bazel_args: Optional[List[str]],
+    bazel_build_args: Optional[List[str]],
+) -> None:
     # ask bazel where the bazel-bin directory is, to support read-only
     # workspaces where bazel is not allowed to create a bazel-bin symlink
     # at the root of the workspace
@@ -167,8 +164,7 @@ def _copy_outputs_multi(
         raise
 
 
-def _copytree(src, dst, ignore=None):
-    # type: (str, str, Any) -> None
+def _copytree(src: str, dst: str, ignore: Any = None) -> None:
     names = os.listdir(src)
     if ignore is not None:
         ignored_names = ignore(src, names)
@@ -258,16 +254,15 @@ def check_for_duplicate_outputs(labels_to_outputs):
 
 
 def copy_labels(
-    labels,  # type: List[str]
-    out_dir,  # type: Text
-    preserve_paths=False,  # type: bool
-    preserve_symlinks=False,  # type: bool
-    _dedup_files=False,  # type: bool
-    bazel_query_args=None,  # type: Optional[List[str]]
-    bazel_args=None,  # type: Optional[List[str]]
-    bazel_build_args=None,  # type: Optional[List[str]]
-):
-    # type: (...) -> None
+    labels: List[str],
+    out_dir: Text,
+    preserve_paths: bool = False,
+    preserve_symlinks: bool = False,
+    _dedup_files: bool = False,
+    bazel_query_args: Optional[List[str]] = None,
+    bazel_args: Optional[List[str]] = None,
+    bazel_build_args: Optional[List[str]] = None,
+) -> None:
     if _dedup_files:
         contents_path = os.path.join(out_dir, ".contents")
     else:

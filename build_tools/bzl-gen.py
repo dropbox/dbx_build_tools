@@ -29,8 +29,7 @@ def get_generators() -> Sequence[Callable[..., Generator]]:
     return generators
 
 
-def main():
-    # type: () -> None
+def main() -> None:
     ap = argparse.ArgumentParser(
         "bzl-gen", epilog=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )

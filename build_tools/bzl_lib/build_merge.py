@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import annotations, print_function
 
 import itertools
 import subprocess
@@ -13,21 +13,20 @@ MAXIMUM_BATCH_SIZE = 1000
 _T = TypeVar("_T")
 
 
-def _chunk(iterable, chunk_size):
-    # type: (Iterable[_T], int) -> Iterable[Sequence[_T]]
+def _chunk(iterable: Iterable[_T], chunk_size: int) -> Iterable[Sequence[_T]]:
     grouped = itertools.groupby(enumerate(iterable), lambda v: v[0] // chunk_size)
     return ([elem for ix, elem in group] for i, group in grouped)
 
 
-def merge_build_files(new_build_filename, annotation_build_filename, output_filename):
-    # type: (str, str, str) -> None
+def merge_build_files(
+    new_build_filename: str, annotation_build_filename: str, output_filename: str
+) -> None:
     batch_merge_build_files(
         [(new_build_filename, annotation_build_filename, output_filename)]
     )
 
 
-def batch_merge_build_files(file_list):
-    # type: (Sequence[Tuple[str, str, str]]) -> None
+def batch_merge_build_files(file_list: Sequence[Tuple[str, str, str]]) -> None:
     tool_path = runfiles.data_path(
         "@dbx_build_tools//go/src/dropbox/build_tools/build-merge/build-merge"
     )

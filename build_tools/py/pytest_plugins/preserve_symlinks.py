@@ -4,14 +4,15 @@
 # is bad because it usually escapes the sandbox.  If
 # https://github.com/pytest-dev/pytest/issues/5266 is ever fixed, we can probably get rid of this.
 
+from __future__ import annotations
+
 import pathlib
 
 import attr
 
 
 class _SymlinkPhilicPath(pathlib.PosixPath):
-    def realpath(self):
-        # type: () -> _SymlinkPhilicPath
+    def realpath(self) -> _SymlinkPhilicPath:
         return self
 
 

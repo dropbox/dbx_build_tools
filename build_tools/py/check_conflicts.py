@@ -9,8 +9,9 @@ from typing import Dict, List
 PIPLIB_SEPARATOR = "=" * 10
 
 
-def check_piplib_conflicts(output_file, namespace_pkgs, files):
-    # type: (str, List[str], List[str]) -> None
+def check_piplib_conflicts(
+    output_file: str, namespace_pkgs: List[str], files: List[str]
+) -> None:
     curr_piplib = None
 
     conflicts = {}  # type: Dict[str, str]
@@ -41,8 +42,7 @@ def check_piplib_conflicts(output_file, namespace_pkgs, files):
         f.write("No conflicts in merged piplib!")
 
 
-def main():
-    # type: () -> None
+def main() -> None:
     parser = argparse.ArgumentParser(fromfile_prefix_chars="@")
     parser.add_argument("-o", "--output-file", help="Name of file to write output to")
     parser.add_argument(

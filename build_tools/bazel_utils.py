@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import annotations, print_function
 
 import os
 import pipes
@@ -23,8 +23,9 @@ class NoSuchTargetError(BazelError):
 
 
 class BazelTarget(object):
-    def __init__(self, label, cwd=None, workspace=None):
-        # type: (str, Optional[str], Optional[str]) -> None
+    def __init__(
+        self, label: str, cwd: Optional[str] = None, workspace: Optional[str] = None
+    ) -> None:
         if ":" in label:
             self.name = label.lstrip("//").split(":")[-1]
         else:
@@ -44,15 +45,13 @@ class BazelTarget(object):
 
 
 class BazelRule(object):
-    def __init__(self, target, kind, output_targets):
-        # type: (str, str, List[Any]) -> None
+    def __init__(self, target: str, kind: str, output_targets: List[Any]) -> None:
         self.target = target
         self.kind = kind
         self.output_targets = output_targets
 
     @staticmethod
-    def from_xml_node(rule):
-        # type: (Any) -> BazelRule
+    def from_xml_node(rule: Any) -> BazelRule:
         return BazelRule(
             target=rule.getAttribute("name"),
             kind=rule.getAttribute("class"),
@@ -64,9 +63,12 @@ class BazelRule(object):
 
 
 def expand_bazel_target_dirs(
-    workspace, targets, normalize=True, require_build_file=True, cwd="."
-):
-    # type: (Text, Iterable[Any], bool, bool, Text) -> List[Any]
+    workspace: Text,
+    targets: Iterable[Any],
+    normalize: bool = True,
+    require_build_file: bool = True,
+    cwd: Text = ".",
+) -> List[Any]:
     """Expand the Bazel target syntax into a list of directories that
     represent Bazel targets. If normalize is 'False', replace '//' with
     the workspace.  If require_build_file is 'False', target directory without
@@ -83,15 +85,14 @@ def expand_bazel_target_dirs(
 
 
 def expand_bazel_targets(
-    workspace,
-    targets,
-    normalize=True,
-    require_build_file=True,
-    cwd=".",
-    allow_nonexistent_npm_folders=False,
-    expand_short_form_labels=False,
-):
-    # type: (Text, Iterable[Any], bool, bool, Text, bool, bool) -> List[Any]
+    workspace: Text,
+    targets: Iterable[Any],
+    normalize: bool = True,
+    require_build_file: bool = True,
+    cwd: Text = ".",
+    allow_nonexistent_npm_folders: bool = False,
+    expand_short_form_labels: bool = False,
+) -> List[Any]:
     matched = set()  # type: ignore[var-annotated]
     filtered = set()  # type: ignore[var-annotated]
     for target in targets:
@@ -125,15 +126,14 @@ def expand_bazel_targets(
 
 
 def _expand_bazel_target(
-    workspace,
-    target,
-    normalize=True,
-    require_build_file=True,
-    cwd=".",
-    allow_nonexistent_npm_folders=False,
-    expand_short_form_labels=False,
-):
-    # type: (Text, Any, bool, bool, Text, bool, bool) -> List[Any]
+    workspace: Text,
+    target: Any,
+    normalize: bool = True,
+    require_build_file: bool = True,
+    cwd: Text = ".",
+    allow_nonexistent_npm_folders: bool = False,
+    expand_short_form_labels: bool = False,
+) -> List[Any]:
     if target.endswith("..."):
         recursive = True
         target_dir = target[:-3]
@@ -191,16 +191,14 @@ def _expand_bazel_target(
     return targets
 
 
-def find_workspace(starting_dir=None):
-    # type: (Optional[str]) -> str
+def find_workspace(starting_dir: Optional[str] = None) -> str:
     """Return the path of the enclosing Bazel workspace."""
     if starting_dir is None:
         starting_dir = os.getcwd()
     return _find_parent_directory_containing(starting_dir, "WORKSPACE")
 
 
-def find_package_dir(starting_dir):
-    # type: (str) -> str
+def find_package_dir(starting_dir: str) -> str:
     """Return the path of the enclosing Bazel package."""
     try:
         return _find_parent_directory_containing(starting_dir, "BUILD")
@@ -208,8 +206,7 @@ def find_package_dir(starting_dir):
         return _find_parent_directory_containing(starting_dir, "BUILD.bazel")
 
 
-def find_workspace_and_package(test_path):
-    # type: (str) -> Tuple[str, str, str]
+def find_workspace_and_package(test_path: str) -> Tuple[str, str, str]:
     """Return the workspace and Bazel package containing the file `path`."""
     package_dir = _find_parent_directory_containing(test_path, "BUILD")
     workspace_dir = find_workspace(package_dir)
@@ -224,8 +221,7 @@ def find_workspace_and_package(test_path):
     return workspace_dir, package_dir, package
 
 
-def _find_parent_directory_containing(start, filename):
-    # type: (str, str) -> str
+def _find_parent_directory_containing(start: str, filename: str) -> str:
     """Given file or directory `start`, search upwards for `filename`.
 
     This can return the path `start` itself (if `start` is a directory),
@@ -248,8 +244,7 @@ def _find_parent_directory_containing(start, filename):
         path = next_directory_up
 
 
-def _tags_query(operator, tags):
-    # type: (str, Optional[Iterable[str]]) -> str
+def _tags_query(operator: str, tags: Optional[Iterable[str]]) -> str:
     assert operator in [
         "except",
         "intersect",
@@ -264,8 +259,7 @@ def _tags_query(operator, tags):
     return " ".join(queries)
 
 
-def check_output_silently(cmd):
-    # type: (List[str]) -> Text
+def check_output_silently(cmd: List[str]) -> Text:
     "similar to subprocess.check_output, but swallows stderr on success."
     proc = subprocess.Popen(
         cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True
@@ -288,9 +282,12 @@ def check_output_silently(cmd):
 # exclude_tags: tags to ignore.
 # require_tags: require all tags to be present.
 def targets_of_kinds_for_labels_xml(
-    bazel_bin_path, kinds, labels, exclude_tags=None, require_tags=None
-):
-    # type: (str, List[str], List[str], Optional[Iterable[str]], Optional[Iterable[str]]) -> Any
+    bazel_bin_path: str,
+    kinds: List[str],
+    labels: List[str],
+    exclude_tags: Optional[Iterable[str]] = None,
+    require_tags: Optional[Iterable[str]] = None,
+) -> Any:
     labels_string = " + ".join(labels)
     kinds_queries = ['kind("{}", {})'.format(k, labels_string) for k in kinds]
     bazel_cmd = [
@@ -312,9 +309,11 @@ def targets_of_kinds_for_labels_xml(
 # exclude_tags: a list of tags to exclude from the query
 # require_tags: a list of must have tags for the query
 def test_targets_for_labels(
-    bazel_bin_path, labels, exclude_tags=None, require_tags=None
-):
-    # type: (str, List[str], Optional[Iterable[str]], Optional[Iterable[str]]) -> List[Text]
+    bazel_bin_path: str,
+    labels: List[str],
+    exclude_tags: Optional[Iterable[str]] = None,
+    require_tags: Optional[Iterable[str]] = None,
+) -> List[Text]:
     bazel_cmd = [
         bazel_bin_path,
         "query",
@@ -333,19 +332,22 @@ def test_targets_for_labels(
 # //code/sfp:sfp.par
 # Return paths that should be archived based on simple heuristics.
 def outputs_for_label(
-    bazel_bin_path,  # type: str
-    target,  # type: str
-    bazel_args=None,  # type: Optional[List[str]]
-    bazel_query_args=None,  # type: Optional[List[str]]
-):
-    # type: (...) -> List[Text]
+    bazel_bin_path: str,
+    target: str,
+    bazel_args: Optional[List[str]] = None,
+    bazel_query_args: Optional[List[str]] = None,
+) -> List[Text]:
     return outputs_for_labels(bazel_bin_path, [target], bazel_args, bazel_query_args)[
         target
     ]
 
 
-def outputs_for_labels(bazel_bin_path, targets, bazel_args=None, bazel_query_args=None):
-    # type: (str, Iterable[str], Optional[Sequence[str]], Optional[Sequence[str]]) -> Dict[str, List[Text]]
+def outputs_for_labels(
+    bazel_bin_path: str,
+    targets: Iterable[str],
+    bazel_args: Optional[Sequence[str]] = None,
+    bazel_query_args: Optional[Sequence[str]] = None,
+) -> Dict[str, List[Text]]:
     # Some targets aren't named for their rule, which is a shame. This
     # is slow, but fortunately rare. Some targets don't actually have an
     # explict output, which is also unfortunate.
@@ -372,14 +374,12 @@ def outputs_for_labels(bazel_bin_path, targets, bazel_args=None, bazel_query_arg
     return _outputs_for_rules(rules)
 
 
-def _rules_from_xml_doc(xml_doc):
-    # type: (Any) -> List[Any]
+def _rules_from_xml_doc(xml_doc: Any) -> List[Any]:
     rules = xml_doc.getElementsByTagName("rule")
     return [BazelRule.from_xml_node(node) for node in rules]
 
 
-def _outputs_for_rules(rules):
-    # type: (List[BazelRule]) -> Dict[str, List[Text]]
+def _outputs_for_rules(rules: List[BazelRule]) -> Dict[str, List[Text]]:
     outputs = {}
     for rule in rules:
         target_outputs = _outputs_for_rule(rule)
@@ -388,8 +388,7 @@ def _outputs_for_rules(rules):
     return outputs
 
 
-def _outputs_for_rule(rule):
-    # type: (BazelRule) -> List[Text]
+def _outputs_for_rule(rule: BazelRule) -> List[Text]:
     # Some targets return outputs that don't get built or are not executable.
     ignore_extensions = [".stripped", ".dwp", ".a"]
 
@@ -420,8 +419,7 @@ def _outputs_for_rule(rule):
     return outputs
 
 
-def _rule_has_runfiles(rule):
-    # type: (BazelRule) -> bool
+def _rule_has_runfiles(rule: BazelRule) -> bool:
     extensions_without_runfiles = (".par", ".tar", ".sqfs", ".deb", ".tgz", ".zip")
 
     # TODO (T192829) Arguably we should be including all rules here (as either with or
@@ -435,8 +433,7 @@ def _rule_has_runfiles(rule):
     )
 
 
-def executable_for_label(target):
-    # type: (str) -> Text
+def executable_for_label(target: str) -> Text:
     if "//" in target:
         remote, target = target.split("//")
         remote = remote.lstrip("@")
@@ -459,8 +456,7 @@ def executable_for_label(target):
 
 # Scan for args that look like targets. We have to guess because I am
 # too lazy to parse bazel args correctly.
-def split_args_targets(argv):
-    # type: (List[str]) -> Tuple[List[str], List[str]]
+def split_args_targets(argv: List[str]) -> Tuple[List[str], List[str]]:
     args = []
     targets = []
     for x in argv:
@@ -471,21 +467,18 @@ def split_args_targets(argv):
     return args, targets
 
 
-def build_file_for_target(target):
-    # type: (str) -> str
+def build_file_for_target(target: str) -> str:
     target_dir = normalize_relative_target_to_os_path(target.lstrip("//").split(":")[0])
     return os.path.join(target_dir, "BUILD")
 
 
-def normalize_os_path_to_target(path):
-    # type: (str) -> str
+def normalize_os_path_to_target(path: str) -> str:
     """A simple helper function that converts OS-specific path separators
     to the forward slash "/" as is used in Bazel targets."""
     return path.replace(os.path.sep, "/")
 
 
-def normalize_relative_target_to_os_path(target):
-    # type: (str) -> str
+def normalize_relative_target_to_os_path(target: str) -> str:
     """A simple helper function that converts Bazel targets into paths
     with the appropriate OS-specific file separator (e.g. for use with os.path).
 
@@ -495,8 +488,7 @@ def normalize_relative_target_to_os_path(target):
     return target.replace("/", os.path.sep)
 
 
-def normalize_relative_target_to_absolute(package, target):
-    # type: (str, str) -> str
+def normalize_relative_target_to_absolute(package: str, target: str) -> str:
     """
     Given a target pattern that may be relative to a package (for example, ':my_lib' or 'tests/...') and an absolute package,
     return an absolute version of the target pattern.
@@ -516,8 +508,7 @@ def normalize_relative_target_to_absolute(package, target):
     )
 
 
-def normalize_relative_target_to_absolute_cwd(target):
-    # type: (str) -> str
+def normalize_relative_target_to_absolute_cwd(target: str) -> str:
     """
     Given a target pattern that may be relative to a package (for example, ':my_lib' or 'tests/...')
     return an absolute version of the target pattern. The current package is determined by looking
@@ -533,8 +524,7 @@ def normalize_relative_target_to_absolute_cwd(target):
 
 # If the target name is a short form label, convert it to a long form
 # Note: this only supports explicit label names
-def expand_short_form_label(target):
-    # type: (str) -> str
+def expand_short_form_label(target: str) -> str:
     if ":" in target:
         return target
     return target.rstrip(os.path.sep) + ":" + os.path.basename(os.path.normpath(target))
@@ -542,8 +532,12 @@ def expand_short_form_label(target):
 
 # A macro to build an internal tool in the background.
 # Returns a path to the executable.
-def build_tool(bazel_path, target, targets=(), squelch_output=True):
-    # type: (str, str, Sequence[str], bool) -> Text
+def build_tool(
+    bazel_path: str,
+    target: str,
+    targets: Sequence[str] = (),
+    squelch_output: bool = True,
+) -> Text:
     cmd = [bazel_path, "build", target] + list(targets)
     if os.environ.get("BZL_DEBUG"):
         print("exec:", " ".join(cmd), file=sys.stderr)
