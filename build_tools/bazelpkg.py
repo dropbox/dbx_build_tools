@@ -484,6 +484,7 @@ def cmd_pkg(args, bazel_args, mode_args):
     workspace_dir = bazel_utils.find_workspace()
     curdir = os.getcwd()
     os.chdir(workspace_dir)
+    os.umask(0o022)
     # Each target must be of type dbx_pkg_* just for sanity.
     for target_str in args.targets:
         target = bazel_utils.BazelTarget(target_str)
