@@ -335,6 +335,7 @@ def build_pip_archive(workdir):
             "tokenizers",
             "torch",
             "torchvision",
+            "torchaudio",
         ]
 
         return (
