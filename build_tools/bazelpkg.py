@@ -315,11 +315,13 @@ def _build_targets(
             "invalid target '%s' - must end with .%s"
             % (pkg_target.label, output_extension)
         )
-    # Treat data as our list of targets.
-    targets = [bazel_utils.BazelTarget(x) for x in data]
+    # Treat data as our list of targets. We pass the package as the cwd as this tool
+    # always executes in the workspace root, and this makes relative labels work.
+    targets = [bazel_utils.BazelTarget(x, cwd=pkg_target.package) for x in data]
 
     if targets:
-        bazel_cmd = [args.bazel_path] + bazel_args + ["build"] + mode_args + data
+        labels = [x.label for x in targets]
+        bazel_cmd = [args.bazel_path] + bazel_args + ["build"] + mode_args + labels
         subprocess.check_call(bazel_cmd)
 
     # ask bazel where bazel-bin and bazel-genfiles are, instead of relying on
