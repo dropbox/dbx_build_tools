@@ -64,7 +64,7 @@ def main() -> None:
     except subprocess.CalledProcessError as e:
         traceback.print_exc(file=sys.stderr)
         if e.output:
-            print(e.output.decode("utf-8"), file=sys.stderr)
+            print(e.output, file=sys.stderr)
         if os.environ.get("BZL_DEBUG"):
             raise
         sys.exit(e.returncode)
