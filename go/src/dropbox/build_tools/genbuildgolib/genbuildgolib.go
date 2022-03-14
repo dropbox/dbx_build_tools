@@ -529,7 +529,7 @@ func PopulatePackageInfo(workspace, goSrc, goPkgPath string) (*build.Package, er
 // to an underscore connected name, we use it to name the
 // the downloaded repo in our bazel cache
 // eg: "github.com/mattn/rune-width" -> "com_github_mattn_rune_width"
-func PathToExtRepoName(repoPath string) string {
+func PathToExtRepoName(repoPath string, majorVersion string) string {
 	urlSegments := strings.Split(repoPath, "/")
 	siteString := strings.Split(urlSegments[0], ".")
 	result := ""
@@ -543,5 +543,8 @@ func PathToExtRepoName(repoPath string) string {
 	result = strings.ReplaceAll(result, ".", "_")
 	result = strings.ReplaceAll(result, " ", "_")
 	result = strings.ReplaceAll(result, "-", "_")
+	if majorVersion != "" {
+		result += "_" + majorVersion
+	}
 	return result
 }

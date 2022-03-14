@@ -15,7 +15,7 @@ func TestPathToExtRepoName(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-		extRepoName := PathToExtRepoName(tc.input)
+		extRepoName := PathToExtRepoName(tc.input, "")
 		if tc.output != extRepoName {
 			t.Errorf("got %s, wanted %s", extRepoName, tc.output)
 		}

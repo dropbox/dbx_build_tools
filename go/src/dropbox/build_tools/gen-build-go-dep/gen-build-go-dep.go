@@ -92,7 +92,7 @@ func (g *DepConfigGenerator) createDeps(
 			for _, importPath := range gomodDepPaths {
 				if strings.HasPrefix(dep, importPath) {
 					if dep == importPath {
-						depName := genlib.PathToExtRepoName(importPath)
+						depName := genlib.PathToExtRepoName(importPath, "")
 						deps = append(deps, "@"+depName+"//:"+depName)
 						depIsInGoMod = true
 					} else {
@@ -100,8 +100,8 @@ func (g *DepConfigGenerator) createDeps(
 						if err != nil {
 							break
 						}
-						repoName := genlib.PathToExtRepoName(importPath)
-						depName := genlib.PathToExtRepoName(dep)
+						repoName := genlib.PathToExtRepoName(importPath, "")
+						depName := genlib.PathToExtRepoName(dep, "")
 						deps = append(deps, "@"+repoName+"//"+relativePath+":"+depName)
 						depIsInGoMod = true
 					}
@@ -112,7 +112,7 @@ func (g *DepConfigGenerator) createDeps(
 				continue
 			}
 		}
-		depName := genlib.PathToExtRepoName(dep)
+		depName := genlib.PathToExtRepoName(dep, "")
 		deps = append(deps, "@"+depName+"//:"+depName)
 	}
 	return deps
@@ -145,7 +145,7 @@ func (g *DepConfigGenerator) generateConfig(pkg *build.Package) error {
 		return err
 	}
 
-	name := genlib.PathToExtRepoName(g.moduleName)
+	name := genlib.PathToExtRepoName(g.moduleName, "")
 
 	var targetBuildPath string
 	targetBuildPath = ""
