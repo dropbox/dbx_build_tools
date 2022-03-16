@@ -129,7 +129,7 @@ func main() {
 	for i := shardId; i < len(tests); i += totalShards {
 		realTests = append(realTests, tests[i])
 	}
-	m := testing.MainStart(testdeps.TestDeps{}, realTests, benchmarks, examples)
+	m := testing.MainStart(testdeps.TestDeps{}, realTests, benchmarks, {{if .IsAtLeastGo1_18}}[]testing.InternalFuzzTarget{}, {{end}}examples)
 	{{if .TestMain}}
 	undertest.TestMain(m)
 	{{else}}
