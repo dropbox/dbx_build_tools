@@ -10,7 +10,7 @@ DEFAULT_EXTERNAL_URLS = {
     "bazel_skylib": ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.2.0/bazel-skylib-1.2.0.tar.gz"],
     "com_github_plougher_squashfs_tools": ["https://github.com/plougher/squashfs-tools/archive/4.4.tar.gz"],
     "cpython_38": ["https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz"],
-    "cpython_39": ["https://www.python.org/ftp/python/3.9.9/Python-3.9.9.tar.xz"],
+    "cpython_39": ["https://www.python.org/ftp/python/3.9.11/Python-3.9.11.tar.xz"],
     "go_1_16_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.16.7.linux-amd64.tar.gz"],
     "go_1_18_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.18.linux-amd64.tar.gz"],
     "io_pypa_pip_whl": ["https://files.pythonhosted.org/packages/54/0c/d01aa759fdc501a58f431eb594a17495f15b88da142ce14b5845662c13f3/pip-20.0.2-py2.py3-none-any.whl"],
@@ -66,9 +66,9 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "org_python_cpython_39",
         urls = urls["cpython_39"],
-        sha256 = "06828c04a573c073a4e51c4292a27c1be4ae26621c3edc7cf9318418ce3b6d27",
+        sha256 = "66767a35309d724f370df9e503c172b4ee444f49d62b98bc4eca725123e26c49",
         build_file = filename_from_label("@dbx_build_tools//thirdparty/cpython:BUILD.python39"),
-        strip_prefix = "Python-3.9.9",
+        strip_prefix = "Python-3.9.11",
     )
 
     http_archive(

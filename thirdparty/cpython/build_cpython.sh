@@ -18,7 +18,7 @@ if [[ "$ver" = "3.8" ]]; then
     pgo_task=("--pgo")
 elif [[ "$ver" = "3.9" ]]; then
     repo=org_python_cpython_39
-    version=3.9.9-dbx1
+    version=3.9.11-dbx1
     abitag=3.9
     pgo_task=("--pgo")
 fi
