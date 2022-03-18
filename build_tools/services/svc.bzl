@@ -748,7 +748,7 @@ def dbx_service_daemon(
     # Automatically verify that the service can start up correctly.
     test = Label("//build_tools/services:restart_test")
     if not idempotent:
-        test = Label("//build_tools:pass")
+        test = Label("//build_tools:pass_binary")
     dbx_services_test(
         name = name + "_service_test",
         test = test,
@@ -798,7 +798,7 @@ def dbx_service_task(
     # Automatically verify that the service can start up correctly.
     test = Label("//build_tools/services:restart_test")
     if not idempotent:
-        test = Label("//build_tools:pass")
+        test = Label("//build_tools:pass_binary")
     dbx_services_test(
         name = name + "_service_test",
         test = test,
@@ -831,7 +831,7 @@ def dbx_service_group(
     # Automatically verify that the service can start up correctly.
     test = Label("//build_tools/services:restart_test")
     if not idempotent:
-        test = Label("//build_tools:pass")
+        test = Label("//build_tools:pass_binary")
     dbx_services_test(
         name = name + "_service_test",
         test = test,
