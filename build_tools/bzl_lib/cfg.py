@@ -45,5 +45,6 @@ PIP_LOAD_STATEMENT = "load('@dbx_build_tools//build_tools/py:py.bzl', %s)" % (
 ### Go-related configuration.
 ###
 GO_RULE_TYPES = ("dbx_go_binary", "dbx_go_library", "dbx_go_test")
+GO_TEST_RULE = "dbx_go_test"
 
 WHITELISTED_GO_SRCS_PATHS: List[str] = []
