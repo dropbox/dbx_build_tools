@@ -82,7 +82,7 @@ go_toolchain = rule(
 SUPPORTED_GO_VERSIONS = ["1.16", "1.18"]
 DEFAULT_GO_VERSION = "1.16"
 DEFAULT_GO_LIBRARY_VERSIONS = ["1.16", "1.18"]
-DEFAULT_GO_TEST_VERSIONS = ["1.16"]
+DEFAULT_GO_TEST_VERSIONS = ["1.16", "1.18"]
 SUPPORTED_GO_TOOLCHAINS = [
     Label("//build_tools/go:go1.16"),
     Label("//build_tools/go:go1.18"),
@@ -314,6 +314,7 @@ def _dbx_go_generate_test_main_impl(ctx):
     gen_args = ctx.actions.args()
     gen_args.add("--package", package)
     gen_args.add("--output", ctx.outputs.test_main)
+    gen_args.add("--go-version", ctx.attr.go_version)
 
     if ctx.coverage_instrumented():
         gen_args.add("--cover")
@@ -1136,15 +1137,6 @@ def dbx_go_test(
     q_tags = process_quarantine_attr(quarantine)
     tags = tags + q_tags
 
-    test_main = name + "-test_main.go"
-    _dbx_go_generate_test_main(
-        name = name + "-gentest",
-        srcs = srcs,
-        test_main = test_main,
-        testonly = True,
-        module_name = module_name,
-    )
-
     # Generate test targets for each entry in `go_versions`, with the following pattern.
     # A test target in `//go/src/foo/bar` (typically, `bar_test) with `go_versions=['1.5', '1.6',
     # '1.8'], will generate 3 `dbx_go_test` targets.
@@ -1156,6 +1148,18 @@ def dbx_go_test(
     # //go/src/foo/bar:bar_test_1.5 will be created (this target shows up during bash autocompletion)
 
     for go_version in go_versions:
+        test_main_fmt = name + "-test_main-{}.go"
+        test_main_versioned = test_main_fmt.format(go_version)
+
+        _dbx_go_generate_test_main(
+            name = name + "-gentest-" + go_version,
+            srcs = srcs,
+            test_main = test_main_versioned,
+            testonly = True,
+            module_name = module_name,
+            go_version = go_version,
+        )
+
         versioned_name = name + "_" + go_version
 
         # We ensure we don't add alternative_go_version to at least one of the elements
@@ -1167,7 +1171,7 @@ def dbx_go_test(
         _dbx_gen_maybe_services_test(
             versioned_name,
             srcs = srcs,
-            test_main = test_main,
+            test_main = test_main_versioned,
             deps = deps,
             size = size,
             package = package,
