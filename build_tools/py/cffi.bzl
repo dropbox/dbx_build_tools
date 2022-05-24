@@ -125,7 +125,7 @@ def dbx_cffi_module(
         visibility = visibility,
         setup_requires = ["//pip/cffi"],
         ignore_missing_static_libraries = ignore_missing_static_libraries,
-        conly = conly,
+        enable_cxx = not conly,
         tags = tags,
         import_test_tags = import_test_tags,
     )
