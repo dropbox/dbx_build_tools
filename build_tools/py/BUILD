@@ -3,7 +3,7 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary")
+load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary", "dbx_py_binary")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 py_binary(
@@ -16,9 +16,10 @@ sh_binary(
     srcs = ["ldshared-wrapper.sh"],
 )
 
-py_binary(
+dbx_py_binary(
     name = "vpip",
     srcs = ["vpip.py"],
+    main = "vpip.py",
     data = [
         ":ldshared-wrapper",
         ":sanitizer-extra-runfiles",
@@ -31,7 +32,6 @@ py_binary(
         # testing of an unreleased build.
         # "@com_git_scm_git//:executables",
     ],
-    python_version = "PY3",
 )
 
 py_binary(
