@@ -13,6 +13,7 @@ import (
 	"unicode/utf8"
 	"os"
 	"path"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -30,6 +31,7 @@ type TestsContext struct {
 	CoverEnabled   bool
 	CoverVars      map[string]string
 	TestMain bool
+	IsAtLeastGo1_18 bool
 }
 
 func isTest(name, prefix string) bool {
@@ -71,7 +73,22 @@ func main() {
 	pkg := flag.String("package", "", "package from which to import test methods.")
 	cover := flag.Bool("cover", false, "if set, enable test coverage.")
 	out := flag.String("output", "", "output file to write. Defaults to stdout.")
+	goVersion := flag.String("go-version", "1.16", "the version of Go the tests are meant to run under")
 	flag.Parse()
+
+	versionRegex := regexp.MustCompile("(\\d+)[.](\\d+)")
+	matches := versionRegex.FindStringSubmatch(*goVersion)
+	if matches == nil {
+		log.Fatalf("Failed to parse Go version: %q", *goVersion)
+	}
+	versionMajor, err := strconv.Atoi(matches[1])
+	if err != nil {
+		log.Fatalf("Failed to parse Go major version: %q, %v", *goVersion, err)
+	}
+	versionMinor, err := strconv.Atoi(matches[2])
+	if err != nil {
+		log.Fatalf("Failed to parse Go minor version: %q, %v", *goVersion, err)
+	}
 
 	if *pkg == "" {
 		log.Fatal("must set --package.")
@@ -92,9 +109,11 @@ func main() {
 		}()
 	}
 
+	isAtLeastGo1_18 := versionMajor > 1 || (versionMajor == 1 && versionMinor >= 18)
 	context := TestsContext{
 		Package:      *pkg,
 		CoverEnabled: *cover,
+		IsAtLeastGo1_18: isAtLeastGo1_18,
 	}
 	testFileSet := token.NewFileSet()
 	coverFiles := make([]string, 0, len(flag.Args()))

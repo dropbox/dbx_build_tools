@@ -40,19 +40,25 @@ def main():
     stdin = "\n".join(stdin_lines)
     if stdin:
         junit_template = """
+        <?xml version="1.0" encoding="UTF-8"?>
         <testsuite tests="1" time="%(duration).3f">
           <testcase classname="%(classname)s" name="%(testname)s" time="%(duration).3f">
             <failure type="test failed">%(input)s</failure>
           </testcase>
         </testsuite>
-        """
+        """.strip().replace(
+            "\n", ""
+        )
         exit_code = 1
     else:
         junit_template = """
+        <?xml version="1.0" encoding="UTF-8"?>
         <testsuite tests="1" time="%(duration).3f">
           <testcase classname="%(classname)s" name="%(testname)s" time="%(duration).3f" />
         </testsuite>
-        """
+        """.strip().replace(
+            "\n", ""
+        )
         exit_code = 0
 
     output_file = os.environ.get("XML_OUTPUT_FILE", "/dev/null")

@@ -67,8 +67,17 @@ selects.config_setting_group(
 """
 
 
-def test_parse_basic_build_file():
-    # type: () -> None
+BUILD_WITH_ARGS = """
+exports_files(
+    ['test.json'],
+    visibility = 'public',
+)
+
+rule1(name = "rule1")
+"""
+
+
+def test_parse_basic_build_file() -> None:
     """Ensures that we can parse simple BUILD files."""
     bp = build_parser.parse(BUILD_WITHOUT_SELECT)
 
@@ -86,8 +95,7 @@ def test_parse_basic_build_file():
     assert rule2_rules[0].attr_map["srcs"] == ["y", "z"]
 
 
-def test_build_with_select():
-    # type: () -> None
+def test_build_with_select() -> None:
     """Ensures that we can parse BUILD files with select() clauses,
     and that they are appropriately preserved in rules."""
     bp = build_parser.parse(BUILD_WITH_SELECT)
@@ -116,8 +124,7 @@ def test_build_with_select():
     assert select_item.select_map["//conditions:linux"] == ["linux1"]
 
 
-def test_select_aware_repr():
-    # type: () -> None
+def test_select_aware_repr() -> None:
     """Ensures that we can get a Starlark-valid string representation of a select()
     clause."""
     bp = build_parser.parse(BUILD_WITH_SELECT)
@@ -156,8 +163,7 @@ def test_select_aware_repr():
     assert new_select_item.select_map["//conditions:linux"] == ["linux1"]
 
 
-def test_build_with_structs():
-    # type: () -> None
+def test_build_with_structs() -> None:
     """Ensures that build_parser doesn't choke on BUILD files that load
     structs."""
     bp = build_parser.parse(BUILD_WITH_STRUCT)
@@ -165,3 +171,14 @@ def test_build_with_structs():
     rule = bp.get_rule("perfect-day")
     assert rule.rule_type == "selects.config_setting_group"
     assert rule.attr_map["match_all"] == [":warm", ":sunny"]
+
+
+def test_build_with_exports_files() -> None:
+    """Ensures that build_parser can handle rules with position arguments."""
+    bp = build_parser.parse(BUILD_WITH_ARGS)
+
+    assert len(bp.get_all_rules()) == 2
+    rule = bp.get_all_rules()[0]
+    assert rule.rule_type == "exports_files"
+    assert rule.args == (["test.json"],)
+    assert bp.get_rule("rule1").args == ()

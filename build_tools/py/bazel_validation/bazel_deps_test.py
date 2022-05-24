@@ -20,8 +20,6 @@ def test_flatten_provides() -> None:
 
 def test_validate_bazel_deps_valid() -> None:
     result = validate_bazel_deps(
-        py2_compatible=False,
-        py3_compatible=True,
         imports=[
             Import(
                 module="dropbox.runfiles",
@@ -49,8 +47,6 @@ def test_validate_bazel_deps_valid() -> None:
 
 def test_validate_bazel_deps_valid_with_identifier() -> None:
     result = validate_bazel_deps(
-        py2_compatible=False,
-        py3_compatible=True,
         imports=[
             Import(
                 module="dropbox.runfiles.data_path",
@@ -73,8 +69,6 @@ def test_validate_bazel_deps_valid_with_identifier() -> None:
 
 def test_validate_bazel_deps_invalid_with_identifier() -> None:
     result = validate_bazel_deps(
-        py2_compatible=False,
-        py3_compatible=True,
         imports=[
             Import(
                 module="dropbox.runfiles.data_path",
@@ -99,8 +93,6 @@ def test_validate_bazel_deps_invalid_with_identifier() -> None:
 
 def test_validate_bazel_deps_unused_target() -> None:
     result = validate_bazel_deps(
-        py2_compatible=False,
-        py3_compatible=True,
         imports=[
             Import(
                 module="asyncio",
@@ -123,8 +115,6 @@ def test_validate_bazel_deps_unused_target() -> None:
 
 def test_validate_bazel_deps_unused_target_prefix() -> None:
     result = validate_bazel_deps(
-        py2_compatible=False,
-        py3_compatible=True,
         imports=[
             Import(
                 module="dropbox.runfiles",
@@ -147,8 +137,6 @@ def test_validate_bazel_deps_unused_target_prefix() -> None:
 
 def test_validate_bazel_deps_unresolved_import() -> None:
     result = validate_bazel_deps(
-        py2_compatible=False,
-        py3_compatible=True,
         imports=[
             Import(
                 module="dropbox.runfiles",
@@ -174,14 +162,6 @@ def test_validate_bazel_deps_unresolved_import() -> None:
     assert not result.unused_targets
 
 
-PY2_FILE_CONTENT = b"""
-from dropbox.runfiles import data_path
-import grpc
-
-print('py2 only')
-"""
-
-
 PY3_FILE_CONTENT = b"""
 from dropbox.runfiles import data_path
 import grpc
@@ -204,19 +184,8 @@ class MockPath:
         return c()
 
 
-def test_parse_imports_py2() -> None:
-    imports = parse_imports(
-        source_file=cast(Path, MockPath(PY2_FILE_CONTENT)),
-        py2_compatible=True,
-        py3_compatible=False,
-    )
-    assert set(i.module for i in imports) == set(["dropbox.runfiles.data_path", "grpc"])
-
-
-def test_parse_imports_py3() -> None:
+def test_parse_imports() -> None:
     imports = parse_imports(
         source_file=cast(Path, MockPath(PY3_FILE_CONTENT)),
-        py2_compatible=False,
-        py3_compatible=True,
     )
     assert set(i.module for i in imports) == set(["dropbox.runfiles.data_path", "grpc"])

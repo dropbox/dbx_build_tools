@@ -7,22 +7,23 @@ def filename_from_label(label):
 
 DEFAULT_EXTERNAL_URLS = {
     "abseil_py": ["https://github.com/abseil/abseil-py/archive/pypi-v0.7.1.tar.gz"],
-    "bazel_skylib": ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.0.2/bazel-skylib-1.0.2.tar.gz"],
+    "bazel_skylib": ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.2.0/bazel-skylib-1.2.0.tar.gz"],
     "com_github_plougher_squashfs_tools": ["https://github.com/plougher/squashfs-tools/archive/4.4.tar.gz"],
-    "cpython_27": ["https://www.python.org/ftp/python/2.7.17/Python-2.7.17.tar.xz"],
-    "cpython_38": ["https://www.python.org/ftp/python/3.8.1/Python-3.8.1.tar.xz"],
-    "go_1_16_7_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.16.7.linux-amd64.tar.gz"],
+    "cpython_39": ["https://www.python.org/ftp/python/3.9.11/Python-3.9.11.tar.xz"],
+    "go_1_16_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.16.7.linux-amd64.tar.gz"],
+    "go_1_18_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.18.linux-amd64.tar.gz"],
     "io_pypa_pip_whl": ["https://files.pythonhosted.org/packages/54/0c/d01aa759fdc501a58f431eb594a17495f15b88da142ce14b5845662c13f3/pip-20.0.2-py2.py3-none-any.whl"],
-    "io_pypa_setuptools_whl": ["https://files.pythonhosted.org/packages/f9/d3/955738b20d3832dfa3cd3d9b07e29a8162edb480bf988332f5e6e48ca444/setuptools-44.0.0-py2.py3-none-any.whl"],
+    "io_pypa_setuptools_whl": ["https://files.pythonhosted.org/packages/11/b9/adac241e2c4aca7ae4ddd86d3c18227667665b6e7eac550695bfc50c7e3d/setuptools-60.6.0-py3-none-any.whl"],
     "io_pypa_wheel_whl": ["https://files.pythonhosted.org/packages/8c/23/848298cccf8e40f5bbb59009b32848a4c38f4e7f3364297ab3c3e2e2cd14/wheel-0.34.2-py2.py3-none-any.whl"],
     "lz4": ["https://github.com/lz4/lz4/archive/v1.9.3.tar.gz"],
+    "mypy": ["https://github.com/python/mypy/archive/8650f5c2eedc26f11b6f5c35cf0c0d752aaf51fb.tar.gz"],
     "net_zlib": ["http://zlib.net/zlib-1.2.11.tar.gz"],
     "org_bzip_bzip2": ["https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"],
     "org_gnu_ncurses": ["https://invisible-mirror.net/archives/ncurses/ncurses-6.2.tar.gz"],
     "org_gnu_readline": ["https://ftp.gnu.org/gnu/readline/readline-8.1.tar.gz"],
-    "org_openssl": ["https://www.openssl.org/source/openssl-1.1.1l.tar.gz"],
+    "org_openssl": ["https://www.openssl.org/source/openssl-1.1.1n.tar.gz"],
     "org_sourceware_libffi": ["https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz"],
-    "org_sqlite": ["https://sqlite.org/2021/sqlite-amalgamation-3360000.zip"],
+    "org_sqlite": ["https://www.sqlite.org/2022/sqlite-amalgamation-3380100.zip"],
     "org_tukaani": ["https://downloads.sourceforge.net/project/lzmautils/xz-5.2.5.tar.xz"],
     "rules_pkg": ["https://github.com/bazelbuild/rules_pkg/releases/download/0.2.6-1/rules_pkg-0.2.6.tar.gz"],
     "six_archive": ["https://pypi.python.org/packages/b3/b2/238e2590826bfdd113244a40d9d3eb26918bd798fc187e2360a8367068db/six-1.10.0.tar.gz"],
@@ -32,9 +33,16 @@ DEFAULT_EXTERNAL_URLS = {
 
 def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
-        name = "go_1_16_7_linux_amd64_tar_gz",
-        urls = urls["go_1_16_7_linux_amd64_tar_gz"],
+        name = "go_1_16_linux_amd64_tar_gz",
+        urls = urls["go_1_16_linux_amd64_tar_gz"],
         sha256 = "7fe7a73f55ba3e2285da36f8b085e5c0159e9564ef5f63ee0ed6b818ade8ef04",
+        build_file = filename_from_label("//build_tools/go:BUILD.go-dist"),
+    )
+
+    http_archive(
+        name = "go_1_18_linux_amd64_tar_gz",
+        urls = urls["go_1_18_linux_amd64_tar_gz"],
+        sha256 = "e85278e98f57cdb150fe8409e6e5df5343ecb13cebf03a5d5ff12bd55a80264f",
         build_file = filename_from_label("//build_tools/go:BUILD.go-dist"),
     )
 
@@ -47,19 +55,11 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
     )
 
     http_archive(
-        name = "org_python_cpython_27",
-        urls = urls["cpython_27"],
-        sha256 = "4d43f033cdbd0aa7b7023c81b0e986fd11e653b5248dac9144d508f11812ba41",
-        build_file = filename_from_label("@dbx_build_tools//thirdparty/cpython:BUILD.python27"),
-        strip_prefix = "Python-2.7.17",
-    )
-
-    http_archive(
-        name = "org_python_cpython_38",
-        urls = urls["cpython_38"],
-        sha256 = "75894117f6db7051c1b34f37410168844bbb357c139a8a10a352e9bf8be594e8",
-        build_file = filename_from_label("@dbx_build_tools//thirdparty/cpython:BUILD.python38"),
-        strip_prefix = "Python-3.8.1",
+        name = "org_python_cpython_39",
+        urls = urls["cpython_39"],
+        sha256 = "66767a35309d724f370df9e503c172b4ee444f49d62b98bc4eca725123e26c49",
+        build_file = filename_from_label("@dbx_build_tools//thirdparty/cpython:BUILD.python39"),
+        strip_prefix = "Python-3.9.11",
     )
 
     http_archive(
@@ -73,7 +73,7 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "bazel_skylib",
         urls = urls["bazel_skylib"],
-        sha256 = "97e70364e9249702246c0e9444bccdc4b847bed1eb03c5a3ece4f83dfe6abc44",
+        sha256 = "af87959afe497dc8dfd4c6cb66e1279cb98ccc84284619ebfec27d9c09a903de",
     )
 
     pypi_core_deps(urls)
@@ -145,16 +145,16 @@ def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "org_openssl",
         urls = urls["org_openssl"],
-        sha256 = "0b7a3e5e59c34827fe0c3a74b7ec8baef302b98fa80088d7f9153aa16fa76bd1",
-        strip_prefix = "openssl-1.1.1l",
+        sha256 = "40dceb51a4f6a5275bde0e6bf20ef4b91bfc32ed57c0552e2e8e15463372b17a",
+        strip_prefix = "openssl-1.1.1n",
         build_file = filename_from_label("//thirdparty/openssl:BUILD.openssl"),
     )
 
     http_archive(
         name = "org_sqlite",
         urls = urls["org_sqlite"],
-        sha256 = "999826fe4c871f18919fdb8ed7ec9dd8217180854dd1fe21eea96aed36186729",
-        strip_prefix = "sqlite-amalgamation-3360000",
+        sha256 = "6fb55507d4517b5cbc80bd2db57b0cbe1b45880b28f2e4bd6dca4cfe3716a231",
+        strip_prefix = "sqlite-amalgamation-3380100",
         build_file = filename_from_label("//thirdparty/sqlite:BUILD.sqlite"),
     )
 
@@ -186,8 +186,8 @@ def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_file(
         name = "io_pypa_setuptools_whl",
         urls = urls["io_pypa_setuptools_whl"],
-        downloaded_file_path = "setuptools-44.0.0-py2.py3-none-any.whl",
-        sha256 = "180081a244d0888b0065e18206950d603f6550721bd6f8c0a10221ed467dd78e",
+        downloaded_file_path = "setuptools-60.6.0-py3-none-any.whl",
+        sha256 = "c99207037c38984eae838c2fd986f39a9ddf4fabfe0fddd957e622d1d1dcdd05",
     )
 
     http_file(
@@ -203,4 +203,14 @@ def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
         urls = urls["ducible"],
         sha256 = "b90d636b6ee08768cd198e00f007a25b91bc1be279d417bdd3d476296060b7da",
         build_file_content = """exports_files(["ducible.exe"])""",
+    )
+
+    # Version is also encoded in //thirdparty/mypy:mypy pip_version attribute, keep in sync.
+    http_archive(
+        name = "mypy",
+        urls = urls["mypy"],
+        sha256 = "ecac469c97ed69880d4783452475f622406fe681de5a79dea50b03d8b5bd788a",
+        strip_prefix = "mypy-8650f5c2eedc26f11b6f5c35cf0c0d752aaf51fb",
+        build_file = filename_from_label("//thirdparty/mypy:BUILD.mypy"),
+        patches = [filename_from_label("//thirdparty/mypy:version.patch")],
     )

@@ -10,6 +10,7 @@ dbx_go_library(
         "service_grpc.pb.go",
     ],
     visibility = [
+        "//go/src/atlas:__subpackages__",
         "//go/src/dropbox:__subpackages__",
     ],
     deps = [

@@ -9,8 +9,7 @@ from build_tools.bzl_lib import commands, core, metrics
 from build_tools.bzl_lib.itest import itest
 
 
-def main():
-    # type: () -> None
+def main() -> None:
     ap, sp = core.create_parser()
 
     commands.register_cmd_bazel(sp)

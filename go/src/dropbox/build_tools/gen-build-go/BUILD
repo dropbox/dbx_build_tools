@@ -12,9 +12,8 @@ dbx_go_binary(
         "//visibility:public",
     ],
     deps = [
-        "//go/src/github.com/bazelbuild/buildtools/build",
+        "//go/src/dropbox/build_tools/genbuildgolib",
+        "//go/src/dropbox/devtools/gomodlib",
         "//go/src/github.com/bazelbuild/buildtools/wspace",
-        "//go/src/golang.org/x/mod/modfile",
-        "//go/src/golang.org/x/mod/module",
     ],
 )

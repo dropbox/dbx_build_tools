@@ -54,48 +54,26 @@ filegroup(
     visibility = ["//visibility:public"],
 )
 
-# All Python 2.7 dbx_py_binarys implicitly depend on this target in
-# order to 1) provide the import hook that loads our custom pycs 2)
-# pick up Bazel's magic builtin __init__.py generation behavior.
-py_binary(
-    name = "dbx_importer",
-    srcs = [":dbx_importer_lib"],
-    python_version = "PY2",
-)
-
-py_library(
-    name = "dbx_importer_lib",
-    srcs = ["dbx_importer.py"],
-    srcs_version = "PY2ONLY",
-)
-
-dbx_internal_bootstrap_py_binary(
-    name = "dbx_compile",
-    srcs = ["dbx_compile.py"],
-    main = "dbx_compile.py",
-    deps = [
-        ":dbx_importer",
-    ],
-)
-
 dbx_internal_bootstrap_py_binary(
     name = "py3_compile",
     srcs = ["py3_compile.py"],
     main = "py3_compile.py",
-    python2_compatible = False,
-    python3_compatible = True,
-)
-
-toolchain_type(
-    name = "toolchain_27",
-)
-
-toolchain_type(
-    name = "toolchain_37",
 )
 
 toolchain_type(
     name = "toolchain_38",
+)
+
+toolchain_type(
+    name = "toolchain_39",
+)
+
+toolchain_type(
+    name = "mypy_toolchain_38",
+)
+
+toolchain_type(
+    name = "mypy_toolchain_39",
 )
 
 bzl_library(
@@ -107,12 +85,6 @@ bzl_library(
         "//build_tools/bazel:bazel_bzl",
         "//build_tools/windows:windows_bzl",
     ],
-)
-
-dbx_py_library(
-    name = "python_encoding",
-    srcs = ["python_encoding.py"],
-    python2_compatible = False,
 )
 
 exports_files(["import_check.py"])

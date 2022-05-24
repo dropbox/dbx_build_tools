@@ -13,8 +13,6 @@ dbx_py_library(
     srcs = [
         "atomic.py",
     ],
-    python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         "//pip/typing",
@@ -27,8 +25,6 @@ dbx_py_library(
         "bazel_utils.py",
         "npm_utils.py",
     ],
-    python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         "//pip/typing",
@@ -40,7 +36,6 @@ dbx_py_pytest_test(
     srcs = [
         "npm_utils_tests.py",
     ],
-    python3_compatible = True,
     deps = [
         ":bazel_utils",
     ],
@@ -49,8 +44,6 @@ dbx_py_pytest_test(
 dbx_py_library(
     name = "bazelpkg",
     srcs = ["bazelpkg.py"],
-    python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [
         ":bazel_utils",
@@ -67,8 +60,6 @@ dbx_py_library(
     ],
     # This must not have further dependencies.
     autogen_deps = False,
-    python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = ["//pip/typing"],
 )
@@ -76,7 +67,6 @@ dbx_py_library(
 dbx_py_pytest_test(
     name = "build_parser_tests",
     srcs = ["build_parser_tests.py"],
-    python2_compatible = True,
     deps = [
         ":build_parser_lib",
     ],
@@ -88,7 +78,6 @@ dbx_py_binary(
         "bzl.py",
     ],
     main = "bzl.py",
-    python2_compatible = False,
     deps = [
         "//build_tools/bzl_lib:commands",
         "//build_tools/bzl_lib:core",
@@ -103,7 +92,6 @@ dbx_py_binary(
         "bzl-gen.py",
     ],
     main = "bzl-gen.py",
-    python2_compatible = False,
     deps = [
         ":bazel_utils",
         "//build_tools/bzl_lib:gazel_lib",
@@ -116,8 +104,16 @@ dbx_py_binary(
     name = "stdin_to_junit",
     srcs = ["stdin_to_junit.py"],
     main = "stdin_to_junit.py",
-    python2_compatible = False,
-    python3_compatible = True,
+)
+
+dbx_py_pytest_test(
+    name = "stdin_to_junit_tests",
+    srcs = ["stdin_to_junit_tests.py"],
+    data = ["//build_tools:stdin_to_junit"],
+    deps = [
+        "//dropbox:runfiles",
+        "//pip/pytest",
+    ],
 )
 
 dbx_py_library(
@@ -125,7 +121,6 @@ dbx_py_library(
     srcs = ["whatpyver.py"],
     # This must not have further dependencies.
     autogen_deps = False,
-    python2_compatible = False,
     validate = "strict",
     deps = [":build_parser_lib"],
 )
@@ -134,7 +129,6 @@ dbx_py_binary(
     name = "whatpyver",
     srcs = ["whatpyver.py"],
     main = "whatpyver.py",
-    python2_compatible = False,
     deps = [
         ":build_parser_lib",
         "//pip/typing",
@@ -258,7 +252,6 @@ dbx_py_dbx_test(
         "${XML_OUTPUT_FILE:-/dev/null}",
     ],
     pip_main = "@dbx_build_tools//pip/pytest",
-    python3_compatible = True,
     deps = [
         ":bazel_utils",
         "@dbx_build_tools//pip/pytest",
@@ -288,9 +281,12 @@ cc_binary(
     srcs = ["exit0.c"],
 )
 
-cc_test(
+# `pass` used to be a `cc_test` but starting with Bazel 5.0.0 we ran into conflicting actions issues due
+# to this test target being added as a dependency to other test and non-test targets.
+# See this issue for more info: see https://github.com/bazelbuild/bazel/issues/14294.
+sh_test(
     name = "pass",
-    srcs = ["exit0.c"],
+    srcs = ["exit0.sh"],
 )
 
 dbx_sh_binary(

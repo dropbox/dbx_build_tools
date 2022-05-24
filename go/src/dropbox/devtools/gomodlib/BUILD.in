@@ -1,0 +1,6 @@
+dbx_go_test(
+    name = "gomodlib_test",
+    data = [
+        "//go/src/dropbox/devtools/gomodlib/fixtures:go.mod",
+    ],
+)

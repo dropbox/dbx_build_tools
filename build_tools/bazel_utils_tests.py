@@ -146,9 +146,28 @@ def test_outputs_for_rules():
     assert len(outputs_map.keys()) == 3
 
 
-def test_normalize_relative_target_to_absolute():
-    # type: () -> None
+def test_normalize_relative_target_to_absolute() -> None:
     norm = bazel_utils.normalize_relative_target_to_absolute
     assert norm("foo/bar", "actions/...") == "//foo/bar/actions/..."
     assert norm("foo/bar", ":baz") == "//foo/bar:baz"
     assert norm("foo/bar", "../wat:baz") == "//foo/wat:baz"
+
+
+def test_expand_short_form_label() -> None:
+    expand = bazel_utils.expand_short_form_label
+
+    # relative
+    assert expand("foo/bar:baz") == "foo/bar:baz"
+    assert expand("foo/bar") == "foo/bar:bar"
+    assert expand("foo/bar/") == "foo/bar:bar"
+
+    # absolute
+    assert expand("//foo/bar:baz") == "//foo/bar:baz"
+    assert expand("//foo/bar") == "//foo/bar:bar"
+    assert expand("//foo/bar/") == "//foo/bar:bar"
+
+    # no subdirectory
+    assert expand("foo") == "foo:foo"
+    assert expand("//foo") == "//foo:foo"
+    assert expand("foo:bar") == "foo:bar"
+    assert expand("//foo:bar") == "//foo:bar"

@@ -29,8 +29,7 @@ def get_generators() -> Sequence[Callable[..., Generator]]:
     return generators
 
 
-def main():
-    # type: () -> None
+def main() -> None:
     ap = argparse.ArgumentParser(
         "bzl-gen", epilog=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
@@ -65,7 +64,7 @@ def main():
     except subprocess.CalledProcessError as e:
         traceback.print_exc(file=sys.stderr)
         if e.output:
-            print(e.output.decode("utf-8"), file=sys.stderr)
+            print(e.output, file=sys.stderr)
         if os.environ.get("BZL_DEBUG"):
             raise
         sys.exit(e.returncode)

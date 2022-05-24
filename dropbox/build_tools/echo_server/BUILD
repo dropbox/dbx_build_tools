@@ -10,7 +10,6 @@ dbx_py_binary(
     name = "echo_server",
     srcs = ["echo_server.py"],
     main = "echo_server.py",
-    python2_compatible = False,
 )
 
 # this is used by a `bzl itest` tutorial
@@ -18,7 +17,6 @@ dbx_py_binary(
     name = "echo_client",
     srcs = ["echo_client.py"],
     main = "echo_client.py",
-    python2_compatible = False,
 )
 
 # this is used by a `bzl itest` tutorial

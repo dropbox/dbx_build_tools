@@ -3,7 +3,12 @@ import os
 from typing import Dict, Iterable, List, Set
 
 from build_tools import bazel_utils, build_parser
-from build_tools.bzl_lib.cfg import BUILD_INPUT, GO_RULE_TYPES, WHITELISTED_GO_SRCS_PATHS
+from build_tools.bzl_lib.cfg import (
+    BUILD_INPUT,
+    GO_RULE_TYPES,
+    GO_TEST_RULE,
+    WHITELISTED_GO_SRCS_PATHS,
+)
 from build_tools.bzl_lib.generator import Config, Generator
 from build_tools.bzl_lib.run import run_cmd
 
@@ -102,9 +107,15 @@ class GoBuildGenerator(Generator):
                         "Do not specify `srcs` in %s - "
                         "these are autoinferred by `bzl gen`" % bzl_path
                     )
-                    assert "go_versions" not in rule.attr_map, (
+                    assert (
+                        rule.rule_type == GO_TEST_RULE
+                        or "go_versions" not in rule.attr_map
+                    ), (
                         "Do not specify `go_versions` in %s - "
-                        "code should build with all supported Go versions." % bzl_path
+                        "code should build with all supported Go versions."
+                        "Only dbx_go_tests are allowed to specify Go versions, "
+                        "but this should only be used when absolutely necessary."
+                        % bzl_path
                     )
             else:
                 print(line)

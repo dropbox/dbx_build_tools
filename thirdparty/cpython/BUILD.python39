@@ -11,14 +11,15 @@ PY_COPTS = [
 ]
 
 CORE_DEFINES = [
-    '-DVERSION=\\"3.8\\"',
+    '-DVERSION=\\"3.9\\"',
     '-DVPATH=\\"external/%s\\"' % (repository_name()[1:],),
     '-DPREFIX=\\"/usr\\"',
     '-DEXEC_PREFIX=\\"/usr\\"',
     '-DPYTHONPATH=\\":plat-linux:lib-tk:lib-old\\"',
     '-DPLATFORM=\\"linux\\"',
-    '-DSOABI=\\"cpython-38-x86_64-linux-gnu\\"',
+    '-DSOABI=\\"cpython-39-x86_64-linux-gnu\\"',
     '-DABIFLAGS=\\"\\"',
+    '-DPLATLIBDIR=\\"lib\\"',
 ]
 
 # Flags for building the core python executable (i.e., not a shared extension).
@@ -40,7 +41,6 @@ PUBLIC_PYTHON_HEADERS = [
     "Include/bltinmodule.h",
     "Include/boolobject.h",
     "Include/bytearrayobject.h",
-    "Include/bytes_methods.h",
     "Include/bytesobject.h",
     "Include/cellobject.h",
     "Include/ceval.h",
@@ -53,16 +53,17 @@ PUBLIC_PYTHON_HEADERS = [
     "Include/datetime.h",
     "Include/descrobject.h",
     "Include/dictobject.h",
-    "Include/dtoa.h",
     "Include/dynamic_annotations.h",
     "Include/enumobject.h",
     "Include/errcode.h",
     "Include/eval.h",
+    "Include/exports.h",
     "Include/fileobject.h",
     "Include/fileutils.h",
     "Include/floatobject.h",
     "Include/frameobject.h",
     "Include/funcobject.h",
+    "Include/genericaliasobject.h",
     "Include/genobject.h",
     "Include/graminit.h",
     "Include/grammar.h",
@@ -98,6 +99,7 @@ PUBLIC_PYTHON_HEADERS = [
     "Include/pyerrors.h",
     "Include/pyexpat.h",
     "Include/pyfpe.h",
+    "Include/pyframe.h",
     "Include/pyhash.h",
     "Include/pylifecycle.h",
     "Include/pymacconfig.h",
@@ -134,10 +136,19 @@ PUBLIC_PYTHON_HEADERS = [
 
 PUBLIC_CPYTHON_HEADERS = [
     "Include/cpython/abstract.h",
+    "Include/cpython/bytearrayobject.h",
+    "Include/cpython/bytesobject.h",
+    "Include/cpython/ceval.h",
+    "Include/cpython/code.h",
     "Include/cpython/dictobject.h",
     "Include/cpython/fileobject.h",
+    "Include/cpython/fileutils.h",
+    "Include/cpython/frameobject.h",
+    "Include/cpython/import.h",
     "Include/cpython/initconfig.h",
     "Include/cpython/interpreteridobject.h",
+    "Include/cpython/listobject.h",
+    "Include/cpython/methodobject.h",
     "Include/cpython/object.h",
     "Include/cpython/objimpl.h",
     "Include/cpython/pyerrors.h",
@@ -151,17 +162,27 @@ PUBLIC_CPYTHON_HEADERS = [
 ]
 
 PRIVATE_PYTHON_HEADERS = [
+    "Include/internal/pegen_interface.h",
+    "Include/internal/pycore_abstract.h",
     "Include/internal/pycore_accu.h",
     "Include/internal/pycore_atomic.h",
+    "Include/internal/pycore_bytes_methods.h",
+    "Include/internal/pycore_byteswap.h",
+    "Include/internal/pycore_call.h",
     "Include/internal/pycore_ceval.h",
     "Include/internal/pycore_code.h",
     "Include/internal/pycore_condvar.h",
     "Include/internal/pycore_context.h",
+    "Include/internal/pycore_dtoa.h",
     "Include/internal/pycore_fileutils.h",
+    "Include/internal/pycore_gc.h",
     "Include/internal/pycore_getopt.h",
     "Include/internal/pycore_gil.h",
     "Include/internal/pycore_hamt.h",
+    "Include/internal/pycore_hashtable.h",
+    "Include/internal/pycore_import.h",
     "Include/internal/pycore_initconfig.h",
+    "Include/internal/pycore_interp.h",
     "Include/internal/pycore_object.h",
     "Include/internal/pycore_pathconfig.h",
     "Include/internal/pycore_pyerrors.h",
@@ -169,6 +190,8 @@ PRIVATE_PYTHON_HEADERS = [
     "Include/internal/pycore_pylifecycle.h",
     "Include/internal/pycore_pymem.h",
     "Include/internal/pycore_pystate.h",
+    "Include/internal/pycore_runtime.h",
+    "Include/internal/pycore_sysmodule.h",
     "Include/internal/pycore_traceback.h",
     "Include/internal/pycore_tupleobject.h",
     "Include/internal/pycore_warnings.h",
@@ -179,22 +202,22 @@ PYTHON_HEADERS = PUBLIC_PYTHON_HEADERS + PUBLIC_CPYTHON_HEADERS + PRIVATE_PYTHON
 genrule(
     name = "include_public_headers",
     srcs = PUBLIC_PYTHON_HEADERS,
-    outs = ["include/python3.8/" + h.partition("/")[2] for h in PUBLIC_PYTHON_HEADERS],
-    cmd = "cp $(SRCS) $(RULEDIR)/include/python3.8/",
+    outs = ["include/python3.9/" + h.partition("/")[2] for h in PUBLIC_PYTHON_HEADERS],
+    cmd = "cp $(SRCS) $(RULEDIR)/include/python3.9/",
 )
 
 genrule(
     name = "include_public_cpython_headers",
     srcs = PUBLIC_CPYTHON_HEADERS,
-    outs = ["include/python3.8/" + h.partition("/")[2] for h in PUBLIC_CPYTHON_HEADERS],
-    cmd = "cp $(SRCS) $(RULEDIR)/include/python3.8/cpython",
+    outs = ["include/python3.9/" + h.partition("/")[2] for h in PUBLIC_CPYTHON_HEADERS],
+    cmd = "cp $(SRCS) $(RULEDIR)/include/python3.9/cpython",
 )
 
 genrule(
     name = "include_private_headers",
     srcs = PRIVATE_PYTHON_HEADERS,
-    outs = ["include/python3.8/" + h.partition("/")[2] for h in PRIVATE_PYTHON_HEADERS],
-    cmd = "cp $(SRCS) $(RULEDIR)/include/python3.8/internal/",
+    outs = ["include/python3.9/" + h.partition("/")[2] for h in PRIVATE_PYTHON_HEADERS],
+    cmd = "cp $(SRCS) $(RULEDIR)/include/python3.9/internal/",
 )
 
 filegroup(
@@ -211,6 +234,7 @@ cc_library(
     name = "headers",
     hdrs = PYTHON_HEADERS,
     linkstatic = True,
+    visibility = ["//visibility:public"],
 )
 
 # All of the builtin extensions that we need from the Modules/ directory.
@@ -272,8 +296,10 @@ cc_library(
         "Modules/_sre.c",
         "Modules/_ssl.c",
         "Modules/_ssl_data.h",
+        "Modules/_ssl_data_111.h",
         "Modules/_stat.c",
         "Modules/_struct.c",
+        "Modules/_testinternalcapi.c",
         "Modules/_threadmodule.c",
         "Modules/_tracemalloc.c",
         "Modules/_weakref.c",
@@ -302,6 +328,7 @@ cc_library(
         "Modules/cjkcodecs/multibytecodec.h",
         "Modules/clinic/_abc.c.h",
         "Modules/clinic/_asynciomodule.c.h",
+        "Modules/clinic/_bisectmodule.c.h",
         "Modules/clinic/_bz2module.c.h",
         "Modules/clinic/_codecsmodule.c.h",
         "Modules/clinic/_collectionsmodule.c.h",
@@ -358,8 +385,6 @@ cc_library(
         "Modules/fcntlmodule.c",
         "Modules/gcmodule.c",
         "Modules/grpmodule.c",
-        "Modules/hashtable.c",
-        "Modules/hashtable.h",
         "Modules/itertoolsmodule.c",
         "Modules/mathmodule.c",
         "Modules/mmapmodule.c",
@@ -480,6 +505,7 @@ cc_binary(
         "Objects/floatobject.c",
         "Objects/frameobject.c",
         "Objects/funcobject.c",
+        "Objects/genericaliasobject.c",
         "Objects/genobject.c",
         "Objects/interpreteridobject.c",
         "Objects/iterobject.c",
@@ -537,6 +563,12 @@ cc_binary(
         "Parser/token.c",
         "Parser/tokenizer.c",
         "Parser/tokenizer.h",
+        "Parser/pegen/parse.c",
+        "Parser/pegen/parse_string.c",
+        "Parser/pegen/parse_string.h",
+        "Parser/pegen/peg_api.c",
+        "Parser/pegen/pegen.c",
+        "Parser/pegen/pegen.h",
         "Python/Python-ast.c",
         "Python/_warnings.c",
         "Python/asdl.c",
@@ -575,6 +607,7 @@ cc_binary(
         "Python/getversion.c",
         "Python/graminit.c",
         "Python/hamt.c",
+        "Python/hashtable.c",
         "Python/import.c",
         "Python/importdl.c",
         "Python/importdl.h",
@@ -770,6 +803,7 @@ cc_library(
     ],
     hdrs = [
         "Modules/expat/expat.h",
+        "Modules/expat/expat_config.h",
         "Modules/expat/expat_external.h",
         "Modules/expat/pyexpatns.h",
     ],
@@ -782,10 +816,12 @@ cc_library(
         # This prevents expat from barfing because it can't detect any
         # randomness syscall. Python takes care of injecting entropy.
         "-DXML_POOR_ENTROPY",
-    ],
+        # Need to add PY_COPTS here beuse the config header includes pyconfig.h
+    ] + PY_COPTS,
     strip_include_prefix = "Modules/expat",
     deps = [
         ":expat-textual-hdrs",
+        ":headers",
     ],
 )
 
@@ -838,7 +874,10 @@ cc_binary(
 
 cc_binary(
     name = "Lib/_testmultiphase.so",
-    srcs = ["Modules/_testmultiphase.c"],
+    srcs = [
+        "Modules/_testmultiphase.c",
+        "Modules/clinic/_testmultiphase.c.h",
+    ],
     copts = PY_COPTS,
     linkshared = True,
     deps = [":headers"],
@@ -875,7 +914,7 @@ cc_binary(
         "Modules/hashlib.h",
         "Modules/sha256module.c",
     ],
-    copts = PY_COPTS,
+    copts = PY_COPTS + ["-DPy_BUILD_CORE_MODULE"],
     linkshared = True,
     deps = [":headers"],
 )
@@ -887,7 +926,7 @@ cc_binary(
         "Modules/hashlib.h",
         "Modules/sha512module.c",
     ],
-    copts = PY_COPTS,
+    copts = PY_COPTS + ["-DPy_BUILD_CORE_MODULE"],
     linkshared = True,
     deps = [":headers"],
 )
@@ -949,6 +988,7 @@ extern PyObject* PyInit__stat(void);
 extern PyObject* PyInit__string(void);
 extern PyObject* PyInit__struct(void);
 extern PyObject* PyInit__symtable(void);
+extern PyObject* PyInit__testinternalcapi(void);
 extern PyObject* PyInit__thread(void);
 extern PyObject* PyInit__tracemalloc(void);
 extern PyObject* PyInit__weakref(void);
@@ -1034,6 +1074,7 @@ struct _inittab _PyImport_Inittab[] = {
     {"_string", PyInit__string},
     {"_struct", PyInit__struct},
     {"_symtable", PyInit__symtable},
+    {"_testinternalcapi", PyInit__testinternalcapi},
     {"_thread", PyInit__thread},
     {"_tracemalloc", PyInit__tracemalloc},
     {"_warnings", _PyWarnings_Init},
@@ -1119,12 +1160,13 @@ genrule(
         "Lib/lib2to3/Grammar.txt",
         "Lib/lib2to3/PatternGrammar.txt",
     ],
-    outs = ["lib/python38.zip"],
+    outs = ["lib/python39.zip"],
     cmd = """
 export ASAN_OPTIONS=detect_leaks=0
-mkdir $(@D)/python3.8
-touch $(@D)/python3.8/os.py
-mkdir $(@D)/python3.8/lib-dynload
+export PYTHONHASHSEED=0
+mkdir $(@D)/python3.9
+touch $(@D)/python3.9/os.py
+mkdir $(@D)/python3.9/lib-dynload
 # First, create an initial stdlib zip with the system Python.
 $(location @dbx_build_tools//thirdparty/cpython:zip-stdlib) sloppy $@ $(locations :production-stdlib)
 # Then do the final zip with our python using the temporary stdlib.
@@ -1144,17 +1186,17 @@ $(location :bin/python)-prime $(location @dbx_build_tools//thirdparty/cpython:zi
 # The final package.
 _tar_files = {
     ":bin/python": "bin/python",
-    ":stdlib-zip": "lib/python38.zip",
+    ":stdlib-zip": "lib/python39.zip",
 }
 
-_tar_files.update({h: "include/python3.8/" + h.partition("/")[2] for h in PYTHON_HEADERS})
+_tar_files.update({h: "include/python3.9/" + h.partition("/")[2] for h in PYTHON_HEADERS})
 
 pkg_tar(
     name = "drte-python",
     empty_files = [
         # Sentinels for Python to find its prefix.
-        "lib/python3.8/os.py",
-        "lib/python3.8/lib-dynload/.SENTINEL",
+        "lib/python3.9/os.py",
+        "lib/python3.9/lib-dynload/.SENTINEL",
     ],
     extension = "tar.xz",
     files = _tar_files,
@@ -1164,8 +1206,8 @@ pkg_tar(
 genrule(
     name = "runtime_sentinels",
     outs = [
-        "lib/python3.8/os.py",
-        "lib/python3.8/lib-dynload/.SENTINEL",
+        "lib/python3.9/os.py",
+        "lib/python3.9/lib-dynload/.SENTINEL",
     ],
     cmd = "touch $(OUTS)",
 )
@@ -1174,9 +1216,9 @@ filegroup(
     name = "runtime",
     srcs = [
         "bin/python",
-        "lib/python3.8/lib-dynload/.SENTINEL",
-        "lib/python3.8/os.py",
-        "lib/python38.zip",
+        "lib/python3.9/lib-dynload/.SENTINEL",
+        "lib/python3.9/os.py",
+        "lib/python39.zip",
     ],
     visibility = ["//visibility:public"],
 )
@@ -1197,7 +1239,7 @@ build_time_vars = {
  'SO': '.so',
  'SHLIBS': '-lpthread -ldl  -lutil',
  'BINDIR': '/usr/local/bin',
- 'VERSION': '3.8',
+ 'VERSION': '3.9',
  'EXE': '',
  'exec_prefix': '/usr/local',
  'host': 'x86_64-pc-linux-gnu',
@@ -1212,7 +1254,7 @@ build_time_vars = {
  'LDFLAGS': '',
  'AR': 'ar',
  'ARFLAGS': 'rc',
- 'EXT_SUFFIX': '.cpython-38-x86_64-linux-gnu.so',
+ 'EXT_SUFFIX': '.cpython-39-x86_64-linux-gnu.so',
  'WITH_DOC_STRINGS': 1,
  'HAVE_GETRANDOM_SYSCALL': 1,
 }
@@ -1227,6 +1269,7 @@ genrule(
 cat <<'E_O_F' >$@
 #ifndef Py_PYCONFIG_H
 #define Py_PYCONFIG_H
+#define PY_BUILTIN_HASHLIB_HASHES "md5,sha1,sha256,sha512,sha3,blake2"
 #define DOUBLE_IS_LITTLE_ENDIAN_IEEE754 1
 #define ENABLE_IPV6 1
 #define HAVE_ACCEPT4 1

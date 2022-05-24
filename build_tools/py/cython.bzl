@@ -153,7 +153,6 @@ def dbx_pyx_library(
         py_deps = [],
         srcs = [],
         pip_version = None,
-        python3_compatible = True,
         visibility = None,
         **kwargs):
     if module_name == None:
@@ -176,6 +175,5 @@ def dbx_pyx_library(
         srcs = [":" + cython_name],
         deps = deps,
         pip_version = pip_version,
-        python3_compatible = python3_compatible,
         visibility = visibility,
     )

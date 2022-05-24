@@ -3,7 +3,6 @@ package(default_visibility = ["//build_tools:__subpackages__"])
 dbx_py_library(
     name = "commands",
     srcs = ["commands.py"],
-    python2_compatible = False,
 )
 
 dbx_py_library(
@@ -19,7 +18,6 @@ dbx_py_library(
         "//build_tools:buildfmt",
         "//go/src/dropbox/build_tools/gen-build-go",
     ],
-    python2_compatible = False,
 )
 
 dbx_py_library(
@@ -27,7 +25,6 @@ dbx_py_library(
     srcs = [
         "parse_py_imports.py",
     ],
-    python2_compatible = False,
     visibility = ["//visibility:public"],
 )
 
@@ -37,41 +34,34 @@ dbx_py_library(
         "build_merge.py",
     ],
     data = ["//go/src/dropbox/build_tools/build-merge"],
-    python2_compatible = True,
 )
 
 dbx_py_library(
     name = "exec_wrapper",
     srcs = ["exec_wrapper.py"],
-    python2_compatible = False,
 )
 
 dbx_py_library(
     name = "metrics",
     srcs = ["metrics.py"],
-    python2_compatible = False,
 )
 
 dbx_py_library(
     name = "run",
     srcs = ["run.py"],
-    python2_compatible = False,
 )
 
 dbx_py_library(
     name = "cache",
     srcs = ["cache.py"],
-    python2_compatible = False,
 )
 
 dbx_py_library(
     name = "core",
     srcs = ["core.py"],
-    python2_compatible = False,
 )
 
 dbx_py_library(
     name = "cfg",
     srcs = ["cfg.py"],
-    python2_compatible = False,
 )

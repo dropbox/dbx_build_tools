@@ -1,4 +1,5 @@
 load("//build_tools/bazel:runfiles.bzl", "runfiles_attrs", "write_runfiles_tmpl")
+load("//build_tools/py:cfg.bzl", "PY3_DEFAULT_BINARY_ABI")
 load(
     "//build_tools/py:common.bzl",
     "ALL_TOOLCHAIN_NAMES",
@@ -11,7 +12,6 @@ load(
     "//build_tools/py:toolchain.bzl",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
     "DbxPyInterpreter",
-    "cpython_27",
 )
 
 DbxServicePyBinaryExtension = provider(fields = [
@@ -121,18 +121,9 @@ def _apply_service_extensions(ctx, services, extensions):
                     continue
                 fail("Extension target service {} which is not in the dependency tree".format(info.service))
             if info.service not in py_binary_info:
-                # Make up the python3/python2 compatibility based on the selected python interpreter.
-                if info.python == cpython_27.build_tag:
-                    python2_compatible = True
-                else:
-                    python2_compatible = False
-                python3_compatible = not python2_compatible
-
                 py_binary_info[info.service] = struct(
                     main = info.main,
                     libs = [info.lib],
-                    python2_compatible = python2_compatible,
-                    python3_compatible = python3_compatible,
                     python = info.python,
                 )
             else:
@@ -174,8 +165,7 @@ def _apply_service_extensions(ctx, services, extensions):
             ext_modules = None,
             python = python,
             internal_bootstrap = False,
-            python2_compatible = info.python2_compatible,
-            python3_compatible = info.python3_compatible,
+            dynamic_libraries = [],
         )
         service_exe[service] = binary_out_file.short_path
 
@@ -575,7 +565,7 @@ service_extension_py_binary_internal = rule(
             providers = [[PyInfo], [DbxPyVersionCompatibility]],
         ),
         "service": attr.label(providers = ["service_name"], mandatory = True),
-        "python": attr.string(default = cpython_27.build_tag, values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys()),
+        "python": attr.string(default = PY3_DEFAULT_BINARY_ABI.build_tag, values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys()),
         "allow_missing": attr.bool(default = False),
     },
 )
@@ -758,7 +748,7 @@ def dbx_service_daemon(
     # Automatically verify that the service can start up correctly.
     test = Label("//build_tools/services:restart_test")
     if not idempotent:
-        test = Label("//build_tools:pass")
+        test = Label("//build_tools:pass_binary")
     dbx_services_test(
         name = name + "_service_test",
         test = test,
@@ -808,7 +798,7 @@ def dbx_service_task(
     # Automatically verify that the service can start up correctly.
     test = Label("//build_tools/services:restart_test")
     if not idempotent:
-        test = Label("//build_tools:pass")
+        test = Label("//build_tools:pass_binary")
     dbx_services_test(
         name = name + "_service_test",
         test = test,
@@ -841,7 +831,7 @@ def dbx_service_group(
     # Automatically verify that the service can start up correctly.
     test = Label("//build_tools/services:restart_test")
     if not idempotent:
-        test = Label("//build_tools:pass")
+        test = Label("//build_tools:pass_binary")
     dbx_services_test(
         name = name + "_service_test",
         test = test,

@@ -254,7 +254,7 @@ def build_pip_archive(workdir):
         external_dir,
         "io_pypa_setuptools_whl",
         "file",
-        "setuptools-44.0.0-py2.py3-none-any.whl",
+        "setuptools-60.6.0-py3-none-any.whl",
     )
     wheel_wheel = os.path.join(
         external_dir, "io_pypa_wheel_whl", "file", "wheel-0.34.2-py2.py3-none-any.whl"
@@ -317,7 +317,27 @@ def build_pip_archive(workdir):
     # writing (non-deterministic) pycs into the build product.
     env["PYTHONDONTWRITEBYTECODE"] = "1"
 
+    # Set the hash seed to a the same value that we use for dbx_py_binary when building piplibs.
+    env["PYTHONHASHSEED"] = "4"
+
     def pip_cmd(cmd, *args):
+        # Binary packages for ML use
+        # Note: tensorboard and tensorflow_estimator are pure Python, but are erroneously
+        # marked as binary packages by the tensorflow build process (arch=none-any)
+        allowed_binaries = [
+            "lightgbm",
+            "onnxruntime",
+            "pyarrow",
+            "sentencepiece",
+            "tensorboard",
+            "tensorflow",
+            "tensorflow_estimator",
+            "tokenizers",
+            "torch",
+            "torchvision",
+            "torchaudio",
+        ]
+
         return (
             [
                 venv_python,
@@ -331,10 +351,7 @@ def build_pip_archive(workdir):
                 "--no-binary=:all:",
                 # Binary packages are not acceptable in general.
                 # These are exceptions for ML usage only.
-                #
-                # Note: tensorboard and tensorflow_estimator are pure Python, but are erroneously
-                # marked as binary packages by the tensorflow build process (arch=none-any)
-                "--only-binary=tensorboard,tensorflow,tensorflow_estimator,torch,tokenizers,sentencepiece,pyarrow,torchvision",
+                "--only-binary={}".format(",".join(allowed_binaries)),
             ]
             + index_url_flags_if_required()
             + list(args)
@@ -372,6 +389,7 @@ def build_pip_archive(workdir):
         else:
             made_build_dir = True
             cmd.extend(["--build-dir", build_dir])
+            _find_and_replace(env, ARGS.buildroot_placeholder, build_dir)
         try:
             run_silently(cmd, env)
         finally:
@@ -637,6 +655,11 @@ def main():
         "--root-placeholder",
         default="____root____",
         help="Placeholder text to be replaced with absolute path to CWD in command and env vars",
+    )
+    p.add_argument(
+        "--buildroot-placeholder",
+        default="____buildroot____",
+        help="Placeholder text to be replaced with absolute path to build directory in env vars",
     )
     p.add_argument(
         "--ignore-missing-static-libraries",

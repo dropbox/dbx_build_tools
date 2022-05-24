@@ -9,6 +9,7 @@ dbx_go_library(
         "env.go",
     ],
     visibility = [
+        "//go/src/atlas:__subpackages__",
         "//go/src/dropbox:__subpackages__",
     ],
     deps = [

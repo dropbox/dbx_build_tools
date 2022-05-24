@@ -1,36 +1,28 @@
 load("//build_tools/windows:windows.bzl", "is_windows")
 
-_cpython_37_ATTR = "cpython_37"
 _cpython_38_ATTR = "cpython_38"
-_cpython_27_ATTR = "cpython_27"
-_cpython_37_BUILD_TAG = "cpython-37"
+_cpython_39_ATTR = "cpython_39"
 _cpython_38_BUILD_TAG = "cpython-38"
+_cpython_39_BUILD_TAG = "cpython-39"
 _cpython_27_BUILD_TAG = "cpython-27"
 
-cpython_37 = struct(
-    build_tag = _cpython_37_BUILD_TAG,
-    attr = _cpython_37_ATTR,
-    major_python_version = 3,
-)
 cpython_38 = struct(
     build_tag = _cpython_38_BUILD_TAG,
     attr = _cpython_38_ATTR,
     major_python_version = 3,
 )
-cpython_27 = struct(
-    build_tag = _cpython_27_BUILD_TAG,
-    attr = _cpython_27_ATTR,
-    major_python_version = 2,
+cpython_39 = struct(
+    build_tag = _cpython_39_BUILD_TAG,
+    attr = _cpython_39_ATTR,
+    major_python_version = 3,
 )
 
-CPYTHON_27_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_27"
-CPYTHON_37_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_37"
 CPYTHON_38_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_38"
+CPYTHON_39_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_39"
 
 BUILD_TAG_TO_TOOLCHAIN_MAP = {
-    cpython_37.build_tag: CPYTHON_37_TOOLCHAIN_NAME,
     cpython_38.build_tag: CPYTHON_38_TOOLCHAIN_NAME,
-    cpython_27.build_tag: CPYTHON_27_TOOLCHAIN_NAME,
+    cpython_39.build_tag: CPYTHON_39_TOOLCHAIN_NAME,
 }
 
 DbxPyInterpreter = provider(fields = [
@@ -38,8 +30,10 @@ DbxPyInterpreter = provider(fields = [
     "runfiles_path",
     "build_tag",
     "headers",
+    "cc_headers",
     "runtime",
     "major_python_version",
+    "minor_python_version",
 ])
 
 def get_py_toolchain_name(python_or_build_tag):
@@ -70,8 +64,10 @@ def _dbx_py_interpreter_impl(ctx):
             runfiles_path = runfiles_path,
             build_tag = ctx.attr.build_tag,
             headers = ctx.attr.headers.files if ctx.attr.headers else depset(),
+            cc_headers = ctx.attr.cc_headers,
             runtime = ctx.attr.runtime.files if ctx.attr.runtime else depset(),
             major_python_version = ctx.attr.major_python_version,
+            minor_python_version = ctx.attr.minor_python_version,
         ),
     ]
 
@@ -82,8 +78,10 @@ dbx_py_interpreter = rule(
         "exe_file": attr.label(allow_single_file = True),
         "build_tag": attr.string(mandatory = True),
         "headers": attr.label(),
+        "cc_headers": attr.label(),
         "runtime": attr.label(),
         "major_python_version": attr.int(default = 2),
+        "minor_python_version": attr.int(mandatory = True),
         "_windows_platform": attr.label(default = Label("@platforms//os:windows")),
     },
 )
@@ -95,7 +93,6 @@ def _dbx_py_toolchain_impl(ctx):
             pyc_compile_exe = ctx.executable.pyc_compile,
             pyc_compile_files_to_run = ctx.attr.pyc_compile[DefaultInfo].files_to_run,
             pyc_compilation_enabled = ctx.attr.pyc_compilation_enabled,
-            dbx_importer = ctx.attr.dbx_importer,
         ),
     ]
 
@@ -105,7 +102,6 @@ dbx_py_toolchain = rule(
         "interpreter": attr.label(mandatory = True),
         "pyc_compile": attr.label(mandatory = True, executable = True, cfg = "host"),
         "pyc_compilation_enabled": attr.bool(default = True),
-        "dbx_importer": attr.label(),
     },
     doc = """
 Python toolchain.
@@ -124,17 +120,12 @@ Attributes:
  - pyc_compilation_enabled: Optional. A boolean that affects whether or
    not pyc files will be generated with this toolchain. Default is True.
 
- - dbx_importer: Optional. A py_library that's used to import
-   Dropbox's custom pyc files.
-
 The toolchain returns the following fields:
 
  - interpreter: The dbx_py_interpreter for the build_tag.
  - pyc_compile_exe: The executable file for pyc_compile.
  - pyc_compile_files_to_run: The runfiles for pyc_compile.
  - pyc_compilation_enabled: Whether or not pyc files should be created
- - dbx_importer: The importer attribute, or None if it's not passed
-   in.
 
 For some reason, executables don't contain the runfiles when you add
 them as an executable for a `ctx.actions.run` action. You need to make

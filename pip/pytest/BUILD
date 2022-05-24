@@ -11,8 +11,6 @@ dbx_py_library(
     testonly = True,
     srcs = [],
     autogen_deps = False,
-    python2_compatible = True,
-    python3_compatible = True,
     validate = "strict",
     deps = [":pytest"],
 )
@@ -23,13 +21,11 @@ dbx_py_pypi_piplib(
     name = "pytest",
     testonly = True,
     pip_main = "py.test",
-    pip_version = "4.6.6",
+    pip_version = "7.0.1",
     provides = [
         "pytest",
         "_pytest",
     ],
-    python2_compatible = True,
-    python3_compatible = True,
     setup_requires = ["//pip/setuptools_scm"],
     use_pep517 = True,
     deps = [
@@ -37,6 +33,7 @@ dbx_py_pypi_piplib(
         "//pip/attrs",
         "//pip/funcsigs",
         "//pip/importlib-metadata",
+        "//pip/iniconfig",
         "//pip/more_itertools",
         "//pip/packaging",
         "//pip/pathlib2",

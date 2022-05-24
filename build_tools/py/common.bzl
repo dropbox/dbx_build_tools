@@ -9,10 +9,7 @@ load("//build_tools/bazel:runfiles.bzl", "write_runfiles_tmpl")
 load("//build_tools/py:cfg.bzl", "ALL_ABIS")
 load("//build_tools/windows:windows.bzl", "is_windows")
 
-DbxPyVersionCompatibility = provider(fields = [
-    "python2_compatible",
-    "python3_compatible",
-])
+DbxPyVersionCompatibility = provider(fields = [])
 
 ALL_TOOLCHAIN_NAMES = [BUILD_TAG_TO_TOOLCHAIN_MAP[abi.build_tag] for abi in ALL_ABIS]
 
@@ -95,7 +92,6 @@ sys.path.extend([
     runfiles + {path_sep} + p
     for p in ({relative_piplib_python_path})
 ])
-{dbx_importer}
 import os
 try:
     fd = os.open('/proc/self/comm', os.O_WRONLY)
@@ -122,14 +118,9 @@ with open(filepath, 'rb') as f:
 exec(code, module.__dict__)
 """
 
-_setup_dbx_importer = """
-sys.path.insert(0, runfiles + '/../{workspace}')
-from build_tools.py import dbx_importer
-del sys.path[0]
-dbx_importer.install()
-"""
-
 def allow_dynamic_links(ctx):
+    if hasattr(ctx.attr, "dynamic_libraries") and ctx.attr.dynamic_libraries:
+        return True
     return ctx.attr._py_link_dynamic_libs[DbxStringValue].value == "allowed"
 
 def workspace_root_to_pythonpath(workspace_root):
@@ -153,9 +144,7 @@ def _binary_wrapper_template(ctx, internal_bootstrap):
 def collect_transitive_srcs_and_libs(
         ctx,
         deps,
-        data,
-        python2_compatible,
-        python3_compatible):
+        data):
     pyc_files_by_build_tag_trans = {}
     for abi in ALL_ABIS:
         pyc_files_by_build_tag_trans[abi.build_tag] = []
@@ -166,9 +155,6 @@ def collect_transitive_srcs_and_libs(
     extra_pythonpath_trans = []
     dynamic_libraries_trans = []
     frameworks_trans = []
-
-    if not python2_compatible and not python3_compatible:
-        fail("Neither compatible with Python 2 or Python 3.")
 
     if data:
         for x in data:
@@ -182,10 +168,6 @@ def collect_transitive_srcs_and_libs(
 
         if DbxPyVersionCompatibility in x:
             versions = x[DbxPyVersionCompatibility]
-            if python2_compatible and not versions.python2_compatible:
-                fail("%s is not compatible with Python 2." % (x.label,))
-            if python3_compatible and not versions.python3_compatible:
-                fail("%s is not compatible with Python 3." % (x.label,))
 
         if hasattr(x, "piplib_contents"):
             # Likely to be a dbx_py_library
@@ -295,8 +277,7 @@ def emit_py_binary(
         ext_modules,
         python,
         internal_bootstrap,
-        python2_compatible,
-        python3_compatible):
+        dynamic_libraries):
     if internal_bootstrap:
         if python:
             fail("`python` arg must be None when internal_bootstrap is True")
@@ -306,20 +287,6 @@ def emit_py_binary(
         py_toolchain = None
     else:
         py_toolchain = ctx.toolchains[get_py_toolchain_name(python.build_tag)]
-
-    if python:
-        # Only check python compatibility for non-bootstrap py
-        # binaries, since we don't have access to the python toolchain
-        # for bootstrap binaries.
-        #
-        # TODO: Check compatibility when a non-bootstrap py binary
-        # actually uses a bootstrapped binary.
-        if python.major_python_version == 2:
-            if not python2_compatible:
-                fail("Python 2 interpreter selected but binary is not compatible with Python 2.")
-        elif python.major_python_version == 3:
-            if not python3_compatible:
-                fail("Python 3 interpreter selected but binary is not compatible with Python 3.")
 
     if not pythonpath:
         pythonpath = workspace_root_to_pythonpath(ctx.label.workspace_root)
@@ -337,7 +304,6 @@ def emit_py_binary(
 
     if internal_bootstrap:
         extra_pythonpath = depset(direct = [pythonpath])
-        dbx_importer = ""
     else:
         # Only collect dependencies from dbx_py_library and
         # dbx_py_pypi* rules for non-bootstrap binaries. Those
@@ -347,33 +313,28 @@ def emit_py_binary(
             pyc_files_by_build_tag,
             piplib_contents,
             extra_pythonpath,
-            dynamic_libraries,
+            dynamic_libraries_trans,
             frameworks_trans,
         ) = collect_transitive_srcs_and_libs(
             ctx,
             deps = deps,
             data = data,
-            python2_compatible = python2_compatible,
-            python3_compatible = python3_compatible,
         )
-        if py_toolchain.dbx_importer:
-            # The importer is only used on py2 non-bootstrap builds
-            # (bootstrap builds don't read dropbox's pyc).
-            extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath, workspace_root_to_pythonpath(py_toolchain.dbx_importer.label.workspace_root)])
-            dbx_importer = _setup_dbx_importer.format(
-                workspace = py_toolchain.dbx_importer.label.workspace_name,
-            )
-        else:
-            extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath])
-            dbx_importer = ""
+        extra_pythonpath = depset(transitive = [extra_pythonpath], direct = [pythonpath])
 
         piplib_contents_set = piplib_contents[build_tag]
         all_piplib_contents = piplib_contents_set.to_list()
         runfiles_trans.append(pyc_files_by_build_tag[build_tag])
 
+        # create a depset of dynamic library files
+        dylibs_direct = []
+        for target in dynamic_libraries:
+            dylibs_direct.extend(target.files.to_list())
+        dylibs = depset(direct = dylibs_direct, transitive = [dynamic_libraries_trans])
+
         if not internal_bootstrap and allow_dynamic_links(ctx):
-            runfiles_trans.append(dynamic_libraries)
-            for f in dynamic_libraries.to_list():
+            runfiles_trans.append(dylibs)
+            for f in dylibs.to_list():
                 library_search_entries[f.short_path.rpartition("/")[0]] = True
             for f in frameworks_trans.to_list():
                 runfiles_trans.append(f.framework_files)
@@ -489,7 +450,6 @@ __path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
             proc_title = repr(ctx.label.name[:15]),
             relative_user_python_path = user_python_path,
             relative_piplib_python_path = piplib_python_path,
-            dbx_importer = dbx_importer,
             path_sep = repr("\\" if is_windows(ctx) else "/"),
         ),
     )
@@ -550,13 +510,8 @@ __path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
     for d in data:
         runfiles = runfiles.merge(d[DefaultInfo].default_runfiles)
 
-    if py_toolchain and py_toolchain.dbx_importer:
-        # Manually add dbx_import.py. This also implicitly picks up Bazel's magically automatic
-        # __init__.py insertion behavior, which is why we add it unconditionally.
-        runfiles = runfiles.merge(py_toolchain.dbx_importer[DefaultInfo].default_runfiles)
-    else:
-        # Add blank_py_binary to trigger Bazel's automatic __init__.py insertion behavior.
-        runfiles = runfiles.merge(ctx.attr._blank_py_binary[DefaultInfo].default_runfiles)
+    # Add blank_py_binary to trigger Bazel's automatic __init__.py insertion behavior.
+    runfiles = runfiles.merge(ctx.attr._blank_py_binary[DefaultInfo].default_runfiles)
 
     write_runfiles_tmpl(
         ctx,

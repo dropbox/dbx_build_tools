@@ -1,9 +1,10 @@
 # mypy: allow-untyped-defs
+
 """
 To test changes locally, prepend BZL_DONT_USE_SQPKG = 1 to your bzl command since it's is bundled in bzl (likely)
 """
 
-from __future__ import print_function
+from __future__ import annotations, print_function
 
 import argparse
 import multiprocessing
@@ -293,8 +294,7 @@ def get_container_name_for_target(target):
     return CONTAINER_NAME_PREFIX + target.strip("/").replace("/", "-").replace(":", "-")
 
 
-def _get_all_containers(docker_path):
-    # type: (Text) -> List[Text]
+def _get_all_containers(docker_path: Text) -> List[Text]:
     return [
         x[0]
         for x in _get_all_containers_targets(
@@ -303,8 +303,9 @@ def _get_all_containers(docker_path):
     ]
 
 
-def _get_all_containers_targets(docker_path, pattern):
-    # type: (Text, Tuple[Text, ...]) -> List[Tuple[Text, ...]]
+def _get_all_containers_targets(
+    docker_path: Text, pattern: Tuple[Text, ...]
+) -> List[Tuple[Text, ...]]:
     """
     Retrieve (container_name, target) tuples.
     """
@@ -418,6 +419,7 @@ def _guess_mem_limit_kb():
 
 
 def cmd_itest_run(args, bazel_args, mode_args):
+    args.target = bazel_utils.normalize_relative_target_to_absolute_cwd(args.target)
     _raise_on_glob_target(args.target)
     _build_target(args, bazel_args, mode_args, args.target)
     itest_target = _get_itest_target(
@@ -476,8 +478,8 @@ exec {test} "$@"
     if args.verbose:
         launch_cmd += ["--svc.verbose"]
 
-    default_paths = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin".split(
-        ":"
+    default_paths = (
+        "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin".split(":")
     )
     itest_paths = [
         os.path.join(

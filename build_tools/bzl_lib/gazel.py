@@ -228,5 +228,16 @@ def merge_generated_build_files(generated_files):
     # NOTE(jhance) Build merge merges in order, and this relies on that, since some of these
     # files in the batch have the same output file.
     build_merge.batch_merge_build_files(merge_batch)
+
+    # Sort the final merged output. BUILD.in files may have out of order lists that bypassed
+    # lint when being committed.
+    formatted = []
+    for batch in merge_batch:
+        for file in batch:
+            if file.endswith("/BUILD") and file not in formatted:
+                formatted.append(file)
+    if len(formatted):
+        run_cmd([buildfmt_path] + formatted)
+
     for f in files_to_remove:
         os.remove(f)

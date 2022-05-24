@@ -10,6 +10,4 @@ dbx_py_binary(
     testonly = True,
     srcs = ["junit_wrapper.py"],
     main = "junit_wrapper.py",
-    python2_compatible = False,
-    python3_compatible = True,
 )

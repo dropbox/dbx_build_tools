@@ -7,7 +7,6 @@ dbx_py_pypi_piplib(
     namespace_pkgs = ["backports"],
     pip_version = "4.0.2",
     provides = ["backports.configparser"],
-    python3_compatible = True,
     setup_requires = ["//pip/setuptools_scm"],
     use_pep517 = True,
 )

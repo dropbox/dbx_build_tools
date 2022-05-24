@@ -23,8 +23,6 @@ dbx_py_pytest_test(
         ":test_sqfs_zstd_2.sqfs",
         "@com_github_plougher_squashfs_tools//:unsquashfs",
     ],
-    python2_compatible = False,
-    python3_compatible = True,
     visibility = ["//visibility:private"],
     deps = [
         "//dropbox:runfiles",
@@ -47,6 +45,7 @@ bzl_library(
 dbx_pkg_sqfs(
     name = "test_sqfs_gzip_1.sqfs",
     testonly = True,
+    block_size_kb = 128,
     compression_algo = "gzip",
     compression_level = 1,
     data = [
@@ -60,7 +59,6 @@ dbx_pkg_sqfs(
 dbx_pkg_sqfs(
     name = "test_sqfs_lz4.sqfs",
     testonly = True,
-    block_size_kb = 16,
     compression_algo = "lz4",
     data = [
         "runfiles.tmpl",

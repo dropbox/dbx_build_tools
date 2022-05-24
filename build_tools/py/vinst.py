@@ -8,7 +8,6 @@ import tempfile
 import zipfile
 
 from configparser import RawConfigParser
-from io import StringIO
 from typing import List
 
 SCRIPT = """
@@ -66,7 +65,7 @@ def get_console_scripts(wheel: zipfile.ZipFile):
             config = RawConfigParser()
             # No clue some entry_points.txt files have leading space
             data = [l.decode("utf-8").strip() for l in wheel.open(name)]
-            config.readfp(StringIO("\n".join(data)))
+            config.read_string("\n".join(data))
             if config.has_section("console_scripts"):
                 return dict(config.items("console_scripts"))
             else:

@@ -11,7 +11,6 @@ load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
 load(
     "@dbx_build_tools//build_tools/py:toolchain.bzl",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
-    "CPYTHON_27_TOOLCHAIN_NAME",
     "DbxPyInterpreter",
     "get_py_toolchain_name",
 )
@@ -46,12 +45,7 @@ load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load("//build_tools/windows:windows.bzl", "is_windows")
 
 def _get_build_interpreters(attr):
-    interpreters = []
-    if attr.python2_compatible:
-        interpreters.extend([abi for abi in ALL_ABIS if abi.major_python_version == 2])
-    if attr.python3_compatible:
-        interpreters.extend([abi for abi in ALL_ABIS if abi.major_python_version == 3])
-    return interpreters
+    return ALL_ABIS
 
 def _get_build_interpreters_for_target(ctx):
     abis = _get_build_interpreters(ctx.attr)
@@ -68,13 +62,18 @@ def _get_build_interpreters_for_target(ctx):
 # Placeholder text which gets replaced with base/root directory where action is executed.
 ROOT_PLACEHOLDER = "____root____"
 
+# In rare cases, we must refer to the absolute path to the build directory where the wheel is built.
+# Similarly to `$(ROOT)`, we can use `$(BUILDROOT)` to refer to this directly which is replaced in vpip.
+# Only applies to environment variables.
+BUILDROOT_PLACEHOLDER = "____buildroot____"
+
 def _add_vpip_compiler_args(ctx, cc_toolchain, copts, enable_cxx, args):
     # Set the compiler to the crosstool compilation driver.
     feature_configuration = cc_common.configure_features(
         ctx = ctx,
         cc_toolchain = cc_toolchain,
         requested_features = ctx.features,
-        unsupported_features = ctx.disabled_features,
+        unsupported_features = ctx.disabled_features + ["thin_lto"],
     )
     c_compiler = cc_common.get_tool_for_action(
         feature_configuration = feature_configuration,
@@ -275,10 +274,6 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     build_dep_wheels = []
     for build_dep in ctx.attr.setup_requires:
         versions = build_dep[DbxPyVersionCompatibility]
-        if ctx.attr.python2_compatible and not versions.python2_compatible:
-            fail("%s is not compatible with Python 2; perhaps this indicates that this target need not be python 2 compatible." % (build_dep.label,))
-        if ctx.attr.python3_compatible and not versions.python3_compatible:
-            fail("%s is not compatible with Python 3." % (build_dep.label,))
         build_dep_wheels.extend(
             [piplib.archive for piplib in build_dep.piplib_contents[build_tag].to_list()],
         )
@@ -312,6 +307,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     for e in ctx.attr.env:
         env[e] = ctx.expand_make_variables("cmd", ctx.expand_location(ctx.attr.env[e], targets = ctx.attr.tools), {
             "ROOT": ROOT_PLACEHOLDER,
+            "BUILDROOT": BUILDROOT_PLACEHOLDER,
             "GENFILES_ROOT": ROOT_PLACEHOLDER + "/" + genfiles_root,
         })
 
@@ -319,6 +315,7 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
         command_args.add("--index-url", PYPI_MIRROR_URL)
 
     command_args.add(ROOT_PLACEHOLDER, format = "--root-placeholder=%s")
+    command_args.add(BUILDROOT_PLACEHOLDER, format = "--buildroot-placeholder=%s")
 
     if not ctx.attr.ignore_missing_static_libraries and not allow_dynamic_links(ctx):
         fail("May not disable ignore_missing_static_libraries when dynamic links are not allowed.")
@@ -417,8 +414,6 @@ def _vpip_rule_impl(ctx, local):
         ctx,
         deps = ctx.attr.deps,
         data = ctx.attr.data,
-        python2_compatible = ctx.attr.python2_compatible,
-        python3_compatible = ctx.attr.python3_compatible,
     )
     required_piplibs = depset(transitive = [collect_required_piplibs(ctx.attr.deps)], direct = [ctx.label.name])
 
@@ -443,10 +438,7 @@ def _vpip_rule_impl(ctx, local):
 
     return struct(
         providers = [
-            DbxPyVersionCompatibility(
-                python2_compatible = ctx.attr.python2_compatible,
-                python3_compatible = ctx.attr.python3_compatible,
-            ),
+            DbxPyVersionCompatibility(),
         ],
         pip_main = pip_main,
         piplib_contents = piplib_contents,
@@ -457,14 +449,11 @@ def _vpip_rule_impl(ctx, local):
         required_piplibs = required_piplibs,
     )
 
-def _vpip_outputs(name, python2_compatible, python3_compatible):
+def _vpip_outputs(name):
     outs = {}
     name = name.replace("-", "_")
     whl_file_tmpl = "{name}-{build_tag}/{name}-0.0.0-py2.py3-none-any.whl"
-    py_configs = _get_build_interpreters_for_macro(
-        python2_compatible = python2_compatible,
-        python3_compatible = python3_compatible,
-    )
+    py_configs = _get_build_interpreters_for_macro()
     for py_config in py_configs:
         whl_file = whl_file_tmpl.format(name = name, build_tag = py_config.build_tag)
         outs[py_config.attr] = whl_file
@@ -561,8 +550,6 @@ _piplib_attrs = {
     "pip_main": attr.string(),
     "provides": attr.string_list(),
     "py_excludes": attr.string_list(default = ["test", "tests", "testing", "SelfTest", "Test", "Tests"]),
-    "python2_compatible": attr.bool(default = True),
-    "python3_compatible": attr.bool(default = True),
     "env": attr.string_dict(),
     "ignore_missing_static_libraries": attr.bool(
         default = True,
@@ -620,9 +607,7 @@ dbx_py_local_piplib_internal = rule(
     toolchains = ALL_TOOLCHAIN_NAMES,
 )
 
-def get_default_py_toolchain_name(python3_compatible):
-    if not python3_compatible:
-        return CPYTHON_27_TOOLCHAIN_NAME
+def get_default_py_toolchain_name():
     return BUILD_TAG_TO_TOOLCHAIN_MAP[PY3_DEFAULT_BINARY_ABI.build_tag]
 
 def _dbx_py_binary_impl(ctx):
@@ -642,7 +627,7 @@ def dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = None)
         if ctx.attr.python:
             toolchain_name = get_py_toolchain_name(ctx.attr.python)
         else:
-            toolchain_name = get_default_py_toolchain_name(ctx.attr.python3_compatible)
+            toolchain_name = get_default_py_toolchain_name()
 
         python = ctx.toolchains[toolchain_name].interpreter[DbxPyInterpreter]
         build_tag = python.build_tag
@@ -688,8 +673,7 @@ def dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = None)
         ext_modules = ext_modules,
         python = python,
         internal_bootstrap = internal_bootstrap,
-        python2_compatible = ctx.attr.python2_compatible,
-        python3_compatible = ctx.attr.python3_compatible,
+        dynamic_libraries = ctx.attr.dynamic_libraries,
     )
     runfiles = runfiles.merge(ctx.runfiles(collect_default = True))
     return struct(
@@ -718,9 +702,8 @@ _dbx_py_binary_base_attrs = {
     "data": attr.label_list(allow_files = True),
     "pythonpath": attr.string(),
     "extra_args": attr.string_list(),
-    "python2_compatible": attr.bool(default = False),
-    "python3_compatible": attr.bool(default = True),
     "python": attr.string(values = BUILD_TAG_TO_TOOLCHAIN_MAP.keys() + [""]),
+    "dynamic_libraries": attr.label_list(allow_files = True),
 }
 _dbx_py_binary_base_attrs.update(runfiles_attrs)
 _dbx_py_binary_base_attrs.update({
@@ -788,8 +771,6 @@ def _gen_import_test(
         build_interpreters,
         name,
         provides,
-        python2_compatible,
-        python3_compatible,
         **kwargs):
     for py_config in build_interpreters:
         dbx_py_dbx_test(
@@ -800,16 +781,11 @@ def _gen_import_test(
             deps = [name],
             python = py_config.build_tag,
             size = "small",
-            python2_compatible = python2_compatible,
-            python3_compatible = python3_compatible,
             **kwargs
         )
 
-def _get_build_interpreters_for_macro(python2_compatible, python3_compatible):
-    attrs = struct(
-        python2_compatible = python2_compatible,
-        python3_compatible = python3_compatible,
-    )
+def _get_build_interpreters_for_macro():
+    attrs = struct()
     return _get_build_interpreters(attrs)
 
 def dbx_py_pypi_piplib(
@@ -817,8 +793,6 @@ def dbx_py_pypi_piplib(
         provides = None,
         hidden_provides = None,
         import_test_tags = None,
-        python2_compatible = True,
-        python3_compatible = True,
         quarantine = {},
         **kwargs):
     if provides == None:
@@ -834,16 +808,12 @@ def dbx_py_pypi_piplib(
     dbx_py_pypi_piplib_internal(
         name = name,
         provides = provides,
-        python2_compatible = python2_compatible,
-        python3_compatible = python3_compatible,
         **kwargs
     )
     _gen_import_test(
-        _get_build_interpreters_for_macro(python2_compatible, python3_compatible),
+        _get_build_interpreters_for_macro(),
         name,
         provides,
-        python2_compatible = python2_compatible,
-        python3_compatible = python3_compatible,
         tags = import_test_tags,
         quarantine = quarantine,
     )
@@ -853,8 +823,6 @@ def dbx_py_local_piplib(
         provides = None,
         hidden_provides = None,
         import_test_tags = None,
-        python2_compatible = True,
-        python3_compatible = True,
         quarantine = {},
         **kwargs):
     if provides == None:
@@ -870,16 +838,12 @@ def dbx_py_local_piplib(
     dbx_py_local_piplib_internal(
         name = name,
         provides = provides,
-        python2_compatible = python2_compatible,
-        python3_compatible = python3_compatible,
         **kwargs
     )
     _gen_import_test(
-        _get_build_interpreters_for_macro(python2_compatible, python3_compatible),
+        _get_build_interpreters_for_macro(),
         name,
         provides,
-        python2_compatible = python2_compatible,
-        python3_compatible = python3_compatible,
         tags = import_test_tags,
         quarantine = quarantine,
     )
@@ -894,8 +858,6 @@ dbx_py_library_attrs = {
     "srcs": attr.label_list(allow_files = py_file_types),
     "stub_srcs": attr.label_list(allow_files = pyi_file_types),  # For mypy
     "pythonpath": attr.string(),
-    "python2_compatible": attr.bool(default = False),
-    "python3_compatible": attr.bool(default = True),
     "validate": attr.string(default = "strict", mandatory = False, values = ["strict", "warn", "ignore", "allow-unused"]),
     # This is available for a few odd cases like tensorflow and opencv which use
     # a wrapper library to expose a piplib
@@ -914,8 +876,6 @@ def _dbx_py_library_impl(ctx):
         ctx,
         deps = ctx.attr.deps,
         data = ctx.attr.data,
-        python2_compatible = ctx.attr.python2_compatible,
-        python3_compatible = ctx.attr.python3_compatible,
     )
 
     direct_pythonpath = [workspace_root_to_pythonpath(ctx.label.workspace_root)]
@@ -926,28 +886,17 @@ def _dbx_py_library_impl(ctx):
     required_piplibs = collect_required_piplibs(ctx.attr.deps)
 
     if ctx.files.srcs:
-        if ctx.attr.python2_compatible:
-            for abi in ALL_ABIS:
-                if abi.major_python_version == 2:
-                    pyc_files_by_build_tag[abi.build_tag] = depset(
-                        direct = compile_pycs(ctx, ctx.files.srcs, abi),
-                        transitive = [pyc_files_by_build_tag[abi.build_tag]],
-                    )
-        if ctx.attr.python3_compatible:
-            for abi in ALL_ABIS:
-                if abi.major_python_version == 3:
-                    pyc_files_by_build_tag[abi.build_tag] = depset(
-                        direct = compile_pycs(ctx, ctx.files.srcs, abi),
-                        transitive = [pyc_files_by_build_tag[abi.build_tag]],
-                    )
+        for abi in ALL_ABIS:
+            if abi.major_python_version == 3:
+                pyc_files_by_build_tag[abi.build_tag] = depset(
+                    direct = compile_pycs(ctx, ctx.files.srcs, abi),
+                    transitive = [pyc_files_by_build_tag[abi.build_tag]],
+                )
 
     return struct(
         providers = [
             coverage_common.instrumented_files_info(ctx, source_attributes = ["srcs"]),
-            DbxPyVersionCompatibility(
-                python2_compatible = ctx.attr.python2_compatible,
-                python3_compatible = ctx.attr.python3_compatible,
-            ),
+            DbxPyVersionCompatibility(),
         ],
         piplib_contents = piplib_contents,
         dynamic_libraries = dynamic_libraries,
@@ -1040,6 +989,7 @@ def dbx_py_pytest_test(
         # have services either way, this works.
         force_services = False,
         start_services = True,
+        disallow_variants = False,
         tags = [],
         test_root = None,
         local = 0,
@@ -1047,8 +997,6 @@ def dbx_py_pytest_test(
         quarantine = {},
         python = None,
         plugins = [],
-        python2_compatible = True,
-        python3_compatible = True,
         visibility = None,
         **kwargs):
     pytest_args, pytest_deps = extract_pytest_args(args, test_root, plugins, srcs, **kwargs)
@@ -1057,21 +1005,11 @@ def dbx_py_pytest_test(
 
     pythons = []
     if python == None:
-        if python2_compatible:
-            if python3_compatible:
-                variant = "python2"
-            else:
-                variant = ""
-            pythons.append((PY2_TEST_ABI.build_tag, variant))
-        if python3_compatible:
-            pythons.append((PY3_TEST_ABI.build_tag, ""))
-            if not python2_compatible:
-                for abi in PY3_ALTERNATIVE_TEST_ABIS:
-                    pythons.append((abi.build_tag, abi.build_tag))
+        pythons.append((PY3_TEST_ABI.build_tag, ""))
+        for abi in PY3_ALTERNATIVE_TEST_ABIS:
+            pythons.append((abi.build_tag, abi.build_tag))
     else:
-        if (not python2_compatible) or python3_compatible:
-            fail('Cannot use a custom "python" attribute and set python(2|3)_compatible.')
-        pythons.append((python, ""))
+        fail('Cannot use a custom "python" attribute.')
 
     all_deps = deps + pytest_deps
     for python, variant in pythons:
@@ -1083,6 +1021,9 @@ def dbx_py_pytest_test(
             extra_args = pytest_args
             suffix = ""
             variant_tags = tags
+        if variant and disallow_variants:
+            continue
+
         if force_services or len(services) > 0:
             dbx_py_dbx_test(
                 name = name + "_bin" + suffix,
@@ -1095,8 +1036,6 @@ def dbx_py_pytest_test(
                 local = local,
                 quarantine = quarantine,
                 python = python,
-                python2_compatible = python2_compatible,
-                python3_compatible = python3_compatible,
                 visibility = ["//visibility:private"],
                 **kwargs
             )
@@ -1126,8 +1065,6 @@ def dbx_py_pytest_test(
                 local = local,
                 flaky = flaky,
                 python = python,
-                python2_compatible = python2_compatible,
-                python3_compatible = python3_compatible,
                 quarantine = quarantine,
                 visibility = visibility,
                 **kwargs
