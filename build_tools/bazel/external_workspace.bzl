@@ -8,7 +8,7 @@ def filename_from_label(label):
 DEFAULT_EXTERNAL_URLS = {
     "abseil_py": ["https://github.com/abseil/abseil-py/archive/pypi-v0.7.1.tar.gz"],
     "bazel_skylib": ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.2.0/bazel-skylib-1.2.0.tar.gz"],
-    "com_github_plougher_squashfs_tools": ["https://github.com/plougher/squashfs-tools/archive/4.4.tar.gz"],
+    "com_github_plougher_squashfs_tools": ["https://github.com/plougher/squashfs-tools/archive/4.5.1.tar.gz"],
     "cpython_39": ["https://www.python.org/ftp/python/3.9.11/Python-3.9.11.tar.xz"],
     "go_1_16_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.16.7.linux-amd64.tar.gz"],
     "go_1_18_linux_amd64_tar_gz": ["https://dl.google.com/go/go1.18.linux-amd64.tar.gz"],
@@ -65,9 +65,9 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "com_github_plougher_squashfs_tools",
         urls = urls["com_github_plougher_squashfs_tools"],
-        sha256 = "a7fa4845e9908523c38d4acf92f8a41fdfcd19def41bd5090d7ad767a6dc75c3",
+        sha256 = "277b6e7f75a4a57f72191295ae62766a10d627a4f5e5f19eadfbc861378deea7",
         build_file = filename_from_label("@dbx_build_tools//thirdparty/squashfs-tools:BUILD.squashfs-tools"),
-        strip_prefix = "squashfs-tools-4.4",
+        strip_prefix = "squashfs-tools-4.5.1",
     )
 
     http_archive(

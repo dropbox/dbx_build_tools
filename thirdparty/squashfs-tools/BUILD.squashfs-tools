@@ -7,6 +7,7 @@ cc_binary(
         "squashfs-tools/caches-queues-lists.h",
         "squashfs-tools/compressor.c",
         "squashfs-tools/compressor.h",
+        "squashfs-tools/endian_compat.h",
         "squashfs-tools/error.h",
         "squashfs-tools/fnmatch_compat.h",
         "squashfs-tools/gzip_wrapper.c",
@@ -17,16 +18,17 @@ cc_binary(
         "squashfs-tools/lz4_wrapper.h",
         "squashfs-tools/mksquashfs.c",
         "squashfs-tools/mksquashfs.h",
+        "squashfs-tools/mksquashfs_error.h",
         "squashfs-tools/process_fragments.c",
         "squashfs-tools/process_fragments.h",
         "squashfs-tools/progressbar.c",
         "squashfs-tools/progressbar.h",
         "squashfs-tools/pseudo.c",
         "squashfs-tools/pseudo.h",
-        "squashfs-tools/read_file.c",
         "squashfs-tools/read_fs.c",
         "squashfs-tools/read_fs.h",
         "squashfs-tools/read_xattrs.c",
+        "squashfs-tools/reader.c",
         "squashfs-tools/restore.c",
         "squashfs-tools/restore.h",
         "squashfs-tools/sort.c",
@@ -34,6 +36,9 @@ cc_binary(
         "squashfs-tools/squashfs_fs.h",
         "squashfs-tools/squashfs_swap.h",
         "squashfs-tools/swap.c",
+        "squashfs-tools/tar.c",
+        "squashfs-tools/tar.h",
+        "squashfs-tools/tar_xattr.c",
         "squashfs-tools/xattr.c",
         "squashfs-tools/xattr.h",
         "squashfs-tools/zstd_wrapper.c",
@@ -50,6 +55,8 @@ cc_binary(
         "-DGZIP_SUPPORT",
         "-DLZ4_SUPPORT",
         "-DZSTD_SUPPORT",
+        "-DVERSION=\\\"4.5.1\\\"",  # from squashfs-tools/Makefile:2
+        "-DDATE=\\\"2022/03/17\\\"",  # from squashfs-tools/Makefile:3
     ],
     linkopts = [
         "-pthread",
@@ -67,6 +74,7 @@ cc_binary(
     srcs = [
         "squashfs-tools/compressor.c",
         "squashfs-tools/compressor.h",
+        "squashfs-tools/endian_compat.h",
         "squashfs-tools/error.h",
         "squashfs-tools/fnmatch_compat.h",
         "squashfs-tools/gzip_wrapper.c",
@@ -86,6 +94,7 @@ cc_binary(
         "squashfs-tools/unsquash-4.c",
         "squashfs-tools/unsquashfs.c",
         "squashfs-tools/unsquashfs.h",
+        "squashfs-tools/unsquashfs_error.h",
         "squashfs-tools/unsquashfs_info.c",
         "squashfs-tools/unsquashfs_info.h",
         "squashfs-tools/unsquashfs_xattr.c",
@@ -104,6 +113,8 @@ cc_binary(
         "-DGZIP_SUPPORT",
         "-DLZ4_SUPPORT",
         "-DZSTD_SUPPORT",
+        "-DVERSION=\\\"4.5.1\\\"",  # from squashfs-tools/Makefile:2
+        "-DDATE=\\\"2022/03/17\\\"",  # from squashfs-tools/Makefile:3
     ],
     linkopts = [
         "-pthread",
