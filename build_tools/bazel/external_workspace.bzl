@@ -17,7 +17,7 @@ DEFAULT_EXTERNAL_URLS = {
     "io_pypa_wheel_whl": ["https://files.pythonhosted.org/packages/8c/23/848298cccf8e40f5bbb59009b32848a4c38f4e7f3364297ab3c3e2e2cd14/wheel-0.34.2-py2.py3-none-any.whl"],
     "lz4": ["https://github.com/lz4/lz4/archive/v1.9.3.tar.gz"],
     "mypy": ["https://github.com/python/mypy/archive/8650f5c2eedc26f11b6f5c35cf0c0d752aaf51fb.tar.gz"],
-    "net_zlib": ["http://zlib.net/zlib-1.2.11.tar.gz"],
+    "net_zlib": ["https://zlib.net/fossils/zlib-1.2.11.tar.gz"],
     "org_bzip_bzip2": ["https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"],
     "org_gnu_ncurses": ["https://invisible-mirror.net/archives/ncurses/ncurses-6.2.tar.gz"],
     "org_gnu_readline": ["https://ftp.gnu.org/gnu/readline/readline-8.1.tar.gz"],
