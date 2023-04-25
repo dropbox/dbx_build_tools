@@ -184,17 +184,18 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     frameworks = []
     rust_deps = []
     for dep in ctx.attr.deps:
-        # Automatically include header files from any cc_library dependencies
-        if CcInfo in dep:
-            cc_infos.append(dep[CcInfo])
-        elif hasattr(dep, "crate_type"):
-            # dep is a rust_library.
-            rust_deps.append(dep)
-        elif apple_common.AppleDynamicFramework in dep:
+        if apple_common.AppleDynamicFramework in dep:
+            # dylib_to_framework emits both AppleDynamicFramework and CcInfo; use the framework info only
             if allow_dynamic_links(ctx):
                 frameworks.append(dep[apple_common.AppleDynamicFramework])
             else:
                 fail("Encountered Apple framework while dynamic links were disallowed.")
+        elif CcInfo in dep:
+            # Automatically include header files from any cc_library dependencies
+            cc_infos.append(dep[CcInfo])
+        elif hasattr(dep, "crate_type"):
+            # dep is a rust_library.
+            rust_deps.append(dep)
         elif not hasattr(dep, "piplib_contents"):
             # Note vpip can't depend on other Python libraries.
             inputs_trans.append(dep.files)
