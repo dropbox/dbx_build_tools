@@ -20,9 +20,6 @@ class Config:
     # NOTE: No reliable guarantee that all generators honor dry_run.
     dry_run: bool
 
-    # Whether Magic Mirror should be used instead of external package sources.
-    use_magic_mirror: bool
-
     # Path to the bazel tool. Should not be necessary in any reasonable case; generators
     # should be built with any required dependency already, and they exist to create BUILD files,
     # so they shouldn't be assuming a correct or complete BUILD graph when they run.
@@ -30,6 +27,27 @@ class Config:
 
     # A Flag that may be used to indicate testing. Must be manually set.
     testing: bool = False
+
+    # Whether Magic Mirror should be used instead of external package sources.
+    use_magic_mirror: bool = False
+    # Whether Artifactory should be used instead of external package sources.
+    use_artifactory: bool = True
+
+
+@dataclasses.dataclass
+class GeneratorInfo:
+    """
+    Information about the "bzl gen" code generator that describes what it's for and who owns the code.
+    """
+
+    # A short summary description that shows up when using `--describe_generator` flag
+    description: str = ""
+
+    # A link to Confluence/Paper that has a more detailed description of how the generator works and what it does
+    doc_link: str = ""
+
+    # The file where the Generator was implemented
+    file_name: str = ""
 
 
 class Generator:
@@ -46,3 +64,8 @@ class Generator:
         passed to the constructor.
         """
         pass
+
+    @abstractmethod
+    def info(self) -> GeneratorInfo:
+        # TODO: Make this mandatory and an error if it hasn't been overriden once all generators have description
+        return GeneratorInfo()

@@ -10,6 +10,7 @@ if [ ! -f "$cfg" ]; then
 fi
 . "$cfg"
 
+umask 0022
 rm -rf packaging-temp
 mkdir packaging-temp
 FINAL_RUNTIME_ROOT="/usr/drte/$DRTEVERSION"
@@ -44,8 +45,7 @@ rsync -a --delete "$INPUT_ROOT/" \
 sed -i 's/\/usr\/drte\/'"$DRTEVERSION"'\/lib64\///g' \
     "$BUILD_SYSROOT/root/lib64/libc.so" \
     "$BUILD_SYSROOT/root/lib64/libm.a" \
-    "$BUILD_SYSROOT/root/lib64/libm.so" \
-    "$BUILD_SYSROOT/root/lib64/libpthread.so"
+    "$BUILD_SYSROOT/root/lib64/libm.so"
 
 # Remove copies of binutils.
 for f in "$BUILD_SYSROOT/root/bin/"*; do
@@ -80,7 +80,7 @@ for so in "$BUILD_SYSROOT/root/lib64"/*.so*; do
     base=$(basename "$so")
     # Ignore files that are actually linker scripts or Python.
     case "$base" in
-        libc.so|libm.so|libpthread.so|libgcc_s.so|*.py)
+        libc.so|libm.so|libgcc_s.so|*.py)
             continue
     esac
     soname=$(objdump -p "$so" | grep SONAME | awk '{print $2}')

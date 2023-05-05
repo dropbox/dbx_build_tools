@@ -274,6 +274,7 @@ def _dbx_mypy_common_code(target, ctx, deps, srcs, stub_srcs, python, use_mypyc,
         ctx.attr._edgestore_plugin.files,
         ctx.attr._sqlalchemy_plugin.files,
         ctx.attr._py3safe_plugin.files,
+        ctx.attr._aiosafe_plugin.files,
         ctx.attr._mypy_ini.files,
         ctx.attr._versions.files,
     ])
@@ -428,6 +429,10 @@ _dbx_mypy_common_attrs = {
     ),
     "_py3safe_plugin": attr.label(
         default = Label("//dropbox/mypy:py3safe.py"),
+        allow_files = True,
+    ),
+    "_aiosafe_plugin": attr.label(
+        default = Label("//dropbox/mypy:aiosafe.py"),
         allow_files = True,
     ),
 }

@@ -376,6 +376,7 @@ func (svc *serviceDef) waitTillHealthyAndMark() {
 			case svclib_proto.StatusResp_STARTING, svclib_proto.StatusResp_STARTED:
 				svc.logger.Printf("Daemon unexpectedly stopped: %s", exitErr)
 				svc.StateMachine.SetState(svclib_proto.StatusResp_ERROR)
+				svc.printLogSample()
 			}
 
 		}()
@@ -398,6 +399,7 @@ func (svc *serviceDef) waitTillHealthyAndMark() {
 			case svclib_proto.StatusResp_STARTING, svclib_proto.StatusResp_STARTED:
 				svc.logger.Printf("Task exited with an error: %s", exitErr)
 				svc.StateMachine.SetState(svclib_proto.StatusResp_ERROR)
+				svc.printLogSample()
 			}
 			return
 		}
@@ -413,6 +415,62 @@ func (svc *serviceDef) waitTillHealthyAndMark() {
 		svc.logger.Printf("Task completed: wall-time:%v cpu-time:%v", FmtDuration(svc.startDuration),
 			FmtDuration(process.Cmd.ProcessState.UserTime()+process.Cmd.ProcessState.SystemTime()))
 	}
+}
+
+func (svc *serviceDef) printLogSample() {
+	start, end, err := headAndTail(svc.getLogsPath(), 1000)
+	if err != nil {
+		svc.logger.Printf("Failed to get logs: %s", err)
+	} else {
+		const colorRed = "\033[31m"
+		const colorReset = "\033[0m"
+		const colorItalics = "\033[3m"
+		if end == nil {
+			svc.logger.Print("Daemon logs:\n" +
+				colorRed + string(start) + colorReset)
+		} else {
+			svc.logger.Print("Daemon logs:\n" +
+				colorRed + string(start) + colorReset +
+				colorItalics + "[...snip...]" + colorReset +
+				colorRed + string(end) + colorReset,
+			)
+		}
+	}
+}
+
+// headAndTail returns the first & last maxBytesEachSide in the given file
+// If the start & end touch/overlap, only the first array is returned
+func headAndTail(fname string, maxBytesEachSide int) ([]byte, []byte, error) {
+	file, err := os.Open(fname)
+	if err != nil {
+		return nil, nil, err
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, nil, err
+	}
+	size := stat.Size()
+	if size <= 2*int64(maxBytesEachSide) {
+		contents, err := io.ReadAll(file)
+		return contents, nil, err
+	}
+
+	start := make([]byte, maxBytesEachSide)
+	end := make([]byte, maxBytesEachSide)
+	_, err = file.ReadAt(start, 0)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	startOfTail := size - int64(maxBytesEachSide)
+	_, err = file.ReadAt(end, startOfTail)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return start, end, nil
 }
 
 // This function waits until the service is healthy, then return.

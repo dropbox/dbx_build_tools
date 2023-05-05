@@ -9,7 +9,7 @@ dbx_go_library(
         "sortkeys.go",
     ],
     visibility = [
-        "//go/src:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
     ],

@@ -225,7 +225,10 @@ def _impl(ctx):
         enabled = True,
         flag_sets = [
             flag_set(
-                actions = [ACTION_NAMES.cpp_link_executable],
+                actions = [
+                    ACTION_NAMES.cpp_link_executable,
+                    ACTION_NAMES.cc_flags_make_variable,
+                ],
                 flag_groups = [
                     flag_group(
                         flags = ["-Wl,-I" + ctx.attr.rtld],

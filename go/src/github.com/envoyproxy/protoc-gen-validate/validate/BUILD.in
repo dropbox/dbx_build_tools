@@ -1,0 +1,4 @@
+exports_files([
+    "validate.h",
+    "validate.proto",
+])

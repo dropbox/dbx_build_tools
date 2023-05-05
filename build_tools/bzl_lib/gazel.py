@@ -6,7 +6,7 @@ from typing import Callable, DefaultDict, Dict, Iterable, List, Sequence, Set
 
 from build_tools import bazel_utils
 from build_tools.bzl_lib import build_merge, metrics
-from build_tools.bzl_lib.generator import Config, Generator
+from build_tools.bzl_lib.generator import Config, Generator, GeneratorInfo
 from build_tools.bzl_lib.run import run_cmd
 
 from dropbox import runfiles
@@ -23,6 +23,12 @@ HEADER = (
 class CopyGenerator(Generator):
     """This creates empty BUILD.gen_empty files to ensure BUILD.in contents are
     copied into BUILD, even when it does not include any generated targets"""
+
+    def info(self) -> GeneratorInfo:
+        return GeneratorInfo(
+            description="""This creates empty BUILD.gen_empty files to ensure BUILD.in contents are
+    copied into BUILD, even when it does not include any generated targets"""
+        )
 
     def __init__(
         self, workspace_dir: str, generated_files: Dict[str, List[str]], cfg: Config

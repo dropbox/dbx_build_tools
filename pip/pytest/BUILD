@@ -5,12 +5,14 @@ package(default_visibility = ["//visibility:public"])
 
 load("//build_tools/py:py.bzl", "dbx_py_library", "dbx_py_pypi_piplib")
 
-# Library used in dbx_py_pytest_test to prevent duplicate deps.
+# Library used in dbx_py_pytest_test to prevent duplicate deps and make
+# pytest.ini visible to pytest.
 dbx_py_library(
-    name = "pytest_fake",
+    name = "pytest_lib",
     testonly = True,
     srcs = [],
     autogen_deps = False,
+    data = ["//:pytest.ini"],
     validate = "strict",
     deps = [":pytest"],
 )
@@ -21,7 +23,7 @@ dbx_py_pypi_piplib(
     name = "pytest",
     testonly = True,
     pip_main = "py.test",
-    pip_version = "7.0.1",
+    pip_version = "7.1.1",
     provides = [
         "pytest",
         "_pytest",

@@ -1,3 +1,0 @@
-dbx_go_library(
-    name = "assert",
-)

@@ -1,5 +1,5 @@
 cc_library(
-    name = "zstd",
+    name = "libzstd",
     srcs = glob([
         "lib/common/*.c",
         "lib/common/*.h",
@@ -31,5 +31,29 @@ cc_library(
         "lib",
         "lib/common",
     ],
+    visibility = ["//visibility:public"],
+)
+
+cc_binary(
+    name = "zstd",
+    srcs = glob([
+        "programs/*.h",
+        "programs/*.c",
+    ]),
+    copts = [
+        "-DXXH_NAMESPACE=ZSTD_",
+    ],
+    deps = [
+        ":libzstd",
+    ],
+)
+
+genrule(
+    name = "unzstd-gen",
+    srcs = [":zstd"],
+    outs = ["unzstd"],
+    cmd = "cp $< $@",
+    executable = True,
+    output_to_bindir = True,
     visibility = ["//visibility:public"],
 )

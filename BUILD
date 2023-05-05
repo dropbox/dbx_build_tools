@@ -6,3 +6,5 @@ genrule(
     tools = ["//build_tools:parse_workspace_status"],
     visibility = ["//visibility:public"],
 )
+
+exports_files(["pytest.ini"])

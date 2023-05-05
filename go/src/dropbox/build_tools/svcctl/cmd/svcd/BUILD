@@ -17,6 +17,6 @@ dbx_go_binary(
         "//go/src/dropbox/build_tools/svcctl",
         "//go/src/dropbox/build_tools/svcctl/svclib",
         "//go/src/dropbox/proto/build_tools/svclib",
-        "//go/src/google.golang.org/grpc",
+        "@org_golang_google_grpc",
     ],
 )

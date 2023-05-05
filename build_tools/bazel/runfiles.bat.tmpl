@@ -4,13 +4,22 @@
 :: annoying to do anything in an `if`/`for` block.
 setlocal EnableDelayedExpansion
 
-:: Before we do anything, check our runtime pre-requisites.
-::   - Python 3.8
+:: Certain bootstrap rules define `DBX_PYTHON`, and with a strict action env,
+:: `py.exe` can't possibly be found. If this is the case, use the provided
+:: intepreter and consider the pre-requisites as met.
+if defined DBX_PYTHON (
+    set "_RUNFILES_PYTHON=%DBX_PYTHON:/=\%"  :: converts forward slashes to backwards
+    goto :prereqsmet
+)
+
+:: Otherwise, check that we have Python 3.8 available in the environment.
 :: This for loop steps through the stdout of `py.exe --list` and
 :: checks strings to make sure that 3.8 is listed.
+set "_RUNFILES_PYTHON=py.exe -3.8"
 for /F "tokens=* USEBACKQ" %%g in (`py.exe --list 2^> nul`) DO (
     set versionline=%%g
     if "!versionline:~0,4!" == "-3.8" goto :prereqsmet
+    if "!versionline:~0,6!" == "-V:3.8" goto :prereqsmet
 )
 
 echo ERROR: Runtime pre-requisites not met.
@@ -24,6 +33,14 @@ exit /b 1
 set workspacename={workspace_name}
 :: Expands the current file name to a fully qualified path.
 set currentfile=%~f0
+
+:: Trim up to parent .runfiles dir (e.g. if this binary is included in another's runfiles)
+:: Replace .runfiles with | character if it exists. Note: | is not a valid Windows filename character.
+set splittable="%currentfile:.runfiles=|%"
+:: Split on | character and keep the first token.
+for /F "tokens=1 delims=|" %%g IN (%splittable%) DO (
+    set currentfile=%%g
+)
 
 :: This loop does a few things: it checks if a ".runfiles" directory
 :: exists. If it doesn't, then it checks if the current file is a
@@ -41,7 +58,7 @@ if not exist %currentrunfiles%\ (
     )
 
     :: Run the Python script that outputs the absolute path to the symlink target.
-    for /F "tokens=* USEBACKQ" %%g IN (`py.exe -3.8 -c "import os;a=r'%%currentfile%%';print(os.path.join(os.path.dirname(a),os.readlink(a)))"`) DO (
+    for /F "tokens=* USEBACKQ" %%g IN (`%_RUNFILES_PYTHON% -c "import os;a=r'%%currentfile%%';print(os.path.join(os.path.dirname(a),os.readlink(a)))"`) DO (
         set currentfile=%%g
     )
 
@@ -49,7 +66,7 @@ if not exist %currentrunfiles%\ (
 )
 
 :: Now that we have the runfiles directory, use Python to get the fully resolved path.
-for /F "tokens=* USEBACKQ" %%g IN (`py.exe -3.8 -c "import os;print(os.path.realpath(r'%%currentrunfiles%%'))"`) DO (
+for /F "tokens=* USEBACKQ" %%g IN (`%_RUNFILES_PYTHON% -c "import os;print(os.path.realpath(r'%%currentrunfiles%%'))"`) DO (
     set currentrunfiles=%%g
 )
 

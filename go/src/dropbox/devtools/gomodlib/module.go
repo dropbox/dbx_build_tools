@@ -11,13 +11,12 @@ import (
 )
 
 // FindGoModDeps parses the go.mod file to extract a list of versions this module requires.
-func FindGoModDeps(rootPath string) ([]module.Version, error) {
-	mfPath := filepath.Join(rootPath, "go.mod")
-	modData, err := ioutil.ReadFile(mfPath)
+func FindGoModDeps(goModPath string) ([]module.Version, error) {
+	modData, err := ioutil.ReadFile(goModPath)
 	if err != nil {
 		return nil, err
 	}
-	mf, err := modfile.Parse(mfPath, modData, nil)
+	mf, err := modfile.Parse(goModPath, modData, nil)
 	if err != nil {
 		return nil, err
 	}

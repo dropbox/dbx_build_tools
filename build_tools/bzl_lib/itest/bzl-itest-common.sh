@@ -18,4 +18,5 @@ fi
 
 SVCCTL_LOG=$TEST_TMPDIR/logs/svcctl.log
 PID_FILE_LOCATION=/tmp/bzl-itest-init-pid  # not using TEST_TMPDIR, we don't want this ever persisted
+EXPOSED_USER_FILE_LOCATION=/tmp/bzl-itest-exposed-user
 EXIT_CODE_FILE_LOCATION=/tmp/bzl-itest-init-exit-code  # not using TEST_TMPDIR, we don't want this ever persisted

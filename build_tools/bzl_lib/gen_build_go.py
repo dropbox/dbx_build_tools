@@ -5,11 +5,12 @@ from typing import Dict, Iterable, List, Set
 from build_tools import bazel_utils, build_parser
 from build_tools.bzl_lib.cfg import (
     BUILD_INPUT,
+    GO_LIBRARY_RULE,
     GO_RULE_TYPES,
     GO_TEST_RULE,
     WHITELISTED_GO_SRCS_PATHS,
 )
-from build_tools.bzl_lib.generator import Config, Generator
+from build_tools.bzl_lib.generator import Config, Generator, GeneratorInfo
 from build_tools.bzl_lib.run import run_cmd
 
 from dropbox import runfiles
@@ -35,6 +36,13 @@ class GoBuildGenerator(Generator):
     """This creates intermediate BUILD.gen-build-go files which contains
     various go targets.  bzl gen will consume the intermediate files
     to generate the fully merged BUILD files."""
+
+    def info(self) -> GeneratorInfo:
+        return GeneratorInfo(
+            description="""This creates intermediate BUILD.gen-build-go files which contains
+    various go targets.  bzl gen will consume the intermediate files
+    to generate the fully merged BUILD files."""
+        )
 
     def __init__(
         self, workspace_dir: str, generated_files: Dict[str, List[str]], cfg: Config
@@ -73,6 +81,14 @@ class GoBuildGenerator(Generator):
         # exisiting ones.
         tmp_buildfile = "BUILD.gen-build-go~"
         args += ["--build-filename", tmp_buildfile]
+        build_config_path = os.path.join(
+            self.workspace_dir, "go/src/dropbox/build_tools/gen-build-go/config.json"
+        )
+        if not os.path.exists(build_config_path):
+            build_config_path = runfiles.data_path(
+                "@dbx_build_tools//go/src/dropbox/build_tools/gen-build-go/config.json"
+            )
+        args += ["--build-config", build_config_path]
         args += go_packages
         output = run_cmd(args, use_go_env=True, verbose=self.cfg.verbose)
 
@@ -109,13 +125,13 @@ class GoBuildGenerator(Generator):
                     )
                     assert (
                         rule.rule_type == GO_TEST_RULE
+                        or rule.rule_type == GO_LIBRARY_RULE
                         or "go_versions" not in rule.attr_map
                     ), (
                         "Do not specify `go_versions` in %s - "
-                        "code should build with all supported Go versions."
-                        "Only dbx_go_tests are allowed to specify Go versions, "
-                        "but this should only be used when absolutely necessary."
-                        % bzl_path
+                        "Only dbx_go_test and dbx_go_library are allowed to specify "
+                        "Go versions, and this should only be used during migrations "
+                        "to newer Go versions" % bzl_path
                     )
             else:
                 print(line)

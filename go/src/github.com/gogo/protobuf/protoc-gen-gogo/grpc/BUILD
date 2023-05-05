@@ -9,7 +9,7 @@ dbx_go_library(
         "grpc.go",
     ],
     visibility = [
-        "//go/src:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
         "//go/src/github.com/gogo/protobuf/protoc-gen-gogo/descriptor",

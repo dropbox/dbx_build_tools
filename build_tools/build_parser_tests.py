@@ -22,19 +22,22 @@ rule1(
     srcs = [
         "common1",
         "common2",
-    ] + select({
-        "//conditions:windows": [
-            "windows1",
-            "windows2",
-        ],
-        "//conditions:osx": [
-            "osx1",
-            "osx2",
-        ],
-        "//conditions:linux": [
-            "linux1",
-        ],
-    }),
+    ] + select(
+        {
+            "//conditions:windows": [
+                "windows1",
+                "windows2",
+            ],
+            "//conditions:osx": [
+                "osx1",
+                "osx2",
+            ],
+            "//conditions:linux": [
+                "linux1",
+            ],
+        },
+        no_match_error = "some error message",
+    ),
     tags = ["hello"],
 )
 """
@@ -161,6 +164,7 @@ def test_select_aware_repr() -> None:
     ]
     assert new_select_item.select_map["//conditions:osx"] == ["osx1", "osx2"]
     assert new_select_item.select_map["//conditions:linux"] == ["linux1"]
+    assert new_select_item.kwargs == {"no_match_error": "some error message"}
 
 
 def test_build_with_structs() -> None:

@@ -8,6 +8,7 @@ load(
 )
 load("//build_tools/bazel:runfiles.bzl", "runfiles_attrs")
 load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
+load("//build_tools/rust:toolchain.bzl", "DbxRustCompiler")
 load(
     "@dbx_build_tools//build_tools/py:toolchain.bzl",
     "BUILD_TAG_TO_TOOLCHAIN_MAP",
@@ -18,6 +19,8 @@ load("//build_tools/services:svc.bzl", "dbx_services_test")
 load(
     "//build_tools/py:cfg.bzl",
     "ALL_ABIS",
+    "ARTIFACTORY_HOST",
+    "ENABLE_RUST",
     "GLOBAL_PYTEST_ARGS",
     "GLOBAL_PYTEST_PLUGINS",
     "NON_THIRDPARTY_PACKAGE_PREFIXES",
@@ -25,6 +28,7 @@ load(
     "PY3_ALTERNATIVE_TEST_ABIS",
     "PY3_DEFAULT_BINARY_ABI",
     "PY3_TEST_ABI",
+    "PYPI_ARTIFACTORY_URL",
     "PYPI_MIRROR_URL",
 )
 load(
@@ -42,6 +46,7 @@ load(
     "workspace_root_to_pythonpath",
 )
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
+load("//build_tools/bazel:magic_mirror_fallback.bzl", "MAGIC_MIRROR_FALLBACK_PYTHON")
 load("//build_tools/windows:windows.bzl", "is_windows")
 
 def _get_build_interpreters(attr):
@@ -61,11 +66,6 @@ def _get_build_interpreters_for_target(ctx):
 # placeholder attribute for `$(ROOT)` which gets replaced in vpip during execution.
 # Placeholder text which gets replaced with base/root directory where action is executed.
 ROOT_PLACEHOLDER = "____root____"
-
-# In rare cases, we must refer to the absolute path to the build directory where the wheel is built.
-# Similarly to `$(ROOT)`, we can use `$(BUILDROOT)` to refer to this directly which is replaced in vpip.
-# Only applies to environment variables.
-BUILDROOT_PLACEHOLDER = "____buildroot____"
 
 def _add_vpip_compiler_args(ctx, cc_toolchain, copts, conly, args):
     # Set the compiler to the crosstool compilation driver.
@@ -283,13 +283,8 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     if sdist_tar:
         module_base = sdist_tar.path
         inputs_direct.append(sdist_tar)
-
-        # Assume the distribution name is the target name. We could provide an
-        # additional attribute if needed.
-        dist_name = ctx.label.name
         command_args.add("--local-module-base", module_base)
-        command_args.add("--dist-name", dist_name)
-        description = ctx.label.package + ":" + dist_name
+        description = ctx.label.package + ":" + ctx.label.name
     else:
         inputs_direct.extend(ctx.files.srcs)
         if ctx.attr.pip_version.startswith("git+"):
@@ -307,15 +302,17 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     for e in ctx.attr.env:
         env[e] = ctx.expand_make_variables("cmd", ctx.expand_location(ctx.attr.env[e], targets = ctx.attr.tools), {
             "ROOT": ROOT_PLACEHOLDER,
-            "BUILDROOT": BUILDROOT_PLACEHOLDER,
             "GENFILES_ROOT": ROOT_PLACEHOLDER + "/" + genfiles_root,
         })
 
-    if ctx.attr.use_magic_mirror:
+    # Prefer using artifactory if both are passed
+    if ctx.attr.use_artifactory:
+        command_args.add("--index-url", PYPI_ARTIFACTORY_URL)
+        command_args.add("--trusted-host", ARTIFACTORY_HOST)
+    elif ctx.attr.use_magic_mirror:
         command_args.add("--index-url", PYPI_MIRROR_URL)
 
     command_args.add(ROOT_PLACEHOLDER, format = "--root-placeholder=%s")
-    command_args.add(BUILDROOT_PLACEHOLDER, format = "--buildroot-placeholder=%s")
 
     if not ctx.attr.ignore_missing_static_libraries and not allow_dynamic_links(ctx):
         fail("May not disable ignore_missing_static_libraries when dynamic links are not allowed.")
@@ -326,6 +323,30 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
     if is_windows(ctx):
         command_args.add("--ducible", ctx.file._ducible)
         tools.append(ctx.file._ducible)
+
+    if ctx.attr.build_rust:
+        rust_compiler = ctx.toolchains["//build_tools/rust:rust_toolchain"].compiler[DbxRustCompiler]
+
+        # Allow using the rust compiler and the standard libraries from the vpip action.
+        tools.append(rust_compiler.rustc_executable)
+        tools.append(rust_compiler.cargo)
+        inputs_trans.append(rust_compiler.rustlib.files)
+        inputs_trans.append(rust_compiler.rustc_lib.files)
+        tools.append(ctx.executable._rustc_wrapper)
+
+        # Give the path to cargo as well as our rustc wrapper, which will inject
+        # any args we need.
+        command_args.add("--extra-path", ctx.executable._rustc_wrapper.dirname)
+        command_args.add("--extra-path", rust_compiler.cargo.dirname)
+
+        # Cargo likes to write cache files, and they default to $HOME/.cargo,
+        # but /dev/null/.cargo will not make cargo very happy.
+        env["CARGO_HOME"] = "/tmp/cargo"
+
+        # This test the wrapper that sets our args where to actually find rust.
+        # Its just two directories up from the rustc binary. This is a relative
+        # path from the exec root.
+        env["RUST_TC"] = rust_compiler.rustc_executable.dirname + "/../.."
 
     ctx.actions.run(
         inputs = depset(direct = inputs_direct, transitive = inputs_trans),
@@ -417,8 +438,8 @@ def _vpip_rule_impl(ctx, local):
     )
     required_piplibs = depset(transitive = [collect_required_piplibs(ctx.attr.deps)], direct = [ctx.label.name])
 
-    if not ctx.attr.use_magic_mirror:
-        print("Magic mirror is not being used for %s. This should only be used during local testing or 'bzl gen'. use_magic_mirror=False should not be checked in." % (ctx.label,))
+    if not ctx.attr.use_magic_mirror and not ctx.attr.use_artifactory:
+        print("Magic mirror/Artifactory is not being used for %s. This should only be used during local testing or 'bzl gen'. setting both use_magic_mirror=False and use_artifactory=False should not be checked in." % (ctx.label,))
 
     pip_main = {}
     py_configs = _get_build_interpreters_for_target(ctx)
@@ -562,12 +583,15 @@ Can only be set to False when linking dynamic libraries is allowed (_py_link_dyn
         doc = """Use a new, PEP 517-defined installation style instead of the legacy, setup.py-based
 one. Note, it does not support 'global_options' and 'build_options' arguments.""",
     ),
+    "build_rust": attr.bool(default = False),
     "_vpip_tool": attr.label(executable = True, default = Label("//build_tools/py:vpip"), cfg = "host"),
-    "use_magic_mirror": attr.bool(default = True),
+    "use_magic_mirror": attr.bool(default = MAGIC_MIRROR_FALLBACK_PYTHON),
+    "use_artifactory": attr.bool(default = not MAGIC_MIRROR_FALLBACK_PYTHON),
     "_debug_prefix_map_supported": attr.label(default = Label("//build_tools:py_debug_prefix_map_supported")),
     "_py_link_dynamic_libs": attr.label(default = Label("//build_tools:py_link_dynamic_libs")),
     "_vinst": attr.label(default = Label("//build_tools/py:vinst"), cfg = "host", executable = True),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
+    "_rustc_wrapper": attr.label(default = Label("//build_tools/py:rustc"), executable = True, cfg = "host"),
     "_ducible": attr.label(default = Label("@ducible//:ducible.exe"), allow_single_file = True),
     "_linux_platform": attr.label(default = Label("@platforms//os:linux")),
     "_macos_platform": attr.label(default = Label("@platforms//os:macos")),
@@ -586,7 +610,9 @@ dbx_py_pypi_piplib_internal = rule(
     implementation = _dbx_py_pypi_piplib_impl,
     outputs = _vpip_outputs,
     attrs = _pypi_piplib_attrs,
-    toolchains = ALL_TOOLCHAIN_NAMES,
+    toolchains = ALL_TOOLCHAIN_NAMES + (
+        ["//build_tools/rust:rust_toolchain"] if ENABLE_RUST else []
+    ),
     fragments = ["cpp"],
 )
 
@@ -596,7 +622,7 @@ _local_piplib_attrs.update({
     "pip_version": attr.string(),
     "setup_requires": attr.label_list(providers = ["piplib_contents", DbxPyVersionCompatibility]),
     "tools": attr.label_list(cfg = "host"),
-    "_tar_tool": attr.label(default = Label("@rules_pkg//:build_tar"), cfg = "host", executable = True),
+    "_tar_tool": attr.label(default = Label("//build_tools/py:build_tar"), cfg = "host", executable = True),
 })
 
 dbx_py_local_piplib_internal = rule(
@@ -604,7 +630,9 @@ dbx_py_local_piplib_internal = rule(
     outputs = _vpip_outputs,
     attrs = _local_piplib_attrs,
     fragments = ["cpp"],
-    toolchains = ALL_TOOLCHAIN_NAMES,
+    toolchains = ALL_TOOLCHAIN_NAMES + (
+        ["//build_tools/rust:rust_toolchain"] if ENABLE_RUST else []
+    ),
 )
 
 def get_default_py_toolchain_name():
@@ -675,7 +703,10 @@ def dbx_py_binary_base_impl(ctx, internal_bootstrap = False, ext_modules = None)
         internal_bootstrap = internal_bootstrap,
         dynamic_libraries = ctx.attr.dynamic_libraries,
     )
-    runfiles = runfiles.merge(ctx.runfiles(collect_default = True))
+    runfiles = runfiles.merge(ctx.runfiles(
+        files = ctx.files.data,
+        collect_default = True,
+    ))
     return struct(
         executable = output_file,
         runfiles = runfiles,
@@ -961,14 +992,17 @@ def extract_pytest_args(
         plugin_arg = plugin[2:].replace("/", ".").replace(":", ".")
         pytest_args += ["-p", plugin_arg]
 
-    pytest_deps = GLOBAL_PYTEST_PLUGINS + plugins + ["@dbx_build_tools//pip/pytest:pytest_fake"]
+    pytest_deps = GLOBAL_PYTEST_PLUGINS + plugins + ["@dbx_build_tools//pip/pytest:pytest_lib"]
 
     pytest_args += [
         "--junitxml",
         "${XML_OUTPUT_FILE:-/dev/null}",
         # $TESTBRIDGE_TEST_ONLY is set to the exact string sent to `--test_filter`.
+        # It is double quoted to allow spaces in -k argument to support multiple tests filter (' or ' syntax)
+        # Please note it has to be double quotes since we require both substition and quotation
+        # See https://unix.stackexchange.com/questions/16303/
         "-k",
-        "${TESTBRIDGE_TEST_ONLY:-.}",
+        "\"${TESTBRIDGE_TEST_ONLY:-.}\"",
         "--maxfail",
         "${TESTBRIDGE_TEST_RUNNER_FAIL_FAST:-0}",
     ]

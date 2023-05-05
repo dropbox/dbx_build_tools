@@ -23,7 +23,6 @@ py_binary_attrs = {
     ),
     "_blank_py_binary": attr.label(
         default = Label("//build_tools/py:blank_py_binary"),
-        cfg = "host",
     ),
     "_py_link_dynamic_libs": attr.label(default = Label("//build_tools:py_link_dynamic_libs")),
 }
@@ -41,7 +40,8 @@ export ASAN_OPTIONS="detect_leaks=0:suppressions=$RUNFILES/build_tools/py/asan-s
 """
 
 _shared_libraries_windows_tmpl = """
-set PATH={library_search_path};%PATH%
+set DBX_LIBRARY_PATH={library_search_path}
+set PATH=%DBX_LIBRARY_PATH%;%PATH%
 """
 
 _shared_libraries_tmpl = """
@@ -102,6 +102,15 @@ try:
 except Exception:
     # too bad
     pass
+
+# Add shared libraries to DLL search path (Windows only). This is needed because
+# Python is built with a strict DLL search path on Win7+, which does not look at
+# %PATH%. This must be done here because the effect of `AddDllDirectory` is not
+# inherited by child processes and this script `exec`s the code it launches.
+if sys.platform == "win32":
+    for lib_path in os.environ.get('DBX_LIBRARY_PATH', '').split(os.pathsep):
+        if lib_path:
+            os.add_dll_directory(lib_path)
 
 # Run the script as __main__.
 script_dir = os.path.join(runfiles, {main_package})
@@ -463,12 +472,15 @@ __path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
         # Rules that use bootstrap binaries need to set DBX_PYTHON to
         # run bootstrap binaries.
         if is_windows(ctx):
-            python_bin = "%DBX_PYTHON%"
+            python_bin = "%DBX_PYTHON:/=\\%"  # converts forward slashes to backwards
         else:
             python_bin = "$DBX_PYTHON"
     else:
         python_flags = "-ESs"
-        python_bin = python.runfiles_path
+        if is_windows(ctx):
+            python_bin = python.runfiles_path.replace("/", "\\")
+        else:
+            python_bin = python.runfiles_path
 
     # Handle dynamic libraries.
     shared_library_path_setup = ""
@@ -489,10 +501,8 @@ __path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
 
     if is_windows(ctx):
         wrapper_path = inner_wrapper.short_path.replace("/", "\\")
-        python_bin_path = python_bin.replace("/", "\\")
     else:
         wrapper_path = inner_wrapper.short_path
-        python_bin_path = python_bin
 
     # Copy-through the runfiles so we get all transitive dependencies.
     runfiles = ctx.runfiles(
@@ -504,11 +514,9 @@ __path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
 
     # manually merge runfiles of dependencies, as earlier we did not create runfiles
     # with collect_default=True
-    for dep in deps:
-        runfiles = runfiles.merge(dep[DefaultInfo].default_runfiles)
+    runfiles = runfiles.merge_all([dep[DefaultInfo].default_runfiles for dep in deps])
 
-    for d in data:
-        runfiles = runfiles.merge(d[DefaultInfo].default_runfiles)
+    runfiles = runfiles.merge_all([d[DefaultInfo].default_runfiles for d in data])
 
     # Add blank_py_binary to trigger Bazel's automatic __init__.py insertion behavior.
     runfiles = runfiles.merge(ctx.attr._blank_py_binary[DefaultInfo].default_runfiles)
@@ -519,7 +527,7 @@ __path__.extend([os.path.join(os.environ['RUNFILES'], d) for d in (%s,)])
         _binary_wrapper_template(ctx, internal_bootstrap).format(
             python_flags = python_flags,
             python_bin = python_bin,
-            inner_wrapper = inner_wrapper.short_path,
+            inner_wrapper = wrapper_path,
             default_args = default_args,
             shared_library_path_setup = shared_library_path_setup,
         ),

@@ -1,5 +1,3 @@
-# mypy: allow-untyped-defs
-
 """bzl-gen is a small wrapper for adding Dropbox-specific functionality on top of Bazel.
 
 Setting the environment variable BZL_DEBUG=1 yields additional debug info.

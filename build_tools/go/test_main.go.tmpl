@@ -14,6 +14,8 @@ import (
 	undertest "{{.Package}}"
 	{{else if .BenchmarkNames }}
 	undertest "{{.Package}}"
+	{{else if and .IsAtLeastGo1_18 .FuzzTestNames }}
+	undertest "{{.Package}}"
 	{{end}}
 )
 
@@ -42,6 +44,14 @@ var benchmarks = []testing.InternalBenchmark{
 	{"{{.}}", undertest.{{.}} },
 {{end}}
 }
+
+{{if .IsAtLeastGo1_18}}
+var fuzzTests = []testing.InternalFuzzTarget{
+{{range .FuzzTestNames}}
+    {"{{.}}", undertest.{{.}} },
+{{end}}
+}
+{{end}}
 
 func parseIntFromEnv(envVar string, def int, failOnErr bool) int {
 	envValue := os.Getenv(envVar)
@@ -120,16 +130,32 @@ func main() {
 				filteredTests = append(filteredTests, test)
 			}
 		}
-
 		tests = filteredTests
+
+{{if .IsAtLeastGo1_18}}
+        var filteredFuzzTests []testing.InternalFuzzTarget
+        for _, test := range fuzzTests {
+            if strings.Contains(test.Name, testFilter) {
+                filteredFuzzTests = append(filteredFuzzTests, test)
+            }
+        }
+        fuzzTests = filteredFuzzTests
+{{end}}
 	}
 
 	var realTests []testing.InternalTest
-
 	for i := shardId; i < len(tests); i += totalShards {
 		realTests = append(realTests, tests[i])
 	}
-	m := testing.MainStart(testdeps.TestDeps{}, realTests, benchmarks, {{if .IsAtLeastGo1_18}}[]testing.InternalFuzzTarget{}, {{end}}examples)
+
+{{if .IsAtLeastGo1_18}}
+    var realFuzzTests []testing.InternalFuzzTarget
+    for i := shardId; i < len(fuzzTests); i += totalShards {
+        realFuzzTests = append(realFuzzTests, fuzzTests[i])
+    }
+{{end}}
+
+	m := testing.MainStart(testdeps.TestDeps{}, realTests, benchmarks, {{if .IsAtLeastGo1_18}}realFuzzTests, {{end}}examples)
 	{{if .TestMain}}
 	undertest.TestMain(m)
 	{{else}}

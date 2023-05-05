@@ -137,6 +137,7 @@ func ServiceTestCaseProperty() JUnitProperty {
 	return JUnitProperty{Name: TestCaseTypePropertyName, Value: string(ServiceTestCase)}
 }
 
+const SvcStartDurationPropertyName = "svc-sec"
 const CpuTimeMsPropertyName = "cpu-ms"
 const RssMbProperyName = "rss-mb"
 

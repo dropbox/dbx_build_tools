@@ -1,7 +1,0 @@
-dbx_go_library(
-    name = "testdata",
-    data = glob([
-        "*.key",
-        "*.pem",
-    ]),
-)

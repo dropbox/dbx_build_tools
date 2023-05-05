@@ -10,7 +10,7 @@ dbx_go_library(
         "descriptiontest.go",
     ],
     visibility = [
-        "//go/src:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
         "//go/src/github.com/gogo/protobuf/gogoproto",

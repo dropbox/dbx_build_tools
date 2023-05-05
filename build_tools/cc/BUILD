@@ -8,6 +8,11 @@ constraint_value(
 )
 
 constraint_value(
+    name = "drte-v5",
+    constraint_setting = ":drte_version",
+)
+
+constraint_value(
     name = "drte-off",
     constraint_setting = ":drte_version",
 )
@@ -18,6 +23,15 @@ platform(
         "@platforms//os:linux",
         "@platforms//cpu:x86_64",
         ":drte-v3",
+    ],
+)
+
+platform(
+    name = "linux-x64-drte-v5",
+    constraint_values = [
+        "@platforms//os:linux",
+        "@platforms//cpu:x86_64",
+        ":drte-v5",
     ],
 )
 platform(

@@ -9,7 +9,7 @@ dbx_go_library(
         "version.go",
     ],
     visibility = [
-        "//go/src:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
     ],

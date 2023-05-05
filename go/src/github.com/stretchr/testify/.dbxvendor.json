@@ -1,1 +1,1 @@
-{"Module":"github.com/stretchr/testify","Revision":"afd4130c14595c7d37c067f8c883f2b5ec2227e2","Fork":"","Dirty":true}
+{"Module":"github.com/stretchr/testify","Revision":"v1.8.1","Sum":"h1:w7B6lhMri9wdJUVmEZPGGhZzrYTPvgJArz7wNPgYKsk=","Patches":["dbx-patches/bazel.patch"],"Vendor":false,"Sha256":"36f64e4f229f87672ef8de1c756648c4165e76abd034362517578397e824856c"}

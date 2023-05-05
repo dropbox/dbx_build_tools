@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
+	"github.com/bazelbuild/buildtools/edit"
 	"github.com/bazelbuild/buildtools/warn"
 )
 
@@ -570,6 +571,7 @@ func main() {
 
 		warn.FixWarnings(output, []string{"load"}, false, nil) // Remove unused loads.
 		build.Rewrite(output)
+		edit.FixFile(output, "", []string{"mergeLiteralLists"})
 		data := build.Format(output)
 
 		err = ioutil.WriteFile(outputFile, data, 0644)

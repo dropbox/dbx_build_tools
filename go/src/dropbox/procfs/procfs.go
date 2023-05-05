@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 // Only build on Linux, since the use of procfs is platform specific.
@@ -90,10 +91,10 @@ func getTotalVszRssBytes(pids []int) (vsz int64, rss int64, err error) {
 }
 
 type IOStats struct {
-	// Rchar, Wchar, Syscr int64
-	Syscw int64
-	// ReadBytes int64
-	WriteBytes int64
+	// Rchar, Wchar int64
+	Syscr, Syscw int64
+	ReadBytes    int64
+	WriteBytes   int64
 	// CanceledWriteBytes int64
 }
 
@@ -144,12 +145,12 @@ func GetIOStats(pid int) (IOStats, error) {
 		// 	retval.Rchar += u
 		// case "wchar:":
 		// 	retval.Wchar += u
-		// case "syscr:":
-		// 	retval.Syscr += u
+		case "syscr:":
+			retval.Syscr += u
 		case "syscw:":
 			retval.Syscw += u
-		// case "read_bytes:":
-		// 	retval.ReadBytes += u
+		case "read_bytes:":
+			retval.ReadBytes += u
 		case "write_bytes:":
 			retval.WriteBytes += u
 			// case "cancelled_write_bytes:":

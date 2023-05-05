@@ -25,6 +25,6 @@ dbx_go_test(
         "stat_test.go",
     ],
     deps = [
-        "//go/src/gopkg.in/check.v1",
+        "@in_gopkg_check_v1",
     ],
 )

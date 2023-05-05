@@ -13,7 +13,7 @@ from argparse import _SubParsersAction, ArgumentParser
 from typing import Tuple
 
 from build_tools import bazel_utils
-from build_tools.bazel_utils import build_tool, find_workspace
+from build_tools.bazel_utils import build_tool, find_workspace, parse_bazel_args
 from build_tools.bzl_lib import exec_wrapper, metrics
 from build_tools.bzl_lib.commands import bazel_modes
 from build_tools.bzl_lib.itest import itest
@@ -44,59 +44,11 @@ def create_parser() -> Tuple[ArgumentParser, _SubParsersAction]:  # type: ignore
         action="store_true",
         help="When true, skip checking bzl package versions",
     )
+    # Allow for dynamically referring to subparsers
+    # e.g. bzl gen <-- "gen" is in the args.mode
     sp = ap.add_subparsers(dest="mode", metavar="")
 
     return ap, sp
-
-
-global_bazel_flags = (
-    "--host_jvm_debug",
-    "--nohost_jvm_debug",
-    "--master_blazerc",
-    "--nomaster_blazerc",
-    "--master_bazelrc",
-    "--nomaster_bazelrc",
-    "--batch",
-    "--batch_cpu_scheduling",
-    "--block_for_lock",
-    "--deep_execroot",
-    "--nobatch",
-    "--nobatch_cpu_scheduling",
-    "--noblock_for_lock",
-    "--nodeep_execroot",
-)
-
-
-global_bazel_args = (
-    "--host_jvm_args",
-    "--host_jvm_profile",
-    "--blazerc",
-    "--bazelrc",
-    "--io_nice_level",
-    "--max_idle_secs",
-    "--output_base",
-    "--output_user_root",
-)
-
-
-# Extract the mode from argv. This is a best-guess and there may be
-# some edge cases if something very complex is passed in.
-# Return (global args, mode args)
-def parse_bazel_args(argv):
-    global_args = []
-    mode_args = []
-
-    argiter = iter(argv)
-    for x in argiter:
-        if x in global_bazel_flags:
-            global_args.append(x)
-        elif x.startswith(global_bazel_args):
-            global_args.append(x)
-            if "=" not in x:
-                global_args.append(next(argiter))
-        else:
-            mode_args.append(x)
-    return (global_args, mode_args)
 
 
 # A macro to rebuild and run an internal tool.  If the rebuild fails,
@@ -194,13 +146,28 @@ def main(ap, self_target):
     bazel_args, mode_args = parse_bazel_args(remaining_args)
     if args.mode in (None, "help"):
         if not mode_args:
+            # top-level bzl help.
             ap.print_help()
-            print()
-        elif len(mode_args) == 1 and mode_args[0] not in bazel_modes:
+            print(file=sys.stderr)
+            print(
+                "This is for the bzl wrapper. To invoke help for bazel itself, use bzl help --",
+                file=sys.stderr,
+            )
+            print(file=sys.stderr)
+        elif (
+            len(mode_args) == 1
+            and mode_args[0] != "--"
+            and mode_args[0] not in bazel_modes
+        ):
+            # show help for a specific wrapper-provided command
             help_mode_parser = subparser_map[mode_args[0]]
             help_mode_parser.print_help()
         sys.stdout.flush()
-        sys.exit(1 if args.mode is None else 0)
+        if args.mode is None:
+            sys.exit(1)
+        if not mode_args:
+            sys.exit(0)
+        # fallthrough for all other cases to invoke inner bazel help
 
     if args.build_image and not args.build_image.startswith(args.docker_registry):
         args.build_image = os.path.join(args.docker_registry, args.build_image)

@@ -1,6 +1,6 @@
-package runfiles
+//go:build linux || darwin
 
-// +build linux
+package runfiles
 
 import (
 	"errors"
@@ -61,6 +61,7 @@ func DataPath(repoPath string) (string, error) {
 	if strings.HasPrefix(repoPath, "@") {
 		return filepath.Clean(path.Join(runfilesDir, "..", repoPath[1:])), nil
 	}
+
 	return path.Join(runfilesDir, repoPath[2:]), nil
 }
 

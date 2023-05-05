@@ -6,8 +6,9 @@ load(
     "dbx_py_toolchain",
 )
 load(
-    "//thirdparty/cpython:constants.bzl",
+    "//build_tools/drte:constraints.bzl",
     "DRTEV3_LINUX64_CONSTRAINTS",
+    "DRTEV5_LINUX64_CONSTRAINTS",
 )
 
 exports_files([
@@ -15,13 +16,6 @@ exports_files([
     "symbols.lds",
     "gen_2to3_grammar.py",
 ])
-
-config_setting(
-    name = "use-bazel-cpython",
-    values = {
-        "define": "cpython=bazel",
-    },
-)
 
 py_binary(
     name = "zip-stdlib",
@@ -51,6 +45,14 @@ toolchain(
     name = "drte-v3-39-toolchain",
     exec_compatible_with = DRTEV3_LINUX64_CONSTRAINTS,
     target_compatible_with = DRTEV3_LINUX64_CONSTRAINTS,
+    toolchain = ":cpython-39-py_toolchain",
+    toolchain_type = CPYTHON_39_TOOLCHAIN_NAME,
+)
+
+toolchain(
+    name = "drte-v5-39-toolchain",
+    exec_compatible_with = DRTEV5_LINUX64_CONSTRAINTS,
+    target_compatible_with = DRTEV5_LINUX64_CONSTRAINTS,
     toolchain = ":cpython-39-py_toolchain",
     toolchain_type = CPYTHON_39_TOOLCHAIN_NAME,
 )

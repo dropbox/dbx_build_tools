@@ -22,6 +22,8 @@ mkdir -p $(dirname $SVCCTL_LOG)
 # avoid a race where the service launcher hasn't created this file before tail gets to it
 touch $SVCCTL_LOG
 
+echo -n "$EXPOSED_USER_UID" > "$EXPOSED_USER_FILE_LOCATION"
+
 setsid $LAUNCH_CMD --svc.services-only >> $SVCCTL_LOG 2>&1 < /dev/null &
 PID=$!
 

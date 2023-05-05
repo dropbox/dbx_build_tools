@@ -25,6 +25,5 @@ dbx_py_library(
     validate = "strict",
     deps = [
         "//pip/attrs",
-        "//pip/pathlib",
     ],
 )

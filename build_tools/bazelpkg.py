@@ -10,6 +10,7 @@ import multiprocessing
 import os
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 
@@ -372,6 +373,15 @@ def _build_targets(
             bazel_args=bazel_args,
             bazel_build_args=mode_args,
         )
+    # chmod go+rx to everything in out_dir
+    GO_RX = stat.S_IRGRP | stat.S_IXGRP | stat.S_IROTH | stat.S_IXOTH
+    for root, dirs, files in os.walk(out_dir):
+        for d in dirs:
+            p = os.path.join(root, d)
+            os.chmod(p, os.stat(p).st_mode | GO_RX)
+        for f in files:
+            p = os.path.join(root, f)
+            os.chmod(p, os.stat(p).st_mode | GO_RX)
     return pkg_dir, out_file
 
 
@@ -481,7 +491,6 @@ def cmd_pkg(args, bazel_args, mode_args):
     workspace_dir = bazel_utils.find_workspace()
     curdir = os.getcwd()
     os.chdir(workspace_dir)
-    os.umask(0o022)
     # Each target must be of type dbx_pkg_* just for sanity.
     for target_str in args.targets:
         target = bazel_utils.BazelTarget(target_str)

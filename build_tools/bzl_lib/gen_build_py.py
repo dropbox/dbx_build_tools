@@ -9,6 +9,7 @@ import os.path
 from typing import Dict, Iterable, List, Optional, Set, Text
 
 from build_tools import bazel_utils, build_parser
+from build_tools.bzl_lib import selenium_build_util
 from build_tools.bzl_lib.cache import get_build_file_cache
 from build_tools.bzl_lib.cfg import (
     BUILD_INPUT,
@@ -22,7 +23,7 @@ from build_tools.bzl_lib.cfg import (
     WELL_KNOWN_PIP_DIRS,
     WELL_KNOWN_PY_EXTENSION_DIRS,
 )
-from build_tools.bzl_lib.generator import Config, Generator
+from build_tools.bzl_lib.generator import Config, Generator, GeneratorInfo
 from build_tools.bzl_lib.parse_py_imports import parse_imports
 
 BUILD_OUTPUT = "BUILD.gen_build_py~"
@@ -31,6 +32,9 @@ PY_BIN_RULE_TYPES = [
     r for r in PY_RULE_TYPES if r.endswith(("_binary", "_test", "_plugin"))
 ]
 
+RULE_SPECIFIC_ARGS = {
+    "dbx_py_selenium_test": selenium_build_util.build_target_tags,
+}
 # A unified list of Python 2.7 and 3.7 standard library modules. Generated with:
 # sort -u <(python2 build_tools/py/stdlib_modules.py) <(python3.7 build_tools/py/stdlib_modules.py)
 STDLIB_MODULES = frozenset(
@@ -767,6 +771,15 @@ class PyBuildGenerator(Generator):
     has autogen_deps set to True.  bzl gen will consume the intermediate
     files to generate the fully merged BUILD files."""
 
+    def info(self) -> GeneratorInfo:
+        return GeneratorInfo(
+            doc_link="https://dropbox-kms.atlassian.net/wiki/spaces/BUILDTOOLCHAINS/pages/699400327/bzl+gen+-+Python",
+            description="""This creates intermediate BUILD.gen_build_py files which contains
+    dbx_py targets.  The targets' deps are auto-populated if the target
+    has autogen_deps set to True.  bzl gen will consume the intermediate
+    files to generate the fully merged BUILD files.""",
+        )
+
     def __init__(
         self, workspace_dir: str, generated_files: Dict[str, List[str]], cfg: Config
     ) -> None:
@@ -885,7 +898,6 @@ class PyBuildGenerator(Generator):
             deps = build_parser.maybe_expand_attribute(rule.attr_map.get("deps", []))
             validate = "strict" in rule.attr_map.get("validate", "strict")
             python_path = rule.attr_map.get("pythonpath", "")
-
             unknown_imports, unknown_froms = None, None
             if autogen_deps:
                 assert (
@@ -942,6 +954,10 @@ class PyBuildGenerator(Generator):
                 for dep in deps:
                     output.append("        '%s'," % dep)
                 output.append("    ],")
+
+            if rule.rule_type in RULE_SPECIFIC_ARGS:
+                output = RULE_SPECIFIC_ARGS[rule.rule_type](pkg, rule, output)
+
             if rule.rule_type == "dbx_py_library":
                 output.append("    validate = 'strict',")
                 if python_path:
@@ -988,10 +1004,8 @@ class PyBuildGenerator(Generator):
         all_deps = set()  # type: ignore[var-annotated]
         all_unknown_imports = set()  # type: ignore[var-annotated]
         all_unknown_froms = set()  # type: ignore[var-annotated]
-
         for src in set(srcs):
             src = os.path.join(target_dir, src)
-
             filename, parsed = mapping.find_closest_bzl_or_build(
                 os.path.splitext(src)[0]
             )
@@ -1058,7 +1072,11 @@ class PyBuildGenerator(Generator):
         if name == os.path.basename(target_dir):
             all_deps.discard("%s" % pkg)
 
-        return sort_deps(pkg, all_deps), all_unknown_imports, all_unknown_froms
+        return (
+            sort_deps(pkg, all_deps),
+            all_unknown_imports,
+            all_unknown_froms,
+        )
 
 
 def sort_deps(curr_pkg_dir: str, deps: Set[str]) -> List[str]:

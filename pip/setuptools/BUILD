@@ -5,7 +5,7 @@ licenses(["notice"])  # MIT
 # NOTE: //build_tools/py/vpip.py encodes the version of setuptools.
 dbx_py_pypi_piplib(
     name = "setuptools",
-    pip_version = "60.6.0",
+    pip_version = "67.3.2",
     provides = [
         "pkg_resources",
         "setuptools",

@@ -36,7 +36,7 @@ def main() -> None:
     parser.add_argument(
         "--allow-unused-targets",
         action="store_true",
-        help="Allow unused depndencies, useful when using additional_deps for automagically imported things",
+        help="Allow unused dependencies, useful when using additional_deps for automagically imported things",
     )
     args = parser.parse_args()
 

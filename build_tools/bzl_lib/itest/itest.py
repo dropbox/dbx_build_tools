@@ -7,6 +7,7 @@ To test changes locally, prepend BZL_DONT_USE_SQPKG = 1 to your bzl command sinc
 from __future__ import annotations, print_function
 
 import argparse
+import getpass
 import multiprocessing
 import os
 import pipes
@@ -189,6 +190,12 @@ def register_cmd_itest(subparsers):
             action="store_true",
             help="Do not wipe TEST_TMPDIR on service start. This will use a different location on the host machine to store TEST_TMPDIR than the default mode.",
         )
+        sap.add_argument(
+            "--expose-user",
+            action="store_true",
+            help="Exposes current user in itest container's /etc/passwd",
+        )
+
         if command_name == "itest-run":
             sap.set_defaults(detach=False)
         else:
@@ -500,6 +507,7 @@ exec {test} "$@"
         "CLEANDIR": os.path.join(container_tmpdir, "logs")
         if args.persist_tmpdir
         else container_tmpdir,
+        "EXPOSED_USER_UID": os.getuid() if args.expose_user else 0,
     }
 
     history_file = os.path.join(HOST_HOME_DIR, ".bash_history")
@@ -606,6 +614,14 @@ exec {test} "$@"
         )
 
     if exit_code == 0:
+        if args.expose_user:
+            # Run adduser with uid/gid and current login.
+            username = getpass.getuser()
+            uid = os.getuid()
+            subprocess.call(
+                docker_exec_args
+                + ["useradd", "-u", str(uid), "-ms", "/bin/bash", username]
+            )
         # run the test command
         with metrics.create_and_register_timer("test_ms"):
             # NOT check_call. Even if this script doesn't exit with 0 (e.g. test fails),

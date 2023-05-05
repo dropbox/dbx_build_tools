@@ -183,6 +183,7 @@ PRIVATE_PYTHON_HEADERS = [
     "Include/internal/pycore_import.h",
     "Include/internal/pycore_initconfig.h",
     "Include/internal/pycore_interp.h",
+    "Include/internal/pycore_long.h",
     "Include/internal/pycore_object.h",
     "Include/internal/pycore_pathconfig.h",
     "Include/internal/pycore_pyerrors.h",

@@ -1,4 +1,6 @@
-package(default_visibility = ["//build_tools:__subpackages__"])
+package(default_visibility = [
+    "//build_tools:__subpackages__",
+])
 
 dbx_py_library(
     name = "commands",
@@ -12,11 +14,13 @@ dbx_py_library(
         "gen_build_go.py",
         "gen_build_py.py",
         "gen_commands.py",
+        "gen_describe.py",
         "generator.py",
     ],
     data = [
         "//build_tools:buildfmt",
         "//go/src/dropbox/build_tools/gen-build-go",
+        "//go/src/dropbox/build_tools/gen-build-go:config.json",
     ],
 )
 
@@ -64,4 +68,22 @@ dbx_py_library(
 dbx_py_library(
     name = "cfg",
     srcs = ["cfg.py"],
+)
+
+dbx_py_library(
+    name = "selenium_build_util_lib",
+    srcs = [
+        "selenium_build_util.py",
+    ],
+    visibility = [
+        "//build_tools:__subpackages__",
+        "//selenium_tests/config:__subpackages__",
+    ],
+)
+
+dbx_py_pytest_test(
+    name = "selenium_build_util_tests",
+    srcs = [
+        "selenium_build_util_tests.py",
+    ],
 )

@@ -143,6 +143,13 @@ config_setting(
 )
 
 config_setting(
+    name = "use-drte-v5",
+    values = {
+        "crosstool_top": "@drte_v5_build_sysroot//:drte-v5",
+    },
+)
+
+config_setting(
     name = "use-asan",
     values = {
         "define": "sanitize=address",
@@ -263,7 +270,7 @@ dbx_sh_binary(
     srcs = ["buildfmt.sh"],
     data = [
         "buildifier.json",
-        "//go/src/github.com/bazelbuild/buildtools/buildifier",
+        "@com_github_bazelbuild_buildtools//buildifier",
     ],
 )
 

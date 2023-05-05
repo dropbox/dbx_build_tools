@@ -6,30 +6,31 @@
 # bunch of intermediate artifacts in a build-temp/ directory.
 
 if [[ $# != 2 ]]; then
-    echo "pass version to build (3.8 or 3.9) as the first argument and drte version (e.g., v2) as the second"
+    echo "pass version to build (3.x) as the first argument and drte version (e.g., v5) as the second"
     exit 2
 fi
 
 ver="$1"
-if [[ "$ver" = "3.8" ]]; then
-    repo=org_python_cpython_38
-    version=3.8.8-dbx1
-    abitag=3.8
-    pgo_task=("--pgo")
-elif [[ "$ver" = "3.9" ]]; then
+if [[ "$ver" = "3.9" ]]; then
     repo=org_python_cpython_39
-    version=3.9.11-dbx1
+    version=3.9.14-dbx1
     abitag=3.9
-    pgo_task=("--pgo")
+elif [[ "$ver" = "3.10" ]]; then
+    repo=org_python_cpython_310
+    version=3.10.5-dbx1
+    abitag=3.10
 fi
 
 drte_version="$2"
+
+pgo_task=("--pgo")
 
 declare -a flags
 # Enable optimized builds
 flags+=("--compilation_mode=opt" "--experimental_omitfp")
 # Use the requested DRTE version.
 flags+=("--crosstool_top=@drte_${drte_version}_build_sysroot//:drte-${drte_version}")
+flags+=("--platforms=//build_tools/cc:linux-x64-drte-${drte_version}")
 # Enable link time optimization.
 flags+=("--copt=-flto" "--linkopt=-flto" "--linkopt=-flto-partition=none")
 # Set -g during linking, so the LTO step generates debug info.

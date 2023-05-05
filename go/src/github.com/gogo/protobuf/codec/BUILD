@@ -9,7 +9,7 @@ dbx_go_library(
         "codec.go",
     ],
     visibility = [
-        "//go/src:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
         "//go/src/github.com/gogo/protobuf/proto",

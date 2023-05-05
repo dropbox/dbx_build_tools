@@ -9,7 +9,7 @@ dbx_go_library(
         "oneofcheck.go",
     ],
     visibility = [
-        "//go/src:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
         "//go/src/github.com/gogo/protobuf/gogoproto",

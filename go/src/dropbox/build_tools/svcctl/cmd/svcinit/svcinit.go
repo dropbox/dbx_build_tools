@@ -20,6 +20,9 @@ import (
 	"syscall"
 	"time"
 
+	// We can't use the suggested dropbox/protobuf/proto package here because
+	// we want to easily be able to export to the open-source dbx_build_tools.
+	// See the open-source-bazel-validation project on Changes.
 	"github.com/gogo/protobuf/proto"
 
 	"dropbox/build_tools/junit"
@@ -123,7 +126,7 @@ func junitTestcasesForServices(testTarget string, services []serviceResult) []ju
 	for _, svc := range services {
 		failMsg := ""
 		if svc.failed {
-			failMsg = fmt.Sprintf("Service %s failed", svc.name)
+			failMsg = fmt.Sprintf("Service %s failed\nhttps://dbx.link/effective-integration-testing includes tools that may help diagnose service issues in service-heavy targets.", svc.name)
 			if data := svc.failureMessage.GetLog(); data != "" {
 				failMsg += "\n" + data
 			}
@@ -132,6 +135,7 @@ func junitTestcasesForServices(testTarget string, services []serviceResult) []ju
 		if svc.failureMessage.GetType() == svclib_proto.StatusResp_FailureMessage_HAS_RACES {
 			tc.Properties = append(tc.Properties, junit.FailedBecause(junit.HasRaces))
 		}
+		tc.Properties = append(tc.Properties, junit.JUnitProperty{Name: junit.SvcStartDurationPropertyName, Value: strconv.Itoa(int(svc.startDuration.Seconds()))})
 		tc.Properties = append(tc.Properties, junit.JUnitProperty{Name: junit.CpuTimeMsPropertyName, Value: strconv.Itoa(int(svc.cpuTime.Seconds() * 1000))})
 		tc.Properties = append(tc.Properties, junit.JUnitProperty{Name: junit.RssMbProperyName, Value: strconv.Itoa(int(svc.rssMb))})
 		additionalTests = append(additionalTests, tc)
@@ -561,7 +565,7 @@ func main() {
 		if actualXMLOutputFile := os.Getenv("XML_OUTPUT_FILE"); actualXMLOutputFile != "" {
 			failing, jerr := isFailingJUnit(actualXMLOutputFile)
 			if jerr != nil {
-				log.Println("Failed to interpret final junit file:", jerr)
+				log.Printf("Failed to interpret final junit file %s: %v\n", actualXMLOutputFile, jerr)
 			}
 			if failing {
 				log.Println("Test exited successfully, but JUnit indicates failure; failing.")
@@ -579,9 +583,25 @@ func isFailingJUnit(path string) (bool, error) {
 	defer func() {
 		_ = f.Close()
 	}()
+	var suites []junit.JUnitTestSuite
+	// First try to parse as a single test suite.
 	suite, serr := junit.ParseFromReader(f)
-	if serr != nil {
-		return false, serr
+	if serr == nil {
+		suites = []junit.JUnitTestSuite{*suite}
+	} else {
+		// If that fails, parse as a set of multiple suites.
+		f.Seek(0, io.SeekStart)
+		suitesObj, serr := junit.ParseFromReaderSuites(f)
+		if serr != nil {
+			return false, serr
+		}
+		suites = suitesObj.Suites
 	}
-	return suite.HasFailingTest(), nil
+	for _, suite := range suites {
+		if suite.HasFailingTest() {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }

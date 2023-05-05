@@ -33,7 +33,7 @@ func TestResolveGoModVersion(t *testing.T) {
 
 func TestFindGoModDeps(t *testing.T) {
 	fixture := runfiles.MustDataPath("@dbx_build_tools//go/src/dropbox/devtools/gomodlib/fixtures")
-	deps, err := FindGoModDeps(fixture)
+	deps, err := FindGoModDeps(fixture + "/go.mod")
 	require.NoError(t, err)
 	require.NotEmpty(t, deps)
 }

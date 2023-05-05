@@ -1,6 +1,10 @@
+load("@rules_pkg//:pkg.bzl", "pkg_deb")
+
 # Create a dummy rule. These type of rules will be handle externally
 # until there is a better story for Starlark rules accessing runfiles.
 
+# TODO(oleg): remove stub and replace custom pkg impl in build_tools/bazelpkg.py
+# with dbx_pkg_tar + upstream pkg_deb.
 def pkg_deb_impl(ctx):
     ctx.actions.run_shell(
         command = "echo 'dbx_pkg_deb targets must be built using bzl pkg'; exit 1",
@@ -268,15 +272,22 @@ def pkg_sqfs_impl(ctx):
     if ctx.attr.compression_level:
         args.add("--compression-level", str(ctx.attr.compression_level))
 
+    if ctx.attr.link_buckets:
+        args.add("--link-buckets", bool(ctx.attr.link_buckets))
+
+    execution_requirements = {
+        "requires-fakeroot": "1",
+    }
+    if "local" in ctx.attr.tags:
+        execution_requirements["local"] = "1"
+
     ctx.actions.run(
         outputs = [ctx.outputs.executable],
         inputs = depset(transitive = [files], direct = extra_input_files),
         executable = ctx.executable._build_sqfs,
         arguments = [args],
         mnemonic = "sqfs",
-        execution_requirements = {
-            "requires-fakeroot": "1",
-        },
+        execution_requirements = execution_requirements,
     )
 
 def dbx_pkg_sqfs(name, tags = [], **kwargs):
@@ -293,6 +304,16 @@ _dbx_pkg_sqfs = rule(
             allow_empty = True,
             doc = "List of tests that need to be green before the service can safely deploy. " +
                   "This attribute will be ignored if yaps config explicitly sets repo_key.",
+            default = [],
+        ),
+        "docker_release_tests": attr.string_list(
+            mandatory = False,
+            allow_empty = True,
+            default = [],
+        ),
+        "selenium_release_tests": attr.string_list(
+            mandatory = False,
+            allow_empty = True,
             default = [],
         ),
         "block_size_kb": attr.int(
@@ -334,16 +355,113 @@ _dbx_pkg_sqfs = rule(
                   "By default, this is set to False as empty targets are usually user-errors, but " +
                   "auto-generated SquashFS packages may find this useful.",
         ),
+        "link_buckets": attr.bool(
+            default = False,
+            doc = "If true, break up files with many duplicates into different groups of hard links.",
+        ),
         "_repo_revision": attr.label(
             default = Label("//:repo_revision"),
             executable = False,
         ),
         "_build_sqfs": attr.label(
-            default = Label("//go/src/dropbox/build_tools/build-sqfs"),
+            default = Label("//go/src/dropbox/build_tools/build-sqfs:build-sqfs_norace"),
             executable = True,
-            cfg = "host",
+            cfg = "exec",
         ),
     },
     # Avoids warnings about the rule name and output being the same.
     executable = True,
 )
+
+dbx_pkg_tar_attrs = {
+    "srcs": attr.label_list(allow_files = True),
+    "package_dir": attr.string(mandatory = True),
+    "extension": attr.string(
+        default = "tar",
+        values = ["tar", "tar.gz"],
+    ),
+    "allow_empty_targets": attr.bool(
+        default = False,
+        doc = "If true, disables the assertion that all data targets must have files to package. " +
+              "Setting this to false allows you to package empty filegroups, for example. " +
+              "By default, this is set to False as empty targets are usually user-errors, but " +
+              "auto-generated SquashFS packages may find this useful.",
+    ),
+    "_build_tar": attr.label(
+        default = Label("//go/src/dropbox/build_tools/build-tar:build-tar_norace"),
+        executable = True,
+        cfg = "exec",
+    ),
+    "preserve_symlinks": attr.bool(
+        default = False,
+        doc = "Controls whether or not to preserve symlinks found in the Bazel outputs. " +
+              "If set to True, prevents dereferencing of any symlinks (for example, created " +
+              "by a genrule) and instead recreates the symlink inside the package.",
+    ),
+}
+
+def dbx_pkg_tar_impl(ctx):
+    out = ctx.actions.declare_file(ctx.label.name + "." + ctx.attr.extension)
+
+    args = ctx.actions.args()
+    args.add("--package-dir", ctx.attr.package_dir)
+    args.add("--output", out.path)
+
+    files, manifest, symlink = _collect_data(
+        ctx,
+        ctx.attr.srcs,
+        dict(),
+        "",
+    )
+
+    extra_input_files = [manifest, symlink]
+    args.add("--manifest", manifest)
+    args.add("--symlink", symlink)
+
+    ctx.actions.run(
+        outputs = [out],
+        executable = ctx.executable._build_tar,
+        inputs = depset(transitive = [files], direct = extra_input_files),
+        arguments = [args],
+        mnemonic = "tar",
+    )
+    return [DefaultInfo(files = depset([out]))]
+
+_dbx_pkg_tar = rule(
+    implementation = dbx_pkg_tar_impl,
+    attrs = dbx_pkg_tar_attrs,
+)
+
+def dbx_pkg_tar(name, tags = [], **kwargs):
+    _dbx_pkg_tar(name = name, tags = tags + ["tar"], **kwargs)
+
+def dbx_pkg_deb_new(
+        name = "",
+        data = (),
+        prefix = "/usr/bin",
+        package = None,
+        version = None,
+        depends = (),
+        postinst = None,
+        preserve_symlinks = False,
+        testonly = False):
+    dbx_pkg_tar(
+        name = name + ".tar",
+        srcs = data,
+        extension = "tar.gz",
+        package_dir = prefix,
+        preserve_symlinks = False,
+        testonly = testonly,
+    )
+
+    pkg_deb(
+        name = name,
+        architecture = "amd64",
+        data = name + ".tar",
+        description = name,
+        maintainer = "Dropbox",
+        package = package,
+        postinst = postinst,
+        version = version,
+        testonly = testonly,
+    )

@@ -20,6 +20,8 @@ GLOBAL_PYTEST_ARGS = [
 NON_THIRDPARTY_PACKAGE_PREFIXES = []
 
 PYPI_MIRROR_URL = "https://pypi.org/simple/"
+ARTIFACTORY_HOST = "dbx-artifactory-primary.awsvip.dbxnw.net"
+PYPI_ARTIFACTORY_URL = "http://{}/artifactory/python-local-index".format(ARTIFACTORY_HOST)
 
 ALL_ABIS = [
     cpython_39,
@@ -30,3 +32,5 @@ PY3_TEST_ABI = cpython_39
 PY3_ALTERNATIVE_TEST_ABIS = []
 
 PY3_DEFAULT_BINARY_ABI = cpython_39
+
+ENABLE_RUST = False

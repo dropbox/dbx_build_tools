@@ -4,4 +4,5 @@ dbx_go_binary(
         "//build_tools:chronic",
         "@com_github_plougher_squashfs_tools//:mksquashfs",
     ],
+    generate_norace_binary = True,
 )

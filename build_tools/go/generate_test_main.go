@@ -5,12 +5,10 @@ package main
 import (
 	"flag"
 	"go/ast"
-	"unicode"
 	"go/doc"
 	"go/parser"
 	"go/token"
 	"log"
-	"unicode/utf8"
 	"os"
 	"path"
 	"regexp"
@@ -18,19 +16,22 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	"unicode"
+	"unicode/utf8"
 )
 
 // Holds template data.
 type TestsContext struct {
-	HasTests       bool
-	HasExamples    bool
-	Package        string
-	Names          []string
-	BenchmarkNames []string
-	Examples       []*doc.Example
-	CoverEnabled   bool
-	CoverVars      map[string]string
-	TestMain bool
+	HasTests        bool
+	HasExamples     bool
+	Package         string
+	Names           []string
+	BenchmarkNames  []string
+	FuzzTestNames   []string
+	Examples        []*doc.Example
+	CoverEnabled    bool
+	CoverVars       map[string]string
+	TestMain        bool
 	IsAtLeastGo1_18 bool
 }
 
@@ -73,7 +74,7 @@ func main() {
 	pkg := flag.String("package", "", "package from which to import test methods.")
 	cover := flag.Bool("cover", false, "if set, enable test coverage.")
 	out := flag.String("output", "", "output file to write. Defaults to stdout.")
-	goVersion := flag.String("go-version", "1.16", "the version of Go the tests are meant to run under")
+	goVersion := flag.String("go-version", "1.18", "the version of Go the tests are meant to run under")
 	flag.Parse()
 
 	versionRegex := regexp.MustCompile("(\\d+)[.](\\d+)")
@@ -111,8 +112,8 @@ func main() {
 
 	isAtLeastGo1_18 := versionMajor > 1 || (versionMajor == 1 && versionMinor >= 18)
 	context := TestsContext{
-		Package:      *pkg,
-		CoverEnabled: *cover,
+		Package:         *pkg,
+		CoverEnabled:    *cover,
 		IsAtLeastGo1_18: isAtLeastGo1_18,
 	}
 	testFileSet := token.NewFileSet()
@@ -156,6 +157,8 @@ func main() {
 				context.HasTests = true
 			case isTest(name, "Benchmark"):
 				context.BenchmarkNames = append(context.BenchmarkNames, name)
+			case isTest(name, "Fuzz"):
+				context.FuzzTestNames = append(context.FuzzTestNames, name)
 			}
 		}
 		ex := doc.Examples(parse)
@@ -167,7 +170,6 @@ func main() {
 			context.Examples = append(context.Examples, e)
 		}
 	}
-
 
 	if !context.HasTests && len(context.Examples) == 0 && len(context.BenchmarkNames) == 0 {
 		log.Fatalf("No test methods (functions with prefix `Test`) or benchmarks (functions with prefix `Benchmark`) found in files %s", flag.Args())

@@ -13,8 +13,8 @@ dbx_go_library(
         "//go/src/dropbox:__subpackages__",
     ],
     deps = [
-        "//go/src/golang.org/x/mod/modfile",
-        "//go/src/golang.org/x/mod/module",
+        "@org_golang_x_mod//modfile",
+        "@org_golang_x_mod//module",
     ],
 )
 
@@ -29,8 +29,8 @@ dbx_go_test(
     ],
     deps = [
         "//go/src/dropbox/runfiles",
-        "//go/src/github.com/stretchr/testify/require",
-        "//go/src/golang.org/x/mod/modfile",
-        "//go/src/golang.org/x/mod/module",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_x_mod//modfile",
+        "@org_golang_x_mod//module",
     ],
 )

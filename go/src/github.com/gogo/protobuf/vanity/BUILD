@@ -13,7 +13,7 @@ dbx_go_library(
         "msg.go",
     ],
     visibility = [
-        "//go/src:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
         "//go/src/github.com/gogo/protobuf/gogoproto",

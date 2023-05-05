@@ -1,0 +1,32 @@
+Read nsswitch.conf from the sysroot not the system.
+
+nsswitch.conf can cause glibc to try to load dynamic libraries, so we
+need to keep this configuration file separate from the system's.
+
+diff --git a/nss/Makefile b/nss/Makefile
+index a5cd2aaca..4f58cfd53 100644
+--- a/nss/Makefile
++++ b/nss/Makefile
+@@ -44,6 +44,10 @@ have-sunrpc		:= 0
+ endif
+ CPPFLAGS-getent.c	= -DHAVE_SUNRPC=$(have-sunrpc)
+
++CPPFLAGS-nsswitch.c	 = -D'SYSCONFDIR="$(sysconfdir)"'
++CPPFLAGS-nss_database.c = -D'SYSCONFDIR="$(sysconfdir)"'
++CPPFLAGS-nss_module.c   = -D'SYSCONFDIR="$(sysconfdir)"'
++
+ others                  := getent makedb
+ install-bin             := getent makedb
+ makedb-modules = xmalloc hash-string
+diff --git a/resolv/netdb.h b/resolv/netdb.h
+index 66a1baaf6..6f5c7a0f2 100644
+--- a/resolv/netdb.h
++++ b/resolv/netdb.h
+@@ -43,7 +43,7 @@
+ #define	_PATH_HEQUIV		"/etc/hosts.equiv"
+ #define	_PATH_HOSTS		"/etc/hosts"
+ #define	_PATH_NETWORKS		"/etc/networks"
+-#define	_PATH_NSSWITCH_CONF	"/etc/nsswitch.conf"
++#define	_PATH_NSSWITCH_CONF	SYSCONFDIR "/nsswitch.conf"
+ #define	_PATH_PROTOCOLS		"/etc/protocols"
+ #define	_PATH_SERVICES		"/etc/services"

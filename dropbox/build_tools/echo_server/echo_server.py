@@ -12,7 +12,7 @@ class EchoHandler(socketserver.StreamRequestHandler):
         print("Client {}:{} sent: {!r}".format(ip, port, data))
         sys.stdout.flush()
         response = "You sent this from {}:{} - {!r}\n".format(ip, port, data)
-        self.request.sendall(response)
+        self.request.sendall(response.encode("utf-8"))
 
 
 def main() -> None:

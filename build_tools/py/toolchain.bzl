@@ -2,8 +2,10 @@ load("//build_tools/windows:windows.bzl", "is_windows")
 
 _cpython_38_ATTR = "cpython_38"
 _cpython_39_ATTR = "cpython_39"
+_cpython_310_ATTR = "cpython_310"
 _cpython_38_BUILD_TAG = "cpython-38"
 _cpython_39_BUILD_TAG = "cpython-39"
+_cpython_310_BUILD_TAG = "cpython-310"
 _cpython_27_BUILD_TAG = "cpython-27"
 
 cpython_38 = struct(
@@ -16,13 +18,20 @@ cpython_39 = struct(
     attr = _cpython_39_ATTR,
     major_python_version = 3,
 )
+cpython_310 = struct(
+    build_tag = _cpython_310_BUILD_TAG,
+    attr = _cpython_310_ATTR,
+    major_python_version = 3,
+)
 
 CPYTHON_38_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_38"
 CPYTHON_39_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_39"
+CPYTHON_310_TOOLCHAIN_NAME = "@dbx_build_tools//build_tools/py:toolchain_310"
 
 BUILD_TAG_TO_TOOLCHAIN_MAP = {
     cpython_38.build_tag: CPYTHON_38_TOOLCHAIN_NAME,
     cpython_39.build_tag: CPYTHON_39_TOOLCHAIN_NAME,
+    cpython_310.build_tag: CPYTHON_310_TOOLCHAIN_NAME,
 }
 
 DbxPyInterpreter = provider(fields = [

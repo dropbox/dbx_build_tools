@@ -15,7 +15,7 @@ fi
 # Install various packages needed to do the build.
 apt-get update
 # "basic" build utilities
-apt-get install -y perl gawk make autoconf
+apt-get install -y perl gawk make autoconf rsync texinfo python3
 # required for downloading, unpacking sources, and applying patches
 apt-get install -y xz-utils wget bzip2 cpio dpkg-dev
 # We need some toolchain packages to bootstrap the build, but don't want them to

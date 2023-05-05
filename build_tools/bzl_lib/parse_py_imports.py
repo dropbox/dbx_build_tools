@@ -1,4 +1,4 @@
-# mypy: allow-untyped-defs, no-check-untyped-defs
+# mypy: allow-untyped-defs
 from __future__ import print_function
 
 import ast

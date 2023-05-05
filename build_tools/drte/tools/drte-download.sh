@@ -16,7 +16,7 @@ echo "changing to $TAR_DIR"
 mkdir -p $TAR_DIR
 cd $TAR_DIR
 
-wget -c https://forge-magic-mirror.awsvip.dbxnw.net/git-archives/glibc-${glibc_version}.tgz
+wget -c https://forge-magic-mirror.awsvip.dbxnw.net/archives/glibc/glibc-${glibc_version}.tgz
 wget -c https://forge-magic-mirror.awsvip.dbxnw.net/archives/binutils/binutils-${binutils_version}.tar.bz2
 wget -c https://forge-magic-mirror.awsvip.dbxnw.net/archives/gcc/gcc-${gcc_version}.tar.xz
 wget -c https://forge-magic-mirror.awsvip.dbxnw.net/archives/gmp/gmp-${gmp_version}.tar.bz2

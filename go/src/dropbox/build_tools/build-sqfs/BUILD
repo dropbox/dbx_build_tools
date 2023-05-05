@@ -12,11 +12,12 @@ dbx_go_binary(
         "//build_tools:chronic",
         "@com_github_plougher_squashfs_tools//:mksquashfs",
     ],
+    generate_norace_binary = True,
     visibility = [
         "//visibility:public",
     ],
     deps = [
         "//go/src/dropbox/runfiles",
-        "//go/src/golang.org/x/sys/unix",
+        "@org_golang_x_sys//unix",
     ],
 )

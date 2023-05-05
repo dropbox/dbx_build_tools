@@ -6,24 +6,41 @@ load("//build_tools/go:go.bzl", "dbx_go_library", "dbx_go_test")
 dbx_go_library(
     name = "genbuildgolib",
     srcs = [
+        "embed.go",
         "genbuildgolib.go",
+        "tagmap.go",
+        "targetlist.go",
+        "utils.go",
     ],
     visibility = [
         "//go/src/atlas:__subpackages__",
         "//go/src/dropbox:__subpackages__",
     ],
     deps = [
-        "//go/src/github.com/bazelbuild/buildtools/build",
+        "//go/src/godropbox/errors",
+        "@com_github_bazelbuild_buildtools//build",
+        "@org_golang_x_mod//modfile",
+        "@org_golang_x_mod//module",
     ],
 )
 
 dbx_go_test(
     name = "genbuildgolib_test",
     srcs = [
+        "embed.go",
+        "embed_test.go",
         "genbuildgolib.go",
         "genbuildgolib_test.go",
+        "tagmap.go",
+        "tagmap_test.go",
+        "targetlist.go",
+        "utils.go",
     ],
     deps = [
-        "//go/src/github.com/bazelbuild/buildtools/build",
+        "//go/src/godropbox/errors",
+        "@com_github_bazelbuild_buildtools//build",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_x_mod//modfile",
+        "@org_golang_x_mod//module",
     ],
 )

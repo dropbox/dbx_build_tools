@@ -12,7 +12,8 @@ dbx_go_binary(
         "//visibility:public",
     ],
     deps = [
-        "//go/src/github.com/bazelbuild/buildtools/build",
-        "//go/src/github.com/bazelbuild/buildtools/warn",
+        "@com_github_bazelbuild_buildtools//build",
+        "@com_github_bazelbuild_buildtools//edit",
+        "@com_github_bazelbuild_buildtools//warn",
     ],
 )

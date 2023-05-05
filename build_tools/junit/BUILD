@@ -4,10 +4,20 @@
 package(default_visibility = ["//visibility:public"])
 
 load("//build_tools/py:py.bzl", "dbx_py_binary")
+load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 dbx_py_binary(
     name = "junit_wrapper",
     testonly = True,
     srcs = ["junit_wrapper.py"],
     main = "junit_wrapper.py",
+)
+
+bzl_library(
+    name = "junit_bzl",
+    srcs = ["junit.bzl"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//build_tools/sh:sh_bzl",
+    ],
 )

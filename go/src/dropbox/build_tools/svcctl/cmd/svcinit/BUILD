@@ -26,6 +26,7 @@ dbx_go_binary(
 dbx_go_test(
     name = "svcinit_test",
     srcs = [
+        "failing_junit_test.go",
         "svcinit.go",
         "xml_mangling_test.go",
     ],
@@ -37,6 +38,6 @@ dbx_go_test(
         "//go/src/dropbox/proto/build_tools/svclib",
         "//go/src/dropbox/runfiles",
         "//go/src/github.com/gogo/protobuf/proto",
-        "//go/src/github.com/stretchr/testify/require",
+        "@com_github_stretchr_testify//require",
     ],
 )

@@ -10,7 +10,6 @@ dbx_py_library(
     deps = [
         ":builtins",
         "//build_tools/bzl_lib:parse_py_imports_lib",
-        "//pip/pathlib",
         "//pip/typing",
     ],
 )
@@ -20,7 +19,6 @@ dbx_py_pytest_test(
     srcs = ["bazel_deps_test.py"],
     deps = [
         ":bazel_deps",
-        "//pip/pathlib",
         "//pip/typing",
     ],
 )
@@ -33,7 +31,6 @@ dbx_py_binary(
     visibility = ["//visibility:public"],
     deps = [
         ":bazel_deps",
-        "//pip/pathlib",
         "//pip/typing",
     ],
 )

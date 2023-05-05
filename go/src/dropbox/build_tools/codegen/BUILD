@@ -27,6 +27,6 @@ dbx_go_test(
         "py_writer.go",
     ],
     deps = [
-        "//go/src/github.com/stretchr/testify/assert",
+        "@com_github_stretchr_testify//assert",
     ],
 )

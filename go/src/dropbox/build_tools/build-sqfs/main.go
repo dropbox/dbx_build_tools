@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"flag"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"log"
 	"os"
@@ -36,6 +37,11 @@ const (
 	directoryMode               = 0755
 	fileModeOrMask  os.FileMode = os.FileMode(syscall.S_IRUSR) | syscall.S_IRGRP | syscall.S_IROTH
 	fileModeAndMask os.FileMode = ^(os.FileMode(syscall.S_IWOTH) | syscall.S_IWUSR | syscall.S_IWGRP)
+
+	// The maximum number of hard links we can create before creating a
+	// new file. This number should be low enough that we never hit any
+	// file system limits (the limit is 65000 on ext2/3/4).
+	maxHardLinks = 30000
 )
 
 var (
@@ -58,7 +64,10 @@ func contentAddressableHash(filePath string, stat os.FileInfo) (string, error) {
 		return "", err
 	}
 	// include file mode in hash as we will be using this to create hardlinks - multiple hardlinks of the same file must have the same mode/metadata
-	hash := hasher.Sum([]byte(fmt.Sprintf("%s", stat.Mode())))
+	if _, err := io.WriteString(hasher, fmt.Sprintf("%s", stat.Mode())); err != nil {
+		return "", err
+	}
+	hash := hasher.Sum(nil)
 	return fmt.Sprintf("%x", hash), nil
 }
 
@@ -116,7 +125,7 @@ func readManifest(manifestFile string) ([]*manifestEntry, error) {
 	return entries, nil
 }
 
-func prepareContentAddressableSrcs(entries []*manifestEntry, contentsDir string) (map[string]string, error) {
+func prepareContentAddressableSrcs(entries []*manifestEntry, contentsDir string, linkBuckets bool) (map[string]string, map[string]int, error) {
 	if *verbose {
 		start := time.Now()
 		defer func() {
@@ -125,6 +134,7 @@ func prepareContentAddressableSrcs(entries []*manifestEntry, contentsDir string)
 	}
 	var lock sync.Mutex
 	contentMap := map[string]string{}
+	duplicateSrcCount := map[string]int{}
 	srcChan := make(chan string, workerCount)
 	defer func() {
 		for _ = range srcChan {
@@ -138,6 +148,9 @@ func prepareContentAddressableSrcs(entries []*manifestEntry, contentsDir string)
 				lock.Unlock()
 				srcChan <- entry.src
 			} else {
+				if linkBuckets && entry.src != "" {
+					duplicateSrcCount[entry.src] += 1
+				}
 				lock.Unlock()
 			}
 		}
@@ -186,6 +199,9 @@ func prepareContentAddressableSrcs(entries []*manifestEntry, contentsDir string)
 						}
 						lock.Lock()
 						contentMap[src] = hashPath
+						if linkBuckets {
+							duplicateSrcCount[src] += 1
+						}
 						lock.Unlock()
 						continue
 					}
@@ -204,6 +220,9 @@ func prepareContentAddressableSrcs(entries []*manifestEntry, contentsDir string)
 				}
 				lock.Lock()
 				contentMap[src] = hashPath
+				if linkBuckets {
+					duplicateSrcCount[src] += 1
+				}
 				lock.Unlock()
 			}
 		}(&lock, &wg)
@@ -217,12 +236,50 @@ func prepareContentAddressableSrcs(entries []*manifestEntry, contentsDir string)
 		consolidatedError = fmt.Errorf("%s\n%s", consolidatedError, err)
 	}
 	if consolidatedError != nil {
-		return nil, consolidatedError
+		return nil, nil, consolidatedError
 	}
-	return contentMap, nil
+	// For each source file, we lookup it's path in the content addressable storage,
+	// and sum up the total number of references. This will give us the number of
+	// hardlinks that need to be created for each file in CAS.
+	linkCount := make(map[string]int)
+	for src, numDuplicates := range duplicateSrcCount {
+		hashPath := contentMap[src]
+		linkCount[hashPath] += numDuplicates
+	}
+	// For files in the CAS that exceed the maximum number of hardlinks (maxHardLinks),
+	// we duplicate them until we have N many files such that we can create N "buckets"
+	// of hardlinks where the number of links in each bucket does not exceed maxHardLinks.
+	for hashPath, numLinks := range linkCount {
+		if numLinks > maxHardLinks {
+			// numFiles is the number of buckets, N
+			numFiles := (numLinks + maxHardLinks - 1) / maxHardLinks
+			// Update the map from hashPath->total_links to hashPath->N
+			linkCount[hashPath] = numFiles
+			for i := 0; i < numFiles; i++ {
+				fileCopyName := fmt.Sprintf("%s-%d", hashPath, i)
+				if err := copyFile(hashPath, fileCopyName); err != nil {
+					return nil, nil, err
+				}
+				stat, err := os.Stat(hashPath)
+				if err != nil {
+					return nil, nil, err
+				}
+				newMode := stat.Mode()&fileModeAndMask | fileModeOrMask
+				if err := os.Chmod(fileCopyName, newMode); err != nil {
+					return nil, nil, err
+				}
+				if err := fixTime(fileCopyName); err != nil {
+					return nil, nil, err
+				}
+			}
+		} else {
+			delete(linkCount, hashPath)
+		}
+	}
+	return contentMap, linkCount, nil
 }
 
-func linkOutputTree(entries []*manifestEntry, scratchDir string, contentMap map[string]string) error {
+func linkOutputTree(entries []*manifestEntry, scratchDir string, contentMap map[string]string, bucketCounts map[string]int) error {
 	if *verbose {
 		start := time.Now()
 		defer func() {
@@ -307,7 +364,17 @@ func linkOutputTree(entries []*manifestEntry, scratchDir string, contentMap map[
 							return
 						}
 					} else {
-						if err := os.Link(contentMap[entry.src], dest); err != nil {
+						hashPath := contentMap[entry.src]
+						if numFiles, ok := bucketCounts[hashPath]; ok {
+							hash := fnv.New32a()
+							if _, err := hash.Write([]byte(dest)); err != nil {
+								errChan <- err
+								return
+							}
+							bucketId := int(hash.Sum32()) % numFiles
+							hashPath += fmt.Sprintf("-%d", bucketId)
+						}
+						if err := os.Link(hashPath, dest); err != nil {
 							if !os.IsNotExist(err) {
 								errChan <- err
 								return
@@ -316,7 +383,7 @@ func linkOutputTree(entries []*manifestEntry, scratchDir string, contentMap map[
 								errChan <- err
 								return
 							}
-							if err := os.Link(contentMap[entry.src], dest); err != nil {
+							if err := os.Link(hashPath, dest); err != nil {
 								errChan <- err
 								return
 							}
@@ -348,7 +415,7 @@ func linkOutputTree(entries []*manifestEntry, scratchDir string, contentMap map[
 	return consolidatedError
 }
 
-func prepareOutputTree(manifestFile, outputDir string) error {
+func prepareOutputTree(manifestFile, outputDir string, linkBuckets bool) error {
 	if *verbose {
 		start := time.Now()
 		defer func() {
@@ -362,11 +429,11 @@ func prepareOutputTree(manifestFile, outputDir string) error {
 		return err
 	}
 
-	contentMap, err := prepareContentAddressableSrcs(entries, contentsPath)
+	contentMap, bucketCounts, err := prepareContentAddressableSrcs(entries, contentsPath, linkBuckets)
 	if err != nil {
 		return err
 	}
-	if err := linkOutputTree(entries, outputDir, contentMap); err != nil {
+	if err := linkOutputTree(entries, outputDir, contentMap, bucketCounts); err != nil {
 		return err
 	}
 
@@ -516,6 +583,7 @@ func main() {
 	blockSizeKb := flag.Int("block-size-kb", 0, "sqfs block size (in KB)")
 	compressionAlgo := flag.String("compression-algo", "", "compression algorithm")
 	compressionLevel := flag.Int("compression-level", 0, "compression level")
+	linkBuckets := flag.Bool("link-buckets", false, "use multiple groups of hardlinks for files with many duplicates")
 	flag.Parse()
 	if *verbose {
 		start := time.Now()
@@ -531,7 +599,12 @@ func main() {
 			directoriesCreated = append(directoriesCreated, dir)
 		}
 	}()
-	if err := prepareOutputTree(*manifest, *scratch); err != nil {
+	// Remove scratch directory at start and also when we're done, or local execution will fail
+	_ = os.RemoveAll(*scratch)
+	defer func() {
+		_ = os.RemoveAll(*scratch)
+	}()
+	if err := prepareOutputTree(*manifest, *scratch, *linkBuckets); err != nil {
 		log.Fatal("failed to prepare manifest", err)
 	}
 

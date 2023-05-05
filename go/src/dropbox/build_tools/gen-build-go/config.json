@@ -1,0 +1,184 @@
+{
+    "linkerInfo": {
+        "boost_1_54_algorithm": {
+            "deps": [
+                "@org_boost//:algorithm"
+            ]
+        },
+        "boost_1_54_filesystem": {
+            "deps": [
+                "@org_boost//:filesystem"
+            ]
+        },
+        "boost_1_54_lexical_cast": {
+            "deps": [
+                "@org_boost//:lexical_cast"
+            ]
+        },
+        "boost_1_54_regex": {
+            "deps": [
+                "@org_boost//:regex"
+            ]
+        },
+        "boost_1_54_system": {
+            "deps": [
+                "@org_boost//:system"
+            ]
+        },
+        "boost_1_54_thread": {
+            "deps": [
+                "@org_boost//:thread"
+            ]
+        },
+        "bpf": {
+            "deps": [
+                "@libbpf//:bpf"
+            ]
+        },
+        "brotli_ffi": {
+            "deps": [
+                "//rust/vendor/brotli-ffi-1.1.1:go_brotli_dep_lib"
+            ]
+        },
+        "bz2": {
+            "deps": [
+                "@org_bzip_bzip2//:bz2"
+            ]
+        },
+        "crypto": {
+            "deps": [
+                "@org_openssl//:ssl"
+            ]
+        },
+        "flatbuffers": {
+            "deps": [
+                "@com_github_google_flatbuffers//:flatbuffers"
+            ]
+        },
+        "__icuuc": {
+            "deps": ["//go/src/github.com/blevesearch/blevex/icu"]
+        },
+        "__icudata": {
+            "deps": ["//go/src/github.com/blevesearch/blevex/"]
+        },
+        "jemalloc": {
+            "deps": [
+                "@jemalloc//:jemalloc"
+            ]
+        },
+        "leveldb": {
+            "deps": [
+                "@leveldb//:leveldb",
+                "@snappy//:snappy"
+            ]
+        },
+        "lz4": {
+            "deps": [
+                "@lz4//:lz4"
+            ]
+        },
+        "mysqlclient_r": {
+            "deps": [
+                "//thirdparty/percona-server-5.6:perconaserverclient"
+            ]
+        },
+        "protobuf": {
+            "deps": [
+                "//thirdparty/protobuf:protobuf"
+            ]
+        },
+        "rdkafka": {
+            "deps": [
+                "@rdkafka//:rdkafka"
+            ]
+        },
+        "rocksdb": {
+            "deps": [
+                "@rocksdb//:rocksdb_with_jemalloc"
+            ]
+        },
+        "rust_ffi_acl_lib_static": {
+            "deps": [
+                "//rust/filesystem/ffi_acl:acl_lib_static"
+            ]
+        },
+        "rust_ffi_dbxpath_c": {
+            "deps": [
+                "//rust/filesystem/dbxpath:dbxpath_c"
+            ]
+        },
+        "rust_ffi_fast_rsync_lib": {
+            "deps": [
+                "//rust/dropbox/fast_rsync_ffi:fast_rsync_ffi_lib"
+            ]
+        },
+        "rust_ffi_go_dep": {
+            "deps": [
+                "//rust/examples/go_dep:go_dep_lib"
+            ]
+        },
+        "rust_ffi_namespace_view_lib": {
+            "deps": [
+                "//rust/dropbox/namespace_view_ffi:namespace_view_ffi_lib"
+            ]
+        },
+        "rust_ffi_osd2_disk_tracker": {
+            "deps": [
+                "//rust/mp/osd2/osd2_ffi:osd2_ffi_cc_lib"
+            ]
+        },
+        "snappy": {
+            "deps": [
+                "@snappy//:snappy"
+            ]
+        },
+        "zookeeper_mt_3_4_6": {
+            "deps": [
+                "@zookeeper//:zookeeper_mt"
+            ]
+        },
+        "zstd": {
+            "deps": [
+                "@zstd//:libzstd"
+            ]
+        }
+    },
+    "allowed_linker_modules": [
+        "m",
+        "rt",
+        "util",
+        "dl",
+        "icuuc",
+        "icudata",
+        "pthread",
+        "tensorflow",
+        "tensorflow_framework",
+        "tspi",
+        "sasl2"
+    ],
+    "allowed_for_build_tags": [
+        "gonum.org/",
+        "github.com/opencontainers/runc"
+    ],
+    "release_tags": [
+        "go1.1",
+        "go1.2",
+        "go1.3",
+        "go1.4",
+        "go1.5",
+        "go1.6",
+        "go1.7",
+        "go1.8",
+        "go1.9",
+        "go1.10",
+        "go1.11",
+        "go1.12",
+        "go1.13",
+        "go1.14",
+        "go1.15",
+        "go1.16",
+        "go1.17",
+        "go1.18",
+        "go1.19"
+    ]
+}

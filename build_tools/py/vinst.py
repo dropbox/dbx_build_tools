@@ -4,6 +4,7 @@ import argparse
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import zipfile
 
@@ -164,9 +165,22 @@ def install(
                         )
                     else:
                         fp.write(os.path.join(target, py + "dbxc") + "\n")
+
+            pyc_compiler_path = os.path.abspath(pyc_compiler)
+            pyc_python_path = os.path.normpath(pyc_python)
+
+            pyc_compiler_env = {
+                "PYTHONHASHSEED": "4",
+                "DBX_PYTHON": pyc_python_path,
+            }
+
+            # On Windows, this is necessary for a `.bat` to be spawned.
+            if sys.platform == "win32" and "SYSTEMROOT" in os.environ:
+                pyc_compiler_env["SYSTEMROOT"] = os.environ["SYSTEMROOT"]
+
             subprocess.check_call(
-                [pyc_compiler, response_file],
-                env={"PYTHONHASHSEED": "4", "DBX_PYTHON": pyc_python},
+                [pyc_compiler_path, response_file],
+                env=pyc_compiler_env,
             )
         finally:
             os.unlink(response_file)

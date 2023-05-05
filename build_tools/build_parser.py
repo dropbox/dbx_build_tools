@@ -8,6 +8,7 @@ from __future__ import annotations
 import glob
 import os.path
 
+from re import Pattern
 from typing import (
     Any,
     Callable,
@@ -131,6 +132,7 @@ def _bazel_glob(
     include: Tuple[Text, ...],
     exclude: Optional[Tuple[Text, ...]] = None,
     exclude_directories: bool = True,
+    allow_empty: bool = True,
 ) -> Tuple[Text, ...]:
     """A super hacky implementation of bazel's glob."""
 
@@ -164,6 +166,9 @@ def _bazel_glob(
         else:
             final.append(src)
 
+    if not allow_empty and not final:
+        raise ValueError("Empty glob is not allowed with `allow_empty=False`")
+
     return tuple(final)
 
 
@@ -176,12 +181,15 @@ class BazelGlob(object):
         include: List[Text],
         exclude: Optional[List[Text]] = None,
         exclude_directories: bool = True,
+        allow_empty: bool = True,
     ) -> List[Text]:
         if self.dirname is None:
             return []
         _exclude = tuple(exclude) if exclude is not None else exclude
         return list(
-            _bazel_glob(self.dirname, tuple(include), _exclude, exclude_directories)
+            _bazel_glob(
+                self.dirname, tuple(include), _exclude, exclude_directories, allow_empty
+            )
         )
 
 
@@ -316,12 +324,16 @@ class Rule(object):
 class Select(object):
     """Represents a `select()` call in Starlark."""
 
-    def __init__(self, select_map: Dict[Text, Any]) -> None:
+    def __init__(self, select_map: Dict[Text, Any], **kwargs: Any) -> None:
         self._select_map = select_map
         self._expanded: Optional[Tuple[Any, ...]] = None
+        self._kwargs = kwargs
 
     def __repr__(self) -> str:
-        return "select({})".format(repr(self._select_map))
+        return "select({}{})".format(
+            repr(self._select_map),
+            "".join(",{}={!r}".format(k, v) for k, v in self._kwargs.items()),
+        )
 
     @property
     def select_map(self) -> Dict[Text, Any]:
@@ -330,6 +342,10 @@ class Select(object):
     @select_map.setter
     def select_map(self, _value: Any) -> None:
         raise TypeError("Setting const attribute Select.select_map")
+
+    @property
+    def kwargs(self) -> Dict[Text, Any]:
+        return self._kwargs
 
     def expand(self) -> Tuple[Any, ...]:
         if self._expanded:
@@ -355,8 +371,7 @@ def select_func(*args: Dict[Text, Any], **kwargs: Any) -> List[Select]:
     Note that this treats `select()`s like lists, so it'll
     fail to parse BUILD files that try to add `select()`s
     to non-list items."""
-    assert not kwargs
-    return [Select(args[0])]
+    return [Select(args[0], **kwargs)]
 
 
 class _MissingItem(object):
@@ -473,6 +488,11 @@ class BuildParser(object):
             if rule.rule_type in type_names:
                 rules.append(rule)
         return rules
+
+    def get_rules_by_pattern(self, pattern: Pattern[str]) -> List[Rule]:
+        return [
+            rule for rule in self._rules.values() if pattern.fullmatch(rule.rule_type)
+        ]
 
     def get_all_rules(self) -> Tuple[Rule, ...]:
         # At least one generator is sensitive to the ordering of the rules, for example:

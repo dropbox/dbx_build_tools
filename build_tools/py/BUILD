@@ -3,8 +3,19 @@
 
 package(default_visibility = ["//visibility:public"])
 
-load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary")
+load("//build_tools/py:py.bzl", "dbx_internal_bootstrap_py_binary", "dbx_py_binary")
+load("//build_tools/sh:sh.bzl", "dbx_sh_binary")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
+
+dbx_py_binary(
+    name = "build_tar",
+    srcs = [
+        "archive.py",
+        "build_tar.py",
+        "helpers.py",
+    ],
+    main = "build_tar.py",
+)
 
 py_binary(
     name = "blank_py_binary",
@@ -72,6 +83,10 @@ toolchain_type(
 )
 
 toolchain_type(
+    name = "toolchain_310",
+)
+
+toolchain_type(
     name = "mypy_toolchain_38",
 )
 
@@ -91,3 +106,8 @@ bzl_library(
 )
 
 exports_files(["import_check.py"])
+
+dbx_sh_binary(
+    name = "rustc",
+    srcs = ["rustc.sh"],
+)

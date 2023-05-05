@@ -39,6 +39,12 @@ def index_url_flags_if_required():
     return []
 
 
+def trusted_host_flags_if_required():
+    if ARGS.trusted_host:
+        return ["--trusted-host", ARGS.trusted_host]
+    return []
+
+
 def asan_options():
     return "detect_leaks=0:suppressions=" + os.path.abspath(
         os.path.join(os.path.dirname(__file__), "asan-suppressions.txt")
@@ -143,6 +149,8 @@ def get_unix_pip_env(venv, venv_source, execroot):
             os.path.join(execroot, path) for path in ARGS.extra_path
         )
 
+    env["VPIP_EXECROOT"] = execroot
+
     # NOTE: Bazel relies on placeholder values for `DEVELOPER_DIR` and `SDKROOT` and while these
     #       are re-written prior to execution via `wrapped_clang` and `xcrunwrapper`, this command
     #       injects various compiler flags as environment variables (e.g. `CFLAGS`): thus, we need
@@ -166,8 +174,8 @@ def get_windows_pip_env(execroot):
         env[k] = os.environ[k].replace(ARGS.root_placeholder, execroot)
 
     # See the analogous comment for non-Windows environments. Some
-    # pip packages require HOME to be set.
-    env["HOME"] = "C:\\Users\\null"
+    # pip packages require this for installation.
+    env["USERPROFILE"] = "C:\\Users\\null"
 
     # Indicate to distutils that it does not need to go looking for the compiler.
     env["MSSdk"] = "1"
@@ -216,6 +224,30 @@ def get_windows_pip_env(execroot):
     return env
 
 
+# This is necessary to continue to have a deterministic build dir with pip v20.3+. See
+# https://github.com/pypa/pip/issues/9604 for more details. Since this version, pip no longer
+# directly supports reproducible builds (see more discussion in
+# https://github.com/pypa/pip/issues/6505). The future path for supporting this is intended to be
+# in the build backends like `setuptools` (pip is the build frontend), but that'll rely on
+# solutions specific to each library. Therefore, we keep this "universal" solution for now.
+# TODO: deep dive into all the wheels made non-deterministic by removing this patch, and fix
+#       each of them using e.g. `--build-options` passed to the `setuptools` backend.
+_MONKEYPATCHER_SOURCE = """
+import os
+import random
+import sys
+import tempfile
+from functools import partial
+
+print("dropbox: monkeypatcher running", file=sys.stderr)
+
+# pin the tempfile RNG to force pip to have deterministic build dirs
+_seed = os.environ.get("DBX_TEMPFILE_SEED")
+if _seed is not None:
+    tempfile._Random = partial(random.Random, _seed)
+    print("dropbox: pinned tempfile seed", file=sys.stderr)
+"""
+
 # Perform an installation via PIP, compile any dependencies,
 def build_pip_archive(workdir):
     wheelhouse_dir = os.path.join(workdir, "wheelhouse")
@@ -246,22 +278,18 @@ def build_pip_archive(workdir):
     if ARGS.msvc_toolchain and external_dir.startswith("\\\\?\\"):
         external_dir = external_dir[4:]
 
-    pip_wheel = os.path.join(
-        external_dir, "io_pypa_pip_whl", "file", "pip-20.0.2-py2.py3-none-any.whl"
-    )
-    # If you change the setuptools version, please update the //pip/setuptools target.
-    st_wheel = os.path.join(
-        external_dir,
-        "io_pypa_setuptools_whl",
-        "file",
-        "setuptools-60.6.0-py3-none-any.whl",
-    )
-    wheel_wheel = os.path.join(
-        external_dir, "io_pypa_wheel_whl", "file", "wheel-0.34.2-py2.py3-none-any.whl"
-    )
+    def _find_bootstrap_whl(label):
+        candidates = glob.glob(os.path.join(external_dir, label, "file", "*.whl"))
+        if len(candidates) != 1:
+            raise AssertionError("there is not exactly one wheel for " + label)
+        return os.path.normpath(candidates[0])
+
+    pip_whl = _find_bootstrap_whl("io_pypa_pip_whl")
+    setuptools_whl = _find_bootstrap_whl("io_pypa_setuptools_whl")
+    wheel_whl = _find_bootstrap_whl("io_pypa_wheel_whl")
 
     install_env = {
-        "PYTHONPATH": pip_wheel,  # force use of `pip` for self-install
+        "PYTHONPATH": pip_whl,  # force use of `pip` for self-install
         "PYTHONNOUSERSITE": "1",  # prevent local site from interfering
     }
 
@@ -278,10 +306,11 @@ def build_pip_archive(workdir):
             "-m",
             "pip",
             "install",
+            "--no-warn-script-location",
             "--no-index",
-            pip_wheel,
-            st_wheel,
-            wheel_wheel,
+            pip_whl,
+            setuptools_whl,
+            wheel_whl,
         ],
         env=install_env,
     )
@@ -320,18 +349,38 @@ def build_pip_archive(workdir):
     # Set the hash seed to a the same value that we use for dbx_py_binary when building piplibs.
     env["PYTHONHASHSEED"] = "4"
 
+    # Some changes require monkeypatching Python, so install a `sitecustomize.py`
+    # file on the `PYTHONPATH`.
+    extra_dir = os.path.join(workdir, "_extra")
+    os.makedirs(extra_dir, exist_ok=True)
+    monkeypatcher_path = os.path.join(extra_dir, "sitecustomize.py")
+    with open(monkeypatcher_path, "w") as monkeypatcher:
+        monkeypatcher.write(_MONKEYPATCHER_SOURCE)
+
+    env["PYTHONPATH"] = extra_dir
+
     def pip_cmd(cmd, *args):
         # Binary packages for ML use
-        # Note: tensorboard and tensorflow_estimator are pure Python, but are erroneously
+        # Note: onnxmltools, tensorboard, tensorflow_estimator, and keras are pure Python, but are erroneously
         # marked as binary packages by the tensorflow build process (arch=none-any)
         allowed_binaries = [
+            "faiss-cpu",
+            "keras",  # pure python
             "lightgbm",
-            "onnxruntime",
+            "llvmlite",
+            "onnx",
+            "onnxmltools",  # pure python
+            "onnxoptimizer",
+            "onnxruntime-gpu",
             "pyarrow",
+            "pytorch-quantization",
             "sentencepiece",
-            "tensorboard",
+            "tensorboard",  # pure python
             "tensorflow",
-            "tensorflow_estimator",
+            "tensorflow_estimator",  # pure python
+            "tensorflow_text",
+            "tensorrt",
+            "tf2onnx",  # pure python
             "tokenizers",
             "torch",
             "torchvision",
@@ -343,6 +392,10 @@ def build_pip_archive(workdir):
                 venv_python,
                 "-m",
                 "pip",
+                # TODO: the 2020-resolver is a source of non-determinism. send a
+                #       PR to pypa/pip or consider adopting `pypa/build` to
+                #       create wheels/sdists.
+                "--use-deprecated=legacy-resolver",
                 "--disable-pip-version-check",
                 "--no-python-version-warning",
                 "--no-cache-dir",
@@ -354,6 +407,7 @@ def build_pip_archive(workdir):
                 "--only-binary={}".format(",".join(allowed_binaries)),
             ]
             + index_url_flags_if_required()
+            + trusted_host_flags_if_required()
             + list(args)
         )
 
@@ -374,13 +428,17 @@ def build_pip_archive(workdir):
         if ARGS.msvc_toolchain:
             build_dir_prefix = "C:\\_bzltmp"
             os.makedirs(build_dir_prefix, exist_ok=True)
+            # if we don't do this, we run into path length limits quickly
+            build_dir_id = hashlib.sha256(
+                os.path.basename(ARGS.wheel).encode("utf8")
+            ).hexdigest()[:12]
         else:
             build_dir_prefix = "/tmp"
+            build_dir_id = os.path.basename(ARGS.wheel)
 
-        build_dir = os.path.join(
-            build_dir_prefix, "vpip-build-{}".format(os.path.basename(ARGS.wheel))
-        )
+        build_dir = os.path.join(build_dir_prefix, "wb-{}".format(build_dir_id))
         made_build_dir = False
+        _env = env.copy()
         try:
             os.mkdir(build_dir)
         except OSError as e:
@@ -388,13 +446,24 @@ def build_pip_archive(workdir):
                 raise
         else:
             made_build_dir = True
-            cmd.extend(["--build-dir", build_dir])
-            _find_and_replace(env, ARGS.buildroot_placeholder, build_dir)
+
+        # if we created the build dir, then force determinism. otherwise, we'll fall back to pip's
+        # own randomly-generated tempdirs.
+        if made_build_dir:
+            _env["DBX_TEMPFILE_SEED"] = os.path.basename(ARGS.wheel)
+            if ARGS.msvc_toolchain:
+                _env["TEMP"] = build_dir
+            else:
+                _env["TMPDIR"] = build_dir
+        elif ARGS.msvc_toolchain:
+            # on windows, always override TEMP to avoid long paths being rooted in the current
+            # user's home.
+            _env["TEMP"] = build_dir_prefix
+
         try:
-            run_silently(cmd, env)
+            run_silently(cmd, _env)
         finally:
-            # An unfortunate side-effect of passing --build-dir is that pip
-            # doesn't clean up after itself.
+            # pip cleans up after itself, but can't remove the top-level tmpdir itself.
             if made_build_dir:
                 shutil.rmtree(build_dir, ignore_errors=True)
 
@@ -492,14 +561,7 @@ def build_pip_archive(workdir):
         )
 
     if ARGS.local_module_base:
-        sdist = os.path.join(os.getcwd(), ARGS.local_module_base)
-        # Inform pip of the distribution name contained in the sdist by adding
-        # an "#egg=" fragment to the sdist URL. We shouldn't need to do this as
-        # pip has the ability infer the distribution name after unpacking the
-        # sdist. Weirdly and unfortunately, that functionality causes it to
-        # ignore --build-dir, which we require for determinism. See
-        # https://github.com/pypa/pip/issues/4242.
-        cmd.append("file://{}#egg={}".format(sdist, ARGS.dist_name))
+        cmd.append(os.path.join(os.getcwd(), ARGS.local_module_base))
     else:
         cmd.extend(ARGS.package_names)
 
@@ -562,7 +624,6 @@ def main():
         action="append",
         help="Path to a wheel file required at build time",
     )
-    p.add_argument("--toolchain-root", default="/usr")
     p.add_argument("--archiver", help="path to unix ar tool")
     p.add_argument("--compiler-executable", help="C++ compiler")
     p.add_argument("--fortran-compiler", help="the fortran compiler")
@@ -641,12 +702,9 @@ def main():
     p.add_argument(
         "--local-module-base", help="Location of an sdist tar file to be installed."
     )
-    p.add_argument(
-        "--dist-name",
-        help="Name of the distribution. Required if using --local-module-base",
-    )
     p.add_argument("-v", "--verbose", action="store_true")
     p.add_argument("--index-url")
+    p.add_argument("--trusted-host")
     p.add_argument(
         "--global-option", dest="global_options", default=[], action="append"
     )
@@ -655,11 +713,6 @@ def main():
         "--root-placeholder",
         default="____root____",
         help="Placeholder text to be replaced with absolute path to CWD in command and env vars",
-    )
-    p.add_argument(
-        "--buildroot-placeholder",
-        default="____buildroot____",
-        help="Placeholder text to be replaced with absolute path to build directory in env vars",
     )
     p.add_argument(
         "--ignore-missing-static-libraries",
@@ -721,8 +774,11 @@ def main():
         os.makedirs(workdir)
     else:
         workdir = tempfile.mkdtemp()
-    build_pip_archive(workdir)
-    shutil.rmtree(workdir, ignore_errors=True)
+
+    try:
+        build_pip_archive(workdir)
+    finally:
+        shutil.rmtree(workdir, ignore_errors=True)
 
 
 if __name__ == "__main__":

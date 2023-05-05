@@ -1,0 +1,17 @@
+load("//build_tools/go:go.bzl", "dbx_go_binary")
+load("@rules_pkg//:pkg.bzl", "pkg_tar")
+
+pkg_tar(
+    name = "gen-build-go-pkg",
+    srcs = [
+        ":gen-build-go",
+    ],
+    extension = "tar.gz",
+    include_runfiles = True,
+    strip_prefix = ".",
+)
+
+exports_files(
+    ["config.json"],
+    visibility = ["//visibility:public"],
+)

@@ -13,5 +13,5 @@ dbx_string_value = rule(
 useful for injecting configuration into Starlark rules.
 
 Args:
-  value: Any string you want.
+value: Any string you want.
 """

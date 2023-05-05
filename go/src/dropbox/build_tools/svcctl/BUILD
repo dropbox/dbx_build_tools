@@ -25,7 +25,7 @@ dbx_go_library(
         "//go/src/dropbox/proto/build_tools/svclib",
         "//go/src/dropbox/runfiles",
         "//go/src/github.com/gogo/protobuf/proto",
-        "//go/src/golang.org/x/sync/errgroup",
+        "@org_golang_x_sync//errgroup",
     ],
 )
 
@@ -52,7 +52,7 @@ dbx_go_test(
         "//go/src/dropbox/proto/build_tools/svclib",
         "//go/src/dropbox/runfiles",
         "//go/src/github.com/gogo/protobuf/proto",
-        "//go/src/github.com/stretchr/testify/require",
-        "//go/src/golang.org/x/sync/errgroup",
+        "@com_github_stretchr_testify//require",
+        "@org_golang_x_sync//errgroup",
     ],
 )

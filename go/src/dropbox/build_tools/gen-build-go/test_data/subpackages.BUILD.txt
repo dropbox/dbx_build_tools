@@ -1,0 +1,15 @@
+load('//build_tools/go:go.bzl', 'dbx_go_binary', 'dbx_go_library', 'dbx_go_test')
+
+dbx_go_library(
+    name = 'mypkg',
+    srcs = [
+    'file1.go',
+    'file2.go',
+    ],
+    deps = [
+    '@dbx_build_tools//go/src/github.com/hanwen/go-fuse/v2/fuse',
+    ],
+    visibility=[
+    '//visibility:public',
+    ],
+)

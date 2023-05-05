@@ -6,6 +6,7 @@ load(
     "C_COMPILE_ACTION_NAME",
 )
 load("//build_tools/go:cfg.bzl", "NORACE_WHITELIST", "VERSION_BINARY_WHITELIST")
+load("//build_tools/go:embed.bzl", "add_embedded_src")
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
 load("//build_tools/bazel:runfiles.bzl", "runfiles_attrs", "write_runfiles_tmpl")
@@ -64,14 +65,14 @@ def _go_toolchain_impl(ctx):
 go_toolchain = rule(
     _go_toolchain_impl,
     attrs = {
-        "asm": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "host"),
+        "asm": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "exec"),
         "asm_inputs": attr.label(mandatory = True),
-        "cgo": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "host"),
-        "compile": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "host"),
-        "cover": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "host"),
+        "cgo": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "exec"),
+        "compile": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "exec"),
+        "cover": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "exec"),
         "include_dir": attr.string(mandatory = True),
-        "link": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "host"),
-        "pack": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "host"),
+        "link": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "exec"),
+        "pack": attr.label(allow_single_file = True, executable = True, mandatory = True, cfg = "exec"),
         "stdlib": attr.label(mandatory = True),
         "stdlib_race": attr.label(mandatory = True),
         "taglist": attr.string_list(mandatory = True),
@@ -79,13 +80,13 @@ go_toolchain = rule(
     },
 )
 
-SUPPORTED_GO_VERSIONS = ["1.16", "1.18"]
-DEFAULT_GO_VERSION = "1.16"
-DEFAULT_GO_LIBRARY_VERSIONS = ["1.16", "1.18"]
-DEFAULT_GO_TEST_VERSIONS = ["1.16", "1.18"]
+SUPPORTED_GO_VERSIONS = ["1.18", "1.19"]
+DEFAULT_GO_VERSION = "1.18"
+DEFAULT_GO_LIBRARY_VERSIONS = ["1.18", "1.19"]
+DEFAULT_GO_TEST_VERSIONS = ["1.18"]
 SUPPORTED_GO_TOOLCHAINS = [
-    Label("//build_tools/go:go1.16"),
     Label("//build_tools/go:go1.18"),
+    Label("//build_tools/go:go1.19"),
 ]
 
 # DbxGoPackage is the main provider exported by dbx_go_library. Go libraries generate compilation
@@ -128,18 +129,22 @@ def _filter_sources_on_tagmap(ctx, go_version):
 
     toolchain = _get_toolchain(ctx, go_version)
     srcs = []
+    basenames = [x.basename for x in ctx.files.srcs]
     for taggedfile in ctx.attr.tagmap:
         if taggedfile not in [x.basename for x in ctx.files.srcs]:
             fail("Source file %s is part of tagmap, but is not listed in sources. Is this a typo?" % taggedfile)
+
+    # TODO: In the future we can extend what's in the taglist to account for more build tags
+    taglist = toolchain.taglist
 
     for src in ctx.files.srcs:
         skip = False
         if src.basename in ctx.attr.tagmap:
             for tag in ctx.attr.tagmap[src.basename]:
                 if tag.startswith("!"):
-                    if tag[1:] in toolchain.taglist:
+                    if tag[1:] in taglist:
                         skip = True
-                elif tag not in toolchain.taglist:
+                elif tag not in taglist:
                     skip = True
         if not skip:
             srcs.append(src)
@@ -155,24 +160,33 @@ def _go_package(ctx):
     return package
 
 def _use_go_race(ctx):
-    # Only do race detection in the target configuration and if --define=go_race=1 is passed.
-    return (ctx.configuration != ctx.host_configuration and
-            "define-go_race" == ctx.attr._go_race[DbxStringValue].value)
+    # Only do race detection if --define=go_race=1 is passed.
+    return "define-go_race" == ctx.attr._go_race[DbxStringValue].value
 
 base_attrs = {
     "srcs": attr.label_list(allow_files = go_file_types),
     "tagmap": attr.string_list_dict(),
     "deps": attr.label_list(allow_files = True, providers = [[CcInfo], [DbxGoPackage]]),
-    "data": attr.label_list(allow_files = True),
+    "data": attr.label_list(
+        allow_files = True,
+        doc = """Data can be used to include files which need to be available during execution but are not Go source files
+        e.g. embed files for go:embed directives""",
+    ),
     "package": attr.string(),
+    # Support for go:embed directives
+    "embed_config": attr.string(),
     "_go_toolchains": attr.label_list(default = SUPPORTED_GO_TOOLCHAINS),
     "_go_race": attr.label(
         default = Label("//build_tools/go:go_race"),
-        cfg = "host",
+        cfg = "exec",
     ),
     "_go_cover": attr.label(
         default = Label("//build_tools/go:go_cover"),
-        cfg = "host",
+        cfg = "exec",
+    ),
+    "_go_cdbg": attr.label(
+        default = Label("//build_tools/go:go_cdbg"),
+        cfg = "exec",
     ),
     "_cc_toolchain": attr.label(default = Label("@bazel_tools//tools/cpp:current_cc_toolchain")),
 }
@@ -190,7 +204,7 @@ def go_binary_impl(ctx):
     go_version = ctx.attr.go_version
 
     if test_wrapper == None and go_version in VERSION_BINARY_WHITELIST and str(ctx.label) not in VERSION_BINARY_WHITELIST[go_version]:
-        fail("'%s' binary is not whitelisted for Go %s. Please use Go 1.16 instead" % (str(ctx.label), go_version))
+        fail("'%s' binary is not whitelisted for Go %s. Please use Go 1.18 instead" % (str(ctx.label), go_version))
 
     go_toolchain = _get_toolchain(ctx, go_version)
     cc_toolchain = find_cpp_toolchain(ctx)
@@ -221,7 +235,12 @@ def go_binary_impl(ctx):
         link_args.add("-X", "dropbox/runfiles.compiledStandalone=yes")
         runfiles = ctx.runfiles(collect_default = False, collect_data = False)
     else:
-        executable_inner = ctx.actions.declare_file("{}_bin".format(executable_wrapper.basename))
+        bin_name = getattr(ctx.attr, "bin_name", None)
+        if bin_name:
+            executable_inner = ctx.actions.declare_file("{}".format(bin_name))
+        else:
+            executable_inner = ctx.actions.declare_file("{}_bin".format(executable_wrapper.basename))
+
         test_wrapper_path = ""
         if test_wrapper != None:
             test_wrapper_path = (
@@ -240,7 +259,6 @@ def go_binary_impl(ctx):
 
         runfiles = ctx.runfiles(
             files = [executable_wrapper, executable_inner] + dynamic_libraries,
-            transitive_files = main_package.transitive_go_sources,
             collect_default = True,
         )
         if test_wrapper != None:
@@ -332,17 +350,17 @@ def _dbx_go_generate_test_main_impl(ctx):
         tools = [],
     )
 
-_generate_test_attrs = {
-    "srcs": attr.label_list(allow_files = go_file_types),
+_generate_test_attrs = dict(base_attrs)
+_generate_test_attrs.update({
     "_test_generator": attr.label(
-        default = Label("//build_tools/go:generate_test_main"),
+        default = Label("//build_tools/go:generate_test_main_norace"),
         executable = True,
-        cfg = "host",
+        cfg = "exec",
     ),
     "go_version": attr.string(),
     "test_main": attr.output(),
     "module_name": attr.string(),
-}
+})
 
 _dbx_go_generate_test_main = rule(
     _dbx_go_generate_test_main_impl,
@@ -391,19 +409,33 @@ def _gc_package(
     compile_args = ctx.actions.args()
     compile_args.add("-p", package)
     compile_args.add("-trimpath=/proc/self/cwd")
-    if symabis_file != None:
+    gen_asm_hdr_file = None
+    if symabis_file:
+        compile_args.add("-symabis", symabis_file.path)
         compile_inputs_direct.append(symabis_file)
-        compile_args.add("-symabis", symabis_file)
+
+        gen_asm_hdr_file = ctx.actions.declare_file("%s/go_asm.h" % (linker_out.basename[:-2]))
+        compile_args.add("-asmhdr", gen_asm_hdr_file.path)
+        outputs.append(gen_asm_hdr_file)
     if compile_out == None:
         compile_args.add("-o", linker_out)
     else:
         outputs.append(compile_out)
         compile_args.add("-o", compile_out)
         compile_args.add("-linkobj", linker_out)
+
+    if getattr(ctx.attr, "embed_config", None):
+        add_embedded_src(ctx, compile_args, compile_inputs_direct)
+
+        # We add the data files because we want the embed_src to be available in the sandbox at execution time
+        # It should be available here:
+        # /dev/shm/bazel-sandbox.<unique_id>/linux-sandbox/<process_id>/execroot/__main__/go/src/dropbox/<package_name>
+        compile_inputs_direct += ctx.files.data
+
     if go_race:
         compile_args.add("-race")
 
-    if ctx.var["COMPILATION_MODE"] == "dbg":
+    if ctx.var["COMPILATION_MODE"] == "dbg" or "define-go_cdbg" == ctx.attr._go_cdbg[DbxStringValue].value:
         compile_args.add("-l")
         compile_args.add("-N")
 
@@ -442,7 +474,7 @@ def _gc_package(
             "PWD": "/proc/self/cwd",
         },
     )
-    return trans_dep_libs
+    return trans_dep_libs, gen_asm_hdr_file
 
 def _instrument_for_coverage(ctx, go_toolchain, srcs):
     "Add coverage instrumentation to a go package and return the instrumented sources."
@@ -553,8 +585,8 @@ def _compute_cgo_parameters(ctx, native_info):
             fail("unknown object in cgo_srcs: %s" % (cgo_src,))
     return struct(
         cc = cc_toolchain.compiler_executable,
-        cflags = cflags,
-        cxxflags = cxxflags,
+        cflags = cflags + ctx.attr.cgo_includeflags,
+        cxxflags = cxxflags + ctx.attr.cgo_includeflags,
         compiler_inputs = depset(
             direct = compiler_inputs_direct,
             transitive = compiler_inputs_trans,
@@ -567,11 +599,9 @@ def _compute_cgo_parameters(ctx, native_info):
     )
 
 def _handle_cgo(ctx, cgo_params, go_toolchain):
-    """Invoke the cgo tool to generate bindings between Go and C/C++. We also handle
-    compiling native sources here even though that can happen without cgo.
-    """
+    "Invoke the cgo tool to generate bindings between Go and C/C++"
     if not ctx.attr.cgo_srcs:
-        return [], None, depset()
+        return [], depset()
 
     variant_prefix = go_toolchain.version
     native_objs_direct = []
@@ -658,51 +688,89 @@ def _handle_cgo(ctx, cgo_params, go_toolchain):
         )
         native_objs_direct.append(obj_file)
 
-    symabis_file = None
-    if cgo_params.to_asm:
-        asm_inputs = depset(
-            direct = list(cgo_params.to_asm) + list(cgo_params.package_headers),
-            transitive = [go_toolchain.asm_inputs],
-        )
-        symabis_file = ctx.actions.declare_file("%s/symabis" % (variant_prefix,))
-        args = ctx.actions.args()
-        args.add("-gensymabis")
-        args.add("-o", symabis_file)
-        args.add("-I", go_toolchain.asm_include_path)
-        args.add("--")
-        args.add_all(cgo_params.to_asm)
-        ctx.actions.run(
-            executable = go_toolchain.asm,
-            inputs = asm_inputs,
-            arguments = [args],
-            mnemonic = "GoGenSymabis",
-            outputs = [symabis_file],
-            tools = [],
-            env = {
-                "PWD": "/proc/self/cwd",
-            },
-        )
-        obj_file = ctx.actions.declare_file("%s/asm.o" % (variant_prefix,))
-        args = ctx.actions.args()
-        args.add("-o", obj_file)
-        args.add("-I", go_toolchain.asm_include_path)
-        args.add("-trimpath=/proc/self/cwd")
-        args.add("--")
-        args.add_all(cgo_params.to_asm)
-        ctx.actions.run(
-            executable = go_toolchain.asm,
-            inputs = asm_inputs,
-            arguments = [args],
-            mnemonic = "GoAsm",
-            outputs = [obj_file],
-            tools = [],
-            env = {
-                "PWD": "/proc/self/cwd",
-            },
-        )
-        native_objs_direct.append(obj_file)
+    return cgo_go_outputs, depset(direct = native_objs_direct)
 
-    return cgo_go_outputs, symabis_file, depset(direct = native_objs_direct)
+def _is_go119_or_higher(go_version):
+    major, minor = go_version.split(".")
+    return int(major) > 1 or int(minor) >= 19
+
+def _asm_gen_symabis_action(ctx, cgo_params, go_toolchain):
+    "Run go asm command, generating symabis for input to later compilation step"
+
+    if not cgo_params or len(cgo_params.to_asm) == 0:
+        return None
+
+    # Later during compilation this header file will get generated; right now a blank throwaway
+    # file is needed in case an asm file depends on it (even though gensymabis does not actually link)
+    temp_asm_hdr_file = ctx.actions.declare_file("%s/%s/empty/go_asm.h" % (go_toolchain.version, ctx.label.name))
+    ctx.actions.write(
+        output = temp_asm_hdr_file,
+        content = "\n",
+    )
+
+    package = _go_package(ctx)
+    asm_inputs = depset(
+        direct = list(cgo_params.to_asm) + list(cgo_params.package_headers) + [temp_asm_hdr_file],
+        transitive = [go_toolchain.asm_inputs],
+    )
+
+    symabis_file = ctx.actions.declare_file("%s-%s/%s symabis" % (ctx.label.package, ctx.label.name, go_toolchain.version))
+    args = ctx.actions.args()
+    args.add("-gensymabis")
+    args.add("-o", symabis_file)
+    args.add("-I", go_toolchain.asm_include_path)
+    args.add("-I", temp_asm_hdr_file.dirname)
+    args.add("-D", "GOOS_linux")
+    args.add("-D", "GOARCH_amd64")
+    args.add("-D", "GOAMD64_v1")
+    if _is_go119_or_higher(go_toolchain.version):
+        args.add("-p", package)
+    args.add("--")
+    args.add_all(cgo_params.to_asm)
+    ctx.actions.run(
+        executable = go_toolchain.asm,
+        inputs = asm_inputs,
+        arguments = [args],
+        mnemonic = "GoGenSymabis",
+        outputs = [symabis_file],
+        tools = [],
+        env = {
+            "PWD": "/proc/self/cwd",
+        },
+    )
+
+    return symabis_file
+
+def _post_compile_asm_action(ctx, asm_file, go_toolchain, asm_inputs, gen_asm_hdr_file, linker_out):
+    "Run go asm command to generate an object file for each asm file, having compile generate a go_asm.h header is a pre-requisite"
+
+    package = _go_package(ctx)
+    obj_file = ctx.actions.declare_file("%s/%s.o" % (linker_out.basename[:-2], asm_file.basename.replace("." + asm_file.extension, "", 1)))
+
+    args = ctx.actions.args()
+    args.add("-o", obj_file)
+    args.add("-I", go_toolchain.asm_include_path)
+    args.add("-I", gen_asm_hdr_file.dirname)
+    args.add("-D", "GOOS_linux")
+    args.add("-D", "GOARCH_amd64")
+    args.add("-D", "GOAMD64_v1")
+    if _is_go119_or_higher(go_toolchain.version):
+        args.add("-p", package)
+    args.add("--")
+    args.add(asm_file)
+    ctx.actions.run(
+        executable = go_toolchain.asm,
+        inputs = asm_inputs,
+        arguments = [args],
+        mnemonic = "GoAsm",
+        outputs = [obj_file],
+        tools = [],
+        env = {
+            "PWD": "/proc/self/cwd",
+        },
+    )
+
+    return obj_file
 
 def _build_package(ctx, go_versions):
     package_info = {}
@@ -743,7 +811,10 @@ def _build_package(ctx, go_versions):
         if ctx.coverage_instrumented() and ctx.label.name.endswith("_testlib"):
             srcs = _instrument_for_coverage(ctx, go_toolchain, srcs)
 
-        cgo_go_outputs, symabis_file, native_objs = _handle_cgo(ctx, cgo_params, go_toolchain)
+        cgo_go_outputs, c_native_objs = _handle_cgo(ctx, cgo_params, go_toolchain)
+        symabis_file = _asm_gen_symabis_action(ctx, cgo_params, go_toolchain)
+        native_objs = depset(transitive = [c_native_objs])
+
         if cgo_go_outputs:
             srcs = srcs + cgo_go_outputs
 
@@ -771,7 +842,8 @@ def _build_package(ctx, go_versions):
                 compile_out = ctx.actions.declare_file(
                     "%s-iface-%s.a" % (artifact_prefix, encoded_package),
                 )
-            dep_libs_trans = _gc_package(
+
+            dep_libs_trans, gen_asm_hdr_file = _gc_package(
                 ctx,
                 compile_out,
                 linker_out,
@@ -783,6 +855,18 @@ def _build_package(ctx, go_versions):
                 go_race,
                 variant_prefix,
             )
+
+            if cgo_params and len(cgo_params.to_asm):
+                asm_native_objs = []
+                asm_inputs = depset(
+                    direct = list(cgo_params.to_asm) + list(cgo_params.package_headers) + [gen_asm_hdr_file],
+                    transitive = [go_toolchain.asm_inputs],
+                )
+                for asm_file in cgo_params.to_asm:
+                    asm_native_objs.append(_post_compile_asm_action(ctx, asm_file, go_toolchain, asm_inputs, gen_asm_hdr_file, linker_out))
+                asm_objects = depset(direct = asm_native_objs)
+                native_objs = depset(transitive = [asm_objects, c_native_objs])
+
             if native_objs:
                 # It would be nice if we could just pass the native object files we compiled into
                 # the final link of a Go binary. Alas, we're obliged to pack the native objects into
@@ -864,7 +948,6 @@ _go_library_attrs.update({
     #
     # However, passing a single string value through works just fine.
     "single_go_version_override": attr.string(),
-    "module_major_version": attr.string(),
     "module_name": attr.string(),
 })
 
@@ -877,6 +960,16 @@ dbx_go_library = rule(
 _go_binary_attrs = dict(base_attrs)
 _go_binary_attrs.update(runfiles_attrs)
 _go_binary_attrs.update({
+    # NOTE(D881381): Add support for arbitrary binary names.
+    #
+    # This is necessary when a go binary must be called by some external source,
+    # and that source expects a specific filename. Currently, all binaries are
+    # built and appended with `_bin`. An example is osquery expects the binary
+    # to be a go binary (and not a bash script, which is currently generated
+    # with the name specified in the bazel target) and for that binary to end
+    # in `.ext`.
+    #
+    "bin_name": attr.string(),
     "go_version": attr.string(),
     "force_no_race": attr.bool(default = False),
     "standalone": attr.bool(default = False),
@@ -917,6 +1010,7 @@ def dbx_go_binary(
         go_version = None,
         alternate_go_versions = [],
         generate_norace_binary = False,
+        bin_name = None,
         standalone = None,
         tags = [],
         cgo_srcs = None,
@@ -941,6 +1035,7 @@ def dbx_go_binary(
     )
     dbx_go_binary_internal(
         name = name,
+        bin_name = bin_name,
         deps = [":" + name + "_exelib"],
         data = data,
         go_version = go_version,
@@ -1007,6 +1102,7 @@ def _dbx_gen_maybe_services_test(
         go_version = None,
         flaky = 0,
         quarantine = {},
+        embed_config = "",
         # normally, the service controller is only launched if a test
         # requries services. To launch it unconditionally, use this flag:
         force_launch_svcctl = False,
@@ -1029,18 +1125,23 @@ def _dbx_gen_maybe_services_test(
         go_versions = [],
         single_go_version_override = go_version,
         testonly = True,
+        embed_config = embed_config,
     )
     testmain_name = name + "_testmain"
     dbx_go_library(
         name = testmain_name,
         package = "main",
         srcs = [test_main],
-        tagmap = tagmap,
+        # Note: The tagmap will always fail the validation that requires a tagged
+        # file to be in the "srcs" here.
+        # TODO: Not sure if that means we need to drop the validation or not pass tagmaps to this
+        # tagmap = tagmap,
         deps = [testlib_name],
         tags = tags,
         go_versions = [],
         single_go_version_override = go_version,
         testonly = True,
+        embed_config = embed_config,
     )
     test_deps = [testmain_name]
 
@@ -1106,6 +1207,7 @@ def _dbx_gen_maybe_services_test(
             flaky = flaky,
             quarantine = quarantine,
             timeout = timeout,
+            embed_config = embed_config,
         )
 
 def dbx_go_test(
@@ -1131,6 +1233,7 @@ def dbx_go_test(
         flaky = 0,
         quarantine = {},
         timeout = None,
+        embed_config = "",
         # normally, the service controller is only launched if a test requries services.
         # To launch it unconditionally, use this flag:
         force_launch_svcctl = False):
@@ -1193,5 +1296,6 @@ def dbx_go_test(
             flaky = flaky,
             quarantine = quarantine,
             timeout = timeout,
+            embed_config = embed_config,
         )
     native.test_suite(name = name, tests = [":" + name + "_" + go_versions[0]], tags = tags)

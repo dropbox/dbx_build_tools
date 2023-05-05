@@ -16,6 +16,6 @@ dbx_go_library(
     ],
     deps = [
         "//go/src/dropbox/procfs",
-        "//go/src/github.com/c9s/goprocinfo/linux",
+        "@com_github_c9s_goprocinfo//linux",
     ],
 )

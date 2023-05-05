@@ -91,7 +91,20 @@ def _create_version_file(ctx, inputs, output):
 
 def _to_proto(services):
     if services:
-        return proto.encode_text(struct(services = list(services)))
+        expanded_services = [
+            struct(
+                type = service.type,
+                service_name = service.service_name,
+                launch_cmd = service.launch_cmd,
+                dependencies = service.dependencies.to_list(),
+                health_checks = service.health_checks,
+                verbose = service.verbose,
+                owner = service.owner,
+                version_files = service.version_files,
+            )
+            for service in services
+        ]
+        return proto.encode_text(struct(services = list(expanded_services)))
 
 def _extension_sort_key(ext):
     return ext.label
@@ -107,7 +120,7 @@ def _apply_service_extensions(ctx, services, extensions):
         service_version_files[service.service_name] = [service.version_file]
         service_exe[service.service_name] = service.launch_cmd.exe
         service_exe_args[service.service_name] = list(service.launch_cmd.args)
-        service_deps[service.service_name] = list(service.dependencies)
+        service_deps[service.service_name] = [service.dependencies]
         service_health_checks[service.service_name] = list(service.health_checks)
 
     all_runfiles = ctx.runfiles()
@@ -138,7 +151,7 @@ def _apply_service_extensions(ctx, services, extensions):
                 if info.allow_missing:
                     continue
                 fail("Extension target service {} which is not in the dependency tree".format(info.service))
-            service_deps[info.service] += info.deps
+            service_deps[info.service].append(depset(info.deps))
             service_exe_args[info.service].extend(info.args)
             service_version_files[info.service].append(info.version_file)
             service_health_checks[info.service].extend(info.health_checks)
@@ -193,7 +206,7 @@ def _apply_service_extensions(ctx, services, extensions):
                 cmd = service_exe[service.service_name] + " " + " ".join(service_exe_args[service.service_name]),
                 env_vars = service.launch_cmd.env_vars,
             ),
-            dependencies = depset(direct = service_deps[service.service_name]).to_list(),
+            dependencies = depset(transitive = service_deps[service.service_name]),
             health_checks = service_health_checks[service.service_name],
             verbose = service.verbose,
             owner = service.owner,
@@ -279,7 +292,7 @@ def service_impl(ctx):
     services = dict()
 
     for dep in ctx.attr.deps:
-        dependents += dep.root_services
+        dependents.append(dep.root_services)
         transitive_extensions.append(dep.extensions)
         services.update(dep.services)
 
@@ -316,7 +329,7 @@ def service_impl(ctx):
         type = ctx.attr.type,
         service_name = label,
         launch_cmd = launch_cmd,
-        dependencies = dependents,
+        dependencies = depset(transitive = dependents),
         health_checks = health_checks,
         verbose = ctx.attr.verbose,
         owner = ctx.attr.owner,
@@ -347,7 +360,7 @@ def service_impl(ctx):
     return struct(
         service_name = label,
         services = services,
-        root_services = [label],
+        root_services = depset([label]),
         extensions = extensions,
         providers = [
             DefaultInfo(
@@ -401,7 +414,7 @@ def service_group_impl(ctx):
     services = dict()
 
     for svc in ctx.attr.services:
-        root_services += svc.root_services
+        root_services.append(svc.root_services)
         transitive_extensions.append(svc.extensions)
         services.update(svc.services)
 
@@ -434,7 +447,7 @@ def service_group_impl(ctx):
 
     return struct(
         services = services,
-        root_services = root_services,
+        root_services = depset(transitive = root_services),
         extensions = extensions,
         providers = [
             DefaultInfo(
@@ -599,7 +612,7 @@ def service_extension_definition_impl(ctx):
     services = dict()
 
     for dep in ctx.attr.deps:
-        for root_svc in dep.root_services:
+        for root_svc in dep.root_services.to_list():
             if root_svc == ctx.attr.service.service_name:
                 # this can happen when an extension of one service depends on
                 # another extension of the same service, in which case what is
@@ -817,6 +830,7 @@ def dbx_service_group(
         quarantine = {},
         idempotent = True,
         data = [],
+        no_tests = False,
         **kwargs):
     service_group_internal(
         name = name,
@@ -827,6 +841,9 @@ def dbx_service_group(
         create_version_file = select(_svc_create_version_file_choices),
         **kwargs
     )
+
+    if no_tests:
+        return
 
     # Automatically verify that the service can start up correctly.
     test = Label("//build_tools/services:restart_test")
