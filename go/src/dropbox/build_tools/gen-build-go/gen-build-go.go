@@ -199,7 +199,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) (*bytes.Buffer, err
 	}
 
 	// Similar to TagMaps in the majority of cases there aren't any
-	ecw, err := genlib.BuildEmbedConfigForPkg(pkg, g.embedUseAbsoluteFilepaths)
+	ecw, err := genlib.BuildEmbedConfigForPkg(pkg, g.workspace, g.embedUseAbsoluteFilepaths)
 	if err != nil {
 		return nil, err
 	}

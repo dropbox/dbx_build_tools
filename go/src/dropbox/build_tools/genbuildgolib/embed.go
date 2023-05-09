@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"go/build"
 	"io"
-	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -35,7 +34,7 @@ type EmbedConfig struct {
 	SRCs []string `json:"-"`
 }
 
-func BuildEmbedConfigForPkg(pkg *build.Package, useAbsoluteFilepaths bool) (EmbedConfigWrapper, error) {
+func BuildEmbedConfigForPkg(pkg *build.Package, workspace string, useAbsoluteFilepaths bool) (EmbedConfigWrapper, error) {
 	ecw := EmbedConfigWrapper{
 		EC: EmbedConfig{
 			Patterns: map[string][]string{},
@@ -50,19 +49,15 @@ func BuildEmbedConfigForPkg(pkg *build.Package, useAbsoluteFilepaths bool) (Embe
 		return ecw, nil
 	}
 
-	cwd, err := os.Getwd()
-	if err != nil {
-		return ecw, err
-	}
 	dir, err := filepath.Abs(pkg.Dir)
 	if err != nil {
 		return ecw, err
 	}
-	ecw.EC, err = generateEmbedConfig(pkg.EmbedPatterns, cwd, dir, useAbsoluteFilepaths)
+	ecw.EC, err = generateEmbedConfig(pkg.EmbedPatterns, workspace, dir, useAbsoluteFilepaths)
 	if err != nil {
 		return ecw, err
 	}
-	ecw.TestEC, err = generateEmbedConfig(pkg.TestEmbedPatterns, cwd, dir, useAbsoluteFilepaths)
+	ecw.TestEC, err = generateEmbedConfig(pkg.TestEmbedPatterns, workspace, dir, useAbsoluteFilepaths)
 	if err != nil {
 		return ecw, err
 	}
@@ -70,7 +65,7 @@ func BuildEmbedConfigForPkg(pkg *build.Package, useAbsoluteFilepaths bool) (Embe
 	return ecw, nil
 }
 
-func generateEmbedConfig(patterns []string, cwd, dir string, useAbsoluteFilepaths bool) (EmbedConfig, error) {
+func generateEmbedConfig(patterns []string, workspace, dir string, useAbsoluteFilepaths bool) (EmbedConfig, error) {
 	ec := EmbedConfig{
 		Patterns: map[string][]string{},
 		Files:    map[string]string{},
@@ -83,18 +78,15 @@ func generateEmbedConfig(patterns []string, cwd, dir string, useAbsoluteFilepath
 		}
 
 		for _, fp := range globMatches {
-			// cwd and dir are already absolute paths as given by the caller.
-			// fp is not necessarily an absolute path; let's make it one.
+			// workspace and dir are already absolute paths as given by the
+			// caller, but fp is not necessarily an absolute path. let's make
+			// it one.
 			fp, err := filepath.Abs(fp)
 			if err != nil {
 				return ec, err
 			}
 
 			fpRelDir, err := filepath.Rel(dir, fp)
-			if err != nil {
-				return ec, err
-			}
-			fpRelCwd, err := filepath.Rel(cwd, fp)
 			if err != nil {
 				return ec, err
 			}
@@ -107,8 +99,15 @@ func generateEmbedConfig(patterns []string, cwd, dir string, useAbsoluteFilepath
 				// the exact path.
 				ec.Files[fpRelDir] = fp
 			} else {
+				if workspace == "" {
+					return ec, errors.New("embed: workspace not found but required")
+				}
+				fpRelWorkspace, err := filepath.Rel(workspace, fp)
+				if err != nil {
+					return ec, err
+				}
 				// otherwise, use a relative path from WORKSPACE.
-				ec.Files[fpRelDir] = fpRelCwd
+				ec.Files[fpRelDir] = fpRelWorkspace
 			}
 
 			// for SRCs, use a relative path from the current directory because
