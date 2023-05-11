@@ -1,5 +1,6 @@
 from unittest import TestCase
 
+from build_tools import bazel_utils
 from build_tools.bzl_lib.selenium_build_util import find_test_tags
 
 
@@ -26,3 +27,11 @@ class TagsTests(TestCase):
         expected_tags = {"p0-server-selenium-tests", "test-to-delete"}
         result = find_test_tags(source)
         self.assertEqual(result, expected_tags)
+
+    def test_partially_tagged_raises_BazelError(self) -> None:
+        source = (
+            "@tag(Tag.Priority.P0_TEST, Tag.Priority.TO_DELETE)\ndef test_example(): pass"
+            "\ndef test_example2(): pass"
+        )
+        with self.assertRaises(bazel_utils.BazelError):
+            find_test_tags(source)

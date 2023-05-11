@@ -155,5 +155,6 @@ dbx_py_pytest_test(
     ],
     deps = [
         ":selenium_build_util_lib",
+        "//build_tools:bazel_utils",
     ],
 )
