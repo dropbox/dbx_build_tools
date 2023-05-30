@@ -364,6 +364,7 @@ def build_pip_archive(workdir):
         # Note: onnxmltools, tensorboard, tensorflow_estimator, and keras are pure Python, but are erroneously
         # marked as binary packages by the tensorflow build process (arch=none-any)
         allowed_binaries = [
+            "ctranslate2",
             "faiss-cpu",
             "keras",  # pure python
             "lightgbm",
