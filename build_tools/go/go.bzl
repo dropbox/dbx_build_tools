@@ -220,6 +220,10 @@ def go_binary_impl(ctx):
     linker_inputs = main_package.native_info.linking_context.linker_inputs.to_list()
     dynamic_libraries = [l2l.dynamic_library for li in linker_inputs for l2l in li.libraries if l2l.dynamic_library]
 
+    if getattr(ctx.attr, "dynamic_libraries", []):
+        for target in ctx.attr.dynamic_libraries:
+            dynamic_libraries.extend(target.files.to_list())
+
     dylib_spec = ""
     if dynamic_libraries:
         dylib_paths = []
@@ -973,6 +977,7 @@ _go_binary_attrs.update({
     "go_version": attr.string(),
     "force_no_race": attr.bool(default = False),
     "standalone": attr.bool(default = False),
+    "dynamic_libraries": attr.label_list(allow_files = True),
 })
 
 dbx_go_binary_internal = rule(
@@ -1021,6 +1026,10 @@ def dbx_go_binary(
     if go_version not in alternate_go_versions:
         alternate_go_versions = alternate_go_versions + [go_version]
 
+    dynamic_libraries = kwargs.get("dynamic_libraries", [])
+    if dynamic_libraries:
+        kwargs.pop("dynamic_libraries")
+
     dbx_go_library(
         name = name + "_exelib",
         srcs = srcs,
@@ -1041,6 +1050,7 @@ def dbx_go_binary(
         go_version = go_version,
         tags = tags,
         standalone = standalone,
+        dynamic_libraries = dynamic_libraries,
         **kwargs
     )
 
@@ -1064,6 +1074,7 @@ def dbx_go_binary(
             data = data,
             go_version = alternate_go_version,
             tags = tags,
+            dynamic_libraries = dynamic_libraries,
             **kwargs
         )
 
@@ -1075,6 +1086,7 @@ def dbx_go_binary(
             go_version = go_version,
             tags = tags,
             force_no_race = True,
+            dynamic_libraries = dynamic_libraries,
             **kwargs
         )
 
