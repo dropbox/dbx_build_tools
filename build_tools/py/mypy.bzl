@@ -96,8 +96,6 @@ def _get_trans_roots(target, srcs, stub_srcs, deps, mypy_provider, ctx):
         dep[mypy_provider].trans_roots
         for dep in deps
     ]
-    if target:
-        transitive.append(target.extra_pythonpath)
     return depset(direct = direct, transitive = transitive)
 
 def _get_trans_field(outs, deps, field, mypy_provider):
