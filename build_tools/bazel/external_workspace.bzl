@@ -50,7 +50,7 @@ DEFAULT_EXTERNAL_GO_URLS = {
 # Please keep sorted.
 DEFAULT_EXTERNAL_URLS = {
     "abseil_py": ["https://github.com/abseil/abseil-py/archive/pypi-v0.7.1.tar.gz"],
-    "bazel_skylib": ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.2.0/bazel-skylib-1.2.0.tar.gz"],
+    "bazel_skylib": ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.4.1/bazel-skylib-1.4.1.tar.gz"],
     "com_github_plougher_squashfs_tools": ["https://github.com/plougher/squashfs-tools/archive/4.5.1.tar.gz"],
     "cpython_310": ["https://www.python.org/ftp/python/3.10.5/Python-3.10.5.tar.xz"],
     "cpython_39": ["https://www.python.org/ftp/python/3.9.14/Python-3.9.14.tar.xz"],
@@ -127,7 +127,7 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS, go_urls = DEFAULT_EXTERNAL_GO_URLS):
     http_archive(
         name = "bazel_skylib",
         urls = urls["bazel_skylib"],
-        sha256 = "af87959afe497dc8dfd4c6cb66e1279cb98ccc84284619ebfec27d9c09a903de",
+        sha256 = "b8a1527901774180afc798aeb28c4634bdccf19c4d98e7bdd1ce79d1fe9aaad7",
     )
 
     pypi_core_deps(urls)
