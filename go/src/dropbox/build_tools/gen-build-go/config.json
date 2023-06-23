@@ -122,6 +122,11 @@
                 "//rust/dropbox/namespace_view_ffi:namespace_view_ffi_lib"
             ]
         },
+        "rust_ffi_nucleus_consistency_check_lib": {
+            "deps": [
+                "//rust/dropbox/nucleus_remote_consistency_check:nucleus_remote_consistency_check_lib"
+            ]
+        },
         "rust_ffi_osd2_disk_tracker": {
             "deps": [
                 "//rust/mp/osd2/osd2_ffi:osd2_ffi_cc_lib"
