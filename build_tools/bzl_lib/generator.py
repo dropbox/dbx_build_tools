@@ -33,6 +33,9 @@ class Config:
     # Whether Artifactory should be used instead of external package sources.
     use_artifactory: bool = True
 
+    # Whether to allow use of public internet.
+    use_public_internet: bool = True
+
 
 @dataclasses.dataclass
 class GeneratorInfo:

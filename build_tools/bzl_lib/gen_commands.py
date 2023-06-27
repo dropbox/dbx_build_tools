@@ -1,5 +1,6 @@
 # mypy: allow-untyped-defs
 
+import argparse
 import functools
 
 from typing import Any, Callable, Optional, Sequence
@@ -21,6 +22,7 @@ def cmd_gen(args: Any, bazel_args, mode_args, generators) -> None:
         dry_run=args.dry_run,
         use_magic_mirror=args.use_magic_mirror,
         use_artifactory=args.use_artifactory,
+        use_public_internet=args.use_public_internet,
     )
 
     if args.describe_generator is not None:
@@ -66,6 +68,11 @@ def register_cmd_gen(
         "--use-artifactory",
         action="store_true",
         help="Use artifactory instead the public internet",
+    )
+    sap.add_argument(
+        "--use-public-internet",
+        action=argparse.BooleanOptionalAction,
+        help="Allow use of public internet.",
     )
     sap.add_argument("-v", "--verbose", action="store_true")
     sap.add_argument("targets", nargs="+", help="A list of bazel targets.")
