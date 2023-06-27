@@ -13,6 +13,7 @@ import urllib.request
 
 from collections import defaultdict, namedtuple
 from typing import Any, Callable, DefaultDict, Dict, Iterator, List, Optional, Set
+from urllib.parse import urljoin
 
 # This is where bazel-cache-agent exposes cache stats as a json blob, port number should be in sync
 # with what's configured in go/src/dropbox/devtools/bazel-cache-agent/run-bazel-cache-agent.sh
@@ -175,19 +176,35 @@ def report_metrics() -> None:
         if k.startswith("BZL_METRICS_EXTRA_ATTR_"):
             stats_key = k[len("BZL_METRICS_EXTRA_ATTR_") :].lower()
             set_extra_attributes(stats_key, os.environ[k])
-    # Heuristic to avoid trying to look up instance type from anywhere besides an EC2 instance.
+    # Heuristic to avoid trying to look up instance type and region from anywhere besides an EC2 instance.
     if os.path.exists("/var/lib/cloud"):
-        special_aws_url = "http://169.254.169.254/latest/meta-data/instance-type"
+        special_aws_url = "http://169.254.169.254/latest/"
         try:
             # AWS's utility route typically responds in under 10ms, but set timeout just in case.
             instance_type = (
-                urllib.request.urlopen(special_aws_url, timeout=0.5)
+                urllib.request.urlopen(
+                    urljoin(special_aws_url, "meta-data/instance-type"), timeout=0.5
+                )
                 .read()
                 .decode("utf-8")
             )
         except Exception:
             instance_type = "unknown"
         set_extra_attributes("instance_type", instance_type)
+        try:
+            # AWS's utility route typically responds in under 10ms, but set timeout just in case.
+            document = (
+                urllib.request.urlopen(
+                    urljoin(special_aws_url, "dynamic/instance-identity/document"),
+                    timeout=0.5,
+                )
+                .read()
+                .decode("utf-8")
+            )
+            region = json.loads(document)["region"]
+        except Exception:
+            region = "unknown"
+        set_extra_attributes("region", region)
     _stats.reported = True
     if os.getenv("BZL_DEBUG"):
         if _stats.recorded_timers:
