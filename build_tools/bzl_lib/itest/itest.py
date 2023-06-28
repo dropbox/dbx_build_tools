@@ -250,6 +250,13 @@ def register_cmd_itest(subparsers):
     sap.set_defaults(func=cmd_itest_exec)
 
     sap = subparsers.add_parser(
+        "itest-exec-current",
+        help="Execute an arbitrary command inside the currently running docker container.",
+    )
+    sap.add_argument("cmd", nargs="+", help="The command to run in the container.")
+    sap.set_defaults(func=cmd_itest_exec_current)
+
+    sap = subparsers.add_parser(
         "itest-reload",
         help="Rebuild and reload any services. Also rerun the test if this is a test target.",
     )
@@ -760,6 +767,10 @@ def cmd_itest_clean_all(args, bazel_args, mode_args):
 
 
 def cmd_itest_exec(args, bazel_args, mode_args):
+    _cmd_itest_exec(args, bazel_args, mode_args)
+
+
+def _cmd_itest_exec(args, bazel_args, mode_args):
     _raise_on_glob_target(args.target)
     itest_target = _get_itest_target(args.bazel_path, args.target)
     container_name = get_container_name_for_target(itest_target.name)
@@ -770,6 +781,29 @@ def cmd_itest_exec(args, bazel_args, mode_args):
         docker_exec_args += ["--interactive", "--tty"]
     docker_exec_args += [container_name]
     exec_wrapper.execv(args.docker_path, docker_exec_args + args.cmd)
+
+
+def cmd_itest_exec_current(args, bazel_args, mode_args):
+    targets = [
+        x[1]
+        for x in _get_all_containers_targets(
+            args.docker_path, POSSIBLE_CONTAINER_NAME_PREFIXES
+        )
+    ]
+    if len(targets) > 1:
+        sys.exit(
+            """Found multiple running `bzl itest`.
+
+Run `bzl itest-exec` with a specific target instead."""
+        )
+    elif not targets:
+        sys.exit(
+            """A `bzl itest` container must already be running.
+
+Run `bzl itest-run` instead."""
+        )
+    args.target = targets[0]
+    _cmd_itest_exec(args, bazel_args, mode_args)
 
 
 def cmd_itest_reload_current(args, bazel_args, mode_args):
