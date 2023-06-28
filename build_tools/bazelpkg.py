@@ -456,7 +456,7 @@ def dbx_pkg_deb(
     # To save the effort in guessing the right one to use,
     # set both all versions as dependencies -- most hosts will have all anyway.
     depends = set(depends)
-    depends.update(["drte-v3"])
+    depends.update(["drte-v5"])
     for dependency in depends:
         pack_cmd.extend(("-d", dependency))
 
