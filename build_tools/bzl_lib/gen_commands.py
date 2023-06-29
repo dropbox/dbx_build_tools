@@ -72,6 +72,7 @@ def register_cmd_gen(
     sap.add_argument(
         "--use-public-internet",
         action=argparse.BooleanOptionalAction,
+        default=True,
         help="Allow use of public internet.",
     )
     sap.add_argument("-v", "--verbose", action="store_true")
