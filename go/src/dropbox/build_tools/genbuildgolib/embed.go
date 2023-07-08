@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"go/build"
 	"io"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -86,34 +88,62 @@ func generateEmbedConfig(patterns []string, workspace, dir string, useAbsoluteFi
 				return ec, err
 			}
 
-			fpRelDir, err := filepath.Rel(dir, fp)
+			stat, err := os.Stat(fp)
 			if err != nil {
 				return ec, err
 			}
 
-			ec.Patterns[p] = append(ec.Patterns[p], fpRelDir)
-
-			if useAbsoluteFilepaths {
-				// if requested, use an absolute path to point to the file.
-				// this is mostly used to make sure Bazel can for sure find
-				// the exact path.
-				ec.Files[fpRelDir] = fp
-			} else {
-				if workspace == "" {
-					return ec, errors.New("embed: workspace not found but required")
-				}
-				fpRelWorkspace, err := filepath.Rel(workspace, fp)
+			var filePaths []string
+			if stat.IsDir() {
+				err = filepath.WalkDir(fp, func(filePath string, entry fs.DirEntry, err error) error {
+					if err != nil {
+						return err
+					}
+					if strings.HasPrefix(filePath, ".") || strings.HasPrefix(filePath, "-") {
+						return nil
+					}
+					if !entry.IsDir() {
+						filePaths = append(filePaths, filePath)
+					}
+					return nil
+				})
 				if err != nil {
 					return ec, err
 				}
-				// otherwise, use a relative path from WORKSPACE.
-				ec.Files[fpRelDir] = fpRelWorkspace
+			} else {
+				filePaths = []string{fp}
 			}
 
-			// for SRCs, use a relative path from the current directory because
-			// that's where the generated BUILD file will be and paths are
-			// relative to that.
-			ec.SRCs = append(ec.SRCs, fpRelDir)
+			for _, fp := range filePaths {
+				fpRelDir, err := filepath.Rel(dir, fp)
+				if err != nil {
+					return ec, err
+				}
+
+				ec.Patterns[p] = append(ec.Patterns[p], fpRelDir)
+
+				if useAbsoluteFilepaths {
+					// if requested, use an absolute path to point to the file.
+					// this is mostly used to make sure Bazel can for sure find
+					// the exact path.
+					ec.Files[fpRelDir] = fp
+				} else {
+					if workspace == "" {
+						return ec, errors.New("embed: workspace not found but required")
+					}
+					fpRelWorkspace, err := filepath.Rel(workspace, fp)
+					if err != nil {
+						return ec, err
+					}
+					// otherwise, use a relative path from WORKSPACE.
+					ec.Files[fpRelDir] = fpRelWorkspace
+				}
+
+				// for SRCs, use a relative path from the current directory because
+				// that's where the generated BUILD file will be and paths are
+				// relative to that.
+				ec.SRCs = append(ec.SRCs, fpRelDir)
+			}
 		}
 	}
 	return ec, nil
