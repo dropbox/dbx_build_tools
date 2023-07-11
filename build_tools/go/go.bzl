@@ -217,6 +217,11 @@ def go_binary_impl(ctx):
     link_inputs_trans = []
     link_inputs_trans.append(go_toolchain.stdlib)
     link_args = ctx.actions.args()
+
+    # TODO(jwon): Remove if/when we stop overriding grpc.health.v1.Health
+    # with our own in dropbox/proto/grpc/health/v1.
+    # https://github.com/protocolbuffers/protobuf-go/releases/tag/v1.26.0
+    link_args.add("-X", "google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn")
     linker_inputs = main_package.native_info.linking_context.linker_inputs.to_list()
     dynamic_libraries = [l2l.dynamic_library for li in linker_inputs for l2l in li.libraries if l2l.dynamic_library]
 
