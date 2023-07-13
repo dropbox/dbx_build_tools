@@ -511,7 +511,11 @@ def _rule_has_runfiles(rule):
     # TODO (T192829) Arguably we should be including all rules here (as either with or
     # without runfiles, and error if unknown), to ensure for
     # accountability, and then remove extensions_without_runfiles.
-    rule_kinds_without_runfiles = ("genrule", "dbx_pkg_sqfs")
+    rule_kinds_without_runfiles = (
+        "genrule",
+        "dbx_pkg_sqfs",
+        "dbx_pkg_container_images",
+    )
 
     return (
         not rule.target.endswith(extensions_without_runfiles)
