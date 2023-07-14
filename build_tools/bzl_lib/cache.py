@@ -23,6 +23,9 @@ class ParsedBuildFileCache(object):
     def get_build(
         self, directory: str
     ) -> Tuple[str, Optional[build_parser.BuildParser]]:
+        if not directory.endswith(os.path.sep):
+            directory += os.path.sep
+
         if directory in self.parsed_builds:
             return self.parsed_builds[directory]
 
