@@ -151,6 +151,8 @@ def test_normalize_relative_target_to_absolute() -> None:
     assert norm("foo/bar", "actions/...") == "//foo/bar/actions/..."
     assert norm("foo/bar", ":baz") == "//foo/bar:baz"
     assert norm("foo/bar", "../wat:baz") == "//foo/wat:baz"
+    assert norm("foo/bar", "//already/absolute") == "//already/absolute"
+    assert norm("foo/bar", "@other//already/absolute") == "@other//already/absolute"
 
 
 def test_expand_short_form_label() -> None:
@@ -171,3 +173,30 @@ def test_expand_short_form_label() -> None:
     assert expand("//foo") == "//foo:foo"
     assert expand("foo:bar") == "foo:bar"
     assert expand("//foo:bar") == "//foo:bar"
+
+
+def test_parse_bazel_label() -> None:
+    parse = bazel_utils.parse_bazel_label
+    assert parse("//a/b:c") == ("__main__", "a/b", "c")
+    assert parse("//a/b") == ("__main__", "a/b", "b")
+    assert parse("//a") == ("__main__", "a", "a")
+    assert parse("//:top") == ("__main__", "", "top")
+
+    assert parse("@other//a/b:c") == ("other", "a/b", "c")
+    assert parse("@other//a/b") == ("other", "a/b", "b")
+    assert parse("@other//a") == ("other", "a", "a")
+    assert parse("@other//:top") == ("other", "", "top")
+
+    # Apparently legal, according to https://bazel.build/concepts/labels
+    assert parse("//a/b:some/file.txt") == ("__main__", "a/b", "some/file.txt")
+
+    with pytest.raises(bazel_utils.BazelError):
+        parse("other//a/b:c")
+    with pytest.raises(bazel_utils.BazelError):
+        parse("a/b:c")
+    with pytest.raises(bazel_utils.BazelError):
+        parse("//a/b/")
+    with pytest.raises(bazel_utils.BazelError):
+        parse("//a/b/:c")
+    with pytest.raises(bazel_utils.BazelError):
+        parse("//a:")

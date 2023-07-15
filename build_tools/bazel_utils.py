@@ -559,6 +559,49 @@ def split_args_targets(argv):
     return args, targets
 
 
+def parse_bazel_label(label: str) -> tuple[str, str, str]:
+    """
+    Parses a Bazel label and returns the workspace name, package, and name.
+
+    It also performs some basic sanity checks to check that the label is valid.
+    If it is not, raises a BazelError.
+
+    For more details see:
+    - https://bazel.build/rules/lib/builtins/Label
+    - https://bazel.build/concepts/labels
+    """
+    if label.startswith("//"):
+        # __main__ is apparently the default workspace name, based on
+        # https://bazel.build/external/migration and manual testing
+        workspace_name = "__main__"
+        rest = label.lstrip("//")
+    elif label.startswith("@"):
+        parts = label.lstrip("@").split("//")
+        if len(parts) != 2:
+            raise BazelError(f"invalid bazel label '{label}': missing '//' divider")
+        workspace_name, rest = parts
+    else:
+        raise BazelError(f"invalid bazel label '{label}': must start with '@' or '//'")
+
+    if ":" in rest:
+        parts = rest.split(":")
+        if len(parts) != 2:
+            raise BazelError(
+                f"invalid bazel label '{label}': contains too many ':' chars"
+            )
+        package, target = parts
+    else:
+        package = rest
+        target = rest.split("/")[-1]
+
+    if package.endswith("/"):
+        raise BazelError(f"invalid bazel label '{label}': package cannot end with '/'")
+    if len(target) == 0:
+        raise BazelError(f"invalid bazel label '{label}': target is empty")
+
+    return workspace_name, package, target
+
+
 def build_file_for_target(target):
     # type: (str) -> str
     target_dir = normalize_relative_target_to_os_path(target.lstrip("//").split(":")[0])
@@ -590,7 +633,7 @@ def normalize_relative_target_to_absolute(package, target):
     return an absolute version of the target pattern.
     If the target pattern is already absolute, it'll just be returned as-is.
     """
-    if target.startswith("//"):
+    if target.startswith("//") or target.startswith("@"):
         return target
     colon = target.find(":")
     if colon == -1:
