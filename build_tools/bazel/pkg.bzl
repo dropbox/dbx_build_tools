@@ -376,6 +376,10 @@ _dbx_pkg_sqfs = rule(
 dbx_pkg_tar_attrs = {
     "srcs": attr.label_list(allow_files = True),
     "package_dir": attr.string(mandatory = True),
+    "strip_prefix": attr.string(
+        default = "",
+        doc = "Optionally remove this prefix from every input filepath before copying it to package_dir",
+    ),
     "extension": attr.string(
         default = "tar",
         values = ["tar", "tar.gz"],
@@ -405,6 +409,7 @@ def dbx_pkg_tar_impl(ctx):
 
     args = ctx.actions.args()
     args.add("--package-dir", ctx.attr.package_dir)
+    args.add("--strip-prefix", ctx.attr.strip_prefix)
     args.add("--output", out.path)
 
     files, manifest, symlink = _collect_data(
