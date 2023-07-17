@@ -449,7 +449,8 @@ def dbx_pkg_deb_new(
         depends = (),
         postinst = None,
         preserve_symlinks = False,
-        testonly = False):
+        testonly = False,
+        **kwargs):
     dbx_pkg_tar(
         name = name + ".tar",
         srcs = data,
@@ -457,6 +458,7 @@ def dbx_pkg_deb_new(
         package_dir = prefix,
         preserve_symlinks = False,
         testonly = testonly,
+        **kwargs
     )
 
     pkg_deb(
@@ -469,4 +471,5 @@ def dbx_pkg_deb_new(
         postinst = postinst,
         version = version,
         testonly = testonly,
+        **kwargs
     )
