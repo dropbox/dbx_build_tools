@@ -195,6 +195,11 @@ def register_cmd_itest(subparsers):
             action="store_true",
             help="Exposes current user in itest container's /etc/passwd",
         )
+        sap.add_argument(
+            "--mount-fuse",
+            action="store_true",
+            help="Mounts /dev/fuse and adds security flags required to do so.",
+        )
 
         if command_name == "itest-run":
             sap.set_defaults(detach=False)
@@ -554,6 +559,11 @@ exec {test} "$@"
 
     if args.privileged:
         docker_run_args += ["--privileged"]
+
+    if args.mount_fuse:
+        docker_run_args += ["--device", "/dev/fuse"]
+        docker_run_args += ["--cap-add", "SYS_ADMIN"]
+        docker_run_args += ["--security-opt", "apparmor:unconfined"]
 
     # set env variables. This will also set it for subsequent `docker exec` commands
     for k, v in env.items():
