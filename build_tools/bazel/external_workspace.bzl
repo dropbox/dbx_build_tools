@@ -61,7 +61,7 @@ DEFAULT_EXTERNAL_URLS = {
     "io_pypa_setuptools_whl": ["https://files.pythonhosted.org/packages/86/7b/f35d72b7a6acbc27732e88d7ceb7f224b3e0683bf645e1c9e2ac2cd96c0d/setuptools-67.3.2-py3-none-any.whl"],
     "io_pypa_wheel_whl": ["https://files.pythonhosted.org/packages/bd/7c/d38a0b30ce22fc26ed7dbc087c6d00851fb3395e9d0dac40bec1f905030c/wheel-0.38.4-py3-none-any.whl"],
     "lz4": ["https://github.com/lz4/lz4/archive/v1.9.3.tar.gz"],
-    "mypy": ["https://github.com/python/mypy/archive/3bf9fdc347ff1d27baead7660442d645a77cb2c6.tar.gz"],
+    "mypy": ["https://github.com/python/mypy/archive/9dd0d396e0a8b477e4bf723a6a24d82db7785ea8.tar.gz"],
     "net_zlib": ["http://zlib.net/zlib-1.2.13.tar.gz"],
     "org_bzip_bzip2": ["https://sourceware.org/pub/bzip2/bzip2-1.0.8.tar.gz"],
     "org_gnu_ncurses": ["https://invisible-mirror.net/archives/ncurses/ncurses-6.2.tar.gz"],
@@ -277,8 +277,8 @@ def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
         name = "mypy",
         urls = urls["mypy"],
-        sha256 = "3819374c92ec5670caae206afe791901b4e8d555a020d6a56b5c8a24f556c133",
-        strip_prefix = "mypy-3bf9fdc347ff1d27baead7660442d645a77cb2c6",
+        sha256 = "19e1f15722a7ed8bffca6def67d1865da13773f4b7a0593a36cb81f39cbfce47",
+        strip_prefix = "mypy-9dd0d396e0a8b477e4bf723a6a24d82db7785ea8",
         build_file = filename_from_label("//thirdparty/mypy:BUILD.mypy"),
         patches = [filename_from_label("//thirdparty/mypy:version.patch")],
     )
