@@ -232,11 +232,11 @@ def _build_wheel(ctx, wheel, python_interp, sdist_tar):
                 dynamic_libs.append(l2l.dynamic_library)
 
     for rust_dep in rust_deps:
-        if rust_dep.crate_type == "staticlib":
-            pic_libs.append(rust_dep.rust_lib)
+        if rust_dep.crate_type == "staticlib" or rust_dep.crate_type == "lib":
+            pic_libs.append(rust_dep.rust_lib["abort"])
         elif rust_dep.crate_type == "cdylib":
             if allow_dynamic_links(ctx):
-                dynamic_libs.append(rust_dep.rust_lib)
+                dynamic_libs.append(rust_dep.rust_lib["abort"])
             else:
                 fail("Dynamic linking is not allowed: {}".format(rust_dep.name))
         else:
