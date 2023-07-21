@@ -9,9 +9,7 @@ from xml.dom import minidom  # type: ignore[import]
 
 from build_tools.npm_utils import target_to_npm_name
 
-MYPY = False
-if MYPY:
-    from typing import Any, Dict, Iterable, List, Optional, Sequence, Text, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Text, Tuple
 
 
 # Bazel startup_options that are booleans
@@ -559,7 +557,7 @@ def split_args_targets(argv):
     return args, targets
 
 
-def parse_bazel_label(label: str) -> tuple[str, str, str]:
+def parse_bazel_label(label: str) -> Tuple[str, str, str]:
     """
     Parses a Bazel label and returns the workspace name, package, and name.
 
