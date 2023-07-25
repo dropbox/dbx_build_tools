@@ -369,7 +369,6 @@ def build_pip_archive(workdir):
             "faiss-cpu",
             "keras",  # pure python
             "lightgbm",
-            "llvmlite",
             "onnx",
             "onnxmltools",  # pure python
             "onnxoptimizer",
