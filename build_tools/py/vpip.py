@@ -365,7 +365,9 @@ def build_pip_archive(workdir):
         # marked as binary packages by the tensorflow build process (arch=none-any)
         allowed_binaries = [
             "bitsandbytes",
+            "blobfile",
             "ctranslate2",
+            "evals",
             "faiss-cpu",
             "keras",  # pure python
             "lightgbm",
@@ -375,6 +377,7 @@ def build_pip_archive(workdir):
             "onnxruntime-gpu",
             "pyarrow",
             "pytorch-quantization",
+            "pyzstd",
             "sentencepiece",
             "tensorboard",  # pure python
             "tensorflow",
