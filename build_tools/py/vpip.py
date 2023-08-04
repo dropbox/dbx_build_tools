@@ -377,7 +377,6 @@ def build_pip_archive(workdir):
             "onnxruntime-gpu",
             "pyarrow",
             "pytorch-quantization",
-            "pyzstd",
             "sentencepiece",
             "tensorboard",  # pure python
             "tensorflow",
