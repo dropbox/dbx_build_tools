@@ -94,6 +94,10 @@ toolchain_type(
     name = "mypy_toolchain_39",
 )
 
+toolchain_type(
+    name = "mypy_toolchain_310",
+)
+
 bzl_library(
     name = "py_bzl",
     srcs = glob([
