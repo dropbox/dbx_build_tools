@@ -106,7 +106,6 @@ def _version_dependent_fields():
 DbxGoPackage = provider(
     fields = [
         "native_info",
-        "transitive_go_sources",
     ] + _version_dependent_fields(),
 )
 
@@ -788,20 +787,17 @@ def _build_package(ctx, go_versions):
     cgo_cc_infos = []
     go_native_infos = []
     direct_native_deps = []
-    sources_trans = []
     for dep in ctx.attr.deps:
         if DbxGoPackage in dep:
             go_dep = dep[DbxGoPackage]
             go_deps.append(go_dep)
             go_native_infos.append(go_dep.native_info)
-            sources_trans.append(go_dep.transitive_go_sources)
         if CcInfo in dep:
             cgo_cc_infos.append(dep[CcInfo])
     cgo_cc_info = cc_common.merge_cc_infos(cc_infos = cgo_cc_infos)
     go_native_infos.append(cgo_cc_info)
     native_info = cc_common.merge_cc_infos(cc_infos = go_native_infos)
     package_info["native_info"] = native_info
-    package_info["transitive_go_sources"] = depset(direct = ctx.files.srcs, transitive = sources_trans)
 
     if ctx.attr.cgo_srcs:
         cgo_params = _compute_cgo_parameters(ctx, cgo_cc_info)
