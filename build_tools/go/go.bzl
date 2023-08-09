@@ -951,11 +951,14 @@ _go_library_attrs.update({
     "module_name": attr.string(),
 })
 
-dbx_go_library = rule(
+_dbx_go_library_internal = rule(
     _dbx_go_library_impl,
     attrs = _go_library_attrs,
     fragments = ["cpp"],
 )
+
+def dbx_go_library(**kwargs):
+    _dbx_go_library_internal(**kwargs)
 
 _go_binary_attrs = dict(base_attrs)
 _go_binary_attrs.update(runfiles_attrs)
@@ -1027,7 +1030,7 @@ def dbx_go_binary(
     if dynamic_libraries:
         kwargs.pop("dynamic_libraries")
 
-    dbx_go_library(
+    _dbx_go_library_internal(
         name = name + "_exelib",
         srcs = srcs,
         deps = deps,
@@ -1054,7 +1057,7 @@ def dbx_go_binary(
 
     for alternate_go_version in alternate_go_versions:
         versioned_name = name + "_" + alternate_go_version
-        dbx_go_library(
+        _dbx_go_library_internal(
             name = versioned_name + "_exelib",
             srcs = srcs,
             deps = deps,
@@ -1120,7 +1123,7 @@ def _dbx_gen_maybe_services_test(
         force_launch_svcctl = False,
         timeout = None):
     testlib_name = name + "_testlib"
-    dbx_go_library(
+    _dbx_go_library_internal(
         name = testlib_name,
         srcs = srcs,
         deps = deps,
@@ -1141,7 +1144,7 @@ def _dbx_gen_maybe_services_test(
         embed_config = embed_config,
     )
     testmain_name = name + "_testmain"
-    dbx_go_library(
+    _dbx_go_library_internal(
         name = testmain_name,
         package = "main",
         srcs = [test_main],
