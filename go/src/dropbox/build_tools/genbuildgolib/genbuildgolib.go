@@ -127,16 +127,17 @@ func getRuleName(pkg *build.Package, moduleName string) (string, error) {
 }
 
 // PopulateBuildAttributes Populates BUILD file attributes
-// like srcs, cgoSrcs, deps, and some flags
+// like srcs, cgoSrcs, cgoDeps, and some flags
 func PopulateBuildAttributes(
 	pkg *build.Package,
-	deps []string,
 	moduleName string,
 	config *GenBuildConfig,
 ) ([]string, []string, []string, []string, []string, []string, string, error) {
 	// write lib/bin target
 	srcs := []string{}
 	srcs = append(srcs, pkg.GoFiles...)
+
+	cgoDeps := []string{}
 
 	cgoSrcs := []string{}
 	cgoSrcs = append(cgoSrcs, pkg.CgoFiles...)
@@ -178,7 +179,7 @@ func PopulateBuildAttributes(
 						uniqueSpecialLd[ldflag] = struct{}{}
 					}
 					cgoLinkerFlags = append(cgoLinkerFlags, str.LibFlags...)
-					deps = append(deps, str.Deps...)
+					cgoDeps = append(cgoDeps, str.Deps...)
 					continue
 				}
 
@@ -209,7 +210,7 @@ func PopulateBuildAttributes(
 
 	srcs = UniqSort(srcs)
 	cgoSrcs = UniqSort(cgoSrcs)
-	deps = UniqSort(deps)
+	cgoDeps = UniqSort(cgoDeps)
 	name, err := getRuleName(pkg, moduleName)
 	if err != nil {
 		return nil, nil, nil, nil, nil, nil, "", err
@@ -218,7 +219,7 @@ func PopulateBuildAttributes(
 	return cgoIncludeFlags,
 		cgoCXXFlags,
 		cgoLinkerFlags,
-		deps,
+		cgoDeps,
 		srcs,
 		cgoSrcs,
 		name,
@@ -259,6 +260,7 @@ func WriteCommonBuildAttrToTarget(
 	srcs []string,
 	deps []string,
 	cgoSrcs []string,
+	cgoDeps []string,
 	cgoIncludeFlags []string,
 	cgoLinkerFlags []string,
 	cgoCXXFlags []string,
@@ -271,6 +273,7 @@ func WriteCommonBuildAttrToTarget(
 
 	WriteListToBuild("srcs", srcs, buffer, true)
 	// Optional attributes, will not be written if slices are empty
+	WriteListToBuild("cdeps", cgoDeps, buffer, false)
 	WriteListToBuild("cgo_srcs", cgoSrcs, buffer, false)
 	WriteListToBuild("cgo_linkerflags", cgoLinkerFlags, buffer, false)
 	WriteListToBuild("cgo_cxxflags", cgoCXXFlags, buffer, false)

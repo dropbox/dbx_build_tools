@@ -156,7 +156,7 @@ func (g *ConfigGenerator) createDeps(pkg *build.Package, pkgs []string) []string
 		dep := g.getDepBazelTarget(pkg)
 		deps = append(deps, dep)
 	}
-	return deps
+	return genlib.UniqSort(deps)
 }
 
 func (g *ConfigGenerator) generateConfig(pkg *build.Package) (*bytes.Buffer, error) {
@@ -169,11 +169,11 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) (*bytes.Buffer, err
 	cgoIncludeFlags,
 		cgoCXXFlags,
 		cgoLinkerFlags,
-		deps,
+		cgoDeps,
 		srcs,
 		cgoSrcs,
 		name,
-		err := genlib.PopulateBuildAttributes(pkg, deps, g.moduleName, g.buildConfig)
+		err := genlib.PopulateBuildAttributes(pkg, g.moduleName, g.buildConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -218,6 +218,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) (*bytes.Buffer, err
 		srcs,
 		deps,
 		cgoSrcs,
+		cgoDeps,
 		cgoIncludeFlags,
 		cgoLinkerFlags,
 		cgoCXXFlags,
@@ -248,6 +249,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) (*bytes.Buffer, err
 				testSrcs,
 				testDeps,
 				cgoSrcs,
+				cgoDeps,
 				cgoIncludeFlags,
 				cgoLinkerFlags,
 				cgoCXXFlags,
@@ -269,6 +271,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) (*bytes.Buffer, err
 				pkg.ImportPath,
 				xTestSrcs,
 				xTestDeps,
+				nil,
 				nil,
 				nil,
 				nil,
@@ -364,6 +367,7 @@ func writeTarget(
 	srcs []string,
 	deps []string,
 	cgoSrcs []string,
+	cgoDeps []string,
 	cgoIncludeFlags []string,
 	cgoLinkerFlags []string,
 	cgoCXXFlags []string,
@@ -374,7 +378,8 @@ func writeTarget(
 
 	if len(srcs) == 0 &&
 		len(deps) == 0 &&
-		len(cgoSrcs) == 0 {
+		len(cgoSrcs) == 0 &&
+		len(cgoDeps) == 0 {
 
 		// bazel freaks out when the go build rule doesn't have any input
 		return
@@ -382,7 +387,7 @@ func writeTarget(
 
 	genlib.WriteCommonBuildAttrToTarget(
 		buffer, rule, name, srcs, deps,
-		cgoSrcs, cgoIncludeFlags, cgoLinkerFlags, cgoCXXFlags,
+		cgoSrcs, cgoDeps, cgoIncludeFlags, cgoLinkerFlags, cgoCXXFlags,
 		moduleName, tm, ecw)
 	if rule == "dbx_go_library" {
 		internalParentPath := pkgPath

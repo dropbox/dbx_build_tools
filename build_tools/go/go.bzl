@@ -165,7 +165,8 @@ def _use_go_race(ctx):
 base_attrs = {
     "srcs": attr.label_list(allow_files = go_file_types),
     "tagmap": attr.string_list_dict(),
-    "deps": attr.label_list(allow_files = True, providers = [[CcInfo], [DbxGoPackage]]),
+    "deps": attr.label_list(allow_files = True, providers = [DbxGoPackage]),
+    "cdeps": attr.label_list(allow_files = True, providers = [CcInfo]),
     "data": attr.label_list(
         allow_files = True,
         doc = """Data can be used to include files which need to be available during execution but are not Go source files
@@ -788,12 +789,11 @@ def _build_package(ctx, go_versions):
     go_native_infos = []
     direct_native_deps = []
     for dep in ctx.attr.deps:
-        if DbxGoPackage in dep:
-            go_dep = dep[DbxGoPackage]
-            go_deps.append(go_dep)
-            go_native_infos.append(go_dep.native_info)
-        if CcInfo in dep:
-            cgo_cc_infos.append(dep[CcInfo])
+        go_dep = dep[DbxGoPackage]
+        go_deps.append(go_dep)
+        go_native_infos.append(go_dep.native_info)
+    for dep in ctx.attr.cdeps:
+        cgo_cc_infos.append(dep[CcInfo])
     cgo_cc_info = cc_common.merge_cc_infos(cc_infos = cgo_cc_infos)
     go_native_infos.append(cgo_cc_info)
     native_info = cc_common.merge_cc_infos(cc_infos = go_native_infos)
@@ -1015,6 +1015,7 @@ def dbx_go_binary(
         standalone = None,
         tags = [],
         cgo_srcs = None,
+        cdeps = [],
         **kwargs):
     if not go_version:
         go_version = DEFAULT_GO_VERSION
@@ -1036,6 +1037,7 @@ def dbx_go_binary(
         single_go_version_override = go_version,
         tags = tags,
         cgo_srcs = cgo_srcs,
+        cdeps = cdeps,
         **kwargs
     )
     dbx_go_binary_internal(
@@ -1062,6 +1064,7 @@ def dbx_go_binary(
             single_go_version_override = alternate_go_version,
             tags = tags,
             cgo_srcs = cgo_srcs,
+            cdeps = cdeps,
             **kwargs
         )
         dbx_go_binary_internal(
@@ -1097,6 +1100,7 @@ def _dbx_gen_maybe_services_test(
         tagmap = {},
         tags = [],
         data = [],
+        cdeps = [],
         cgo_srcs = [],
         cgo_includeflags = [],
         cgo_includeheaders = [],
@@ -1125,6 +1129,7 @@ def _dbx_gen_maybe_services_test(
         tags = tags,
         tagmap = tagmap,
         data = data,
+        cdeps = cdeps,
         cgo_srcs = cgo_srcs,
         cgo_includeflags = cgo_includeflags,
         cgo_linkerflags = cgo_linkerflags,
@@ -1228,6 +1233,7 @@ def dbx_go_test(
         tagmap = {},
         tags = [],
         data = [],
+        cdeps = [],
         cgo_srcs = [],
         cgo_includeflags = [],
         cgo_linkerflags = [],
@@ -1290,6 +1296,7 @@ def dbx_go_test(
             tagmap = tagmap,
             tags = versioned_tags,
             data = data,
+            cdeps = cdeps,
             cgo_srcs = cgo_srcs,
             cgo_includeflags = cgo_includeflags,
             cgo_linkerflags = cgo_linkerflags,
