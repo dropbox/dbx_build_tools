@@ -957,8 +957,37 @@ _dbx_go_library_internal = rule(
     fragments = ["cpp"],
 )
 
-def dbx_go_library(**kwargs):
-    _dbx_go_library_internal(**kwargs)
+def dbx_go_library(
+        name,
+        srcs = [],
+        deps = [],
+        cgo_srcs = [],
+        cdeps = [],
+        data = [],
+        tagmap = {},
+        module_name = None,
+        cgo_includeflags = [],
+        cgo_linkerflags = [],
+        cgo_cxxflags = [],
+        package = "",
+        embed_config = None,
+        **kwargs):
+    _dbx_go_library_internal(
+        name = name,
+        srcs = srcs,
+        deps = deps,
+        cgo_srcs = cgo_srcs,
+        cdeps = cdeps,
+        data = data,
+        tagmap = tagmap,
+        module_name = module_name,
+        cgo_includeflags = cgo_includeflags,
+        cgo_linkerflags = cgo_linkerflags,
+        cgo_cxxflags = cgo_cxxflags,
+        package = package,
+        embed_config = embed_config,
+        **kwargs
+    )
 
 _go_binary_attrs = dict(base_attrs)
 _go_binary_attrs.update(runfiles_attrs)
@@ -1011,11 +1040,18 @@ def dbx_go_binary(
         srcs,
         deps,
         data = [],
+        tagmap = {},
+        cgo_includeflags = [],
+        cgo_linkerflags = [],
+        cgo_cxxflags = [],
         go_version = None,
         alternate_go_versions = [],
+        testonly = False,
+        visibility = None,
         generate_norace_binary = False,
         bin_name = None,
         standalone = None,
+        embed_config = None,
         tags = [],
         cgo_srcs = None,
         cdeps = [],
@@ -1041,6 +1077,13 @@ def dbx_go_binary(
         tags = tags,
         cgo_srcs = cgo_srcs,
         cdeps = cdeps,
+        tagmap = tagmap,
+        cgo_includeflags = cgo_includeflags,
+        cgo_linkerflags = cgo_linkerflags,
+        cgo_cxxflags = cgo_cxxflags,
+        testonly = testonly,
+        visibility = visibility,
+        embed_config = embed_config,
         **kwargs
     )
     dbx_go_binary_internal(
@@ -1052,6 +1095,10 @@ def dbx_go_binary(
         tags = tags,
         standalone = standalone,
         dynamic_libraries = dynamic_libraries,
+        tagmap = tagmap,
+        testonly = testonly,
+        visibility = visibility,
+        embed_config = embed_config,
         **kwargs
     )
 
@@ -1068,6 +1115,13 @@ def dbx_go_binary(
             tags = tags,
             cgo_srcs = cgo_srcs,
             cdeps = cdeps,
+            tagmap = tagmap,
+            cgo_includeflags = cgo_includeflags,
+            cgo_linkerflags = cgo_linkerflags,
+            cgo_cxxflags = cgo_cxxflags,
+            testonly = testonly,
+            visibility = visibility,
+            embed_config = embed_config,
             **kwargs
         )
         dbx_go_binary_internal(
@@ -1077,6 +1131,10 @@ def dbx_go_binary(
             go_version = alternate_go_version,
             tags = tags,
             dynamic_libraries = dynamic_libraries,
+            tagmap = tagmap,
+            testonly = testonly,
+            visibility = visibility,
+            embed_config = embed_config,
             **kwargs
         )
 
@@ -1089,6 +1147,10 @@ def dbx_go_binary(
             tags = tags,
             force_no_race = True,
             dynamic_libraries = dynamic_libraries,
+            tagmap = tagmap,
+            testonly = testonly,
+            visibility = visibility,
+            embed_config = embed_config,
             **kwargs
         )
 
@@ -1268,6 +1330,14 @@ def dbx_go_test(
     # //go/src/foo/bar:bar_test_1.5 will be created (this target shows up during bash autocompletion)
 
     for go_version in go_versions:
+        versioned_name = name + "_" + go_version
+
+        # We ensure we don't add alternative_go_version to at least one of the elements
+        # in go_versions (in case someone disables the default go version from running)
+        versioned_tags = tags
+        if go_version != DEFAULT_GO_VERSION and DEFAULT_GO_VERSION in go_versions:
+            versioned_tags = tags + ["alternative_go_version"]
+
         test_main_fmt = name + "-test_main-{}.go"
         test_main_versioned = test_main_fmt.format(go_version)
 
@@ -1279,14 +1349,6 @@ def dbx_go_test(
             module_name = module_name,
             go_version = go_version,
         )
-
-        versioned_name = name + "_" + go_version
-
-        # We ensure we don't add alternative_go_version to at least one of the elements
-        # in go_versions (in case someone disables the default go version from running)
-        versioned_tags = tags
-        if go_version != DEFAULT_GO_VERSION and DEFAULT_GO_VERSION in go_versions:
-            versioned_tags = tags + ["alternative_go_version"]
 
         _dbx_gen_maybe_services_test(
             versioned_name,
