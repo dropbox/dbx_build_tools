@@ -1,0 +1,9 @@
+load("//build_tools/go:go.bzl", "dbx_go_library")
+
+dbx_go_library(
+    name = "v2",
+    visibility = [
+        "//go/src/github.com/envoyproxy/protoc-gen-validate:__subpackages__",
+        "//go/src/github.com/lyft/protoc-gen-star:__subpackages__",
+    ],
+)

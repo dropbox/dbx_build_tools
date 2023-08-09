@@ -18,6 +18,6 @@ dbx_go_library(
     ],
     deps = [
         "//go/src/github.com/envoyproxy/protoc-gen-validate/templates/goshared",
-        "//go/src/github.com/lyft/protoc-gen-star",
+        "//go/src/github.com/lyft/protoc-gen-star/v2",
     ],
 )

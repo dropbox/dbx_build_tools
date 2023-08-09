@@ -46,6 +46,13 @@ const msgTpl = `
 			{{- end }}
 		};
 	{{ end }}{{ end }}
+	{{ if has .Rules.Items.GetAny "In" }} {{ if .Rules.Items.GetAny.In }}
+	const std::set<string> {{ lookup .Field "InLookup" }} = {
+			{{- range .Rules.Items.GetAny.In }}
+				{{ inKey $f . }},
+			{{- end }}
+		};
+	{{ end }}{{ end }}
 	{{ end }}{{ end }}
 
 	{{ if has .Rules "Items"}}{{ if .Rules.Items }}
@@ -59,6 +66,13 @@ const msgTpl = `
 	{{ if has .Rules.Items.GetEnum "NotIn" }} {{ if .Rules.Items.GetEnum.NotIn }}
 	const std::set<{{ inType .Field .Rules.Items.GetEnum.NotIn }}> {{ lookup .Field "NotInLookup" }} = {
 			{{- range .Rules.Items.GetEnum.NotIn }}
+				{{ inKey $f . }},
+			{{- end }}
+		};
+	{{ end }}{{ end }}
+	{{ if has .Rules.Items.GetAny "NotIn" }} {{ if .Rules.Items.GetAny.NotIn }}
+	const std::set<string> {{ lookup .Field "NotInLookup" }} = {
+			{{- range .Rules.Items.GetAny.NotIn }}
 				{{ inKey $f . }},
 			{{- end }}
 		};
@@ -77,7 +91,21 @@ const msgTpl = `
 	{{ end }}{{ end }}
         {{ end }}{{ end }}
 
-        {{ if has .Rules "Keys"}}{{ if .Rules.Keys }}
+	{{ if has .Rules "Keys"}}{{ if .Rules.Keys }}
+	{{ if has .Rules.Keys.GetString_ "In" }} {{ if .Rules.Keys.GetString_.In }}
+	const std::set<string> {{ lookup .Field "InLookup" }} = {
+			{{- range .Rules.Keys.GetString_.In }}
+				{{ inKey $f . }},
+			{{- end }}
+		};
+	{{ end }}{{ end }}
+	{{ if has .Rules.Keys.GetString_ "NotIn" }} {{ if .Rules.Keys.GetString_.NotIn }}
+	const std::set<string> {{ lookup .Field "NotInLookup" }} = {
+			{{- range .Rules.Keys.GetString_.NotIn }}
+				{{ inKey $f . }},
+			{{- end }}
+		};
+	{{ end }}{{ end }}
 	{{ if has .Rules.Keys.GetString_ "Pattern" }} {{ if .Rules.Keys.GetString_.Pattern }}
 		const re2::RE2 {{ lookup .Field "Pattern" }}(re2::StringPiece({{ lit .Rules.Keys.GetString_.GetPattern }},
                                               sizeof({{ lit .Rules.Keys.GetString_.GetPattern }}) - 1));
@@ -102,6 +130,11 @@ bool Validate(const {{ class . }}& m, pgv::ValidationMsg* err) {
 		{{ range .NonOneOfFields }}
 			{{- render (context .) -}}
 		{{ end -}}
+		{{ range .SyntheticOneOfFields }}
+			if ({{ hasAccessor (context .) }}) {
+				{{ render (context .) }}
+			}
+		{{ end }}
 		{{ range .RealOneOfs }}
 			switch (m.{{ .Name }}_case()) {
 				{{ range .Fields -}}

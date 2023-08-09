@@ -1,1 +1,1 @@
-{"Module":"github.com/envoyproxy/protoc-gen-validate","Revision":"v0.6.7","Sum":"h1:qcZcULcd/abmQg6dwigimCNEyi4gg31M/xaciQlDml8=","Patches":["dbx-patches/bazel.patch"]}
+{"Module":"github.com/envoyproxy/protoc-gen-validate","Revision":"v1.0.2","Sum":"h1:QkIBuU5k+x7/QXPvPPnWXWlCdaBFApVqftFV6k087DA=","Patches":["dbx-patches/bazel.patch"],"Vendor":true}

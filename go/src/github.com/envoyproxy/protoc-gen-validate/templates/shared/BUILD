@@ -8,6 +8,7 @@ dbx_go_library(
     srcs = [
         "context.go",
         "disabled.go",
+        "enums.go",
         "functions.go",
         "reflection.go",
         "well_known.go",
@@ -17,7 +18,7 @@ dbx_go_library(
     ],
     deps = [
         "//go/src/github.com/envoyproxy/protoc-gen-validate/validate",
-        "//go/src/github.com/lyft/protoc-gen-star",
+        "//go/src/github.com/lyft/protoc-gen-star/v2",
         "@org_golang_google_protobuf//proto",
     ],
 )

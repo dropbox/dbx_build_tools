@@ -17,7 +17,7 @@ dbx_go_library(
         "//go/src/github.com/envoyproxy/protoc-gen-validate/templates/go",
         "//go/src/github.com/envoyproxy/protoc-gen-validate/templates/java",
         "//go/src/github.com/envoyproxy/protoc-gen-validate/templates/shared",
-        "//go/src/github.com/lyft/protoc-gen-star",
-        "//go/src/github.com/lyft/protoc-gen-star/lang/go",
+        "//go/src/github.com/lyft/protoc-gen-star/v2",
+        "//go/src/github.com/lyft/protoc-gen-star/v2/lang/go",
     ],
 )

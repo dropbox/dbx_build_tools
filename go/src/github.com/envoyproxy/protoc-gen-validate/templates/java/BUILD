@@ -31,8 +31,8 @@ dbx_go_library(
     ],
     deps = [
         "//go/src/github.com/envoyproxy/protoc-gen-validate/templates/shared",
-        "//go/src/github.com/lyft/protoc-gen-star",
-        "//go/src/github.com/lyft/protoc-gen-star/lang/go",
+        "//go/src/github.com/lyft/protoc-gen-star/v2",
+        "//go/src/github.com/lyft/protoc-gen-star/v2/lang/go",
         "@com_github_iancoleman_strcase",
         "@org_golang_google_protobuf//types/known/durationpb",
         "@org_golang_google_protobuf//types/known/timestamppb",

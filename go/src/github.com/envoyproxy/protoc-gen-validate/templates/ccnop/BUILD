@@ -10,10 +10,10 @@ dbx_go_library(
         "register.go",
     ],
     visibility = [
-        "//go/src:__subpackages__",
+        "//visibility:public",
     ],
     deps = [
         "//go/src/github.com/envoyproxy/protoc-gen-validate/templates/cc",
-        "//go/src/github.com/lyft/protoc-gen-star",
+        "//go/src/github.com/lyft/protoc-gen-star/v2",
     ],
 )

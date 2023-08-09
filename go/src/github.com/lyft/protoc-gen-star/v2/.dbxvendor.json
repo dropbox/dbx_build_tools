@@ -1,0 +1,1 @@
+{"Module":"github.com/lyft/protoc-gen-star/v2","Revision":"v2.0.3","Sum":"h1:/3+/2sWyXeMLzKd1bX+ixWKgEMsULrIivpDsuaF441o=","Patches":["dbx-patches/bazel.patch"],"Vendor":true}

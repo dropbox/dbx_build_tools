@@ -1,0 +1,13 @@
+diff -ruN 1/BUILD.in 2/BUILD.in
+--- 1/BUILD.in	1970-01-01 00:00:00.000000000 +0000
++++ 2/BUILD.in	2023-08-08 22:53:58.353944742 +0000
+@@ -0,0 +1,9 @@
++load("//build_tools/go:go.bzl", "dbx_go_library")
++
++dbx_go_library(
++    name = "v2",
++    visibility = [
++        "//go/src/github.com/envoyproxy/protoc-gen-validate:__subpackages__",
++        "//go/src/github.com/lyft/protoc-gen-star:__subpackages__",
++    ],
++)
