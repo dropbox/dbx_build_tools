@@ -375,6 +375,10 @@ func linkOutputTree(entries []*manifestEntry, scratchDir string, contentMap map[
 							hashPath += fmt.Sprintf("-%d", bucketId)
 						}
 						if err := os.Link(hashPath, dest); err != nil {
+							if os.IsExist(err) {
+								// correctness is validated below
+								continue
+							}
 							if !os.IsNotExist(err) {
 								errChan <- err
 								return
@@ -384,6 +388,10 @@ func linkOutputTree(entries []*manifestEntry, scratchDir string, contentMap map[
 								return
 							}
 							if err := os.Link(hashPath, dest); err != nil {
+								if os.IsExist(err) {
+									// correctness is validated below
+									continue
+								}
 								errChan <- err
 								return
 							}
@@ -400,12 +408,13 @@ func linkOutputTree(entries []*manifestEntry, scratchDir string, contentMap map[
 	{
 		// validate input. do this while the background workers are doing work, to save time, as going
 		// through all entries for large sqfs can be slow
-		destMap := make(map[string]struct{})
+		destMap := make(map[string]string)
 		for _, entry := range entries {
-			if _, ok := destMap[entry.shortDest]; ok {
-				return fmt.Errorf("Detected duplicate output %s", entry.shortDest)
+			hash := contentMap[entry.src]
+			if prevHash, ok := destMap[entry.shortDest]; ok && prevHash != hash {
+				return fmt.Errorf("Detected duplicate output %s, hashes: %v vs %v", entry.shortDest, prevHash, hash)
 			}
-			destMap[entry.shortDest] = struct{}{}
+			destMap[entry.shortDest] = hash
 		}
 	}
 	var consolidatedError error
