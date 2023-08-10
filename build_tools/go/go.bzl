@@ -11,6 +11,8 @@ load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
 load("//build_tools/bazel:runfiles.bzl", "runfiles_attrs", "write_runfiles_tmpl")
 load("//build_tools/services:svc.bzl", "dbx_services_test")
+load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library", "go_test")
+load("//build_tools/binary:binary.bzl", "dbx_binary_shim", "dbx_binary_shim_test")
 
 DbxGoToolchain = provider(
     fields = [
@@ -80,6 +82,7 @@ go_toolchain = rule(
     },
 )
 
+# TODO(team): Remove all notion of versions once migration to bazel/rules_go is finished.
 SUPPORTED_GO_VERSIONS = ["1.18", "1.19"]
 DEFAULT_GO_VERSION = "1.18"
 DEFAULT_GO_LIBRARY_VERSIONS = ["1.18", "1.19"]
@@ -88,6 +91,7 @@ SUPPORTED_GO_TOOLCHAINS = [
     Label("//build_tools/go:go1.18"),
     Label("//build_tools/go:go1.19"),
 ]
+RULES_GO_VERSION = "1.21"
 
 # DbxGoPackage is the main provider exported by dbx_go_library. Go libraries generate compilation
 # actions over the matrix [go verions]X[race, no race]. To avoid the overhead of indirection, we
@@ -957,6 +961,21 @@ _dbx_go_library_internal = rule(
     fragments = ["cpp"],
 )
 
+_SUFFIX_RULES_GO = "_rules_go"
+
+def _normalized_dep(dep):
+    if dep.startswith("@") and "//" not in dep:
+        dep = dep + "//:" + dep[1:]
+    if ":" not in dep:
+        dep = dep + ":" + dep[dep.rfind("/") + 1:]
+    return dep
+
+def _rewrite_godeps(deps):
+    return [
+        _normalized_dep(dep) + _SUFFIX_RULES_GO
+        for dep in deps
+    ]
+
 def dbx_go_library(
         name,
         srcs = [],
@@ -971,6 +990,8 @@ def dbx_go_library(
         cgo_cxxflags = [],
         package = "",
         embed_config = None,
+        # The following are bazel/rules_go-specific attributes.
+        x_defs = {},
         **kwargs):
     _dbx_go_library_internal(
         name = name,
@@ -986,6 +1007,26 @@ def dbx_go_library(
         cgo_cxxflags = cgo_cxxflags,
         package = package,
         embed_config = embed_config,
+        **kwargs
+    )
+
+    embedsrcs = []
+    if embed_config:
+        embedsrcs = data
+
+    go_library(
+        name = name + _SUFFIX_RULES_GO,
+        cgo = len(cgo_srcs) > 0,
+        srcs = srcs + cgo_srcs,
+        data = data,
+        deps = _rewrite_godeps(deps),
+        cdeps = cdeps,
+        embedsrcs = embedsrcs,
+        importpath = module_name if module_name else native.package_name()[len("go/src/"):],
+        clinkopts = cgo_linkerflags,
+        copts = cgo_includeflags,
+        cppopts = cgo_cxxflags + cgo_includeflags,
+        x_defs = x_defs,
         **kwargs
     )
 
@@ -1055,63 +1096,41 @@ def dbx_go_binary(
         tags = [],
         cgo_srcs = None,
         cdeps = [],
+        # The following are bazel/rules_go-specific attributes.
+        gotags = [],
+        static = "off",
+        x_defs = {},
         **kwargs):
     if not go_version:
         go_version = DEFAULT_GO_VERSION
-
     if go_version not in alternate_go_versions:
         alternate_go_versions = alternate_go_versions + [go_version]
+
+    embedsrcs = []
+    if embed_config:
+        embedsrcs = data
+
+    all_srcs = srcs + (cgo_srcs or [])
+    x_defs = x_defs
+    static = static
+    if standalone:
+        x_defs = dict(x_defs)  # original is immutable
+        x_defs["dropbox/runfiles.compiledStandalone"] = "yes"
+        static = "on"
 
     dynamic_libraries = kwargs.get("dynamic_libraries", [])
     if dynamic_libraries:
         kwargs.pop("dynamic_libraries")
 
-    _dbx_go_library_internal(
-        name = name + "_exelib",
-        srcs = srcs,
-        deps = deps,
-        data = data,
-        package = "main",
-        go_versions = [],
-        single_go_version_override = go_version,
-        tags = tags,
-        cgo_srcs = cgo_srcs,
-        cdeps = cdeps,
-        tagmap = tagmap,
-        cgo_includeflags = cgo_includeflags,
-        cgo_linkerflags = cgo_linkerflags,
-        cgo_cxxflags = cgo_cxxflags,
-        testonly = testonly,
-        visibility = visibility,
-        embed_config = embed_config,
-        **kwargs
-    )
-    dbx_go_binary_internal(
-        name = name,
-        bin_name = bin_name,
-        deps = [":" + name + "_exelib"],
-        data = data,
-        go_version = go_version,
-        tags = tags,
-        standalone = standalone,
-        dynamic_libraries = dynamic_libraries,
-        tagmap = tagmap,
-        testonly = testonly,
-        visibility = visibility,
-        embed_config = embed_config,
-        **kwargs
-    )
-
-    for alternate_go_version in alternate_go_versions:
-        versioned_name = name + "_" + alternate_go_version
+    if go_version != RULES_GO_VERSION:
         _dbx_go_library_internal(
-            name = versioned_name + "_exelib",
+            name = name + "_exelib",
             srcs = srcs,
             deps = deps,
             data = data,
             package = "main",
             go_versions = [],
-            single_go_version_override = alternate_go_version,
+            single_go_version_override = go_version,
             tags = tags,
             cgo_srcs = cgo_srcs,
             cdeps = cdeps,
@@ -1125,11 +1144,13 @@ def dbx_go_binary(
             **kwargs
         )
         dbx_go_binary_internal(
-            name = versioned_name,
-            deps = [":" + versioned_name + "_exelib"],
+            name = name,
+            bin_name = bin_name,
+            deps = [":" + name + "_exelib"],
             data = data,
-            go_version = alternate_go_version,
+            go_version = go_version,
             tags = tags,
+            standalone = standalone,
             dynamic_libraries = dynamic_libraries,
             tagmap = tagmap,
             testonly = testonly,
@@ -1137,8 +1158,127 @@ def dbx_go_binary(
             embed_config = embed_config,
             **kwargs
         )
+    else:
+        go_binary(
+            name = name + "_bin",
+            cgo = bool(cgo_srcs),
+            srcs = all_srcs,
+            data = data,
+            embedsrcs = embedsrcs,
+            gotags = gotags,
+            deps = _rewrite_godeps(deps),
+            cdeps = cdeps,
+            clinkopts = cgo_linkerflags,
+            copts = cgo_includeflags,
+            cppopts = cgo_cxxflags + cgo_includeflags,
+            static = static,
+            x_defs = x_defs,
+            testonly = testonly,
+            visibility = visibility,
+            tags = tags,
+            **kwargs
+        )
 
-    if generate_norace_binary:
+        dbx_binary_shim(
+            name = name,
+            binary = name + "_bin",
+            testonly = testonly,
+            visibility = visibility,
+            tags = tags,
+        )
+
+    for alternate_go_version in alternate_go_versions:
+        versioned_name = name + "_" + alternate_go_version
+        if alternate_go_version != RULES_GO_VERSION:
+            _dbx_go_library_internal(
+                name = versioned_name + "_exelib",
+                srcs = srcs,
+                deps = deps,
+                data = data,
+                package = "main",
+                go_versions = [],
+                single_go_version_override = alternate_go_version,
+                tags = tags,
+                cgo_srcs = cgo_srcs,
+                cdeps = cdeps,
+                tagmap = tagmap,
+                cgo_includeflags = cgo_includeflags,
+                cgo_linkerflags = cgo_linkerflags,
+                cgo_cxxflags = cgo_cxxflags,
+                testonly = testonly,
+                visibility = visibility,
+                embed_config = embed_config,
+                **kwargs
+            )
+            dbx_go_binary_internal(
+                name = versioned_name,
+                deps = [":" + versioned_name + "_exelib"],
+                data = data,
+                go_version = alternate_go_version,
+                tags = tags,
+                dynamic_libraries = dynamic_libraries,
+                tagmap = tagmap,
+                testonly = testonly,
+                visibility = visibility,
+                embed_config = embed_config,
+                **kwargs
+            )
+        else:
+            go_binary(
+                name = versioned_name + "_bin",
+                cgo = bool(cgo_srcs),
+                srcs = all_srcs,
+                data = data,
+                embedsrcs = embedsrcs,
+                gotags = gotags,
+                deps = _rewrite_godeps(deps),
+                cdeps = cdeps,
+                clinkopts = cgo_linkerflags,
+                copts = cgo_includeflags,
+                cppopts = cgo_cxxflags + cgo_includeflags,
+                static = static,
+                x_defs = x_defs,
+                testonly = testonly,
+                visibility = visibility,
+                tags = tags,
+                **kwargs
+            )
+
+            dbx_binary_shim(
+                name = versioned_name,
+                binary = versioned_name + "_bin",
+                testonly = testonly,
+                visibility = visibility,
+                tags = tags,
+            )
+
+    if go_version == RULES_GO_VERSION and generate_norace_binary:
+        go_binary(
+            name = name + "_bin_norace",
+            cgo = bool(cgo_srcs),
+            srcs = all_srcs,
+            gotags = gotags,
+            deps = _rewrite_godeps(deps),
+            cdeps = cdeps,
+            clinkopts = cgo_linkerflags,
+            copts = cgo_includeflags,
+            cppopts = cgo_cxxflags + cgo_includeflags,
+            race = "off",
+            static = static,
+            x_defs = x_defs,
+            testonly = testonly,
+            visibility = visibility,
+            **kwargs
+        )
+
+        dbx_binary_shim(
+            name = name + "_norace",
+            binary = name + "_bin_norace",
+            testonly = testonly,
+            visibility = visibility,
+            tags = tags,
+        )
+    elif generate_norace_binary:
         dbx_go_binary_internal(
             name = name + "_norace",
             deps = [":" + name + "_exelib"],
@@ -1315,7 +1455,11 @@ def dbx_go_test(
         embed_config = "",
         # normally, the service controller is only launched if a test requries services.
         # To launch it unconditionally, use this flag:
-        force_launch_svcctl = False):
+        force_launch_svcctl = False,
+        # bazel/rules_go-specific attributes.
+        static = "off",
+        x_defs = {},
+        gotags = []):
     q_tags = process_quarantine_attr(quarantine)
     tags = tags + q_tags
 
@@ -1338,44 +1482,114 @@ def dbx_go_test(
         if go_version != DEFAULT_GO_VERSION and DEFAULT_GO_VERSION in go_versions:
             versioned_tags = tags + ["alternative_go_version"]
 
-        test_main_fmt = name + "-test_main-{}.go"
-        test_main_versioned = test_main_fmt.format(go_version)
+        if go_version == RULES_GO_VERSION:
+            launch_svcctl = len(services) > 0 or force_launch_svcctl
 
-        _dbx_go_generate_test_main(
-            name = name + "-gentest-" + go_version,
-            srcs = srcs,
-            test_main = test_main_versioned,
-            testonly = True,
-            module_name = module_name,
-            go_version = go_version,
-        )
+            embedsrcs = []
+            if embed_config:
+                embedsrcs = data
 
-        _dbx_gen_maybe_services_test(
-            versioned_name,
-            srcs = srcs,
-            test_main = test_main_versioned,
-            deps = deps,
-            size = size,
-            package = package,
-            module_name = module_name,
-            tagmap = tagmap,
-            tags = versioned_tags,
-            data = data,
-            cdeps = cdeps,
-            cgo_srcs = cgo_srcs,
-            cgo_includeflags = cgo_includeflags,
-            cgo_linkerflags = cgo_linkerflags,
-            cgo_cxxflags = cgo_cxxflags,
-            shard_count = shard_count,
-            services = services,
-            local = local,
-            args = args,
-            start_services = start_services,
-            go_version = go_version,
-            force_launch_svcctl = force_launch_svcctl,
-            flaky = flaky,
-            quarantine = quarantine,
-            timeout = timeout,
-            embed_config = embed_config,
-        )
+            manual_tags = versioned_tags + ["manual"]
+
+            test_name = versioned_name
+            test_tags = versioned_tags
+            if launch_svcctl:
+                test_name = versioned_name + "_bin"
+                test_tags = manual_tags
+
+            go_test(
+                name = test_name + "_bin",
+                cgo = len(cgo_srcs) > 0,
+                srcs = srcs + cgo_srcs,
+                gotags = gotags,
+                deps = _rewrite_godeps(deps),
+                cdeps = cdeps,
+                importpath = module_name if module_name else native.package_name()[len("go/src/"):],
+                embedsrcs = embedsrcs,
+                rundir = ".",
+                clinkopts = cgo_linkerflags,
+                copts = cgo_includeflags,
+                cppopts = cgo_cxxflags + cgo_includeflags,
+                static = static,
+                x_defs = x_defs,
+                data = data,
+                tags = manual_tags,
+                size = size,
+                local = local,
+                args = args,
+                shard_count = shard_count,
+                flaky = flaky,
+                timeout = timeout,
+            )
+
+            dbx_binary_shim_test(
+                name = test_name,
+                binary = test_name + "_bin",
+                testonly = True,
+                tags = test_tags,
+                size = size,
+                local = local,
+                args = args,
+                shard_count = shard_count,
+                flaky = flaky,
+                # quarantine = quarantine,
+                timeout = timeout,
+            )
+
+            if launch_svcctl:
+                dbx_services_test(
+                    name = versioned_name,
+                    test = versioned_name + "_bin",
+                    size = size,
+                    services = services,
+                    start_services = start_services,
+                    tags = versioned_tags,
+                    local = local,
+                    args = args,
+                    shard_count = shard_count,
+                    flaky = flaky,
+                    quarantine = quarantine,
+                    timeout = timeout,
+                )
+        else:
+            test_main_fmt = name + "-test_main-{}.go"
+            test_main_versioned = test_main_fmt.format(go_version)
+
+            _dbx_go_generate_test_main(
+                name = name + "-gentest-" + go_version,
+                srcs = srcs,
+                test_main = test_main_versioned,
+                testonly = True,
+                module_name = module_name,
+                go_version = go_version,
+            )
+
+            _dbx_gen_maybe_services_test(
+                versioned_name,
+                srcs = srcs,
+                test_main = test_main_versioned,
+                deps = deps,
+                size = size,
+                package = package,
+                module_name = module_name,
+                tagmap = tagmap,
+                tags = versioned_tags,
+                data = data,
+                cdeps = cdeps,
+                cgo_srcs = cgo_srcs,
+                cgo_includeflags = cgo_includeflags,
+                cgo_linkerflags = cgo_linkerflags,
+                cgo_cxxflags = cgo_cxxflags,
+                shard_count = shard_count,
+                services = services,
+                local = local,
+                args = args,
+                start_services = start_services,
+                go_version = go_version,
+                force_launch_svcctl = force_launch_svcctl,
+                flaky = flaky,
+                quarantine = quarantine,
+                timeout = timeout,
+                embed_config = embed_config,
+            )
     native.test_suite(name = name, tests = [":" + name + "_" + go_versions[0]], tags = tags)
