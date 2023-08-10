@@ -114,6 +114,7 @@ dbx_string_value(
     name = "go_race",
     value = select({
         ":use-go-race": "define-go_race",
+        ":rules-go-race": "define-go_race",
         "//conditions:default": "define-none",
     }),
 )
@@ -130,6 +131,7 @@ dbx_string_value(
     name = "go_cdbg",
     value = select({
         ":go-cdbg": "define-go_cdbg",
+        ":rules-go-cdbg": "define-go_cdbg",
         "//conditions:default": "define-none",
     }),
 )
@@ -139,6 +141,13 @@ config_setting(
     name = "use-go-race",
     values = {
         "define": "go_race=1",
+    },
+)
+
+config_setting(
+    name = "rules-go-race",
+    flag_values = {
+        "@io_bazel_rules_go//go/config:race": "true",
     },
 )
 
@@ -155,5 +164,12 @@ config_setting(
     name = "go-cdbg",
     values = {
         "define": "go_cdbg=1",
+    },
+)
+
+config_setting(
+    name = "rules-go-cdbg",
+    flag_values = {
+        "@io_bazel_rules_go//go/config:debug": "true",
     },
 )
