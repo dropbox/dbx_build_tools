@@ -565,7 +565,7 @@ func main() {
 		}
 	}
 
-	repoByImportPath, err := parseGoRepositoryPaths(path.Join(workspace, *dependenciesFilePath))
+	repoByImportPath, err := parseGoRepositoryPaths(*dependenciesFilePath)
 	if err != nil {
 		log.Fatalf("failed to read dbx_go_dependencies.json, err: %v", err)
 	}

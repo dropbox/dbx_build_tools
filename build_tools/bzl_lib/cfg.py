@@ -49,3 +49,13 @@ GO_TEST_RULE = "dbx_go_test"
 GO_LIBRARY_RULE = "dbx_go_library"
 
 WHITELISTED_GO_SRCS_PATHS: List[str] = []
+
+
+GO_DEPENDENCIES_LOCAL_PATH = "build_tools/go/dbx_go_dependencies.json"
+GO_DEPENDENCIES_RUNFILES_PATH = (
+    "@dbx_build_tools//build_tools/go/dbx_go_dependencies.json"
+)
+GO_GEN_CONFIG_LOCAL_PATH = "go/src/dropbox/build_tools/gen-build-go/config.json"
+GO_GEN_CONFIG_RUNFILES_PATH = (
+    "@dbx_build_tools//go/src/dropbox/build_tools/gen-build-go/config.json"
+)

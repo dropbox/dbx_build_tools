@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	GoDepDefJsonPath = "build_tools/go/dbx_go_dependencies.json"
+	GoDepDefJsonPath = "build_tools/go/dbx/dbx_go_dependencies.json"
 )
 
 type DbxGoDependency struct {

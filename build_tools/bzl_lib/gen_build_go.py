@@ -5,6 +5,10 @@ from typing import Dict, Iterable, List, Set
 from build_tools import bazel_utils, build_parser
 from build_tools.bzl_lib.cfg import (
     BUILD_INPUT,
+    GO_DEPENDENCIES_LOCAL_PATH,
+    GO_DEPENDENCIES_RUNFILES_PATH,
+    GO_GEN_CONFIG_LOCAL_PATH,
+    GO_GEN_CONFIG_RUNFILES_PATH,
     GO_LIBRARY_RULE,
     GO_RULE_TYPES,
     GO_TEST_RULE,
@@ -30,6 +34,13 @@ def targets2packages(workspace_dir: str, bazel_targets: Iterable[str]) -> List[s
         if x.startswith("//go/src/"):
             go_packages.append(x.replace("//go/src/", ""))
     return go_packages
+
+
+def _resolve_path(workspace_dir: str, local_path: str, runfiles_path: str) -> str:
+    config_path = os.path.join(workspace_dir, local_path)
+    if not os.path.exists(config_path):
+        config_path = runfiles.data_path(runfiles_path)
+    return config_path
 
 
 class GoBuildGenerator(Generator):
@@ -81,14 +92,22 @@ class GoBuildGenerator(Generator):
         # exisiting ones.
         tmp_buildfile = "BUILD.gen-build-go~"
         args += ["--build-filename", tmp_buildfile]
-        build_config_path = os.path.join(
-            self.workspace_dir, "go/src/dropbox/build_tools/gen-build-go/config.json"
-        )
-        if not os.path.exists(build_config_path):
-            build_config_path = runfiles.data_path(
-                "@dbx_build_tools//go/src/dropbox/build_tools/gen-build-go/config.json"
-            )
-        args += ["--build-config", build_config_path]
+        args += [
+            "--build-config",
+            _resolve_path(
+                self.workspace_dir,
+                GO_GEN_CONFIG_LOCAL_PATH,
+                GO_GEN_CONFIG_RUNFILES_PATH,
+            ),
+        ]
+        args += [
+            "--dependencies-path",
+            _resolve_path(
+                self.workspace_dir,
+                GO_DEPENDENCIES_LOCAL_PATH,
+                GO_DEPENDENCIES_RUNFILES_PATH,
+            ),
+        ]
         args += go_packages
         output = run_cmd(args, use_go_env=True, verbose=self.cfg.verbose)
 

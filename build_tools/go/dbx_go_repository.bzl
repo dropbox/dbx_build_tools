@@ -1,4 +1,5 @@
 load("//build_tools/bazel:magic_mirror_fallback.bzl", "MAGIC_MIRROR_FALLBACK_GO", "MAGIC_MIRROR_URL_MAPPING")
+load("//build_tools/go:cfg.bzl", "GO_DEPENDENCIES_JSON_PATH")
 
 _DBX_GO_REPOSITORY_RULE_TIMEOUT = 86400
 
@@ -120,7 +121,7 @@ dbx_go_dependency = repository_rule(
             need for gen-build-go-dep to determine which imports are native go imports.""",
         ),
         "_dbx_go_dependencies": attr.label(
-            default = "@dbx_build_tools//build_tools/go:dbx_go_dependencies.json",
+            default = GO_DEPENDENCIES_JSON_PATH,
             doc = "Indicate that BUILD files need to be regenerated on modules list changes.",
         ),
         "_gen_build_go": attr.label(
