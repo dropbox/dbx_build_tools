@@ -1,0 +1,4 @@
+dbx_go_binary(
+    name = "build-tar",
+    generate_norace_binary = True,
+)
