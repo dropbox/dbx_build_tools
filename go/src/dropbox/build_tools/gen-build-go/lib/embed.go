@@ -1,8 +1,10 @@
-package genbuildgolib
+package lib
 
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"go/build"
 	"io"
 	"io/fs"
@@ -10,8 +12,6 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
-	"godropbox/errors"
 )
 
 const (
@@ -76,7 +76,7 @@ func generateEmbedConfig(patterns []string, workspace, dir string, useAbsoluteFi
 		fullPattern := filepath.Join(dir, p)
 		globMatches, globErr := filepath.Glob(fullPattern)
 		if globErr != nil {
-			return ec, errors.Wrapf(globErr, "could not glob pattern %s", fullPattern)
+			return ec, fmt.Errorf("could not glob pattern %s, err: %w", fullPattern, globErr)
 		}
 
 		for _, fp := range globMatches {

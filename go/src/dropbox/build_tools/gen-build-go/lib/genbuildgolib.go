@@ -1,4 +1,4 @@
-package genbuildgolib
+package lib
 
 import (
 	"bytes"
@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"go/build"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -51,7 +50,7 @@ func readAssignmentsFromBuildIN(workspacePkgPath string) (map[string]interface{}
 	config := make(map[string]interface{})
 
 	buildConfigPath := filepath.Join(workspacePkgPath, "BUILD.in")
-	buildContent, err := ioutil.ReadFile(buildConfigPath)
+	buildContent, err := os.ReadFile(buildConfigPath)
 	if err != nil {
 		return config, err
 	}
@@ -84,7 +83,7 @@ func getBinaryRuleName(pkg *build.Package, moduleName string) (string, error) {
 		moduleName = pkg.Dir
 	}
 	modFilePath := path.Join(pkg.Dir, "go.mod")
-	modFileContent, err := ioutil.ReadFile(modFilePath)
+	modFileContent, err := os.ReadFile(modFilePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return filepath.Base(moduleName), nil

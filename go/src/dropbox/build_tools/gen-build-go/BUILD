@@ -13,12 +13,9 @@ dbx_go_binary(
         "//visibility:public",
     ],
     deps = [
-        "//go/src/dropbox/build_tools/genbuildgolib",
-        "//go/src/dropbox/devtools/dbxvendor/godep",
-        "//go/src/godropbox/errors",
+        "//go/src/dropbox/build_tools/gen-build-go/lib",
     ],
 )
-
 
 pkg_tar(
     name = "gen-build-go-pkg",
@@ -32,5 +29,18 @@ pkg_tar(
 
 exports_files(
     ["config.json"],
+    visibility = ["//visibility:public"],
+)
+
+filegroup(
+    name = "srcs",
+    data = glob(
+        ["*.go"],
+        exclude = ["*_test.go"],
+    ) + [
+        "go.mod",
+        "go.sum",
+        "//go/src/dropbox/build_tools/gen-build-go/lib:srcs",
+    ],
     visibility = ["//visibility:public"],
 )

@@ -11,16 +11,13 @@ import (
 	"go/build"
 	"io"
 	"io/fs"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
-	genlib "dropbox/build_tools/genbuildgolib"
-	"dropbox/devtools/dbxvendor/godep"
-	"godropbox/errors"
+	genlib "dropbox/build_tools/gen-build-go/lib"
 )
 
 const (
@@ -33,7 +30,7 @@ const (
 )
 
 func parseGoRepositoryPaths(filePath string) (map[string]string, error) {
-	dbxGoDependencies, err := godep.LoadGoDepDefJson(filePath)
+	dbxGoDependencies, err := genlib.LoadGoDepDefJson(filePath)
 	if os.IsNotExist(err) {
 		// Tolerate missing deps file for now.
 		return nil, nil
@@ -182,7 +179,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) (*bytes.Buffer, err
 	if g.moduleName == "" {
 		_, _ = buffer.WriteString(fmt.Sprintf(buildHeaderTmpl, "@dbx_build_tools"))
 	} else {
-		_, _ = buffer.WriteString(fmt.Sprintf(buildHeaderTmpl, "@"))
+		_, _ = buffer.WriteString(fmt.Sprintf(buildHeaderTmpl, "@dbx_build_tools"))
 		if pkg.Dir == "." && pkg.Name != "main" {
 			name = genlib.PathToExtRepoName(g.moduleName, "")
 		}
@@ -194,7 +191,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) (*bytes.Buffer, err
 	if len(pkg.AllTags) > 0 {
 		tm, err = genlib.BuildTagmapForPkg(pkg.Dir)
 		if err != nil {
-			return nil, errors.Wrap(err, "Could not build tag map")
+			return nil, fmt.Errorf("could not build tag map: %w", err)
 		}
 	}
 
@@ -289,7 +286,7 @@ func (g *ConfigGenerator) generateConfig(pkg *build.Package) (*bytes.Buffer, err
 func (g *ConfigGenerator) Process(goPkgPath string) error {
 	err := g.process(goPkgPath)
 	if err != nil {
-		return errors.New("Failed to process " + goPkgPath + ": " + err.Error())
+		return fmt.Errorf("failed to process %s: %w", goPkgPath, err.Error())
 	}
 
 	return nil
@@ -499,7 +496,7 @@ var moduleName = flag.String(
 
 var dependenciesFilePath = flag.String(
 	"dependencies-path",
-	godep.GoDepDefJsonPath,
+	genlib.GoDepDefJsonPath,
 	"The path to dbx_go_dependencies.json, relative to the workspace",
 )
 
@@ -547,7 +544,7 @@ func main() {
 	}
 
 	buildConfig := &genlib.GenBuildConfig{}
-	buildConfigData, err := ioutil.ReadFile(*buildConfigPath)
+	buildConfigData, err := os.ReadFile(*buildConfigPath)
 	if err != nil {
 		log.Fatalf("failed to read build config, err: %v", err)
 	}

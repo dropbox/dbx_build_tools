@@ -1,4 +1,4 @@
-package genbuildgolib
+package lib
 
 import "testing"
 

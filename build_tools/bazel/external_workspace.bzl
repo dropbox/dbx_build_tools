@@ -1,5 +1,6 @@
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive", "http_file")
 load("@dbx_build_tools//build_tools/go:workspace.bzl", "load_go_build_gen")
+load("//build_tools/go:dbx_go_gen_build.bzl", "dbx_go_gen_build")
 load("@dbx_build_tools//build_tools/go:dbx_go_repository.bzl", "dbx_go_dependency")
 
 # Retrieve a filename from given label. This is useful when the target is used in other repos, in
@@ -77,7 +78,7 @@ DEFAULT_EXTERNAL_URLS = {
     "zstd": ["https://github.com/facebook/zstd/releases/download/v1.4.9/zstd-1.4.9.tar.gz"],
 }
 
-def drte_deps(urls = DEFAULT_EXTERNAL_URLS, go_urls = DEFAULT_EXTERNAL_GO_URLS):
+def drte_deps(urls = DEFAULT_EXTERNAL_URLS, go_urls = DEFAULT_EXTERNAL_GO_URLS, goproxy_url = ""):
     http_archive(
         name = "go_1_18_linux_amd64_tar_gz",
         urls = urls["go_1_18_linux_amd64_tar_gz"],
@@ -134,7 +135,7 @@ def drte_deps(urls = DEFAULT_EXTERNAL_URLS, go_urls = DEFAULT_EXTERNAL_GO_URLS):
 
     cpython_deps(urls)
 
-    go_core_deps(go_urls)
+    go_core_deps(go_urls, goproxy_url)
 
 def cpython_deps(urls = DEFAULT_EXTERNAL_URLS):
     http_archive(
@@ -283,7 +284,9 @@ def pypi_core_deps(urls = DEFAULT_EXTERNAL_URLS):
         patches = [filename_from_label("//thirdparty/mypy:version.patch")],
     )
 
-def go_core_deps(urls = DEFAULT_EXTERNAL_GO_URLS):
+def go_core_deps(urls = DEFAULT_EXTERNAL_GO_URLS, goproxy_url = ""):
+    load_go_build_gen(goproxy_url)
+
     dbx_go_dependency(
         name = "com_github_stretchr_testify",
         url = urls["com_github_stretchr_testify"],

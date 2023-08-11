@@ -7,12 +7,11 @@ import (
 	"compress/gzip"
 	"flag"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"dropbox/dlog"
 )
 
 var (
@@ -32,13 +31,13 @@ func main() {
 	flag.Parse()
 
 	if *manifest == "" {
-		dlog.Fatal("-manifest must be set")
+		log.Fatal("-manifest must be set")
 	}
 	if *symlink == "" {
-		dlog.Fatal("-symlink must be set")
+		log.Fatal("-symlink must be set")
 	}
 	if *packageDirPrefix == "" {
-		dlog.Fatal("-package-dir must be set")
+		log.Fatal("-package-dir must be set")
 	}
 	packageDir := strings.TrimPrefix(*packageDirPrefix, "/")
 	if !strings.HasPrefix(packageDir, "./") {
@@ -46,12 +45,12 @@ func main() {
 	}
 
 	if *outputFile == "" {
-		dlog.Fatal("-output must be set")
+		log.Fatal("-output must be set")
 	}
 
 	outFile, err := os.Create(*outputFile)
 	if err != nil {
-		dlog.Fatal(err)
+		log.Fatal(err)
 	}
 
 	defer outFile.Close()
@@ -60,7 +59,7 @@ func main() {
 	if strings.HasSuffix(*outputFile, "gz") {
 		gzipWriter, err := gzip.NewWriterLevel(outFile, gzip.BestCompression)
 		if err != nil {
-			dlog.Fatal(err)
+			log.Fatal(err)
 		}
 		defer gzipWriter.Close()
 		tarWriter = tar.NewWriter(gzipWriter)
@@ -72,11 +71,11 @@ func main() {
 
 	manifestEntries, err := readManifest(*manifest)
 	if err != nil {
-		dlog.Fatal(err)
+		log.Fatal(err)
 	}
 	symlinkEntries, err := readSymlinks(*symlink)
 	if err != nil {
-		dlog.Fatal(err)
+		log.Fatal(err)
 	}
 
 	createdDirs := make(map[string]struct{}, 0)
@@ -92,22 +91,22 @@ func main() {
 				ModTime: constantTimestamp,
 			}
 			if err := tarWriter.WriteHeader(header); err != nil {
-				dlog.Fatal(err)
+				log.Fatal(err)
 			}
 			var b bytes.Buffer
 			if _, err := io.Copy(tarWriter, &b); err != nil {
-				dlog.Fatal(err)
+				log.Fatal(err)
 			}
 			continue
 		}
 
 		stat, err := os.Stat(manifest.src)
 		if err != nil {
-			dlog.Errorf("failed to stat file %q: %v", manifest.src, err)
+			log.Printf("failed to stat file %q: %v", manifest.src, err)
 		}
 
 		if err := maybeCreateDirectories(dst, createdDirs, tarWriter); err != nil {
-			dlog.Fatal(err)
+			log.Fatal(err)
 		}
 		header := &tar.Header{
 			Name:    dst,
@@ -116,15 +115,15 @@ func main() {
 			ModTime: constantTimestamp,
 		}
 		if err := tarWriter.WriteHeader(header); err != nil {
-			dlog.Fatal(err)
+			log.Fatal(err)
 		}
 
 		f, err := os.Open(manifest.src)
 		if err != nil {
-			dlog.Fatal(err)
+			log.Fatal(err)
 		}
 		if _, err := io.Copy(tarWriter, f); err != nil {
-			dlog.Fatal(err)
+			log.Fatal(err)
 		}
 		f.Close()
 	}

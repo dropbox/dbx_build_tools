@@ -1,15 +1,13 @@
-package genbuildgolib
+package lib
 
 import (
+	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path"
 	"regexp"
 	"sort"
 	"strings"
-
-	"godropbox/errors"
 )
 
 const (
@@ -34,7 +32,7 @@ func BuildTagmapForPkg(dirPath string) (TagMap, error) {
 	// So we resort to just reading the files manually
 	files, err := os.ReadDir(dirPath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed while reading %s", dirPath)
+		return nil, fmt.Errorf("failed while reading %s, err: %w", dirPath, err)
 	}
 	for _, di := range files {
 		// Also note that we don't recursively walk directories
@@ -42,7 +40,7 @@ func BuildTagmapForPkg(dirPath string) (TagMap, error) {
 			continue
 		}
 		p := path.Join(dirPath, di.Name())
-		b, readErr := ioutil.ReadFile(p)
+		b, readErr := os.ReadFile(p)
 		if readErr != nil {
 			return nil, readErr
 		}
