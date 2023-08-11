@@ -388,6 +388,7 @@ def build_pip_archive(workdir):
             "torch",
             "torchvision",
             "torchaudio",
+            "tritonclient",
         ]
 
         return (
