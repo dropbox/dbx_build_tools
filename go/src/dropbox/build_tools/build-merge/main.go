@@ -118,75 +118,79 @@ func maybeMergeAdditionalArg(
 
 	used["additional_"+name] = struct{}{}
 
-	switch t := assign.RHS.(type) {
+	newExpr, err := maybeMergeExpr(assign.RHS, additional.RHS, name, "additional_"+name)
+	if err != nil {
+		return err
+	}
+	assign.RHS = newExpr
+	return nil
+}
+
+func maybeMergeExpr(lhs, rhs build.Expr, lhsName, rhsName string) (build.Expr, error) {
+	switch t := lhs.(type) {
 	case *build.ListExpr:
-		l, ok := additional.RHS.(*build.ListExpr)
+		l, ok := rhs.(*build.ListExpr)
 		if !ok {
-			return fmt.Errorf(
-				"Cannot merge %s with addition_%s",
-				name,
-				name)
+			return nil, fmt.Errorf("Cannot merge %s with %s", lhsName, rhsName)
 		}
 
-		assign.RHS = &build.BinaryExpr{
+		return &build.BinaryExpr{
 			X:         t,
 			Op:        "+",
 			LineBreak: true,
 			Y:         l,
-		}
+		}, nil
 	case *build.DictExpr:
-		d, ok := additional.RHS.(*build.DictExpr)
+		d, ok := rhs.(*build.DictExpr)
 		if !ok {
-			return fmt.Errorf(
-				"Cannot merge %s with addition_%s",
-				name,
-				name)
+			return nil, fmt.Errorf("Cannot merge %s with %s", lhsName, rhsName)
 		}
 
-		assign.RHS = &build.CallExpr{
+		return &build.CallExpr{
 			X: &build.DotExpr{
 				X:    t,
 				Name: "update",
 			},
 			List: []build.Expr{d},
-		}
+		}, nil
 	case *build.CallExpr:
 		identExpr, identExprOk := t.X.(*build.Ident)
 		if !identExprOk {
-			return fmt.Errorf(
-				"Cannot merge %s with addition_%s",
-				name,
-				name)
+			return nil, fmt.Errorf("Cannot merge %s with %s", lhsName, rhsName)
 		}
 		if identExpr.Name != "glob" {
-			return fmt.Errorf(
-				"Cannot merge %s with addition_%s",
-				name,
-				name)
+			return nil, fmt.Errorf("Cannot merge %s with addition_%s", lhsName, rhsName)
 		}
-		l, ok := additional.RHS.(*build.ListExpr)
+		l, ok := rhs.(*build.ListExpr)
 		if !ok {
-			return fmt.Errorf(
-				"Cannot merge %s with addition_%s",
-				name,
-				name)
+			return nil, fmt.Errorf("Cannot merge %s with %s", lhsName, rhsName)
 		}
 
-		assign.RHS = &build.BinaryExpr{
+		return &build.BinaryExpr{
 			X:         t,
 			Op:        "+",
 			LineBreak: true,
 			Y:         l,
+		}, nil
+	case *build.BinaryExpr:
+		if t.Op != "+" {
+			return nil, fmt.Errorf("Cannot merge %s with %s", lhsName, rhsName)
+		}
+		newRhsExpr, err := maybeMergeExpr(t.Y, rhs, lhsName, rhsName)
+		if err != nil {
+			return nil, err
 		}
 
+		// We optimistically assume t.X is something plausible and don't bother verifying
+		return &build.BinaryExpr{
+			X:         t.X,
+			Op:        "+",
+			LineBreak: t.LineBreak,
+			Y:         newRhsExpr,
+		}, nil
 	default:
-		return fmt.Errorf(
-			"Cannot merge %s with additional_%s",
-			name,
-			name)
+		return nil, fmt.Errorf("Cannot merge %s with %s", lhsName, rhsName)
 	}
-
-	return nil
 }
 
 func mergeCallExpr(m1 *mergeable, m2 *mergeable) (*build.CallExpr, error) {
