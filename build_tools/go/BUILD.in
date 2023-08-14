@@ -164,3 +164,8 @@ config_setting(
         "@io_bazel_rules_go//go/config:debug": "true",
     },
 )
+
+exports_files(
+    ["dbx_go_gen_build_srcs.bzl"],
+    visibility = ["//go/src/dropbox/build_tools/update-gen-build-go-srcs:__pkg__"],
+)

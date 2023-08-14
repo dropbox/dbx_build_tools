@@ -51,5 +51,5 @@ filegroup(
         ["*.go"],
         exclude = ["*_test.go"],
     ),
-    visibility = ["//visibility:public"],
+    visibility = ["//go/src/dropbox/build_tools/gen-build-go:__pkg__"],
 )

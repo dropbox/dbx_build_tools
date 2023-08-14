@@ -1,4 +1,4 @@
-load("//build_tools/go:cfg.bzl", "GO_GEN_BUILD_SRCS")
+load("//build_tools/go:dbx_go_gen_build_srcs.bzl", "GO_GEN_BUILD_SRCS")
 
 _GO_GEN_BUILD_BUILD = """
 exports_files(["gen-build-go_bin"], visibility="//visibility:public")
@@ -6,7 +6,7 @@ exports_files(["gen-build-go_bin"], visibility="//visibility:public")
 
 def _dbx_go_gen_build_impl(ctx):
     ctx.symlink(
-        ctx.path(ctx.attr._go_gen_build_srcs.relative("go.mod")).dirname,
+        ctx.path(Label("//go/src/dropbox/build_tools/gen-build-go:go.mod")).dirname,
         "gen-build-go",
     )
 
@@ -56,7 +56,7 @@ dbx_go_gen_build = repository_rule(
             doc = """This implicit dep loads the golang toolchain package. It's a dependency we
             need for gen-build-go-dep to determine which imports are native go imports.""",
         ),
-        "_go_gen_build_srcs": attr.label(
+        "_go_gen_build_srcs": attr.label_list(
             default = GO_GEN_BUILD_SRCS,
         ),
     },

@@ -42,5 +42,5 @@ filegroup(
         "go.sum",
         "//go/src/dropbox/build_tools/gen-build-go/lib:srcs",
     ],
-    visibility = ["//visibility:public"],
+    visibility = ["//go/src/dropbox/build_tools/update-gen-build-go-srcs:__pkg__"],
 )
