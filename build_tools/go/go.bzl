@@ -961,18 +961,22 @@ _dbx_go_library_internal = rule(
     fragments = ["cpp"],
 )
 
-_SUFFIX_RULES_GO = "_rules_go"
+_SUFFIX_DBX_GO = "_dbx_go"
 
 def _normalized_dep(dep):
     if dep.startswith("@") and "//" not in dep:
         dep = dep + "//:" + dep[1:]
     if ":" not in dep:
-        dep = dep + ":" + dep[dep.rfind("/") + 1:]
+        fixed_name = dep[dep.rfind("/") + 1:]
+        if "//" in dep:
+            dep = dep + ":" + fixed_name
+        else:
+            dep = ":" + fixed_name
     return dep
 
 def _rewrite_godeps(deps):
     return [
-        _normalized_dep(dep) + _SUFFIX_RULES_GO
+        _normalized_dep(dep) + _SUFFIX_DBX_GO
         for dep in deps
     ]
 
@@ -994,9 +998,9 @@ def dbx_go_library(
         x_defs = {},
         **kwargs):
     _dbx_go_library_internal(
-        name = name,
+        name = name + _SUFFIX_DBX_GO,
         srcs = srcs,
-        deps = deps,
+        deps = _rewrite_godeps(deps),
         cgo_srcs = cgo_srcs,
         cdeps = cdeps,
         data = data,
@@ -1015,11 +1019,11 @@ def dbx_go_library(
         embedsrcs = data
 
     go_library(
-        name = name + _SUFFIX_RULES_GO,
+        name = name,
         cgo = len(cgo_srcs) > 0,
         srcs = srcs + cgo_srcs,
         data = data,
-        deps = _rewrite_godeps(deps),
+        deps = deps,
         cdeps = cdeps,
         embedsrcs = embedsrcs,
         importpath = module_name if module_name else native.package_name()[len("go/src/"):],
@@ -1126,7 +1130,7 @@ def dbx_go_binary(
         _dbx_go_library_internal(
             name = name + "_exelib",
             srcs = srcs,
-            deps = deps,
+            deps = _rewrite_godeps(deps),
             data = data,
             package = "main",
             go_versions = [],
@@ -1166,7 +1170,7 @@ def dbx_go_binary(
             data = data,
             embedsrcs = embedsrcs,
             gotags = gotags,
-            deps = _rewrite_godeps(deps),
+            deps = deps,
             cdeps = cdeps,
             clinkopts = cgo_linkerflags,
             copts = cgo_includeflags,
@@ -1193,7 +1197,7 @@ def dbx_go_binary(
             _dbx_go_library_internal(
                 name = versioned_name + "_exelib",
                 srcs = srcs,
-                deps = deps,
+                deps = _rewrite_godeps(deps),
                 data = data,
                 package = "main",
                 go_versions = [],
@@ -1231,7 +1235,7 @@ def dbx_go_binary(
                 data = data,
                 embedsrcs = embedsrcs,
                 gotags = gotags,
-                deps = _rewrite_godeps(deps),
+                deps = deps,
                 cdeps = cdeps,
                 clinkopts = cgo_linkerflags,
                 copts = cgo_includeflags,
@@ -1258,7 +1262,7 @@ def dbx_go_binary(
             cgo = bool(cgo_srcs),
             srcs = all_srcs,
             gotags = gotags,
-            deps = _rewrite_godeps(deps),
+            deps = deps,
             cdeps = cdeps,
             clinkopts = cgo_linkerflags,
             copts = cgo_includeflags,
@@ -1328,7 +1332,7 @@ def _dbx_gen_maybe_services_test(
     _dbx_go_library_internal(
         name = testlib_name,
         srcs = srcs,
-        deps = deps,
+        deps = _rewrite_godeps(deps),
         package = package,
         module_name = module_name,
         tags = tags,
@@ -1502,7 +1506,7 @@ def dbx_go_test(
                 cgo = len(cgo_srcs) > 0,
                 srcs = srcs + cgo_srcs,
                 gotags = gotags,
-                deps = _rewrite_godeps(deps),
+                deps = deps,
                 cdeps = cdeps,
                 importpath = module_name if module_name else native.package_name()[len("go/src/"):],
                 embedsrcs = embedsrcs,
