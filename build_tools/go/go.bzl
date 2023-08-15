@@ -1261,6 +1261,7 @@ def dbx_go_binary(
             name = name + "_bin_norace",
             cgo = bool(cgo_srcs),
             srcs = all_srcs,
+            data = data,
             gotags = gotags,
             deps = deps,
             cdeps = cdeps,
