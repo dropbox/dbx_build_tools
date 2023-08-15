@@ -8,6 +8,27 @@ load("//build_tools/sh:sh.bzl", "dbx_sh_binary")
 load("@bazel_skylib//:bzl_library.bzl", "bzl_library")
 
 dbx_py_binary(
+    name = "vpip",
+    srcs = ["vpip.py"],
+    data = [
+        ":ldshared-wrapper",
+        ":sanitizer-extra-runfiles",
+        "@io_pypa_pip_whl//file",
+        "@io_pypa_setuptools_whl//file",
+        "@io_pypa_wheel_whl//file",
+        # Directly use git, rather than //thirdparty/git:git to
+        # avoid a circular dependency
+        # Uncomment this if you need git features of pip for manual
+        # testing of an unreleased build.
+        # "@com_git_scm_git//:executables",
+    ],
+    main = "vpip.py",
+    deps = [
+        "//build_tools/bzl_lib:cfg",
+    ],
+)
+
+dbx_py_binary(
     name = "build_tar",
     srcs = [
         "archive.py",
@@ -25,24 +46,6 @@ py_binary(
 sh_binary(
     name = "ldshared-wrapper",
     srcs = ["ldshared-wrapper.sh"],
-)
-
-py_binary(
-    name = "vpip",
-    srcs = ["vpip.py"],
-    data = [
-        ":ldshared-wrapper",
-        ":sanitizer-extra-runfiles",
-        "@io_pypa_pip_whl//file",
-        "@io_pypa_setuptools_whl//file",
-        "@io_pypa_wheel_whl//file",
-        # Directly use git, rather than //thirdparty/git:git to
-        # avoid a circular dependency
-        # Uncomment this if you need git features of pip for manual
-        # testing of an unreleased build.
-        # "@com_git_scm_git//:executables",
-    ],
-    python_version = "PY3",
 )
 
 py_binary(
@@ -72,6 +75,7 @@ dbx_internal_bootstrap_py_binary(
     name = "py3_compile",
     srcs = ["py3_compile.py"],
     main = "py3_compile.py",
+    deps = ["//build_tools/bzl_lib:cfg"],
 )
 
 toolchain_type(

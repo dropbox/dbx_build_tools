@@ -65,7 +65,7 @@ dbx_py_library(
     srcs = ["core.py"],
 )
 
-dbx_py_library(
+py_library(
     name = "cfg",
     srcs = ["cfg.py"],
 )

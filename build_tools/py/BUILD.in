@@ -14,9 +14,8 @@ sh_binary(
     srcs = ["ldshared-wrapper.sh"],
 )
 
-py_binary(
+dbx_py_binary(
     name = "vpip",
-    srcs = ["vpip.py"],
     data = [
         ":ldshared-wrapper",
         ":sanitizer-extra-runfiles",
@@ -29,7 +28,7 @@ py_binary(
         # testing of an unreleased build.
         # "@com_git_scm_git//:executables",
     ],
-    python_version = "PY3",
+    main = "vpip.py",
 )
 
 py_binary(
@@ -69,6 +68,7 @@ dbx_internal_bootstrap_py_binary(
     name = "py3_compile",
     srcs = ["py3_compile.py"],
     main = "py3_compile.py",
+    deps = ["//build_tools/bzl_lib:cfg"],
 )
 
 toolchain_type(

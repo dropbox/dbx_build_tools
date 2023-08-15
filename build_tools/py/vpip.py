@@ -16,6 +16,8 @@ import subprocess
 import sys
 import tempfile
 
+from build_tools.bzl_lib.cfg import VPIP_ALLOWED_BINARIES
+
 ARGS = None
 SOURCE_DATE_EPOCH = "1541963471"
 
@@ -360,37 +362,6 @@ def build_pip_archive(workdir):
     env["PYTHONPATH"] = extra_dir
 
     def pip_cmd(cmd, *args):
-        # Binary packages for ML use
-        # Note: onnxmltools, tensorboard, tensorflow_estimator, and keras are pure Python, but are erroneously
-        # marked as binary packages by the tensorflow build process (arch=none-any)
-        allowed_binaries = [
-            "bitsandbytes",
-            "blobfile",
-            "ctranslate2",
-            "evals",
-            "faiss-cpu",
-            "keras",  # pure python
-            "lightgbm",
-            "onnx",
-            "onnxmltools",  # pure python
-            "onnxoptimizer",
-            "onnxruntime-gpu",
-            "pyarrow",
-            "pytorch-quantization",
-            "sentencepiece",
-            "tensorboard",  # pure python
-            "tensorflow",
-            "tensorflow_estimator",  # pure python
-            "tensorflow_text",
-            "tensorrt",
-            "tf2onnx",  # pure python
-            "tokenizers",
-            "torch",
-            "torchvision",
-            "torchaudio",
-            "tritonclient",
-        ]
-
         return (
             [
                 venv_python,
@@ -408,7 +379,7 @@ def build_pip_archive(workdir):
                 "--no-binary=:all:",
                 # Binary packages are not acceptable in general.
                 # These are exceptions for ML usage only.
-                "--only-binary={}".format(",".join(allowed_binaries)),
+                "--only-binary={}".format(",".join(VPIP_ALLOWED_BINARIES)),
             ]
             + index_url_flags_if_required()
             + trusted_host_flags_if_required()

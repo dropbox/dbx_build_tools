@@ -41,6 +41,9 @@ PIP_LOAD_STATEMENT = "load('@dbx_build_tools//build_tools/py:py.bzl', %s)" % (
     ", ".join([repr(t) for t in PIP_RULE_TYPES])
 )
 
+VPIP_ALLOWED_BINARIES: List[str] = []
+DOCSTRING_STRIP_EXCEPTIONS: List[str] = []
+
 ###
 ### Go-related configuration.
 ###

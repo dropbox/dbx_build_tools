@@ -126,12 +126,6 @@ dbx_py_library(
 )
 
 dbx_py_library(
-    name = "cfg",
-    srcs = ["cfg.py"],
-    validate = "strict",
-)
-
-dbx_py_library(
     name = "selenium_build_util_lib",
     srcs = [
         "selenium_build_util.py",
@@ -157,4 +151,9 @@ dbx_py_pytest_test(
         ":selenium_build_util_lib",
         "//build_tools:bazel_utils",
     ],
+)
+
+py_library(
+    name = "cfg",
+    srcs = ["cfg.py"],
 )
