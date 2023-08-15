@@ -21,6 +21,11 @@ var (
 func main() {
 	manifest := flag.String("manifest", "", "manifest file")
 	symlink := flag.String("symlink", "", "manifest file")
+	compression := flag.Int(
+		"compression",
+		-1,
+		"if non-negative, override the default the compression level",
+	)
 	packageDirPrefix := flag.String("package-dir", "", "path prefix")
 	stripPrefix := flag.String(
 		"strip-prefix",
@@ -57,7 +62,11 @@ func main() {
 
 	var tarWriter *tar.Writer
 	if strings.HasSuffix(*outputFile, "gz") {
-		gzipWriter, err := gzip.NewWriterLevel(outFile, gzip.BestCompression)
+		gzipCompression := gzip.BestCompression
+		if *compression >= 0 {
+			gzipCompression = *compression
+		}
+		gzipWriter, err := gzip.NewWriterLevel(outFile, gzipCompression)
 		if err != nil {
 			log.Fatal(err)
 		}

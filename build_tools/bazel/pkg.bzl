@@ -384,6 +384,12 @@ dbx_pkg_tar_attrs = {
         default = "tar",
         values = ["tar", "tar.gz"],
     ),
+    "compression": attr.int(
+        default = -1,
+        doc = "If producing a compressed tar, pass this int to the underlying compression algorithm. " +
+              "For example, gzip supports compression levels from 1 (fastest) to 9 (most compressed). " +
+              "If set to -1, have build-tar pick some default level.",
+    ),
     "allow_empty_targets": attr.bool(
         default = False,
         doc = "If true, disables the assertion that all data targets must have files to package. " +
@@ -408,6 +414,7 @@ def dbx_pkg_tar_impl(ctx):
     out = ctx.actions.declare_file(ctx.label.name + "." + ctx.attr.extension)
 
     args = ctx.actions.args()
+    args.add("--compression", ctx.attr.compression)
     args.add("--package-dir", ctx.attr.package_dir)
     args.add("--strip-prefix", ctx.attr.strip_prefix)
     args.add("--output", out.path)
