@@ -10,7 +10,8 @@ def _dbx_go_gen_build_impl(ctx):
         "gen-build-go",
     )
 
-    go_root = "/".join([str(ctx.path(ctx.attr._go_toolchain).dirname), "go"])
+    go_sdk_label = Label("@" + ctx.attr.go_sdk_name + "//:ROOT")
+    go_root = str(ctx.path(go_sdk_label).dirname)
     env = {
         "GOPATH": str(ctx.path(".")),
         "GOROOT": go_root,
@@ -51,10 +52,9 @@ dbx_go_gen_build = repository_rule(
         "goproxy_url": attr.string(
             doc = """Base url for GOPROXY to fetch modules.""",
         ),
-        "_go_toolchain": attr.label(
-            default = "@go_1_18_linux_amd64_tar_gz//:WORKSPACE",
-            doc = """This implicit dep loads the golang toolchain package. It's a dependency we
-            need for gen-build-go-dep to determine which imports are native go imports.""",
+        "go_sdk_name": attr.string(
+            default = "go_sdk",
+            doc = """Name of Go SDK to use to compile gen-build-go binary.""",
         ),
         "_go_gen_build_srcs": attr.label_list(
             default = GO_GEN_BUILD_SRCS,

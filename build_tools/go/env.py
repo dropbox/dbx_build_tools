@@ -11,7 +11,7 @@ def _ensure_goroot_exists(goroot: str) -> None:
     """Tries to populate GOROOT and verify that it exists."""
     # Doesn't actually build anything, but should populate the Go toolchain.
     subprocess.run(
-        ["bazel", "build", "@dbx_build_tools//build_tools/go:go1.18"], check=True, capture_output=True
+        ["bazel", "build", "@go_sdk//:ROOT"], check=True, capture_output=True
     )
     assert os.path.isdir(goroot), "Could not populate GOROOT"
 
@@ -28,7 +28,7 @@ def make_go_env(ensure_goroot: bool = True) -> Dict[str, str]:
     }
 
     bazel_ws_root = "bazel-" + os.path.basename(ws)
-    GOROOT = os.path.join(ws, bazel_ws_root, "external/go_1_18_linux_amd64_tar_gz/go")
+    GOROOT = os.path.join(ws, bazel_ws_root, "external/go_sdk")
     if ensure_goroot and not os.path.isdir(GOROOT):
         _ensure_goroot_exists(GOROOT)
 

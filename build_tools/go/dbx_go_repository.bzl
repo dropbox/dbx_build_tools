@@ -4,7 +4,8 @@ load("//build_tools/go:cfg.bzl", "GO_DEPENDENCIES_JSON_PATH")
 _DBX_GO_REPOSITORY_RULE_TIMEOUT = 86400
 
 def _dbx_go_dependency_impl(ctx):
-    go_root = "/".join([str(ctx.path(ctx.attr._go_toolchain).dirname), "go"])
+    go_sdk_label = Label("@" + ctx.attr.go_sdk_name + "//:ROOT")
+    go_root = str(ctx.path(go_sdk_label).dirname)
 
     mm_url = ctx.attr.url
     for mapping in MAGIC_MIRROR_URL_MAPPING:
@@ -115,10 +116,9 @@ dbx_go_dependency = repository_rule(
                 "bzr",
             ],
         ),
-        "_go_toolchain": attr.label(
-            default = "@go_1_18_linux_amd64_tar_gz//:WORKSPACE",
-            doc = """This implicit dep loads the golang toolchain package. It's a dependency we
-            need for gen-build-go-dep to determine which imports are native go imports.""",
+        "go_sdk_name": attr.string(
+            default = "go_sdk",
+            doc = """Name of Go SDK to use to determine which imports are native go imports.""",
         ),
         "_dbx_go_dependencies": attr.label(
             default = GO_DEPENDENCIES_JSON_PATH,

@@ -5,7 +5,7 @@ load(
     "CPP_LINK_EXECUTABLE_ACTION_NAME",
     "C_COMPILE_ACTION_NAME",
 )
-load("//build_tools/go:cfg.bzl", "NORACE_WHITELIST", "VERSION_BINARY_WHITELIST")
+load("//build_tools/go:cfg.bzl", "GO_USE_RULES_GO_ONLY", "NORACE_WHITELIST", "VERSION_BINARY_WHITELIST")
 load("//build_tools/go:embed.bzl", "add_embedded_src")
 load("//build_tools/bazel:config.bzl", "DbxStringValue")
 load("//build_tools/bazel:quarantine.bzl", "process_quarantine_attr")
@@ -83,15 +83,13 @@ go_toolchain = rule(
 )
 
 # TODO(team): Remove all notion of versions once migration to bazel/rules_go is finished.
+RULES_GO_VERSION = "1.21"
 SUPPORTED_GO_VERSIONS = ["1.18", "1.19"]
-DEFAULT_GO_VERSION = "1.18"
+DEFAULT_GO_VERSION = "1.18" if not GO_USE_RULES_GO_ONLY else RULES_GO_VERSION
 DEFAULT_GO_LIBRARY_VERSIONS = ["1.18", "1.19"]
 DEFAULT_GO_TEST_VERSIONS = ["1.18"]
 SUPPORTED_GO_TOOLCHAINS = [
-    Label("//build_tools/go:go1.18"),
-    Label("//build_tools/go:go1.19"),
 ]
-RULES_GO_VERSION = "1.21"
 
 # DbxGoPackage is the main provider exported by dbx_go_library. Go libraries generate compilation
 # actions over the matrix [go verions]X[race, no race]. To avoid the overhead of indirection, we
@@ -997,22 +995,23 @@ def dbx_go_library(
         # The following are bazel/rules_go-specific attributes.
         x_defs = {},
         **kwargs):
-    _dbx_go_library_internal(
-        name = name + _SUFFIX_DBX_GO,
-        srcs = srcs,
-        deps = _rewrite_godeps(deps),
-        cgo_srcs = cgo_srcs,
-        cdeps = cdeps,
-        data = data,
-        tagmap = tagmap,
-        module_name = module_name,
-        cgo_includeflags = cgo_includeflags,
-        cgo_linkerflags = cgo_linkerflags,
-        cgo_cxxflags = cgo_cxxflags,
-        package = package,
-        embed_config = embed_config,
-        **kwargs
-    )
+    if not GO_USE_RULES_GO_ONLY:
+        _dbx_go_library_internal(
+            name = name + _SUFFIX_DBX_GO,
+            srcs = srcs,
+            deps = _rewrite_godeps(deps),
+            cgo_srcs = cgo_srcs,
+            cdeps = cdeps,
+            data = data,
+            tagmap = tagmap,
+            module_name = module_name,
+            cgo_includeflags = cgo_includeflags,
+            cgo_linkerflags = cgo_linkerflags,
+            cgo_cxxflags = cgo_cxxflags,
+            package = package,
+            embed_config = embed_config,
+            **kwargs
+        )
 
     embedsrcs = []
     if embed_config:
@@ -1126,7 +1125,7 @@ def dbx_go_binary(
     if dynamic_libraries:
         kwargs.pop("dynamic_libraries")
 
-    if go_version != RULES_GO_VERSION:
+    if go_version != RULES_GO_VERSION and not GO_USE_RULES_GO_ONLY:
         _dbx_go_library_internal(
             name = name + "_exelib",
             srcs = srcs,
@@ -1193,7 +1192,7 @@ def dbx_go_binary(
 
     for alternate_go_version in alternate_go_versions:
         versioned_name = name + "_" + alternate_go_version
-        if alternate_go_version != RULES_GO_VERSION:
+        if alternate_go_version != RULES_GO_VERSION and not GO_USE_RULES_GO_ONLY:
             _dbx_go_library_internal(
                 name = versioned_name + "_exelib",
                 srcs = srcs,
@@ -1256,7 +1255,7 @@ def dbx_go_binary(
                 tags = tags,
             )
 
-    if go_version == RULES_GO_VERSION and generate_norace_binary:
+    if (go_version == RULES_GO_VERSION or GO_USE_RULES_GO_ONLY) and generate_norace_binary:
         go_binary(
             name = name + "_bin_norace",
             cgo = bool(cgo_srcs),
@@ -1487,7 +1486,7 @@ def dbx_go_test(
         if go_version != DEFAULT_GO_VERSION and DEFAULT_GO_VERSION in go_versions:
             versioned_tags = tags + ["alternative_go_version"]
 
-        if go_version == RULES_GO_VERSION:
+        if go_version == RULES_GO_VERSION or GO_USE_RULES_GO_ONLY:
             launch_svcctl = len(services) > 0 or force_launch_svcctl
 
             embedsrcs = []
