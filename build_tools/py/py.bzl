@@ -1031,6 +1031,7 @@ def dbx_py_pytest_test(
         flaky = 0,
         quarantine = {},
         python = None,
+        default_binary_abi_only = False,
         plugins = [],
         visibility = None,
         **kwargs):
@@ -1040,9 +1041,19 @@ def dbx_py_pytest_test(
 
     pythons = []
     if python == None:
-        pythons.append((PY3_TEST_ABI.build_tag, ""))
-        for abi in PY3_ALTERNATIVE_TEST_ABIS:
-            pythons.append((abi.build_tag, abi.build_tag))
+        # Some targets have a hard-coded cc-library level dependency on
+        # //thirdparty/cpython/dbx:drte-interpreter-headers. Such targets
+        # only work on the same interpreter as the default. The easiest way
+        # handle this is to ensure drte-interpreter-headers match the default
+        # abi, and only run tests against that abi. In the future this could
+        # actually be a different abi than the default, but this would be easy
+        # to change.
+        if default_binary_abi_only:
+            pythons.append((PY3_DEFAULT_BINARY_ABI.build_tag, ""))
+        else:
+            pythons.append((PY3_TEST_ABI.build_tag, ""))
+            for abi in PY3_ALTERNATIVE_TEST_ABIS:
+                pythons.append((abi.build_tag, abi.build_tag))
     else:
         fail('Cannot use a custom "python" attribute.')
 
