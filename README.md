@@ -165,3 +165,48 @@ INFO: Build completed successfully, 1825 total actions
 
 INFO: Build completed successfully, 1825 total actions
 ```
+
+# Using external packages
+
+External packages can be specified using `dbx_py_pypi_piplib`, which can be imported from `@dbx_build_tools//build_tools/py:py.bzl`. Consider a python file which uses `import some_library`, and you wish for this to be retrieved through PyPI. When `bzl` reads this import, it will try to find its definition at `//pip/some_library`; if it finds it, it will be added to the `deps` list of the `dbx_py_binary` or `dbx_py_library` that depends on it in the corresponding `BUILD` file.
+
+## If the external package has no dependencies
+If `some_library` has no external dependencies, you can thus create a file at `[project_root]/pip/some_library/BUILD` containing
+```
+load("@dbx_build_tools//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
+
+dbx_py_pypi_piplib(
+    name = "some_library",
+    pip_version = "1.2.3", #replace with the required version
+    visibility = ["//visibility:public"],
+)
+```
+and the build of your project will download and install the correct version, making it available to your code.
+
+## If the external package has runtime dependencies
+Consider another library called `another_library` that imports `some_library`. In this scenario, you should also create `[project_root]/pip/another_library/BUILD` along the same lines as the previous example, but specifying the dependency in the `deps` array, such as
+```
+load("@dbx_build_tools//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
+
+dbx_py_pypi_piplib(
+    name = "another_library",
+    pip_version = "2.3.4", #replace with the required version
+    deps = ['//pip/some_library'],
+    visibility = ["//visibility:public"],
+)
+```
+
+## If the external package has setup dependencies
+The installation of some libraries requires other python packages to be installed. For example, `numpy` requires the `cython` package during the setup phase. You can specify such setup dependencies in the `setup_requires` list.
+
+Consider that `another_library` requires `some_library` during the initial installation, rather than at runtime. Then your build file at `[project_root]/pip/another_library/BUILD` will look like
+```
+load("@dbx_build_tools//build_tools/py:py.bzl", "dbx_py_pypi_piplib")
+
+dbx_py_pypi_piplib(
+    name = "another_library",
+    pip_version = "2.3.4", #replace with the required version
+    setup_requires = ['//pip/some_library'],
+    visibility = ["//visibility:public"],
+)
+```
