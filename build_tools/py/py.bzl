@@ -84,6 +84,7 @@ def _add_vpip_compiler_args(ctx, cc_toolchain, copts, conly, args):
         action_name = CPP_LINK_STATIC_LIBRARY_ACTION_NAME,
     )
     args.add(c_compiler, format = "--compiler-executable=%s")
+    args.add(c_compiler, format = "--mpi-executable=%s")
     args.add(archiver, format = "--archiver=%s")
 
     # Add base compiler flags from the crosstool. These contain the correct
