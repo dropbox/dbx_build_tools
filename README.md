@@ -75,9 +75,12 @@ def hello_app(environ, start_response):
     start_response('200 OK', [('Content-type', 'text/html')])
 
     return [
-        '<html><strong>',
-        say_hello(),
-        '</strong></html>',
+        i.encode('utf-8')
+        for i in [
+            '<html><strong>',
+            say_hello(),
+            '</strong></html>',
+        ]
     ]
 
 
@@ -96,6 +99,7 @@ load('@dbx_build_tools//build_tools/services:svc.bzl', 'dbx_service_daemon')
 dbx_py_library(
     name = "hello",
     srcs = ["hello.py"],
+    python2_compatible=True,
 )
 
 dbx_py_binary(
